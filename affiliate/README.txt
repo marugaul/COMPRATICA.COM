@@ -1,0 +1,1 @@
+Pantallas de Afiliados (login, dashboard, sales, products, orders)

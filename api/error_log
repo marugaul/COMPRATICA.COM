@@ -1,0 +1,42 @@
+[2025-10-25 15:13:13] SESSION_STATUS | {"status":2,"sid":"49038ad89ba7825eb9a1504fa2028175"}
+[2025-10-25 15:13:13] GET_CART | {"count":0}
+[2025-10-25 15:13:28] SESSION_STATUS | {"status":2,"sid":"164b4bffdd9438ffed7d649482110513"}
+[2025-10-25 15:13:28] ADD_START
+[2025-10-25 15:13:28] CSRF_CHECK | {"header_len":64,"cookie_len":64,"match":1}
+[2025-10-25 15:13:28] ADD_RAW | {"raw":"{\"product_id\":9,\"qty\":1,\"unit_price\":15000}"}
+[2025-10-25 15:13:28] ADD_BEFORE | {"cart":[]}
+[2025-10-25 15:13:28] ADD_AFTER | {"cart":{"9":{"product_id":9,"qty":1,"unit_price":15000}}}
+[2025-10-25 15:13:32] SESSION_STATUS | {"status":2,"sid":"f26aa8a859d8afb588754ea417d197db"}
+[2025-10-25 15:13:32] ADD_START
+[2025-10-25 15:13:32] CSRF_CHECK | {"header_len":64,"cookie_len":64,"match":1}
+[2025-10-25 15:13:32] ADD_RAW | {"raw":"{\"product_id\":8,\"qty\":1,\"unit_price\":15000}"}
+[2025-10-25 15:13:32] ADD_BEFORE | {"cart":[]}
+[2025-10-25 15:13:32] ADD_AFTER | {"cart":{"8":{"product_id":8,"qty":1,"unit_price":15000}}}
+[2025-10-25 15:13:37] SESSION_STATUS | {"status":2,"sid":"78689e3146296c62533159d3103b3959"}
+[2025-10-25 15:13:37] ADD_START
+[2025-10-25 15:13:37] CSRF_CHECK | {"header_len":64,"cookie_len":64,"match":1}
+[2025-10-25 15:13:37] ADD_RAW | {"raw":"{\"product_id\":11,\"qty\":1,\"unit_price\":60000}"}
+[2025-10-25 15:13:37] ADD_BEFORE | {"cart":[]}
+[2025-10-25 15:13:37] ADD_AFTER | {"cart":{"11":{"product_id":11,"qty":1,"unit_price":60000}}}
+[2025-10-25 15:13:43] SESSION_STATUS | {"status":2,"sid":"32f33e93d5e4969a6b23ba65f2bd2de4"}
+[2025-10-25 15:13:43] GET_CART | {"count":0}
+[2025-10-25 15:15:56] SESSION_STATUS | {"status":2,"sid":"bc02030497a34567d31d13ece7c61141"}
+[2025-10-25 15:15:56] GET_CART | {"count":0}
+[2025-10-25 15:16:00] SESSION_STATUS | {"status":2,"sid":"e58b15da833c9d4f0e4814934dfec3e4"}
+[2025-10-25 15:16:00] ADD_START
+[2025-10-25 15:16:00] CSRF_CHECK | {"header_len":64,"cookie_len":64,"match":1}
+[2025-10-25 15:16:00] ADD_RAW | {"raw":"{\"product_id\":9,\"qty\":1,\"unit_price\":15000}"}
+[2025-10-25 15:16:00] ADD_BEFORE | {"cart":[]}
+[2025-10-25 15:16:00] ADD_AFTER | {"cart":{"9":{"product_id":9,"qty":1,"unit_price":15000}}}
+[2025-10-25 15:16:09] SESSION_STATUS | {"status":2,"sid":"b0cb3281264045348b78c40302fa8f14"}
+[2025-10-25 15:16:09] GET_CART | {"count":0}
+[30-Oct-2025 04:39:54 UTC] PHP Warning:  require_once(../config.php): Failed to open stream: No such file or directory in /home/comprati/public_html/api/cart.php on line 3
+[30-Oct-2025 04:39:54 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '../config.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/comprati/public_html/api/cart.php:3
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/api/cart.php on line 3
+[30-Oct-2025 04:59:28 UTC] PHP Warning:  require_once(../config.php): Failed to open stream: No such file or directory in /home/comprati/public_html/api/cart.php on line 3
+[30-Oct-2025 04:59:28 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '../config.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/comprati/public_html/api/cart.php:3
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/api/cart.php on line 3

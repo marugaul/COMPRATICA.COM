@@ -1,0 +1,8 @@
+/* Evita que backdrops ocultos bloqueen el click hacia /cart.php */
+.vg-cart-overlay-off { pointer-events: none !important; }
+
+.cart-popover[aria-hidden="true"],
+[data-cart-popover][aria-hidden="true"],
+.mini-cart:not(.is-open) {
+  pointer-events: none !important;
+}

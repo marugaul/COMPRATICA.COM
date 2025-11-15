@@ -1,0 +1,15 @@
+<?php
+// TCPDF FONT FILE DESCRIPTION
+$type='TrueTypeUnicode';
+$name='NotoSansOldSouthArabian-Regular';
+$up=-100;
+$ut=50;
+$dw=500;
+$diff='';
+$originalsize=5240;
+$enc='';
+$file='notosansoldsoutharabian.z';
+$ctg='notosansoldsoutharabian.ctg.z';
+$desc=array('Flags'=>32,'FontBBox'=>'[49 -15 581 874]','ItalicAngle'=>0,'Ascent'=>1069,'Descent'=>-293,'Leading'=>0,'CapHeight'=>714,'XHeight'=>714,'StemV'=>70,'StemH'=>30,'AvgWidth'=>541,'MaxWidth'=>688,'MissingWidth'=>500);
+$cw=array(0=>0,13=>260,32=>260,160=>260);
+// --- EOF ---

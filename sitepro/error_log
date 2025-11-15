@@ -1,0 +1,1520 @@
+[08-Apr-2022 05:14:30 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Jun-2022 22:33:45 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[13-Jul-2022 21:21:44 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Aug-2022 16:41:12 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Aug-2022 10:25:28 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[08-Sep-2022 21:06:45 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Oct-2022 06:46:16 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Oct-2022 08:20:52 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[24-Nov-2022 22:18:07 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[07-Feb-2023 02:54:28 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Feb-2023 22:31:44 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Feb-2023 17:38:53 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[05-Mar-2023 21:53:08 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Mar-2023 00:17:57 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Mar-2023 12:03:43 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[03-Apr-2023 09:55:38 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[19-Apr-2023 16:30:01 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[19-Apr-2023 16:30:42 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[22-Apr-2023 12:13:31 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[14-May-2023 09:20:57 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-May-2023 08:00:27 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Jun-2023 13:43:30 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Jul-2023 12:08:35 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-Jul-2023 04:26:44 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Aug-2023 08:07:52 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[10-Aug-2023 14:40:38 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Aug-2023 18:09:47 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[05-Sep-2023 18:49:38 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Sep-2023 09:59:48 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Sep-2023 08:39:35 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Sep-2023 09:51:00 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[18-Sep-2023 04:03:50 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[06-Oct-2023 22:53:26 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[24-Oct-2023 15:50:31 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Nov-2023 12:53:58 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-Nov-2023 04:35:27 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-Dec-2023 21:02:01 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Dec-2023 23:35:20 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Jan-2024 08:30:59 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[03-Jan-2024 14:53:58 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[03-Jan-2024 14:54:09 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[04-Jan-2024 08:01:13 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[26-Jan-2024 03:11:50 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[06-Feb-2024 04:18:24 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[13-Feb-2024 01:49:02 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[18-Feb-2024 22:24:59 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[19-Feb-2024 23:17:40 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Mar-2024 13:58:56 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Mar-2024 13:59:10 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[14-Mar-2024 19:17:16 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[14-Mar-2024 19:17:45 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[14-Mar-2024 22:55:15 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Mar-2024 20:18:42 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[18-Mar-2024 11:36:16 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[20-Mar-2024 22:51:13 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[22-Mar-2024 04:25:45 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[22-Mar-2024 04:26:13 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[23-Mar-2024 03:54:59 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-Mar-2024 03:55:33 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[02-Apr-2024 23:32:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[10-Apr-2024 16:56:12 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Apr-2024 23:05:32 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[26-May-2024 10:08:36 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-May-2024 21:24:21 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[22-Jun-2024 18:15:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[07-Jul-2024 05:07:36 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[10-Jul-2024 02:49:15 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[30-Jul-2024 06:47:58 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[31-Jul-2024 23:15:22 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Aug-2024 00:49:33 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Aug-2024 00:51:28 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[14-Sep-2024 10:52:43 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[26-Sep-2024 13:06:39 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Sep-2024 22:13:40 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[08-Oct-2024 01:44:56 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Oct-2024 00:41:54 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Oct-2024 21:02:00 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Oct-2024 04:50:06 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Oct-2024 03:04:32 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Oct-2024 11:11:55 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[19-Oct-2024 22:10:07 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[20-Oct-2024 06:18:21 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Oct-2024 11:08:55 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Oct-2024 22:53:46 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-Oct-2024 17:47:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Oct-2024 10:03:02 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[03-Nov-2024 12:57:44 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[05-Nov-2024 07:36:25 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[06-Nov-2024 05:43:45 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Nov-2024 23:56:44 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Nov-2024 09:50:57 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[07-Dec-2024 04:48:53 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Dec-2024 02:05:27 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Dec-2024 04:13:32 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Dec-2024 10:49:21 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[20-Dec-2024 15:39:13 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-Dec-2024 01:03:01 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Dec-2024 17:45:53 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Dec-2024 17:48:59 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[30-Dec-2024 01:37:26 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[31-Dec-2024 01:50:50 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[02-Jan-2025 00:26:32 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[04-Jan-2025 15:42:25 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[07-Jan-2025 08:34:55 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[16-Jan-2025 08:50:58 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[16-Jan-2025 12:14:59 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[19-Jan-2025 01:58:49 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[05-Feb-2025 10:00:28 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[05-Feb-2025 10:00:29 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[13-Feb-2025 09:13:00 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[13-Feb-2025 09:24:53 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[16-Feb-2025 14:20:10 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Feb-2025 06:29:00 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Feb-2025 09:07:56 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Feb-2025 08:16:20 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Feb-2025 12:05:04 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[08-Mar-2025 02:13:25 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[14-Mar-2025 06:14:08 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[14-Mar-2025 13:02:13 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[18-Mar-2025 15:50:08 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[22-Mar-2025 23:43:46 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-Mar-2025 09:18:48 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[24-Mar-2025 14:44:04 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[25-Mar-2025 20:15:31 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[26-Mar-2025 03:01:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Mar-2025 12:02:22 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Mar-2025 00:17:03 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Mar-2025 01:07:03 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Mar-2025 13:49:46 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Apr-2025 11:33:50 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Apr-2025 14:14:50 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Apr-2025 20:22:48 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[04-Apr-2025 23:30:26 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[07-Apr-2025 11:41:33 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[07-Apr-2025 11:43:05 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[10-Apr-2025 03:45:23 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[10-Apr-2025 03:46:05 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[13-Apr-2025 00:43:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[13-Apr-2025 00:44:11 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[13-Apr-2025 19:39:15 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Apr-2025 02:33:53 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Apr-2025 17:58:10 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[18-Apr-2025 19:41:34 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[19-Apr-2025 18:55:40 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[19-Apr-2025 18:55:59 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[19-Apr-2025 18:55:59 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Apr-2025 20:49:20 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Apr-2025 21:11:21 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Apr-2025 22:57:39 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-Apr-2025 20:46:54 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[24-Apr-2025 07:20:15 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[25-Apr-2025 10:28:19 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[27-Apr-2025 06:30:58 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-Apr-2025 14:37:53 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-May-2025 02:59:57 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[02-May-2025 16:06:29 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[03-May-2025 18:29:04 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[07-May-2025 06:40:26 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[07-May-2025 06:40:30 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[08-May-2025 08:48:00 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[08-May-2025 08:48:04 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[08-May-2025 18:03:48 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[08-May-2025 18:04:32 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[09-May-2025 21:59:38 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[10-May-2025 00:43:45 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-May-2025 09:08:11 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-May-2025 08:40:42 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-May-2025 08:40:55 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-May-2025 08:41:29 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[19-May-2025 22:59:14 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[20-May-2025 01:16:38 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[20-May-2025 01:16:57 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[20-May-2025 01:17:36 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[20-May-2025 18:18:03 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[20-May-2025 18:18:14 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-May-2025 17:38:31 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-May-2025 17:38:43 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-May-2025 17:39:11 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[25-May-2025 11:10:41 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[26-May-2025 04:40:43 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[26-May-2025 04:41:04 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[26-May-2025 04:41:58 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[27-May-2025 01:56:43 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-May-2025 02:00:34 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[27-May-2025 06:55:54 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-May-2025 10:01:54 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-May-2025 10:03:37 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-May-2025 10:05:54 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[28-May-2025 11:14:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-May-2025 11:14:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-May-2025 05:57:55 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-May-2025 05:57:55 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-May-2025 18:14:43 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-May-2025 18:14:44 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[30-May-2025 20:19:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Jun-2025 21:40:37 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[06-Jun-2025 17:23:28 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[07-Jun-2025 10:10:56 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[10-Jun-2025 06:20:03 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Jun-2025 09:14:51 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[02-Jul-2025 11:02:24 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[02-Jul-2025 12:46:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[03-Jul-2025 20:33:21 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[04-Jul-2025 19:28:18 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[06-Jul-2025 00:56:18 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[08-Jul-2025 03:24:30 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[08-Jul-2025 09:39:02 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Jul-2025 09:57:48 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Jul-2025 14:55:00 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Jul-2025 14:55:03 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Jul-2025 16:17:21 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[09-Jul-2025 23:30:49 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Jul-2025 23:30:51 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[10-Jul-2025 10:18:22 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Jul-2025 16:25:22 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Jul-2025 16:25:28 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Jul-2025 03:41:47 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Jul-2025 05:44:13 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Jul-2025 05:44:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[14-Jul-2025 19:59:08 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[14-Jul-2025 19:59:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Jul-2025 19:53:00 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Jul-2025 05:17:49 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Jul-2025 05:17:55 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Jul-2025 19:32:03 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[18-Jul-2025 18:26:16 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[18-Jul-2025 19:32:36 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[18-Jul-2025 19:32:46 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[19-Jul-2025 05:56:55 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[19-Jul-2025 23:47:48 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Jul-2025 16:25:07 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Jul-2025 16:25:13 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Jul-2025 18:53:22 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[22-Jul-2025 00:56:09 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[22-Jul-2025 00:56:15 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[22-Jul-2025 23:55:37 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-Jul-2025 15:07:14 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-Jul-2025 23:07:34 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[24-Jul-2025 11:50:53 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[24-Jul-2025 11:52:31 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[24-Jul-2025 11:53:11 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[24-Jul-2025 16:00:37 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[24-Jul-2025 16:00:48 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[25-Jul-2025 12:29:11 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[25-Jul-2025 14:33:48 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[26-Jul-2025 13:30:25 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Jul-2025 03:33:26 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Jul-2025 14:37:36 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Jul-2025 15:58:45 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Jul-2025 18:50:59 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Jul-2025 21:54:53 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-Jul-2025 08:00:22 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-Jul-2025 17:10:51 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Jul-2025 05:32:21 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Jul-2025 07:59:13 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Jul-2025 09:32:00 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Jul-2025 19:48:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[30-Jul-2025 01:52:49 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[30-Jul-2025 07:50:32 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[30-Jul-2025 07:50:47 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[31-Jul-2025 04:08:23 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[31-Jul-2025 13:03:20 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[31-Jul-2025 13:26:27 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Aug-2025 09:43:38 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Aug-2025 10:30:33 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[03-Aug-2025 18:38:54 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[04-Aug-2025 15:38:00 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[05-Aug-2025 00:45:55 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[06-Aug-2025 10:51:08 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[06-Aug-2025 15:07:41 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[07-Aug-2025 09:33:20 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[07-Aug-2025 13:08:51 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[07-Aug-2025 14:13:31 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[08-Aug-2025 16:21:27 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[09-Aug-2025 11:11:58 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Aug-2025 14:14:23 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[10-Aug-2025 00:40:23 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[10-Aug-2025 19:53:49 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Aug-2025 02:35:36 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Aug-2025 02:35:37 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[11-Aug-2025 17:52:26 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Aug-2025 17:52:48 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Aug-2025 19:45:15 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Aug-2025 20:54:44 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[13-Aug-2025 16:57:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[15-Aug-2025 07:26:32 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Aug-2025 08:49:04 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Aug-2025 09:25:13 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Aug-2025 16:04:12 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[16-Aug-2025 00:27:49 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[16-Aug-2025 18:55:50 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[16-Aug-2025 21:56:01 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Aug-2025 07:27:30 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Aug-2025 18:21:34 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[17-Aug-2025 20:57:52 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[18-Aug-2025 03:16:49 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[18-Aug-2025 05:58:55 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[18-Aug-2025 14:11:05 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[18-Aug-2025 19:25:42 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[19-Aug-2025 00:56:54 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[20-Aug-2025 02:18:45 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[20-Aug-2025 10:19:27 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Aug-2025 05:00:33 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Aug-2025 10:57:13 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[22-Aug-2025 00:44:53 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[22-Aug-2025 14:59:39 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[24-Aug-2025 11:19:53 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[24-Aug-2025 19:58:25 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[25-Aug-2025 06:07:25 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[25-Aug-2025 06:10:04 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[25-Aug-2025 22:58:47 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[26-Aug-2025 09:45:17 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Aug-2025 03:41:24 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[28-Aug-2025 00:08:44 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Aug-2025 01:32:13 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Aug-2025 14:45:12 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Aug-2025 16:58:21 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[29-Aug-2025 18:50:46 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Aug-2025 19:01:04 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[30-Aug-2025 21:53:27 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[30-Aug-2025 21:53:30 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[30-Aug-2025 23:03:27 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[31-Aug-2025 17:42:07 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[31-Aug-2025 17:42:09 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[31-Aug-2025 23:18:31 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[01-Sep-2025 19:14:55 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Sep-2025 19:23:21 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[01-Sep-2025 19:29:36 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[03-Sep-2025 15:46:09 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[03-Sep-2025 16:24:22 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[03-Sep-2025 21:21:00 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[04-Sep-2025 07:10:10 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[04-Sep-2025 09:45:58 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[04-Sep-2025 20:45:26 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[05-Sep-2025 20:46:51 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[08-Sep-2025 09:44:03 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[08-Sep-2025 09:44:11 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[08-Sep-2025 18:39:26 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[08-Sep-2025 19:01:08 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Sep-2025 17:25:11 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Sep-2025 09:14:17 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Sep-2025 22:22:03 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[14-Sep-2025 16:46:46 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[15-Sep-2025 14:47:06 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[17-Sep-2025 00:52:19 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[17-Sep-2025 19:36:22 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[21-Sep-2025 11:02:37 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[23-Sep-2025 10:59:06 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[25-Sep-2025 20:27:47 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[26-Sep-2025 23:07:17 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[27-Sep-2025 02:21:22 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[29-Sep-2025 00:18:07 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[29-Sep-2025 22:33:47 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[06-Oct-2025 10:36:15 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[06-Oct-2025 11:25:05 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[06-Oct-2025 11:25:27 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[08-Oct-2025 15:10:06 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[08-Oct-2025 17:35:20 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Oct-2025 14:16:37 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[09-Oct-2025 14:17:01 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[10-Oct-2025 02:03:58 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[10-Oct-2025 02:04:09 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[10-Oct-2025 20:25:29 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[10-Oct-2025 20:25:34 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[11-Oct-2025 13:04:11 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Oct-2025 19:18:25 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[11-Oct-2025 19:18:42 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[12-Oct-2025 16:23:21 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Oct-2025 17:00:25 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[12-Oct-2025 19:45:25 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[13-Oct-2025 12:03:06 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[13-Oct-2025 13:02:00 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[13-Oct-2025 14:56:17 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[14-Oct-2025 10:25:07 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function popSessionOrGlobalVar() in /home/comprati/public_html/sitepro/3.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/3.php on line 59
+[14-Oct-2025 20:42:09 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Oct-2025 08:33:38 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Oct-2025 14:57:12 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Oct-2025 16:45:11 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[15-Oct-2025 17:37:12 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51
+[16-Oct-2025 13:53:38 UTC] PHP Fatal error:  Uncaught Error: Class 'StoreCartElement' not found in /home/comprati/public_html/sitepro/1.php:51
+Stack trace:
+#0 {main}
+  thrown in /home/comprati/public_html/sitepro/1.php on line 51

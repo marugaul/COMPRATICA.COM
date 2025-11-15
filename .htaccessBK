@@ -1,0 +1,73 @@
+# =====================================================
+# 🛡️ COMPRATICA.COM - .htaccess compatible cPanel
+# =====================================================
+
+
+# Fuerza UTF-8 para todo el sitio
+AddDefaultCharset utf-8
+
+# Fuerza HTTPS y sin "www"
+RewriteEngine On
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} ^www\. [NC]
+RewriteRule ^ https://compratica.com%{REQUEST_URI} [R=301,L]
+
+
+
+# Fuerza dominio sin www
+RewriteCond %{HTTP_HOST} ^www\.compratica\.com$ [NC]
+RewriteRule ^(.*)$ https://compratica.com/$1 [L,R=301]
+
+# No reescribir API/Auth
+RewriteRule ^api/ - [L]
+RewriteRule ^auth/ - [L]
+
+
+# Índice por defecto
+DirectoryIndex index.php index.html
+
+# Oculta listado de directorios
+Options -Indexes
+
+# Bloquea acceso directo a /includes (sin usar <Directory>)
+RewriteRule ^includes/ - [F,L]
+
+# Bloquea ejecución de PHP dentro de /uploads (sin php_flag)
+RewriteRule ^uploads/.*\.(php|phtml|php[0-9])$ - [F,L]
+
+# =====================================================
+# 🚀 CACHÉ Y RENDIMIENTO
+# =====================================================
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/jpg "access plus 30 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/gif "access plus 30 days"
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+  ExpiresDefault "access plus 1 day"
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+  AddOutputFilterByType DEFLATE application/javascript application/json
+</IfModule>
+
+# =====================================================
+# 🔐 CABECERAS DE SEGURIDAD (si el módulo está disponible)
+# =====================================================
+<IfModule mod_headers.c>
+  Header always append X-Frame-Options SAMEORIGIN
+  Header set X-XSS-Protection "1; mode=block"
+  Header set X-Content-Type-Options "nosniff"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+</IfModule>
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# Set the “ea-php82” package as the default “PHP” programming language.
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit

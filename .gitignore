@@ -1,0 +1,25 @@
+# Archivos sensibles y de datos
+data.sqlite
+*.log
+php_error.log
+
+# Directorios con datos temporales
+sessions/
+logs/
+
+# Uploads (comentar si quieres incluirlos)
+# uploads/
+
+# Configuración local
+.user.ini
+php.ini
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,67 @@
+# ================================
+# .htaccess - Basico y seguro
+# ================================
+
+# Fuerza UTF-8
+AddDefaultCharset utf-8
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Forzar HTTPS y sin www en un solo paso
+  RewriteCond %{HTTPS} !=on [OR]
+  RewriteCond %{HTTP_HOST} ^www\.compratica\.com$ [NC]
+  RewriteRule ^ https://compratica.com%{REQUEST_URI} [R=301,L]
+
+  # No reescribir API ni Auth
+  RewriteRule ^api/ - [L]
+  RewriteRule ^auth/ - [L]
+
+  # Bloquear /includes directo
+  RewriteRule ^includes/ - [F,L]
+
+  # Bloquear ejecución de PHP en /uploads
+  RewriteRule ^uploads/.*\.(php|phtml|php[0-9])$ - [F,L]
+
+  # Enviar todo lo demás a index.php (rutas amigables)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.php [L]
+</IfModule>
+
+# Índice por defecto
+DirectoryIndex index.php index.html
+
+# Ocultar listado de directorios
+Options -Indexes
+
+# Compresión / Caché
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/jpg "access plus 30 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/gif "access plus 30 days"
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+  ExpiresDefault "access plus 1 day"
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+  AddOutputFilterByType DEFLATE application/javascript application/json
+</IfModule>
+
+# Cabeceras de seguridad
+<IfModule mod_headers.c>
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header set X-XSS-Protection "1; mode=block"
+  Header set X-Content-Type-Options "nosniff"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+</IfModule>
+
+# Handler PHP de cPanel
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
+</IfModule>

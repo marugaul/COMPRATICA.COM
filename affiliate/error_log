@@ -1,0 +1,34 @@
+[06-Nov-2025 22:26:15 UTC] PHP Parse error:  Unclosed '(' on line 207 in /home/comprati/public_html/affiliate/sale_pickup_location.php on line 208
+[06-Nov-2025 16:31:49 America/Costa_Rica] PHP Fatal error:  Uncaught TypeError: htmlspecialchars(): Argument #1 ($string) must be of type string, float given in /home/comprati/public_html/affiliate/sale_pickup_location.php:225
+Stack trace:
+#0 /home/comprati/public_html/affiliate/sale_pickup_location.php(225): htmlspecialchars(9.98171)
+#1 {main}
+  thrown in /home/comprati/public_html/affiliate/sale_pickup_location.php on line 225
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:37:26 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261
+[10-Nov-2025 09:38:52 America/Costa_Rica] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/comprati/public_html/affiliate/orders.php on line 261

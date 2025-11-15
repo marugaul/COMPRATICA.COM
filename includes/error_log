@@ -1,0 +1,4 @@
+[05-Oct-2025 11:33:02 UTC] PHP Warning:  session_name(): Cannot change session name when headers already sent in /home/comprati/public_html/includes/config.php on line 26
+[05-Oct-2025 11:33:02 UTC] PHP Warning:  session_start(): Cannot start session when headers already sent in /home/comprati/public_html/includes/config.php on line 27
+[05-Oct-2025 11:34:00 UTC] PHP Warning:  session_name(): Cannot change session name when headers already sent in /home/comprati/public_html/includes/config.php on line 26
+[05-Oct-2025 11:34:00 UTC] PHP Warning:  session_start(): Cannot start session when headers already sent in /home/comprati/public_html/includes/config.php on line 27

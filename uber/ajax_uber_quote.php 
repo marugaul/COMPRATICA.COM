@@ -1,0 +1,275 @@
+<?php
+declare(strict_types=1);
+/**
+ * ajax_uber_quote.php
+ * Endpoint AJAX para obtener cotización de envío por Uber
+ * ✨ INCLUYE MODO SANDBOX para pruebas sin credenciales de Uber
+ */
+header('Content-Type: application/json; charset=utf-8');
+
+require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/UberDirectAPI.php';
+
+// Validar que sea POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+    exit;
+}
+
+// Leer JSON del body
+$input = file_get_contents('php://input');
+$data = json_decode($input, true);
+
+if (!$data) {
+    echo json_encode(['success' => false, 'message' => 'Datos inválidos']);
+    exit;
+}
+
+// Validar CSRF (opcional pero recomendado)
+session_start();
+if (!isset($data['csrf_token']) || $data['csrf_token'] !== ($_SESSION['csrf_token'] ?? '')) {
+    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido']);
+    exit;
+}
+
+$sale_id = (int)($data['sale_id'] ?? 0);
+$delivery_address = trim($data['delivery_address'] ?? '');
+$delivery_city = trim($data['delivery_city'] ?? 'San José');
+
+if ($sale_id <= 0 || !$delivery_address) {
+    echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+    exit;
+}
+
+try {
+    $pdo = db();
+    
+    // Obtener ubicación de pickup del espacio
+    $stmt = $pdo->prepare("
+        SELECT * FROM sale_pickup_locations 
+        WHERE sale_id = ? AND is_active = 1 
+        LIMIT 1
+    ");
+    $stmt->execute([$sale_id]);
+    $pickup = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$pickup) {
+        echo json_encode([
+            'success' => false, 
+            'message' => 'No se encontró ubicación de recogida configurada para este espacio'
+        ]);
+        exit;
+    }
+    
+    // Verificar que tenga coordenadas
+    if (empty($pickup['lat']) || empty($pickup['lng'])) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'La ubicación de recogida no tiene coordenadas configuradas. El vendedor debe completar esta información.'
+        ]);
+        exit;
+    }
+    
+    // TODO: Geocodificar la dirección de entrega para obtener lat/lng
+    // Por ahora usaremos coordenadas de ejemplo o el usuario debe proporcionar coordenadas
+    // Se puede integrar con Google Geocoding API u otro servicio
+    
+    // Coordenadas de ejemplo para San José centro (cambiar por geocoding real)
+    $delivery_lat = 9.9281; // Ejemplo
+    $delivery_lng = -84.0907; // Ejemplo
+    
+    // 🎯 MODO SANDBOX: Verificar si hay credenciales configuradas
+    $use_sandbox = false;
+    $sandbox_reason = '';
+    
+    try {
+        $uber = new UberDirectAPI($pdo);
+    } catch (Exception $e) {
+        // Si no hay credenciales, usar modo sandbox
+        $error_msg = $e->getMessage();
+        if (strpos($error_msg, 'no configuradas') !== false || 
+            strpos($error_msg, 'no encontrada') !== false) {
+            $use_sandbox = true;
+            $sandbox_reason = 'Credenciales de Uber no configuradas';
+        } else {
+            throw $e; // Re-lanzar si es otro tipo de error
+        }
+    }
+    
+    if ($use_sandbox) {
+        // 🎮 MODO SANDBOX: Generar cotización simulada
+        $quote = generateSandboxQuote($pickup, $delivery_address);
+        $is_sandbox = true;
+    } else {
+        // 🚀 MODO PRODUCCIÓN: Obtener cotización real de Uber
+        $quote = $uber->getQuote([
+            'pickup' => [
+                'address' => $pickup['address'],
+                'lat' => (float)$pickup['lat'],
+                'lng' => (float)$pickup['lng']
+            ],
+            'dropoff' => [
+                'address' => $delivery_address . ', ' . $delivery_city,
+                'lat' => $delivery_lat,
+                'lng' => $delivery_lng
+            ]
+        ]);
+        $is_sandbox = false;
+    }
+    
+    // Formatear respuesta
+    $currency = $quote['currency'] ?? 'CRC';
+    
+    $response = [
+        'success' => true,
+        'quote_id' => $quote['quote_id'],
+        'uber_base_cost' => $quote['uber_base_cost'],
+        'platform_commission' => $quote['platform_commission'],
+        'total_cost' => $quote['total_cost'],
+        'currency' => $currency,
+        'estimated_pickup_time' => $quote['estimated_pickup_time'],
+        'estimated_delivery_time' => $quote['estimated_delivery_time'],
+        'expires_at' => $quote['expires_at'],
+        
+        // Formateados para mostrar
+        'uber_base_cost_formatted' => formatMoney($quote['uber_base_cost'], $currency),
+        'commission_formatted' => formatMoney($quote['platform_commission'], $currency),
+        'total_cost_formatted' => formatMoney($quote['total_cost'], $currency),
+        'estimated_time' => calculateEstimatedTime($quote['estimated_pickup_time'], $quote['estimated_delivery_time']),
+        
+        // 🎮 Indicar si está en modo sandbox
+        'is_sandbox' => $is_sandbox,
+        'sandbox_reason' => $is_sandbox ? $sandbox_reason : null
+    ];
+    
+    // Guardar cotización temporalmente en sesión para usarla en el checkout
+    $_SESSION['uber_quote'] = $quote;
+    $_SESSION['uber_quote_sale_id'] = $sale_id;
+    $_SESSION['uber_is_sandbox'] = $is_sandbox;
+    
+    echo json_encode($response);
+    
+} catch (Exception $e) {
+    error_log("Error en uber quote: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error al obtener cotización: ' . $e->getMessage()
+    ]);
+}
+
+/**
+ * 🎮 MODO SANDBOX: Generar cotización simulada
+ */
+function generateSandboxQuote(array $pickup, string $delivery_address): array {
+    // Calcular distancia aproximada basada en la longitud de la dirección
+    // (esto es solo para simular, en producción se usaría geocoding real)
+    $address_length = strlen($delivery_address);
+    
+    // Simular distancia en km (entre 2 y 15 km)
+    $estimated_distance_km = min(15, max(2, $address_length / 10));
+    
+    // Calcular costo base simulado (₡500 base + ₡200 por km)
+    $uber_base_cost = 500 + ($estimated_distance_km * 200);
+    
+    // Agregar variación aleatoria ±10%
+    $variation = mt_rand(-10, 10) / 100;
+    $uber_base_cost = $uber_base_cost * (1 + $variation);
+    
+    // Redondear a múltiplos de 50 colones
+    $uber_base_cost = round($uber_base_cost / 50) * 50;
+    
+    // Comisión de plataforma (15%)
+    $commission = $uber_base_cost * 0.15;
+    $total_cost = $uber_base_cost + $commission;
+    
+    // Tiempo estimado (5-30 minutos)
+    $estimated_minutes = min(30, max(5, round($estimated_distance_km * 2)));
+    
+    $now = time();
+    $pickup_time = date('c', $now + (5 * 60)); // 5 minutos para pickup
+    $delivery_time = date('c', $now + ($estimated_minutes * 60));
+    
+    return [
+        'quote_id' => 'SANDBOX_' . uniqid(),
+        'uber_base_cost' => $uber_base_cost,
+        'platform_commission' => $commission,
+        'total_cost' => $total_cost,
+        'currency' => 'CRC',
+        'estimated_pickup_time' => $pickup_time,
+        'estimated_delivery_time' => $delivery_time,
+        'expires_at' => date('c', $now + (15 * 60)), // Expira en 15 minutos
+        'is_sandbox' => true,
+        'estimated_distance_km' => round($estimated_distance_km, 1)
+    ];
+}
+
+/**
+ * Formatear dinero según moneda
+ */
+function formatMoney(float $amount, string $currency): string {
+    $currency = strtoupper($currency);
+    if ($currency === 'USD') {
+        return '$' . number_format($amount, 2);
+    }
+    return '₡' . number_format($amount, 0);
+}
+
+/**
+ * Calcular tiempo estimado total
+ */
+function calculateEstimatedTime($pickup_time, $delivery_time): string {
+    if (!$pickup_time || !$delivery_time) {
+        return 'N/A';
+    }
+    
+    $pickup = strtotime($pickup_time);
+    $delivery = strtotime($delivery_time);
+    
+    if (!$pickup || !$delivery) {
+        return 'N/A';
+    }
+    
+    $diff_minutes = ($delivery - $pickup) / 60;
+    
+    if ($diff_minutes < 60) {
+        return round($diff_minutes) . ' minutos';
+    } else {
+        $hours = floor($diff_minutes / 60);
+        $minutes = $diff_minutes % 60;
+        return $hours . 'h ' . round($minutes) . 'min';
+    }
+}
+
+/**
+ * Geocodificar dirección usando Google Geocoding API
+ * (Requiere API key de Google)
+ */
+function geocodeAddress(string $address): ?array {
+    // TODO: Implementar con tu API key de Google
+    $api_key = 'TU_API_KEY_DE_GOOGLE'; // Configura esto en config.php
+    
+    if (!$api_key || $api_key === 'TU_API_KEY_DE_GOOGLE') {
+        return null;
+    }
+    
+    $url = 'https://maps.googleapis.com/maps/api/geocode/json?' . http_build_query([
+        'address' => $address,
+        'key' => $api_key
+    ]);
+    
+    $response = file_get_contents($url);
+    $data = json_decode($response, true);
+    
+    if ($data['status'] === 'OK' && !empty($data['results'][0])) {
+        $location = $data['results'][0]['geometry']['location'];
+        return [
+            'lat' => $location['lat'],
+            'lng' => $location['lng'],
+            'formatted_address' => $data['results'][0]['formatted_address']
+        ];
+    }
+    
+    return null;
+}

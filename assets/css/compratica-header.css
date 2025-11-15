@@ -1,0 +1,118 @@
+:root {
+  --cr-azul: #002b7f;
+  --cr-azul-claro: #0041b8;
+  --cr-rojo: #ce1126;
+  --cr-rojo-claro: #e63946;
+  --cr-blanco: #ffffff;
+  --cr-gris: #f8f9fa;
+
+  --gradient-cr: linear-gradient(135deg, var(--cr-azul) 0%, var(--cr-rojo) 100%);
+  --shadow-md: 0 4px 6px -1px rgba(0, 43, 127, 0.15), 0 2px 4px -1px rgba(0, 43, 127, 0.1);
+}
+
+/* Fondo general (opcional, pero así se ve igual que en index) */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--cr-gris);
+  color: #1a1a1a;
+  margin: 0;
+}
+
+/* HEADER */
+.header {
+  background: var(--cr-blanco);
+  border-bottom: 3px solid var(--cr-azul);
+  padding: 1.25rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 43, 127, 0.1);
+}
+
+/* Barra de colores debajo del header (la franja que ves en el screenshot) */
+.top-bar {
+  height: 10px;
+  background: var(--gradient-cr);
+}
+
+/* Logo CompraTica */
+.logo {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--cr-azul);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  letter-spacing: -0.03em;
+}
+
+.logo .flag {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.logo .text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.logo .text .main {
+  color: var(--cr-azul);
+  font-size: 1.5rem;
+}
+
+.logo .text .sub {
+  color: var(--cr-rojo);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Navegación y carrito */
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 2px solid var(--cr-azul);
+  background: var(--cr-blanco);
+  color: var(--cr-azul);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  font-size: 1.125rem;
+}
+
+.btn-icon:hover {
+  background: var(--cr-azul);
+  color: var(--cr-blanco);
+  box-shadow: 0 4px 12px rgba(0, 43, 127, 0.3);
+}
+
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--cr-rojo);
+  color: var(--cr-blanco);
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(206, 17, 38, 0.4);
+}
