@@ -13,6 +13,7 @@ logs/
 # Configuración local
 .user.ini
 php.ini
+includes/config.local.php
 
 # Archivos de sistema
 .DS_Store
