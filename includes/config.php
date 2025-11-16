@@ -112,6 +112,19 @@ function get_session_id_for_cart(): string {
 }
 
 // =========================
+// OAuth Configuration (Google & Facebook Login)
+// =========================
+// INSTRUCCIONES EN: OAUTH_SETUP.md
+
+// Google OAuth - Obtén credenciales en: https://console.cloud.google.com/
+define('GOOGLE_CLIENT_ID', '');     // Reemplaza con tu Client ID
+define('GOOGLE_CLIENT_SECRET', ''); // Reemplaza con tu Client Secret
+
+// Facebook OAuth - Obtén credenciales en: https://developers.facebook.com/
+define('FACEBOOK_APP_ID', '');      // Reemplaza con tu App ID
+define('FACEBOOK_APP_SECRET', '');  // Reemplaza con tu App Secret
+
+// =========================
 // Helpers generales
 // =========================
 if (!defined('APP_URL')) define('APP_URL', rtrim(BASE_URL, '/'));
