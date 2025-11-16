@@ -2,11 +2,21 @@
 declare(strict_types=1);
 
 // =========================
+// DETECCIÓN AUTOMÁTICA DE STAGING (TEMPORAL - Quitar cuando exista subdominio)
+// =========================
+$isStaging = false;
+$stagingPath = '';
+if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/staging/') === 0) {
+    $isStaging = true;
+    $stagingPath = '/staging';
+}
+
+// =========================
 // Configuración general
 // =========================
 define('APP_NAME', 'VentaGaraje online');
-define('BASE_URL', 'https://www.compratica.com');
-define('SITE_URL', 'https://compratica.com');
+define('BASE_URL', $isStaging ? 'https://www.compratica.com/staging' : 'https://www.compratica.com');
+define('SITE_URL', $isStaging ? 'https://compratica.com/staging' : 'https://compratica.com');
 define('SITE_EMAIL', 'info@compratica.com');
 define('ADMIN_EMAIL', 'marco.ulate@crv-soft.com');
 
@@ -22,7 +32,7 @@ define('ADMIN_PASS_HASH', '');
 define('ADMIN_PASS_PLAIN', 'marden7i');
 
 // Ruta del dashboard real
-define('ADMIN_DASHBOARD_PATH', '/admin/dashboard.php');
+define('ADMIN_DASHBOARD_PATH', $stagingPath . '/admin/dashboard.php');
 
 // =========================
 // Pagos

@@ -1,0 +1,18 @@
+# TEMPORAL - Para que funcione /staging/ correctamente
+# Eliminar cuando exista subdominio staging.compratica.com
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /staging/
+
+    # Si el archivo o directorio existe, servirlo directamente
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Para peticiones de assets, css, js, imágenes
+    RewriteRule ^(assets|includes|admin|affiliate|api|uploads|sonidos|sitepro)/(.*)$ $1/$2 [L]
+</IfModule>
+
+# Seguridad básica
+Options -Indexes
