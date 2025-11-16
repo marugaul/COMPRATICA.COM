@@ -1,5 +1,5 @@
 # ================================
-# .htaccess - Basico y seguro
+# .htaccess PARA STAGING - SIN reescritura a index.php
 # ================================
 
 # Fuerza UTF-8
@@ -7,13 +7,9 @@ AddDefaultCharset utf-8
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  RewriteBase /staging/
 
-  # Forzar HTTPS y sin www en un solo paso
-  RewriteCond %{HTTPS} !=on [OR]
-  RewriteCond %{HTTP_HOST} ^www\.compratica\.com$ [NC]
-  RewriteRule ^ https://compratica.com%{REQUEST_URI} [R=301,L]
-
-  # No reescribir API ni Auth
+  # NO reescribir API ni Auth
   RewriteRule ^api/ - [L]
   RewriteRule ^auth/ - [L]
 
@@ -23,10 +19,10 @@ AddDefaultCharset utf-8
   # Bloquear ejecución de PHP en /uploads
   RewriteRule ^uploads/.*\.(php|phtml|php[0-9])$ - [F,L]
 
-  # Enviar todo lo demás a index.php (rutas amigables)
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ index.php [L]
+  # NO REDIRIGIR TODO A INDEX.PHP - Esta sección está comentada para staging
+  # RewriteCond %{REQUEST_FILENAME} !-f
+  # RewriteCond %{REQUEST_FILENAME} !-d
+  # RewriteRule ^ index.php [L]
 </IfModule>
 
 # Índice por defecto
@@ -58,7 +54,6 @@ Options -Indexes
   Header always set X-Frame-Options "SAMEORIGIN"
   Header set X-XSS-Protection "1; mode=block"
   Header set X-Content-Type-Options "nosniff"
-  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 </IfModule>
 
 # Handler PHP de cPanel
