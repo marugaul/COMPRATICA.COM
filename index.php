@@ -1,4 +1,5 @@
 <?php
+// AUTO-DEPLOY TEST - Last update: 2025-11-16 (Git auto-sync enabled)
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/php_error.log');
