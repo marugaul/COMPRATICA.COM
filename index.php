@@ -163,12 +163,17 @@ logDebug("RENDERING_PAGE");
       <i class="fas fa-shopping-cart"></i>
       <span id="cartBadge" class="cart-badge" style="display:none">0</span>
     </button>
-    
+
     <button id="menuButton" class="btn-icon" title="Menú" aria-label="Abrir menú">
       <i class="fas fa-bars"></i>
     </button>
   </nav>
-  
+
+  <!-- MENSAJE DE PRUEBA - DEPLOY AUTOMÁTICO -->
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 10px 20px; border-radius: 8px;">
+    🚀 ¡Hola Mundo! - Sistema de Deploy Automático Funcionando 🚀
+  </div>
+
   <!-- Popover del carrito -->
   <div id="cart-popover">
     <div class="cart-popover-header">
