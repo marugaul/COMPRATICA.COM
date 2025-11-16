@@ -116,19 +116,17 @@ function get_session_id_for_cart(): string {
 // =========================
 // INSTRUCCIONES EN: OAUTH_SETUP.md
 
-// Google OAuth - Configura en config.local.php
-if (!defined('GOOGLE_CLIENT_ID')) define('GOOGLE_CLIENT_ID', '');
-if (!defined('GOOGLE_CLIENT_SECRET')) define('GOOGLE_CLIENT_SECRET', '');
-
-// Facebook OAuth - Configura en config.local.php
-if (!defined('FACEBOOK_APP_ID')) define('FACEBOOK_APP_ID', '');
-if (!defined('FACEBOOK_APP_SECRET')) define('FACEBOOK_APP_SECRET', '');
-
-// Cargar configuración local (credenciales sensibles)
+// Cargar configuración local PRIMERO (credenciales sensibles)
 // NOTA: Este archivo NO debe subirse a git (está en .gitignore)
 if (file_exists(__DIR__ . '/config.local.php')) {
     require_once __DIR__ . '/config.local.php';
 }
+
+// Definir valores por defecto solo si no fueron definidos en config.local.php
+if (!defined('GOOGLE_CLIENT_ID')) define('GOOGLE_CLIENT_ID', '');
+if (!defined('GOOGLE_CLIENT_SECRET')) define('GOOGLE_CLIENT_SECRET', '');
+if (!defined('FACEBOOK_APP_ID')) define('FACEBOOK_APP_ID', '');
+if (!defined('FACEBOOK_APP_SECRET')) define('FACEBOOK_APP_SECRET', '');
 
 // =========================
 // Helpers generales
