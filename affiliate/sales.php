@@ -25,6 +25,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create'])) {
     if ($title === '' || $start === '' || $end === '') {
       throw new RuntimeException('Faltan datos obligatorios (título, inicio, fin).');
     }
+
+    // 🔒 Privacidad del espacio
+    $isPrivate = !empty($_POST['is_private']) ? 1 : 0;
+    $accessCode = null;
+
+    if ($isPrivate) {
+      $accessCode = trim($_POST['access_code'] ?? '');
+      // Validar código de 6 dígitos
+      if (!preg_match('/^[0-9]{6}$/', $accessCode)) {
+        throw new RuntimeException('El código de acceso debe ser exactamente 6 dígitos numéricos.');
+      }
+    }
+
     // Portada opcional
     $img = null;
     if (!empty($_FILES['cover']['name']) && is_uploaded_file($_FILES['cover']['tmp_name'])) {
@@ -38,18 +51,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create'])) {
     }
     // INSERT con timestamps en hora de Costa Rica
     $sql = "INSERT INTO sales
-            (affiliate_id, title, cover_image, start_at, end_at, is_active, created_at, updated_at)
+            (affiliate_id, title, cover_image, start_at, end_at, is_active, is_private, access_code, created_at, updated_at)
             VALUES
-            (:aff, :title, :cover, :start, :end, 0, :now, :now)";
+            (:aff, :title, :cover, :start, :end, 0, :private, :code, :now, :now)";
     $stmt = $pdo->prepare($sql);
     $now  = now_cr();
     $stmt->execute([
-      ':aff'   => $aff_id,
-      ':title' => $title,
-      ':cover' => $img,
-      ':start' => $start,
-      ':end'   => $end,
-      ':now'   => $now
+      ':aff'     => $aff_id,
+      ':title'   => $title,
+      ':cover'   => $img,
+      ':start'   => $start,
+      ':end'     => $end,
+      ':private' => $isPrivate,
+      ':code'    => $accessCode,
+      ':now'     => $now
     ]);
     $sale_id = (int)$pdo->lastInsertId();
     // Crear fee de activación (parametrizable)
@@ -199,6 +214,30 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
         <input class="input" type="datetime-local" name="end_at" id="end_at" required>
       </label>
 
+      <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 1rem; margin: 1rem 0;">
+        <h4 style="margin-top: 0; color: #495057;">🔒 Configuración de privacidad</h4>
+
+        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 1rem;">
+          <input type="checkbox" name="is_private" id="is_private" value="1" style="width: auto; margin-right: 0.5rem;">
+          <span><strong>Espacio privado</strong> - Requiere código de acceso para ver productos</span>
+        </label>
+
+        <div id="access_code_container" style="display: none;">
+          <label>
+            Código de acceso (6 dígitos)
+            <small style="color:#666; display:block; margin-top:4px;">
+              🔑 Los clientes necesitarán este código para acceder a los productos
+            </small>
+            <input class="input" type="text" name="access_code" id="access_code"
+                   pattern="[0-9]{6}" maxlength="6" placeholder="Ej: 123456"
+                   style="font-size: 1.2rem; letter-spacing: 0.3rem; font-family: monospace;">
+            <small style="color:#999; display:block; margin-top:4px;">
+              Solo números, exactamente 6 dígitos
+            </small>
+          </label>
+        </div>
+      </div>
+
       <button class="btn primary" name="create" value="1">Crear (pagar activación)</button>
     </form>
 
@@ -237,6 +276,31 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
             endInput.value = endDate.toISOString().slice(0, 16);
           }
         }
+      });
+
+      // 🔒 Control de espacio privado
+      const isPrivateCheckbox = document.getElementById('is_private');
+      const accessCodeContainer = document.getElementById('access_code_container');
+      const accessCodeInput = document.getElementById('access_code');
+
+      // Mostrar/ocultar campo de código según checkbox
+      isPrivateCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+          accessCodeContainer.style.display = 'block';
+          accessCodeInput.required = true;
+          // Generar código automático si está vacío
+          if (!accessCodeInput.value) {
+            accessCodeInput.value = Math.floor(100000 + Math.random() * 900000).toString();
+          }
+        } else {
+          accessCodeContainer.style.display = 'none';
+          accessCodeInput.required = false;
+        }
+      });
+
+      // Validar que solo sean números
+      accessCodeInput.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
       });
     });
     </script>

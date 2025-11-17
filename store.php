@@ -156,8 +156,50 @@ logStore('SALE_LOADED', [
     'title' => $sale['title']
 ]);
 
+// 🔒 VALIDACIÓN DE ESPACIO PRIVADO
+$accessGranted = true;
+$accessError = '';
+
+if (!empty($sale['is_private'])) {
+    logStore('PRIVATE_SPACE_DETECTED', ['sale_id' => $sale_id]);
+
+    // Inicializar array de accesos en sesión si no existe
+    if (!isset($_SESSION['private_sales_access'])) {
+        $_SESSION['private_sales_access'] = [];
+    }
+
+    // Procesar envío de código
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['access_code'])) {
+        $submittedCode = trim($_POST['access_code'] ?? '');
+        logStore('ACCESS_CODE_SUBMITTED', ['code_length' => strlen($submittedCode)]);
+
+        if ($submittedCode === $sale['access_code']) {
+            // Código correcto - guardar en sesión
+            $_SESSION['private_sales_access'][$sale_id] = true;
+            logStore('ACCESS_GRANTED', ['sale_id' => $sale_id]);
+            $accessGranted = true;
+        } else {
+            // Código incorrecto
+            logStore('ACCESS_DENIED', ['sale_id' => $sale_id]);
+            $accessError = 'Código incorrecto. Por favor, verifica e intenta nuevamente.';
+            $accessGranted = false;
+        }
+    } else {
+        // Verificar si ya tiene acceso en sesión
+        $accessGranted = !empty($_SESSION['private_sales_access'][$sale_id]);
+        logStore('ACCESS_CHECK', ['has_access' => $accessGranted]);
+    }
+
+    // Si no tiene acceso, mostrar formulario y detener
+    if (!$accessGranted) {
+        logStore('SHOWING_ACCESS_FORM');
+        require __DIR__ . '/views/access_form.php';
+        exit;
+    }
+}
+
 $productsStmt = $pdo->prepare("
-    SELECT p.id, p.name, p.price, p.currency, 
+    SELECT p.id, p.name, p.price, p.currency,
     p.image, p.image2, p.description, p.stock
     FROM products p
     WHERE p.sale_id = ?
