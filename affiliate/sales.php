@@ -351,6 +351,13 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
             <?php endif; ?>
           </td>
           <td class="actions">
+            <!-- ✏️ Botón EDITAR ESPACIO -->
+            <a class="btn" href="edit_sale.php?id=<?= (int)$s['id'] ?>"
+               title="Editar espacio"
+               style="background: #667eea; color: white;">
+              <i class="fas fa-edit"></i> Editar
+            </a>
+
             <?php
               // Si ya hay fee creado, ir por fee_id; si no, por sale_id
               $q = $pdo->prepare("SELECT id FROM sale_fees WHERE sale_id=? AND affiliate_id=? ORDER BY id DESC LIMIT 1");
@@ -362,19 +369,19 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
             <?php else: ?>
               <a class="btn" href="sales_pay.php?sale_id=<?= (int)$s['id'] ?>">Pagar/Estado</a>
             <?php endif; ?>
-            
+
             <!-- ⭐ NUEVO: Botón configurar ubicación de recogida -->
-            <a class="btn-pickup" href="sale_pickup_location.php?sale_id=<?= (int)$s['id'] ?>" 
+            <a class="btn-pickup" href="sale_pickup_location.php?sale_id=<?= (int)$s['id'] ?>"
                title="<?= $has_location ? 'Editar ubicación de recogida' : 'Configurar ubicación de recogida' ?>">
-              <i class="fas fa-map-marker-alt"></i> 
+              <i class="fas fa-map-marker-alt"></i>
               <?= $has_location ? 'Editar Ubicación' : 'Configurar Ubicación' ?>
             </a>
-            
+
             <?php if ($has_location): ?>
               <!-- Mini-preview de la ubicación -->
               <small style="display: block; color: #666; margin-top: 0.25rem; font-size: 0.8rem;">
-                <i class="fas fa-map-pin"></i> 
-                <?= htmlspecialchars($pickup_location['city'] ?? '') ?> - 
+                <i class="fas fa-map-pin"></i>
+                <?= htmlspecialchars($pickup_location['city'] ?? '') ?> -
                 <?= htmlspecialchars($pickup_location['contact_name'] ?? '') ?>
               </small>
             <?php endif; ?>
