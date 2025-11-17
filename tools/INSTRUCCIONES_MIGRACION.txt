@@ -1,0 +1,127 @@
+============================================================
+INSTRUCCIONES: MIGRACIÓN DE ESPACIOS PRIVADOS
+============================================================
+
+OPCIÓN 1: Desde cPanel (Recomendado)
+------------------------------------------------------------
+
+1. Entrar a cPanel → phpMyAdmin
+
+2. Buscar la base de datos SQLite: data.sqlite
+   (Puede que no aparezca en phpMyAdmin si SQLite no está soportado)
+
+3. Si NO aparece, usar "Terminal" de cPanel (opción 2)
+
+
+OPCIÓN 2: Desde Terminal de cPanel
+------------------------------------------------------------
+
+1. Ir a cPanel → Terminal
+
+2. Navegar a la carpeta del proyecto:
+   cd public_html
+   (o donde esté instalado COMPRATICA.COM)
+
+3. Ejecutar el script de migración:
+   sqlite3 data.sqlite < tools/migrate_private_spaces.sql
+
+4. IMPORTANTE: Si da error "column already exists", es NORMAL
+   Significa que las columnas ya se agregaron. Continúa al paso 5.
+
+5. Verificar que funcionó:
+   sqlite3 data.sqlite < tools/verify_private_spaces.sql
+
+6. Deberías ver en la salida:
+   - Una línea con: is_private|INTEGER|1|0|0
+   - Una línea con: access_code|TEXT|0||0
+
+7. ¡Listo! Ahora puedes crear espacios privados.
+
+
+OPCIÓN 3: Ejecutar comandos SQL directamente
+------------------------------------------------------------
+
+Si prefieres ejecutar los comandos uno por uno:
+
+1. Abrir terminal y entrar a SQLite:
+   sqlite3 data.sqlite
+
+2. Ejecutar estos comandos:
+
+   ALTER TABLE sales ADD COLUMN is_private INTEGER NOT NULL DEFAULT 0;
+   ALTER TABLE sales ADD COLUMN access_code TEXT;
+
+3. Verificar:
+
+   PRAGMA table_info(sales);
+
+4. Salir:
+
+   .quit
+
+
+OPCIÓN 4: Si SQLite3 no está disponible (usar PHP)
+------------------------------------------------------------
+
+Créame un archivo temporal en la raíz del proyecto llamado:
+migrate_now.php
+
+Con este contenido:
+
+<?php
+require_once __DIR__ . '/includes/db.php';
+$pdo = db();
+try {
+    echo "Agregando is_private...\n";
+    $pdo->exec("ALTER TABLE sales ADD COLUMN is_private INTEGER NOT NULL DEFAULT 0");
+    echo "OK\n\n";
+} catch (Exception $e) {
+    echo "Error (puede ser normal): " . $e->getMessage() . "\n\n";
+}
+try {
+    echo "Agregando access_code...\n";
+    $pdo->exec("ALTER TABLE sales ADD COLUMN access_code TEXT");
+    echo "OK\n\n";
+} catch (Exception $e) {
+    echo "Error (puede ser normal): " . $e->getMessage() . "\n\n";
+}
+echo "Verificando estructura:\n";
+$cols = $pdo->query("PRAGMA table_info(sales)")->fetchAll(PDO::FETCH_ASSOC);
+foreach ($cols as $col) {
+    echo "- {$col['name']} ({$col['type']})\n";
+}
+echo "\n¡Migración completada!\n";
+?>
+
+Luego ejecutar:
+php migrate_now.php
+
+O visitarlo desde el navegador:
+https://compratica.com/migrate_now.php
+
+IMPORTANTE: Borrar el archivo después de ejecutarlo.
+
+
+============================================================
+RESOLUCIÓN DE PROBLEMAS
+============================================================
+
+Error: "no such table: sales"
+→ La base de datos no tiene la tabla sales
+→ Verifica que estés en el directorio correcto
+→ Verifica que el archivo data.sqlite exista
+
+Error: "duplicate column name"
+→ Las columnas ya existen
+→ ¡Esto es BUENO! Ya puedes usar la funcionalidad
+
+Error: "unable to open database file"
+→ Permisos incorrectos en data.sqlite
+→ Ejecutar: chmod 664 data.sqlite
+
+
+============================================================
+CONTACTO
+============================================================
+
+Si ninguna opción funciona, avísame y te ayudo directamente.
