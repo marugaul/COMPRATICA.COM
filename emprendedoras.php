@@ -1168,7 +1168,12 @@ logDebug("RENDERING_PAGE");
       <i class="fas fa-briefcase"></i>
       <span>Servicios</span>
     </a>
-    
+
+    <a href="venta-garaje.php" class="menu-item">
+      <i class="fas fa-tags"></i>
+      <span>Venta de Garaje</span>
+    </a>
+
     <a href="emprendedores.php" class="menu-item">
       <i class="fas fa-rocket"></i>
       <span>Emprendedores</span>
