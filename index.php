@@ -416,6 +416,7 @@ logDebug("RENDERING_PAGE");
           alt="Volcán Arenal"
           class="pv-icon-img"
           id="pv-arenal-img"
+          loading="lazy"
           title="Hacé clic una vez para activar los sonidos y luego pasá el mouse">
         <span class="pv-icon-text">Volcán Arenal</span>
       </div>
@@ -425,6 +426,7 @@ logDebug("RENDERING_PAGE");
           alt="Café Costarricense"
           class="pv-icon-img"
           id="pv-cafe-img"
+          loading="lazy"
           title="Hacé clic una vez para activar los sonidos y luego pasá el mouse">
         <span class="pv-icon-text">Café de Altura</span>
       </div>
@@ -434,6 +436,7 @@ logDebug("RENDERING_PAGE");
           alt="Playas de Costa Rica"
           class="pv-icon-img"
           id="pv-caribe-img"
+          loading="lazy"
           title="Hacé clic una vez para activar los sonidos y luego pasá el mouse">
         <span class="pv-icon-text">Playas del Caribe</span>
       </div>
@@ -451,10 +454,10 @@ logDebug("RENDERING_PAGE");
 </section>
 
 <!-- Audios de la sección Pura Vida -->
-<audio id="audioArenal" src="/sonidos/arenal.mp3" preload="auto"></audio>
-<audio id="audioCafe" src="/sonidos/cafe.mp3" preload="auto"></audio>
-<audio id="audioCaribe" src="/sonidos/caribe.mp3" preload="auto"></audio>
-<audio id="audioYiguirro" src="/sonidos/yiguirro.mp3" preload="auto"></audio>
+<audio id="audioArenal" src="/sonidos/arenal.mp3" preload="none"></audio>
+<audio id="audioCafe" src="/sonidos/cafe.mp3" preload="none"></audio>
+<audio id="audioCaribe" src="/sonidos/caribe.mp3" preload="none"></audio>
+<audio id="audioYiguirro" src="/sonidos/yiguirro.mp3" preload="none"></audio>
 
 <!-- FOOTER -->
 <footer class="site-footer">
@@ -730,14 +733,23 @@ function renderCart(data) {
 
 async function loadCart() {
   try {
+    // Timeout de 5 segundos para móviles lentos
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(API + '?action=get', {
       credentials: 'include',
-      cache: 'no-store'
+      cache: 'no-store',
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
+
     const data = await response.json();
     renderCart(data);
   } catch (error) {
+    // Si falla o timeout, mostrar carrito vacío sin bloquear
     console.error('Error al cargar carrito:', error);
+    renderCart({ items: [], total: 0 });
   }
 }
 
