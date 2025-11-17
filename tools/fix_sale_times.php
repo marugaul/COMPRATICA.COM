@@ -7,12 +7,12 @@
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/config.php';
 
-// Solo permitir ejecución si estás logueado como admin o desde localhost
-$isLocal = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1']);
-$isAdmin = isset($_SESSION['uid']) && $_SESSION['uid'] > 0; // Ajusta según tu lógica de admin
+// Validación de acceso con token temporal
+$validToken = 'fix2025'; // Cambia esto después de ejecutar el script
+$providedToken = $_GET['token'] ?? '';
 
-if (!$isLocal && !$isAdmin) {
-    die('Acceso denegado. Solo admin o localhost.');
+if ($providedToken !== $validToken) {
+    die('Acceso denegado. Usa: ?token=fix2025');
 }
 
 $pdo = db();
