@@ -179,13 +179,67 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
   
   <div class="card">
     <h3>Crear nuevo espacio</h3>
-    <form class="form" method="post" enctype="multipart/form-data">
+    <form class="form" method="post" enctype="multipart/form-data" id="saleForm">
       <label>Título <input class="input" name="title" required></label>
       <label>Portada <input class="input" type="file" name="cover" accept="image/*"></label>
-      <label>Inicio <input class="input" type="datetime-local" name="start_at" required></label>
-      <label>Fin <input class="input" type="datetime-local" name="end_at" required></label>
+
+      <label>
+        Fecha y Hora de Inicio
+        <small style="color:#666; display:block; margin-top:4px;">
+          📅 Incluye la hora exacta (ej: 8:00 AM)
+        </small>
+        <input class="input" type="datetime-local" name="start_at" id="start_at" required>
+      </label>
+
+      <label>
+        Fecha y Hora de Fin
+        <small style="color:#666; display:block; margin-top:4px;">
+          📅 Incluye la hora exacta (ej: 6:00 PM)
+        </small>
+        <input class="input" type="datetime-local" name="end_at" id="end_at" required>
+      </label>
+
       <button class="btn primary" name="create" value="1">Crear (pagar activación)</button>
     </form>
+
+    <script>
+    // Establecer valores por defecto razonables
+    document.addEventListener('DOMContentLoaded', function() {
+      const startInput = document.getElementById('start_at');
+      const endInput = document.getElementById('end_at');
+
+      // Si están vacíos, sugerir valores por defecto
+      if (!startInput.value) {
+        // Mañana a las 8:00 AM
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(8, 0, 0, 0);
+        startInput.value = tomorrow.toISOString().slice(0, 16);
+      }
+
+      if (!endInput.value) {
+        // Una semana después a las 6:00 PM
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 8);
+        nextWeek.setHours(18, 0, 0, 0);
+        endInput.value = nextWeek.toISOString().slice(0, 16);
+      }
+
+      // Actualizar fin cuando cambie inicio (sugerir 7 días después)
+      startInput.addEventListener('change', function() {
+        const startDate = new Date(this.value);
+        if (!isNaN(startDate)) {
+          const endDate = new Date(startDate);
+          endDate.setDate(endDate.getDate() + 7);
+          // Solo actualizar si endInput está vacío o es anterior a la nueva fecha
+          const currentEnd = new Date(endInput.value);
+          if (!endInput.value || currentEnd < startDate) {
+            endInput.value = endDate.toISOString().slice(0, 16);
+          }
+        }
+      });
+    });
+    </script>
   </div>
   
   <div class="card">
