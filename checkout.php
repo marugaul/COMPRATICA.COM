@@ -1075,8 +1075,8 @@ foreach ($_SESSION['cart'] as $it) {
 <script>
 // Variables globales
 let shippingCost = 0;
-const baseTotal = <?= $grand_total ?>;
-const currency = '<?= $currency ?>';
+const baseTotal = <?= isset($grand_total) && is_numeric($grand_total) ? $grand_total : 0 ?>;
+const currency = '<?= isset($currency) ? addslashes($currency) : 'CRC' ?>';
 
 // MENÚ HAMBURGUESA
 const menuButton = document.getElementById('menuButton');
