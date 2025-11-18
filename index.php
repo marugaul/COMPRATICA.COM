@@ -159,11 +159,6 @@ logDebug("RENDERING_PAGE");
 
 <!-- HEADER -->
 <header class="header">
-  <!-- PRUEBA CRON - HOLA MUNDO -->
-  <div style="background: #ffeb3b; padding: 8px; text-align: center; font-weight: bold; width: 100%; color: #000;">
-    🚀 ¡HOLA MUNDO! - Prueba de sincronización CRON activa
-  </div>
-
   <a href="index.php" class="logo">
     <span class="flag emoji">🇨🇷</span>
     <div class="text">
