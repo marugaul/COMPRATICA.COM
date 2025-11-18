@@ -1258,13 +1258,7 @@ document.getElementById('calculate-uber-btn')?.addEventListener('click', async f
     });
     
     const data = await response.json();
-    
-    if (data.success) {
-      // Mostrar resultado
-      const resultDiv = document.getElementById('uber-quote-result');
-      resultDiv.innerHTML = `
-        <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 1rem; border-radius: 8px;">
-          <h4 style="color: #155724; margin: 0 0 0.5rem 0;">
+
     if (data.success) {
       // Determinar si es sandbox
       const isSandbox = data.is_sandbox || false;
