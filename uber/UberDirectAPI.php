@@ -21,9 +21,10 @@ class UberDirectAPI {
     private $token_expires_at;
     private $commission_percentage;
     
-    private const SANDBOX_BASE_URL = 'https://api.uber.com/v1';
+    private const SANDBOX_BASE_URL = 'https://sandbox-api.uber.com/v1';
     private const PROD_BASE_URL = 'https://api.uber.com/v1';
-    private const TOKEN_URL = 'https://login.uber.com/oauth/v2/token';
+    private const SANDBOX_TOKEN_URL = 'https://auth.uber.com/oauth/v2/token';
+    private const PROD_TOKEN_URL = 'https://login.uber.com/oauth/v2/token';
     
     public function __construct($pdo, $affiliate_id = null) {
         $this->pdo = $pdo;
@@ -75,9 +76,12 @@ class UberDirectAPI {
                 return $this->access_token;
             }
         }
-        
+
+        // Usar URL de token según el ambiente
+        $token_url = $this->is_sandbox ? self::SANDBOX_TOKEN_URL : self::PROD_TOKEN_URL;
+
         // Solicitar nuevo token
-        $ch = curl_init(self::TOKEN_URL);
+        $ch = curl_init($token_url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
