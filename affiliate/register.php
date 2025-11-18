@@ -12,6 +12,137 @@ if (file_exists(__DIR__ . '/../includes/mailer.php')) {
 if (session_status() === PHP_SESSION_NONE) session_start();
 $pdo = db();
 
+// ============================================
+// OAUTH GOOGLE - Callback Handler
+// ============================================
+if (isset($_GET['code']) && !empty($_GET['code'])) {
+  try {
+    $code = $_GET['code'];
+
+    // Verificar que tenemos las credenciales
+    if (empty(GOOGLE_CLIENT_ID) || empty(GOOGLE_CLIENT_SECRET)) {
+      throw new RuntimeException('Configuración OAuth incompleta');
+    }
+
+    // Exchange code for access token
+    $tokenUrl = 'https://oauth2.googleapis.com/token';
+    $redirectUri = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http')
+                 . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+                 . '/affiliate/register.php';
+
+    $postData = [
+      'code' => $code,
+      'client_id' => GOOGLE_CLIENT_ID,
+      'client_secret' => GOOGLE_CLIENT_SECRET,
+      'redirect_uri' => $redirectUri,
+      'grant_type' => 'authorization_code'
+    ];
+
+    $ch = curl_init($tokenUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200) {
+      throw new RuntimeException('Error al obtener token de Google');
+    }
+
+    $tokenData = json_decode($response, true);
+    if (!isset($tokenData['access_token'])) {
+      throw new RuntimeException('Token no recibido');
+    }
+
+    // Get user info from Google
+    $userInfoUrl = 'https://www.googleapis.com/oauth2/v2/userinfo';
+    $ch = curl_init($userInfoUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+      'Authorization: Bearer ' . $tokenData['access_token']
+    ]);
+    $userInfoResponse = curl_exec($ch);
+    curl_close($ch);
+
+    $userInfo = json_decode($userInfoResponse, true);
+
+    if (!isset($userInfo['email'])) {
+      throw new RuntimeException('No se pudo obtener información del usuario');
+    }
+
+    // Check if affiliate already exists
+    $email = $userInfo['email'];
+    $name = $userInfo['name'] ?? $userInfo['email'];
+
+    $stmt = $pdo->prepare("SELECT id FROM affiliates WHERE email = ? LIMIT 1");
+    $stmt->execute([$email]);
+    $existingAff = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($existingAff) {
+      // Ya existe - iniciar sesión directamente
+      $_SESSION['aff_id'] = (int)$existingAff['id'];
+      $_SESSION['aff_name'] = $name;
+      header('Location: dashboard.php');
+      exit;
+    }
+
+    // Create new affiliate
+    $phone = ''; // Google no proporciona teléfono, lo dejaremos vacío
+    $password_hash = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT); // Password aleatorio
+
+    $ins = $pdo->prepare("
+      INSERT INTO affiliates (name, email, phone, password_hash, is_active, created_at)
+      VALUES (?, ?, ?, ?, 1, datetime('now'))
+    ");
+    $ins->execute([$name, $email, $phone, $password_hash]);
+
+    $aff_id = (int)$pdo->lastInsertId();
+
+    // Iniciar sesión automáticamente
+    $_SESSION['aff_id'] = $aff_id;
+    $_SESSION['aff_name'] = $name;
+
+    // Enviar email de bienvenida
+    try {
+      $loginUrl = (defined('APP_URL') ? APP_URL : (((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS']!=='off')?'https':'http').'://'.($_SERVER['HTTP_HOST'] ?? 'localhost'))) . "/affiliate/dashboard.php";
+      $subject = "✅ Bienvenido a " . APP_NAME;
+      $body = "
+        <p>Hola <strong>".htmlspecialchars($name)."</strong>,</p>
+        <p>¡Bienvenido a <strong>".APP_NAME."</strong>! Tu cuenta de afiliado ha sido creada exitosamente usando Google.</p>
+        <p>Ya podés crear tus espacios y publicar productos:</p>
+        <p><a href='".htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8')."' style='background:#3498db;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block'>Ir al panel</a></p>
+        <p>Si necesitás ayuda, escribinos a <a href='mailto:".htmlspecialchars(ADMIN_EMAIL)."'>".htmlspecialchars(ADMIN_EMAIL)."</a>.</p>
+        <br><p>— El equipo de ".APP_NAME."</p>";
+      safe_send($email, $subject, $body);
+    } catch (Throwable $e) {
+      error_log("[register.php] Email bienvenida OAuth falló: ".$e->getMessage());
+    }
+
+    // Notificar admin
+    try {
+      $subject = "[Afiliados] Nuevo registro con Google";
+      $body = "Nuevo afiliado registrado con Google:<br><br>"
+            . "Nombre: <strong>".htmlspecialchars($name)."</strong><br>"
+            . "Email: <strong>".htmlspecialchars($email)."</strong><br>"
+            . "ID: <strong>".$aff_id."</strong>";
+      if (defined('ADMIN_EMAIL') && ADMIN_EMAIL !== '') {
+        safe_send(ADMIN_EMAIL, $subject, $body);
+      }
+    } catch (Throwable $e) {
+      error_log("[register.php] Email admin OAuth falló: ".$e->getMessage());
+    }
+
+    header('Location: dashboard.php');
+    exit;
+
+  } catch (Throwable $e) {
+    error_log("[register.php] OAuth error: " . $e->getMessage());
+    $msg = "Error al registrarse con Google: " . $e->getMessage();
+  }
+}
+
 $msg = '';
 $ok  = false;
 
@@ -407,6 +538,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     /* ===================================== */
+    /* OAUTH BUTTONS */
+    /* ===================================== */
+    .btn-google {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 0.875rem 1.5rem;
+      background: white;
+      border: 2px solid #dadce0;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 500;
+      color: #3c4043;
+      text-decoration: none;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .btn-google:hover {
+      background: #f8f9fa;
+      border-color: #d2d3d4;
+      box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 1.5rem 0;
+      color: var(--gray-500);
+      font-size: 0.875rem;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--gray-300);
+    }
+
+    .divider span {
+      padding: 0 1rem;
+    }
+
+    /* ===================================== */
     /* HONEYPOT */
     /* ===================================== */
     .hpwrap {
@@ -523,7 +700,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="card">
     <h2>Crear cuenta de afiliado</h2>
     <p>Registrate para crear tus espacios de venta y publicar productos.</p>
-    
+
+    <?php
+    // OAuth Google - Generar URL
+    $googleAuthUrl = '';
+    if (!empty(GOOGLE_CLIENT_ID)) {
+      $redirectUri = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http')
+                   . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+                   . '/affiliate/register.php';
+
+      $params = [
+        'client_id' => GOOGLE_CLIENT_ID,
+        'redirect_uri' => $redirectUri,
+        'response_type' => 'code',
+        'scope' => 'email profile',
+        'access_type' => 'online'
+      ];
+
+      $googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
+    }
+    ?>
+
+    <?php if ($googleAuthUrl): ?>
+    <!-- Botón de Google -->
+    <div style="margin-bottom: 1.5rem;">
+      <a href="<?= htmlspecialchars($googleAuthUrl, ENT_QUOTES, 'UTF-8') ?>" class="btn-google">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 12px;">
+          <path d="M17.64 9.20443C17.64 8.56625 17.5827 7.95262 17.4764 7.36353H9V10.8449H13.8436C13.635 11.9699 13.0009 12.9231 12.0477 13.5613V15.8194H14.9564C16.6582 14.2526 17.64 11.9453 17.64 9.20443Z" fill="#4285F4"/>
+          <path d="M8.99976 18C11.4298 18 13.467 17.1941 14.9561 15.8195L12.0475 13.5613C11.2416 14.1013 10.2107 14.4204 8.99976 14.4204C6.65567 14.4204 4.67158 12.8372 3.96385 10.71H0.957031V13.0418C2.43794 15.9831 5.48158 18 8.99976 18Z" fill="#34A853"/>
+          <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40682 3.78409 7.82999 3.96409 7.28999V4.95819H0.957273C0.347727 6.17318 0 7.54772 0 9C0 10.4523 0.347727 11.8268 0.957273 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
+          <path d="M8.99976 3.57955C10.3211 3.57955 11.5075 4.03364 12.4402 4.92545L15.0216 2.34409C13.4629 0.891818 11.4257 0 8.99976 0C5.48158 0 2.43794 2.01682 0.957031 4.95818L3.96385 7.29C4.67158 5.16273 6.65567 3.57955 8.99976 3.57955Z" fill="#EA4335"/>
+        </svg>
+        Registrarse con Google
+      </a>
+    </div>
+
+    <div class="divider">
+      <span>o registrate con email</span>
+    </div>
+    <?php endif; ?>
+
     <form class="form" method="post" autocomplete="on" novalidate>
       <div class="hpwrap" aria-hidden="true">
         <label>Empresa
