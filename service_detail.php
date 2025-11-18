@@ -607,19 +607,8 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
 
 <script>
 function handleBooking() {
-    <?php if ($isLoggedIn): ?>
-        // Redirigir a página de reserva (próximamente)
-        alert('Sistema de reservas en desarrollo.\n\n' +
-              'Próximamente podrás:\n' +
-              '• Seleccionar fecha y hora\n' +
-              '• Confirmar detalles\n' +
-              '• Realizar el pago\n\n' +
-              'Por ahora, contacta directamente al proveedor.');
-    <?php else: ?>
-        if (confirm('Necesitas iniciar sesión para hacer una reserva.\n¿Quieres ir a la página de login?')) {
-            window.location.href = 'login.php?redirect=' + encodeURIComponent(window.location.href);
-        }
-    <?php endif; ?>
+    // Redirigir a la página de reserva
+    window.location.href = 'booking.php?service_id=<?php echo $serviceId; ?>';
 }
 </script>
 
