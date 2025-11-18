@@ -1,4 +1,14 @@
 <?php
+/**
+ * Página Principal de Servicios
+ *
+ * Muestra las categorías de servicios disponibles:
+ * - Abogados
+ * - Mantenimiento y Reparación
+ * - Tutorías
+ * - Fletes
+ */
+
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/php_error.log');
@@ -56,7 +66,7 @@ logDebug("BEFORE_SESSION_START", [
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_name('PHPSESSID');
-    
+
     if (PHP_VERSION_ID < 70300) {
         ini_set('session.cookie_lifetime', '0');
         ini_set('session.cookie_path', '/');
@@ -75,7 +85,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
             'samesite' => 'Lax',
         ]);
     }
-    
+
     ini_set('session.use_strict_mode', '0');
     ini_set('session.use_only_cookies', '1');
     ini_set('session.gc_maxlifetime', '86400');
@@ -127,21 +137,53 @@ if (PHP_VERSION_ID < 70300) {
     ]);
 }
 
-logDebug("RENDERING_PAGE");
+// Obtener categorías de servicios
+$pdo = db();
+$categories = [];
+$totalServices = 0;
+
+try {
+    $stmt = $pdo->query("
+        SELECT
+            sc.*,
+            COUNT(s.id) as service_count
+        FROM service_categories sc
+        LEFT JOIN services s ON s.category_id = sc.id AND s.is_active = 1
+        WHERE sc.is_active = 1
+        GROUP BY sc.id
+        ORDER BY sc.display_order ASC, sc.name ASC
+    ");
+    $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($categories as $cat) {
+        $totalServices += (int)$cat['service_count'];
+    }
+} catch (Exception $e) {
+    logDebug("ERROR_LOADING_CATEGORIES", ['error' => $e->getMessage()]);
+}
+
+logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_services' => $totalServices]);
 ?>
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Servicios — <?php echo APP_NAME; ?></title>
+  <title>Servicios Profesionales Ticos — <?php echo APP_NAME; ?></title>
+
+  <!-- SEO -->
+  <meta name="description" content="Encuentra servicios profesionales en Costa Rica: abogados, mantenimiento, tutorías y fletes. Reserva online con los mejores profesionales ticos.">
+  <meta name="keywords" content="servicios costa rica, abogados, mantenimiento, tutorías, fletes, profesionales ticos">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- Soporte de emojis para todas las plataformas -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
-  
+
+  <link rel="stylesheet" href="/assets/css/main.css">
+
   <style>
     :root {
       /* Colores Costa Rica */
@@ -149,7 +191,7 @@ logDebug("RENDERING_PAGE");
       --cr-azul-claro: #0041b8;
       --cr-rojo: #ce1126;
       --cr-rojo-claro: #e63946;
-      
+
       /* Paleta Moderna */
       --primary: #1a73e8;
       --primary-dark: #1557b0;
@@ -157,7 +199,7 @@ logDebug("RENDERING_PAGE");
       --accent: #10b981;
       --warning: #f59e0b;
       --danger: #ef4444;
-      
+
       /* Neutros */
       --white: #ffffff;
       --gray-50: #f9fafb;
@@ -170,14 +212,14 @@ logDebug("RENDERING_PAGE");
       --gray-700: #374151;
       --gray-800: #1f2937;
       --gray-900: #111827;
-      
+
       /* Sombras */
       --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
       --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
       --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
       --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      
+
       --radius-sm: 8px;
       --radius: 12px;
       --radius-lg: 16px;
@@ -205,9 +247,9 @@ logDebug("RENDERING_PAGE");
       transition: var(--transition);
     }
 
-    /* Clase para emojis - Asegura visibilidad en todas las plataformas */
+    /* Clase para emojis */
     .emoji {
-      font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+      font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
       font-style: normal;
       font-weight: normal;
       line-height: 1;
@@ -237,7 +279,6 @@ logDebug("RENDERING_PAGE");
     .logo .flag {
       font-size: 2rem;
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-      line-height: 1;
     }
 
     .logo .text .main {
@@ -307,37 +348,16 @@ logDebug("RENDERING_PAGE");
       padding: 2.5rem 2rem;
     }
 
-    /* Breadcrumb */
-    .breadcrumb {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 2rem;
-      font-size: 0.875rem;
-      color: var(--gray-600);
-    }
-
-    .breadcrumb a {
-      color: var(--primary);
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    .breadcrumb a:hover {
-      color: var(--primary-dark);
-    }
-
-    .breadcrumb i {
-      font-size: 0.7rem;
-    }
-
     /* Hero Section */
     .hero-section {
-      background: linear-gradient(135deg, rgba(26, 115, 232, 0.1), rgba(124, 58, 237, 0.1));
+      background: linear-gradient(135deg, rgba(26, 115, 232, 0.95), rgba(124, 58, 237, 0.95)),
+                  url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path fill="%23ffffff" fill-opacity="0.1" d="M0,64L48,69.3C96,75,192,85,288,80C384,75,480,53,576,48C672,43,768,53,864,58.7C960,64,1056,64,1152,58.7L1248,53L1248,120L1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path></svg>');
+      background-size: cover;
+      background-position: center;
       border-radius: var(--radius-xl);
-      padding: 3rem 2.5rem;
+      padding: 4rem 3rem;
       margin-bottom: 3rem;
+      color: var(--white);
       position: relative;
       overflow: hidden;
     }
@@ -349,194 +369,103 @@ logDebug("RENDERING_PAGE");
       right: -10%;
       width: 500px;
       height: 500px;
-      background: radial-gradient(circle, rgba(26, 115, 232, 0.15), transparent 70%);
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent 70%);
       border-radius: 50%;
     }
 
     .hero-content {
       position: relative;
       z-index: 2;
-      max-width: 700px;
-    }
-
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: var(--white);
-      padding: 0.5rem 1.25rem;
-      border-radius: 50px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--primary);
-      margin-bottom: 1.5rem;
-      box-shadow: var(--shadow);
-    }
-
-    .hero-badge i {
-      font-size: 1rem;
+      max-width: 800px;
     }
 
     .hero-title {
       font-family: "Poppins", sans-serif;
-      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-size: clamp(2.5rem, 5vw, 4rem);
       font-weight: 700;
-      color: var(--gray-900);
-      margin-bottom: 1rem;
-      line-height: 1.2;
-    }
-
-    .hero-title .highlight {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      margin-bottom: 1.5rem;
+      line-height: 1.1;
     }
 
     .hero-description {
-      font-size: 1.125rem;
-      color: var(--gray-700);
-      margin-bottom: 2rem;
+      font-size: 1.25rem;
+      margin-bottom: 2.5rem;
       line-height: 1.7;
-    }
-
-    .hero-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.625rem 1.25rem;
-      background: var(--white);
-      border-radius: 50px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--gray-700);
-      box-shadow: var(--shadow-sm);
-      transition: var(--transition);
-    }
-
-    .tag:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .tag i {
-      color: var(--primary);
-      font-size: 0.9rem;
-    }
-
-    /* Info Box */
-    .info-box {
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      border-radius: var(--radius-lg);
-      padding: 2rem;
-      color: var(--white);
-      margin-bottom: 3rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .info-box::before {
-      content: "";
-      position: absolute;
-      top: -50%;
-      right: -20%;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent 70%);
-      border-radius: 50%;
-    }
-
-    .info-box-content {
-      position: relative;
-      z-index: 2;
-    }
-
-    .info-box-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .info-box-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1.25rem;
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
-      border-radius: 50px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .status-pill i {
-      animation: spin 2s linear infinite;
-    }
-
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    .info-text {
-      font-size: 1rem;
-      line-height: 1.7;
-      margin-bottom: 2rem;
       opacity: 0.95;
     }
 
-    .info-actions {
+    .hero-stats {
       display: flex;
-      gap: 1rem;
+      gap: 3rem;
       flex-wrap: wrap;
     }
 
-    .info-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.75rem;
-      background: var(--white);
-      color: var(--primary);
-      border-radius: 50px;
-      font-weight: 600;
-      font-size: 0.9375rem;
-      transition: var(--transition);
-      box-shadow: var(--shadow);
-      border: none;
-      cursor: pointer;
+    .stat-item {
+      display: flex;
+      flex-direction: column;
     }
 
-    .info-btn:hover {
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+
+    /* Search Bar */
+    .search-section {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+      margin-bottom: 3rem;
+    }
+
+    .search-form {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 1.25rem 1.5rem;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+    }
+
+    .search-btn {
+      padding: 1.25rem 2.5rem;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .search-btn:hover {
       transform: translateY(-2px);
       box-shadow: var(--shadow-lg);
     }
 
-    .info-btn.secondary {
-      background: transparent;
-      color: var(--white);
-      border: 2px solid var(--white);
-    }
-
-    .info-btn.secondary:hover {
-      background: var(--white);
-      color: var(--primary);
-    }
-
-    /* Categories Section */
+    /* Categories Grid */
     .section-header {
       text-align: center;
       margin-bottom: 3rem;
@@ -544,7 +473,7 @@ logDebug("RENDERING_PAGE");
 
     .section-title {
       font-family: "Poppins", sans-serif;
-      font-size: 2.25rem;
+      font-size: 2.5rem;
       font-weight: 700;
       color: var(--gray-900);
       margin-bottom: 0.75rem;
@@ -557,10 +486,9 @@ logDebug("RENDERING_PAGE");
       margin: 0 auto;
     }
 
-    /* Cards Grid */
     .categories-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 2rem;
       margin-bottom: 3rem;
     }
@@ -568,13 +496,13 @@ logDebug("RENDERING_PAGE");
     .category-card {
       background: var(--white);
       border-radius: var(--radius-lg);
-      padding: 2rem;
+      padding: 2.5rem;
       box-shadow: var(--shadow);
       transition: var(--transition);
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      border: 2px solid transparent;
+      border: 3px solid transparent;
     }
 
     .category-card::before {
@@ -583,10 +511,11 @@ logDebug("RENDERING_PAGE");
       top: 0;
       left: 0;
       right: 0;
-      height: 4px;
+      height: 6px;
       background: linear-gradient(90deg, var(--primary), var(--secondary));
       transform: scaleX(0);
-      transition: transform 0.3s ease;
+      transform-origin: left;
+      transition: transform 0.4s ease;
     }
 
     .category-card:hover::before {
@@ -594,36 +523,40 @@ logDebug("RENDERING_PAGE");
     }
 
     .category-card:hover {
-      transform: translateY(-8px);
+      transform: translateY(-10px);
       box-shadow: var(--shadow-xl);
       border-color: var(--primary);
     }
 
+    .category-card.payment-required {
+      border-color: var(--warning);
+    }
+
     .category-icon {
-      width: 64px;
-      height: 64px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--primary), var(--secondary));
       color: var(--white);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.75rem;
-      margin-bottom: 1.5rem;
+      font-size: 2.25rem;
+      margin-bottom: 1.75rem;
       box-shadow: var(--shadow-md);
     }
 
     .category-title {
-      font-size: 1.375rem;
+      font-size: 1.75rem;
       font-weight: 700;
       color: var(--gray-900);
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
     }
 
     .category-description {
-      font-size: 0.9375rem;
+      font-size: 1rem;
       color: var(--gray-600);
-      line-height: 1.6;
+      line-height: 1.7;
       margin-bottom: 1.5rem;
     }
 
@@ -631,24 +564,38 @@ logDebug("RENDERING_PAGE");
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-top: 1rem;
-      border-top: 1px solid var(--gray-200);
-      font-size: 0.875rem;
+      padding-top: 1.5rem;
+      border-top: 2px solid var(--gray-100);
+      font-size: 0.9rem;
     }
 
-    .category-badge {
+    .category-count {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
+      gap: 0.5rem;
       font-weight: 600;
-      color: var(--gray-600);
+      color: var(--gray-700);
     }
 
-    .category-badge .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
+    .category-count .badge {
+      background: var(--primary);
+      color: var(--white);
+      padding: 0.25rem 0.75rem;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .payment-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: var(--warning);
+      color: var(--white);
     }
 
     .category-link {
@@ -656,42 +603,13 @@ logDebug("RENDERING_PAGE");
       font-weight: 600;
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
+      gap: 0.5rem;
+      font-size: 1rem;
     }
 
     .category-link:hover {
       color: var(--primary-dark);
-    }
-
-    /* Notice Box */
-    .notice-box {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(26, 115, 232, 0.1));
-      border: 2px dashed var(--primary);
-      border-radius: var(--radius-lg);
-      padding: 1.75rem 2rem;
-      display: flex;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-
-    .notice-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--white);
-      color: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      box-shadow: var(--shadow);
-      font-size: 1.125rem;
-    }
-
-    .notice-text {
-      color: var(--gray-700);
-      line-height: 1.7;
-      font-size: 0.9375rem;
+      gap: 0.75rem;
     }
 
     /* Responsive */
@@ -705,11 +623,15 @@ logDebug("RENDERING_PAGE");
       }
 
       .hero-section {
-        padding: 2rem 1.5rem;
+        padding: 2.5rem 1.5rem;
       }
 
-      .hero-title {
-        font-size: 2rem;
+      .hero-stats {
+        gap: 2rem;
+      }
+
+      .search-form {
+        flex-direction: column;
       }
 
       .categories-grid {
@@ -717,719 +639,116 @@ logDebug("RENDERING_PAGE");
         gap: 1.5rem;
       }
 
-      .info-actions {
-        flex-direction: column;
-      }
-
-      .info-btn {
-        width: 100%;
-        justify-content: center;
+      .stat-number {
+        font-size: 2rem;
       }
     }
-      /* MENÚ HAMBURGUESA */
-    #menu-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 999;
-      display: none;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-
-    #menu-overlay.show {
-      display: block;
-      opacity: 1;
-    }
-
-    #hamburger-menu {
-      position: fixed;
-      top: 0;
-      right: -320px;
-      width: 320px;
-      height: 100vh;
-      background: var(--cr-blanco, #ffffff);
-      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
-      transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      overflow-y: auto;
-    }
-
-    #hamburger-menu.show {
-      right: 0;
-    }
-
-    .menu-header {
-      padding: 1.5rem;
-      border-bottom: 1px solid var(--gray-300, #e2e8f0);
-      background: linear-gradient(to right, #f8f9fa, #ffffff);
-    }
-
-    .menu-user {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .menu-user-avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: var(--cr-azul, #002b7f);
-      color: var(--cr-blanco, #ffffff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 1.25rem;
-    }
-
-    .menu-user-info h3 {
-      font-size: 1.0625rem;
-      font-weight: 600;
-      color: var(--dark, #1a1a1a);
-      margin-bottom: 0.125rem;
-    }
-
-    .menu-user-info p {
-      font-size: 0.875rem;
-      color: var(--gray-500, #718096);
-    }
-
-    .menu-close {
-      position: absolute;
-      top: 1.25rem;
-      right: 1.25rem;
-      width: 32px;
-      height: 32px;
-      border: none;
-      background: transparent;
-      color: var(--gray-500, #718096);
-      font-size: 1.5rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      transition: var(--transition, all 0.3s);
-    }
-
-    .menu-close:hover {
-      background: var(--gray-100, #f7fafc);
-      color: var(--dark, #1a1a1a);
-    }
-
-    .menu-body {
-      padding: 1rem 0;
-    }
-
-    .menu-item {
-      display: flex;
-      align-items: center;
-      gap: 0.875rem;
-      padding: 0.875rem 1.5rem;
-      color: var(--gray-700, #4a5568);
-      text-decoration: none;
-      transition: var(--transition, all 0.3s);
-      font-size: 0.9375rem;
-      font-weight: 500;
-    }
-
-    .menu-item:hover {
-      background: var(--gray-100, #f7fafc);
-      color: var(--cr-azul, #002b7f);
-    }
-
-    .menu-item i {
-      width: 20px;
-      text-align: center;
-      font-size: 1.0625rem;
-      color: var(--gray-500, #718096);
-    }
-
-    .menu-item:hover i {
-      color: var(--cr-azul, #002b7f);
-    }
-
-    .menu-divider {
-      height: 1px;
-      background: var(--gray-300, #e2e8f0);
-      margin: 0.5rem 0;
-    }
-
-    .menu-item.primary {
-      color: var(--cr-azul, #002b7f);
-      font-weight: 600;
-    }
-
-    .menu-item.primary i {
-      color: var(--cr-azul, #002b7f);
-    }
-
-    .menu-item.danger {
-      color: var(--cr-rojo, #ce1126);
-    }
-
-    .menu-item.danger i {
-      color: var(--cr-rojo, #ce1126);
-    }
-
-    /* POPOVER DEL CARRITO */
-    #cart-popover {
-      position: absolute;
-      top: calc(100% + 12px);
-      right: 0;
-      width: 380px;
-      max-width: calc(100vw - 2rem);
-      background: var(--cr-blanco, #ffffff);
-      border: 1px solid var(--gray-300, #e2e8f0);
-      border-radius: var(--radius, 16px);
-      box-shadow: var(--shadow-lg);
-      display: none;
-      flex-direction: column;
-      max-height: 500px;
-      z-index: 101;
-    }
-
-    #cart-popover.show {
-      display: flex;
-    }
-
-    .cart-popover-header {
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--gray-300, #e2e8f0);
-      font-size: 1.0625rem;
-      font-weight: 600;
-      color: var(--dark, #1a1a1a);
-      background: linear-gradient(to right, #f8f9fa, #ffffff);
-    }
-
-    .cart-popover-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1rem;
-    }
-
-    #cart-empty {
-      text-align: center;
-      padding: 2.5rem 1.5rem;
-      color: var(--gray-500, #718096);
-      font-size: 0.9375rem;
-    }
-
-    .cart-popover-item {
-      display: flex;
-      gap: 0.875rem;
-      padding: 0.875rem;
-      border-radius: var(--radius, 16px);
-      background: var(--gray-100, #f7fafc);
-      margin-bottom: 0.625rem;
-      position: relative;
-      transition: var(--transition, all 0.3s);
-    }
-
-    .cart-popover-item:hover {
-      background: var(--gray-300, #e2e8f0);
-    }
-
-    .cart-popover-item-img {
-      width: 56px;
-      height: 56px;
-      object-fit: cover;
-      border-radius: 6px;
-      border: 1px solid var(--gray-300, #e2e8f0);
-      flex-shrink: 0;
-    }
-
-    .cart-popover-item-info {
-      flex: 1;
-      min-width: 0;
-      padding-right: 28px;
-    }
-
-    .cart-popover-item-name {
-      font-weight: 600;
-      font-size: 0.9375rem;
-      color: var(--dark, #1a1a1a);
-      margin-bottom: 0.25rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .cart-popover-item-price {
-      font-size: 0.8125rem;
-      color: var(--gray-500, #718096);
-    }
-
-    .cart-popover-item-total {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--success, #27ae60);
-      margin-top: 0.25rem;
-    }
-
-    .cart-popover-item-remove {
-      position: absolute;
-      top: 0.625rem;
-      right: 0.625rem;
-      width: 24px;
-      height: 24px;
-      border: none;
-      background: transparent;
-      color: var(--cr-rojo, #ce1126);
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1.125rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: var(--transition, all 0.3s);
-    }
-
-    .cart-popover-item-remove:hover {
-      background: rgba(206, 17, 38, 0.1);
-    }
-
-    .cart-popover-footer {
-      padding: 1rem 1.25rem;
-      border-top: 1px solid var(--gray-300, #e2e8f0);
-    }
-
-    .cart-popover-total {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.875rem;
-      font-size: 1.0625rem;
-      font-weight: 700;
-      color: var(--dark, #1a1a1a);
-    }
-
-    .cart-popover-actions {
-      display: flex;
-      gap: 0.625rem;
-    }
-
-    .cart-popover-btn {
-      flex: 1;
-      padding: 0.75rem;
-      border: none;
-      border-radius: var(--radius, 16px);
-      font-weight: 600;
-      font-size: 0.875rem;
-      cursor: pointer;
-      transition: var(--transition, all 0.3s);
-      text-decoration: none;
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .cart-popover-btn.secondary {
-      background: var(--gray-100, #f7fafc);
-      color: var(--gray-700, #4a5568);
-      border: 1px solid var(--gray-300, #e2e8f0);
-    }
-
-    .cart-popover-btn.secondary:hover {
-      background: var(--gray-300, #e2e8f0);
-    }
-
-    .cart-popover-btn.primary {
-      background: var(--success, #27ae60);
-      color: var(--cr-blanco, #ffffff);
-    }
-
-    .cart-popover-btn.primary:hover {
-      background: #229954;
-    }
-
   </style>
 </head>
 <body>
 
-<header class="header">
-  <a href="index.php" class="logo">
-    <span class="flag emoji">🇨🇷</span>
-    <div class="text">
-      <span class="main">CompraTica</span>
-      <span class="sub">Servicios Ticos</span>
-    </div>
-  </a>
-  <nav class="header-nav">
-    <button id="cartButton" class="btn-icon" title="Carrito" aria-label="Ver carrito">
-      <i class="fas fa-shopping-cart"></i>
-      <span id="cartBadge" class="cart-badge" style="display:none">0</span>
-    </button>
-    
-    <button id="menuButton" class="btn-icon" title="Menú" aria-label="Abrir menú">
-      <i class="fas fa-bars"></i>
-    </button>
-  </nav>
-  
-  <!-- Popover del carrito -->
-  <div id="cart-popover">
-    <div class="cart-popover-header">
-      <i class="fas fa-shopping-cart"></i> Tu Carrito
-    </div>
-    
-    <div class="cart-popover-body">
-      <div id="cart-empty" style="display:none">
-        <p>Tu carrito está vacío</p>
-      </div>
-      <div id="cart-items"></div>
-    </div>
-    
-    <div class="cart-popover-footer">
-      <div class="cart-popover-total">
-        <span>Total:</span>
-        <span id="cart-total">₡0</span>
-      </div>
-      <div class="cart-popover-actions">
-        <a href="cart.php" class="cart-popover-btn secondary">
-          Ver carrito
-        </a>
-        <a href="checkout.php" id="checkoutBtn" class="cart-popover-btn primary">
-          Pagar
-        </a>
-      </div>
-    </div>
-  </div>
-</header>
-
-<!-- Overlay del menú -->
-<div id="menu-overlay"></div>
-
-<!-- Menú hamburguesa -->
-<aside id="hamburger-menu">
-  <button class="menu-close" id="menu-close" aria-label="Cerrar menú">
-    <i class="fas fa-times"></i>
-  </button>
-  
-  <div class="menu-header">
-    <?php if ($isLoggedIn): ?>
-      <div class="menu-user">
-        <div class="menu-user-avatar">
-          <?php echo strtoupper(substr($userName, 0, 1)); ?>
-        </div>
-        <div class="menu-user-info">
-          <h3><?php echo htmlspecialchars($userName); ?></h3>
-          <p>Bienvenido de nuevo</p>
-        </div>
-      </div>
-    <?php else: ?>
-      <div class="menu-user">
-        <div class="menu-user-avatar">
-          <i class="fas fa-user"></i>
-        </div>
-        <div class="menu-user-info">
-          <h3>Hola, Invitado</h3>
-          <p>Inicia sesión para más opciones</p>
-        </div>
-      </div>
-    <?php endif; ?>
-  </div>
-  
-  <div class="menu-body">
-    <?php if ($isLoggedIn): ?>
-      <a href="my_orders.php" class="menu-item">
-        <i class="fas fa-box"></i>
-        <span>Mis Órdenes</span>
-      </a>
-      <a href="cart.php" class="menu-item">
-        <i class="fas fa-shopping-cart"></i>
-        <span>Mi Carrito</span>
-      </a>
-      <div class="menu-divider"></div>
-    <?php else: ?>
-      <a href="login.php" class="menu-item primary">
-        <i class="fas fa-sign-in-alt"></i>
-        <span>Iniciar Sesión</span>
-      </a>
-      <div class="menu-divider"></div>
-    <?php endif; ?>
-    
-    <a href="index.php" class="menu-item">
-      <i class="fas fa-home"></i>
-      <span>Inicio</span>
-    </a>
-    
-    <a href="servicios.php" class="menu-item">
-      <i class="fas fa-briefcase"></i>
-      <span>Servicios</span>
-    </a>
-
-    <a href="venta-garaje.php" class="menu-item">
-      <i class="fas fa-tags"></i>
-      <span>Venta de Garaje</span>
-    </a>
-
-    <a href="emprendedores.php" class="menu-item">
-      <i class="fas fa-rocket"></i>
-      <span>Emprendedores</span>
-    </a>
-    
-    <a href="emprendedoras.php" class="menu-item">
-      <i class="fas fa-crown"></i>
-      <span>Emprendedoras</span>
-    </a>
-    
-    <div class="menu-divider"></div>
-    
-    <a href="affiliate/register.php" class="menu-item">
-      <i class="fas fa-bullhorn"></i>
-      <span>Publicar mi venta</span>
-    </a>
-    
-    <a href="affiliate/login.php" class="menu-item">
-      <i class="fas fa-user-tie"></i>
-      <span>Portal Afiliados</span>
-    </a>
-    
-    <a href="admin/login.php" class="menu-item">
-      <i class="fas fa-user-shield"></i>
-      <span>Administrador</span>
-    </a>
-    
-    <?php if ($isLoggedIn): ?>
-      <div class="menu-divider"></div>
-      <a href="logout.php" class="menu-item danger">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Cerrar Sesión</span>
-      </a>
-    <?php endif; ?>
-  </div>
-</aside>
-
+<?php require_once __DIR__ . '/includes/header.php'; ?>
 
 <div class="main-wrapper">
-  <!-- Breadcrumb -->
-  <div class="breadcrumb">
-    <a href="index.php">
-      <i class="fas fa-home"></i>
-      Inicio
-    </a>
-    <i class="fas fa-chevron-right"></i>
-    <span>Servicios</span>
-  </div>
-
   <!-- Hero Section -->
   <section class="hero-section">
     <div class="hero-content">
-      <div class="hero-badge">
-        <i class="fas fa-briefcase"></i>
-        <span>Profesionales certificados</span>
-      </div>
-      
       <h1 class="hero-title">
-        Servicios profesionales <span class="highlight">hechos en Costa Rica</span>
+        Servicios Profesionales Ticos <span class="emoji">🇨🇷</span>
       </h1>
-      
       <p class="hero-description">
-        Conectá con profesionales ticos expertos en diferentes áreas. Desde diseño gráfico hasta
-        consultoría empresarial, encontrá el servicio que necesitás de la mano de talento local.
+        Conectá con los mejores profesionales de Costa Rica. Desde abogados hasta técnicos,
+        encontrá el servicio que necesitás y reservá directamente online.
       </p>
 
-      <div class="hero-tags">
-        <span class="tag">
-          <i class="fas fa-palette"></i>
-          Diseño creativo
-        </span>
-        <span class="tag">
-          <i class="fas fa-code"></i>
-          Desarrollo web
-        </span>
-        <span class="tag">
-          <i class="fas fa-camera"></i>
-          Fotografía
-        </span>
-        <span class="tag">
-          <i class="fas fa-chart-line"></i>
-          Consultoría
-        </span>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-number"><?php echo count($categories); ?></div>
+          <div class="stat-label">Categorías</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number"><?php echo $totalServices; ?>+</div>
+          <div class="stat-label">Servicios</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Ticos</div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Info Box -->
-  <div class="info-box">
-    <div class="info-box-content">
-      <div class="info-box-header">
-        <h2 class="info-box-title">Directorio en construcción</h2>
-        <span class="status-pill">
-          <i class="fas fa-circle-notch"></i>
-          Próximamente
-        </span>
-      </div>
+  <!-- Search Section -->
+  <section class="search-section">
+    <form class="search-form" action="services_search.php" method="GET">
+      <input
+        type="text"
+        name="q"
+        class="search-input"
+        placeholder="¿Qué servicio estás buscando? (ej: abogado, plomero, tutor de matemáticas...)"
+        required
+      >
+      <button type="submit" class="search-btn">
+        <i class="fas fa-search"></i>
+        Buscar
+      </button>
+    </form>
+  </section>
 
-      <p class="info-text">
-        Estamos preparando el catálogo de servicios más completo de Costa Rica. Muy pronto vas a poder
-        buscar profesionales por categoría, ubicación, calificación y presupuesto. Todo en un solo lugar.
-      </p>
-
-      <div class="info-actions">
-        <button class="info-btn">
-          <i class="fas fa-bell"></i>
-          Notificarme cuando esté listo
-        </button>
-        <button class="info-btn secondary">
-          <i class="fas fa-user-plus"></i>
-          Registrar mi servicio
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Categorías -->
+  <!-- Categories Section -->
   <div class="section-header">
-    <h2 class="section-title">Categorías de servicios</h2>
+    <h2 class="section-title">Explorá Nuestros Servicios</h2>
     <p class="section-subtitle">
-      Explorá las diferentes áreas donde podés encontrar profesionales ticos
+      Seleccioná la categoría que necesitás y encontrá a los mejores profesionales
     </p>
   </div>
 
   <div class="categories-grid">
-    <article class="category-card">
-      <div class="category-icon">
-        <i class="fas fa-palette"></i>
+    <?php if (empty($categories)): ?>
+      <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+        <i class="fas fa-box-open" style="font-size: 4rem; color: var(--gray-300); margin-bottom: 1rem;"></i>
+        <h3 style="color: var(--gray-600); margin-bottom: 0.5rem;">No hay categorías disponibles aún</h3>
+        <p style="color: var(--gray-500);">Estamos trabajando para traerte los mejores servicios</p>
       </div>
-      <h3 class="category-title">Diseño & Creatividad</h3>
-      <p class="category-description">
-        Diseñadores gráficos, ilustradores, animadores y creativos listos para darle vida a tus ideas.
-      </p>
-      <div class="category-footer">
-        <span class="category-badge">
-          <span class="dot"></span>
-          Alta demanda
-        </span>
-        <span class="category-link">
-          Próximamente
-          <i class="fas fa-arrow-right"></i>
-        </span>
-      </div>
-    </article>
+    <?php else: ?>
+      <?php foreach ($categories as $cat): ?>
+        <a href="services_list.php?category=<?php echo urlencode($cat['slug']); ?>" class="category-card <?php echo $cat['requires_online_payment'] ? 'payment-required' : ''; ?>">
+          <div class="category-icon">
+            <i class="<?php echo htmlspecialchars($cat['icon']); ?>"></i>
+          </div>
 
-    <article class="category-card">
-      <div class="category-icon">
-        <i class="fas fa-code"></i>
-      </div>
-      <h3 class="category-title">Desarrollo Web</h3>
-      <p class="category-description">
-        Desarrolladores especializados en crear sitios web, aplicaciones y soluciones digitales a medida.
-      </p>
-      <div class="category-footer">
-        <span class="category-badge">
-          <span class="dot"></span>
-          Muy solicitado
-        </span>
-        <span class="category-link">
-          Ver más
-          <i class="fas fa-arrow-right"></i>
-        </span>
-      </div>
-    </article>
+          <h3 class="category-title"><?php echo htmlspecialchars($cat['name']); ?></h3>
 
-    <article class="category-card">
-      <div class="category-icon">
-        <i class="fas fa-camera"></i>
-      </div>
-      <h3 class="category-title">Fotografía & Video</h3>
-      <p class="category-description">
-        Fotógrafos y videógrafos profesionales para eventos, productos, retratos y contenido publicitario.
-      </p>
-      <div class="category-footer">
-        <span class="category-badge">
-          <span class="dot"></span>
-          Popular
-        </span>
-        <span class="category-link">
-          Explorar
-          <i class="fas fa-arrow-right"></i>
-        </span>
-      </div>
-    </article>
+          <p class="category-description">
+            <?php echo htmlspecialchars($cat['description']); ?>
+          </p>
 
-    <article class="category-card">
-      <div class="category-icon">
-        <i class="fas fa-chart-line"></i>
-      </div>
-      <h3 class="category-title">Consultoría</h3>
-      <p class="category-description">
-        Consultores de negocios, marketing, finanzas y más para impulsar el crecimiento de tu empresa.
-      </p>
-      <div class="category-footer">
-        <span class="category-badge">
-          <span class="dot"></span>
-          Expertos
-        </span>
-        <span class="category-link">
-          Descubrir
-          <i class="fas fa-arrow-right"></i>
-        </span>
-      </div>
-    </article>
+          <div class="category-footer">
+            <div class="category-count">
+              <span class="badge"><?php echo (int)$cat['service_count']; ?></span>
+              <span>servicios disponibles</span>
+            </div>
+            <?php if ($cat['requires_online_payment']): ?>
+              <span class="payment-badge">
+                <i class="fas fa-credit-card"></i>
+                Pago online
+              </span>
+            <?php endif; ?>
+          </div>
 
-    <article class="category-card">
-      <div class="category-icon">
-        <i class="fas fa-pen-fancy"></i>
-      </div>
-      <h3 class="category-title">Redacción & Contenido</h3>
-      <p class="category-description">
-        Escritores, editores y creadores de contenido para blogs, redes sociales y marketing digital.
-      </p>
-      <div class="category-footer">
-        <span class="category-badge">
-          <span class="dot"></span>
-          Creativo
-        </span>
-        <span class="category-link">
-          Conocer más
-          <i class="fas fa-arrow-right"></i>
-        </span>
-      </div>
-    </article>
-
-    <article class="category-card">
-      <div class="category-icon">
-        <i class="fas fa-tools"></i>
-      </div>
-      <h3 class="category-title">Mantenimiento & Reparación</h3>
-      <p class="category-description">
-        Técnicos especializados en reparación de equipos, mantenimiento del hogar y servicios generales.
-      </p>
-      <div class="category-footer">
-        <span class="category-badge">
-          <span class="dot"></span>
-          Confiable
-        </span>
-        <span class="category-link">
-          Ver servicios
-          <i class="fas fa-arrow-right"></i>
-        </span>
-      </div>
-    </article>
-  </div>
-
-  <!-- Notice -->
-  <div class="notice-box">
-    <div class="notice-icon">
-      <i class="fas fa-lightbulb"></i>
-    </div>
-    <p class="notice-text">
-      <strong>¿Sos un profesional independiente?</strong> Muy pronto vas a poder registrar tus servicios
-      en CompraTica y conectar con clientes de toda Costa Rica. Mantenete atento al lanzamiento oficial.
-    </p>
+          <div style="margin-top: 1.5rem;">
+            <span class="category-link">
+              Ver servicios
+              <i class="fas fa-arrow-right"></i>
+            </span>
+          </div>
+        </a>
+      <?php endforeach; ?>
+    <?php endif; ?>
   </div>
 </div>
 
+<script src="/assets/js/services.js"></script>
 <script>
 const cartBadge = document.getElementById('cartBadge');
 const cantidadInicial = <?php echo $cantidadProductos; ?>;
@@ -1437,242 +756,6 @@ const cantidadInicial = <?php echo $cantidadProductos; ?>;
 if (cartBadge) {
   cartBadge.style.display = cantidadInicial > 0 ? 'flex' : 'none';
 }
-
-// Interacción con tarjetas
-document.querySelectorAll('.category-card').forEach(card => {
-  card.addEventListener('click', function() {
-    console.log('Categoría seleccionada:', this.querySelector('.category-title').textContent);
-  });
-});
-
-// Botones de info box
-document.querySelectorAll('.info-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    const action = this.textContent.trim();
-    console.log('Acción:', action);
-    alert('Funcionalidad próximamente disponible');
-  });
-});
-</script>
-
-
-<script>
-// MENÚ HAMBURGUESA
-const menuButton = document.getElementById('menuButton');
-const menuOverlay = document.getElementById('menu-overlay');
-const hamburgerMenu = document.getElementById('hamburger-menu');
-const menuClose = document.getElementById('menu-close');
-
-function openMenu() {
-  menuOverlay.classList.add('show');
-  hamburgerMenu.classList.add('show');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeMenu() {
-  menuOverlay.classList.remove('show');
-  hamburgerMenu.classList.remove('show');
-  document.body.style.overflow = '';
-}
-
-if (menuButton) {
-  menuButton.addEventListener('click', openMenu);
-}
-
-if (menuClose) {
-  menuClose.addEventListener('click', closeMenu);
-}
-
-if (menuOverlay) {
-  menuOverlay.addEventListener('click', closeMenu);
-}
-
-// Cerrar con ESC
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && hamburgerMenu.classList.contains('show')) {
-    closeMenu();
-  }
-});
-
-// ============= CARRITO =============
-const API = '/api/cart.php';
-
-function groupCartItems(groups) {
-  const productMap = new Map();
-  
-  groups.forEach(group => {
-    group.items.forEach(item => {
-      const key = `${item.product_id}_${item.unit_price}`;
-      
-      if (productMap.has(key)) {
-        const existing = productMap.get(key);
-        existing.qty += item.qty;
-        existing.line_total += item.line_total;
-      } else {
-        productMap.set(key, {
-          ...item,
-          sale_id: group.sale_id,
-          sale_title: group.sale_title,
-          currency: group.currency
-        });
-      }
-    });
-  });
-  
-  return Array.from(productMap.values());
-}
-
-function fmtPrice(n, currency = 'CRC') {
-  currency = currency.toUpperCase();
-  if (currency === 'USD') {
-    return '$' + n.toFixed(2);
-  }
-  return '₡' + Math.round(n).toLocaleString('es-CR');
-}
-
-function renderCart(data) {
-  const cartItemsContainer = document.getElementById('cart-items');
-  const cartTotal = document.getElementById('cart-total');
-  const cartEmpty = document.getElementById('cart-empty');
-  const cartBadge = document.getElementById('cartBadge');
-  const checkoutBtn = document.getElementById('checkoutBtn');
-  
-  if (!data || !data.ok || !data.groups || data.groups.length === 0) {
-    cartBadge.textContent = '0';
-    cartBadge.style.display = 'none';
-    cartEmpty.style.display = 'block';
-    cartItemsContainer.innerHTML = '';
-    cartTotal.textContent = '₡0';
-    if (checkoutBtn) {
-      checkoutBtn.href = 'cart.php';
-      checkoutBtn.textContent = 'Pagar';
-    }
-    return;
-  }
-  
-  const groupedItems = groupCartItems(data.groups);
-  
-  let totalCount = 0;
-  let totalAmount = 0;
-  let mainCurrency = 'CRC';
-  
-  groupedItems.forEach(item => {
-    totalCount += item.qty;
-    totalAmount += item.line_total;
-    mainCurrency = item.currency || 'CRC';
-  });
-  
-  cartBadge.textContent = totalCount;
-  cartBadge.style.display = totalCount > 0 ? 'inline-block' : 'none';
-  cartEmpty.style.display = totalCount === 0 ? 'block' : 'none';
-  
-  if (checkoutBtn) {
-    if (data.groups.length === 1) {
-      checkoutBtn.href = `checkout.php?sale_id=${data.groups[0].sale_id}`;
-      checkoutBtn.innerHTML = '<i class="fas fa-credit-card"></i> Pagar';
-    } else {
-      checkoutBtn.href = 'cart.php';
-      checkoutBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Ver carrito';
-    }
-  }
-  
-  cartItemsContainer.innerHTML = groupedItems.map(item => `
-    <div class="cart-popover-item" data-pid="${item.product_id}" data-sale-id="${item.sale_id}">
-      <img 
-        src="${item.product_image_url || '/assets/placeholder.jpg'}" 
-        alt="${item.product_name}"
-        class="cart-popover-item-img"
-      >
-      <div class="cart-popover-item-info">
-        <div class="cart-popover-item-name">${item.product_name}</div>
-        <div class="cart-popover-item-price">
-          ${fmtPrice(item.unit_price, item.currency)} × ${item.qty}
-        </div>
-        <div class="cart-popover-item-total">
-          ${fmtPrice(item.line_total, item.currency)}
-        </div>
-      </div>
-      <button 
-        class="cart-popover-item-remove" 
-        data-pid="${item.product_id}"
-        data-sale-id="${item.sale_id}"
-        title="Eliminar"
-      >
-        ×
-      </button>
-    </div>
-  `).join('');
-  
-  cartTotal.textContent = fmtPrice(totalAmount, mainCurrency);
-}
-
-async function loadCart() {
-  try {
-    const response = await fetch(API + '?action=get', {
-      credentials: 'include',
-      cache: 'no-store'
-    });
-    const data = await response.json();
-    renderCart(data);
-  } catch (error) {
-    console.error('Error al cargar carrito:', error);
-  }
-}
-
-// Toggle popover carrito
-const cartBtn = document.getElementById('cartButton');
-const cartPopover = document.getElementById('cart-popover');
-
-if (cartBtn && cartPopover) {
-  cartBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = cartPopover.classList.contains('show');
-    
-    if (!isOpen) {
-      loadCart();
-    }
-    
-    cartPopover.classList.toggle('show');
-  });
-  
-  document.addEventListener('click', (e) => {
-    if (!cartPopover.contains(e.target) && !cartBtn.contains(e.target)) {
-      cartPopover.classList.remove('show');
-    }
-  });
-}
-
-// Eliminar item del carrito
-document.addEventListener('click', async (e) => {
-  const removeBtn = e.target.closest('.cart-popover-item-remove');
-  if (!removeBtn) return;
-  
-  const pid = parseInt(removeBtn.dataset.pid);
-  const saleId = parseInt(removeBtn.dataset.saleId);
-  
-  try {
-    const token = (document.cookie.match(/(?:^|;\s*)vg_csrf=([^;]+)/) || [])[1] || '';
-    const response = await fetch(API + '?action=remove', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': token
-      },
-      body: JSON.stringify({ product_id: pid, sale_id: saleId }),
-      credentials: 'include'
-    });
-    
-    const data = await response.json();
-    if (data.ok) {
-      loadCart();
-    }
-  } catch (error) {
-    console.error('Error:', error);
-  }
-});
-
-// Cargar carrito al inicio
-loadCart();
 </script>
 
 </body>
