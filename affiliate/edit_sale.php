@@ -187,6 +187,12 @@ if ($sale['end_at']) {
       border-radius: 6px;
       margin-bottom: 1rem;
     }
+    #access_code {
+      transition: all 0.3s ease;
+    }
+    #generateCodeBtn {
+      transition: all 0.3s ease;
+    }
   </style>
 </head>
 <body>
@@ -272,10 +278,21 @@ if ($sale['end_at']) {
             <small style="color:#666; display:block; margin-top:4px;">
               🔑 Los clientes necesitarán este código para acceder a los productos
             </small>
-            <input class="input" type="text" name="access_code" id="access_code"
-                   pattern="[0-9]{6}" maxlength="6" placeholder="Ej: 123456"
-                   value="<?= htmlspecialchars($sale['access_code'] ?? '') ?>"
-                   style="font-size: 1.2rem; letter-spacing: 0.3rem; font-family: monospace;">
+            <div style="display: flex; gap: 0.75rem; align-items: stretch;">
+              <input class="input" type="text" name="access_code" id="access_code"
+                     pattern="[0-9]{6}" maxlength="6" placeholder="Ej: 123456"
+                     value="<?= htmlspecialchars($sale['access_code'] ?? '') ?>"
+                     style="flex: 1; font-size: 1.2rem; letter-spacing: 0.3rem; font-family: monospace;">
+              <button type="button" id="generateCodeBtn"
+                      style="padding: 0 1.5rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                             color: white; border: none; border-radius: 6px; cursor: pointer;
+                             font-weight: 600; font-size: 0.9rem; white-space: nowrap;
+                             transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                      onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(245,87,108,0.4)';"
+                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                <i class="fas fa-sync-alt"></i> Generar Nuevo
+              </button>
+            </div>
             <small style="color:#999; display:block; margin-top:4px;">
               Solo números, exactamente 6 dígitos
             </small>
@@ -319,6 +336,34 @@ document.addEventListener('DOMContentLoaded', function() {
   accessCodeInput.addEventListener('input', function() {
     this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
   });
+
+  // 🔄 Botón para generar nuevo código
+  const generateCodeBtn = document.getElementById('generateCodeBtn');
+  if (generateCodeBtn) {
+    generateCodeBtn.addEventListener('click', function() {
+      // Generar código de 6 dígitos aleatorio
+      const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+      accessCodeInput.value = newCode;
+
+      // Efecto visual de confirmación
+      const originalText = this.innerHTML;
+      this.innerHTML = '<i class="fas fa-check"></i> ¡Generado!';
+      this.style.background = 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)';
+
+      setTimeout(() => {
+        this.innerHTML = originalText;
+        this.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+      }, 1500);
+
+      // Animar el input
+      accessCodeInput.style.transform = 'scale(1.05)';
+      accessCodeInput.style.background = '#fff3cd';
+      setTimeout(() => {
+        accessCodeInput.style.transform = 'scale(1)';
+        accessCodeInput.style.background = '';
+      }, 300);
+    });
+  }
 
   // Preview de nueva imagen
   const newImageInput = document.getElementById('newImage');
