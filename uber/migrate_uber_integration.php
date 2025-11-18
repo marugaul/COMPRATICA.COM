@@ -221,7 +221,7 @@ try {
     echo "5. El checkout ahora tiene geolocalización y cotización en tiempo real\n\n";
 
 } catch (Exception $e) {
-    if ($pdo->inTransaction()) {
+    if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
     echo "\n❌ ERROR EN MIGRACIÓN: " . $e->getMessage() . "\n";
