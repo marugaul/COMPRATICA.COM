@@ -1107,51 +1107,40 @@ document.addEventListener('keydown', (e) => {
 });
 
 // SHIPPING OPTIONS
-document.querySelectorAll('.shipping-option').forEach(opt => {
+document.querySelectorAll('.shipping-option').forEach(function(opt) {
   opt.addEventListener('click', function() {
     if (this.classList.contains('disabled')) return;
 
-    document.querySelectorAll('.shipping-option').forEach(o => o.classList.remove('selected'));
+    document.querySelectorAll('.shipping-option').forEach(function(o) {
+      o.classList.remove('selected');
+    });
     this.classList.add('selected');
-    const r = this.querySelector('input[type="radio"]');
+    var r = this.querySelector('input[type="radio"]');
     if (r) r.checked = true;
 
     // Mostrar/ocultar sección de dirección de entrega
-    const deliverySection = document.getElementById('delivery-address-section');
-    console.log('🚀 Shipping option clicked:', r ? r.value : 'no radio found');
-    console.log('📦 Delivery section found:', deliverySection ? 'YES' : 'NO');
-
+    var deliverySection = document.getElementById('delivery-address-section');
     if (deliverySection) {
       if (r && r.value === 'uber') {
-        console.log('✅ Showing Uber delivery section');
         deliverySection.classList.add('show');
-        deliverySection.style.display = 'block'; // Forzar display
       } else {
-        console.log('❌ Hiding delivery section');
         deliverySection.classList.remove('show');
-        deliverySection.style.display = 'none';
-        // Resetear costo de envío
         shippingCost = 0;
         updateTotals();
       }
-    } else {
-      console.error('❌ ERROR: delivery-address-section not found in DOM');
     }
   });
 });
 
 // También escuchar cambios en los radio buttons directamente
-document.querySelectorAll('input[name="shipping_method"]').forEach(radio => {
+document.querySelectorAll('input[name="shipping_method"]').forEach(function(radio) {
   radio.addEventListener('change', function() {
-    console.log('📻 Radio changed to:', this.value);
-    const deliverySection = document.getElementById('delivery-address-section');
+    var deliverySection = document.getElementById('delivery-address-section');
     if (deliverySection) {
       if (this.value === 'uber') {
         deliverySection.classList.add('show');
-        deliverySection.style.display = 'block';
       } else {
         deliverySection.classList.remove('show');
-        deliverySection.style.display = 'none';
       }
     }
   });
