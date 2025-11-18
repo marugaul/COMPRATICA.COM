@@ -643,11 +643,488 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
         font-size: 2rem;
       }
     }
+    /* MENÚ HAMBURGUESA Y CARRITO - Estilos adicionales */
+    #menu-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    #menu-overlay.show {
+      display: block;
+      opacity: 1;
+    }
+
+    #hamburger-menu {
+      position: fixed;
+      top: 0;
+      right: -320px;
+      width: 320px;
+      height: 100vh;
+      background: var(--white);
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-y: auto;
+    }
+
+    #hamburger-menu.show {
+      right: 0;
+    }
+
+    .menu-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--gray-300);
+      background: linear-gradient(to right, #f8f9fa, #ffffff);
+    }
+
+    .menu-user {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .menu-user-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--cr-azul);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+
+    .menu-user-info h3 {
+      font-size: 1.0625rem;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 0.125rem;
+    }
+
+    .menu-user-info p {
+      font-size: 0.875rem;
+      color: var(--gray-500);
+    }
+
+    .menu-close {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.25rem;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--gray-500);
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: var(--transition);
+    }
+
+    .menu-close:hover {
+      background: var(--gray-100);
+      color: var(--gray-900);
+    }
+
+    .menu-body {
+      padding: 1rem 0;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      padding: 0.875rem 1.5rem;
+      color: var(--gray-700);
+      text-decoration: none;
+      transition: var(--transition);
+      font-size: 0.9375rem;
+      font-weight: 500;
+    }
+
+    .menu-item:hover {
+      background: var(--gray-100);
+      color: var(--cr-azul);
+    }
+
+    .menu-item i {
+      width: 20px;
+      text-align: center;
+      font-size: 1.0625rem;
+      color: var(--gray-500);
+    }
+
+    .menu-item:hover i {
+      color: var(--cr-azul);
+    }
+
+    .menu-divider {
+      height: 1px;
+      background: var(--gray-300);
+      margin: 0.5rem 0;
+    }
+
+    .menu-item.primary {
+      color: var(--cr-azul);
+      font-weight: 600;
+    }
+
+    .menu-item.primary i {
+      color: var(--cr-azul);
+    }
+
+    .menu-item.danger {
+      color: var(--cr-rojo);
+    }
+
+    .menu-item.danger i {
+      color: var(--cr-rojo);
+    }
+
+    /* POPOVER DEL CARRITO */
+    #cart-popover {
+      position: absolute;
+      top: calc(100% + 12px);
+      right: 0;
+      width: 380px;
+      max-width: calc(100vw - 2rem);
+      background: var(--white);
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      display: none;
+      flex-direction: column;
+      max-height: 500px;
+      z-index: 101;
+    }
+
+    #cart-popover.show {
+      display: flex;
+    }
+
+    .cart-popover-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--gray-300);
+      font-size: 1.0625rem;
+      font-weight: 600;
+      color: var(--gray-900);
+      background: linear-gradient(to right, #f8f9fa, #ffffff);
+    }
+
+    .cart-popover-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    #cart-empty {
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      color: var(--gray-500);
+      font-size: 0.9375rem;
+    }
+
+    .cart-popover-item {
+      display: flex;
+      gap: 0.875rem;
+      padding: 0.875rem;
+      border-radius: var(--radius);
+      background: var(--gray-100);
+      margin-bottom: 0.625rem;
+      position: relative;
+      transition: var(--transition);
+    }
+
+    .cart-popover-item:hover {
+      background: var(--gray-300);
+    }
+
+    .cart-popover-item-img {
+      width: 56px;
+      height: 56px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--gray-300);
+      flex-shrink: 0;
+    }
+
+    .cart-popover-item-info {
+      flex: 1;
+      min-width: 0;
+      padding-right: 28px;
+    }
+
+    .cart-popover-item-name {
+      font-weight: 600;
+      font-size: 0.9375rem;
+      color: var(--gray-900);
+      margin-bottom: 0.25rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cart-popover-item-price {
+      font-size: 0.8125rem;
+      color: var(--gray-500);
+    }
+
+    .cart-popover-item-total {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 0.25rem;
+    }
+
+    .cart-popover-item-remove {
+      position: absolute;
+      top: 0.625rem;
+      right: 0.625rem;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      color: var(--cr-rojo);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1.125rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .cart-popover-item-remove:hover {
+      background: rgba(206, 17, 38, 0.1);
+    }
+
+    .cart-popover-footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--gray-300);
+    }
+
+    .cart-popover-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.875rem;
+      font-size: 1.0625rem;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    .cart-popover-actions {
+      display: flex;
+      gap: 0.625rem;
+    }
+
+    .cart-popover-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .cart-popover-btn.secondary {
+      background: var(--gray-100);
+      color: var(--gray-700);
+      border: 1px solid var(--gray-300);
+    }
+
+    .cart-popover-btn.secondary:hover {
+      background: var(--gray-300);
+    }
+
+    .cart-popover-btn.primary {
+      background: var(--accent);
+      color: var(--white);
+    }
+
+    .cart-popover-btn.primary:hover {
+      background: #0d9668;
+    }
   </style>
 </head>
 <body>
 
-<?php require_once __DIR__ . '/includes/header.php'; ?>
+<!-- HEADER -->
+<header class="header">
+  <a href="index.php" class="logo">
+    <span class="flag emoji">🇨🇷</span>
+    <div class="text">
+      <span class="main">CompraTica</span>
+      <span class="sub">Servicios Ticos</span>
+    </div>
+  </a>
+  <nav class="header-nav">
+    <button id="cartButton" class="btn-icon" title="Carrito" aria-label="Ver carrito">
+      <i class="fas fa-shopping-cart"></i>
+      <span id="cartBadge" class="cart-badge" style="display:none">0</span>
+    </button>
+
+    <button id="menuButton" class="btn-icon" title="Menú" aria-label="Abrir menú">
+      <i class="fas fa-bars"></i>
+    </button>
+  </nav>
+
+  <!-- Popover del carrito -->
+  <div id="cart-popover">
+    <div class="cart-popover-header">
+      <i class="fas fa-shopping-cart"></i> Tu Carrito
+    </div>
+
+    <div class="cart-popover-body">
+      <div id="cart-empty" style="display:none">
+        <p>Tu carrito está vacío</p>
+      </div>
+      <div id="cart-items"></div>
+    </div>
+
+    <div class="cart-popover-footer">
+      <div class="cart-popover-total">
+        <span>Total:</span>
+        <span id="cart-total">₡0</span>
+      </div>
+      <div class="cart-popover-actions">
+        <a href="cart.php" class="cart-popover-btn secondary">
+          Ver carrito
+        </a>
+        <a href="checkout.php" id="checkoutBtn" class="cart-popover-btn primary">
+          Pagar
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Overlay del menú -->
+<div id="menu-overlay"></div>
+
+<!-- Menú hamburguesa -->
+<aside id="hamburger-menu">
+  <button class="menu-close" id="menu-close" aria-label="Cerrar menú">
+    <i class="fas fa-times"></i>
+  </button>
+
+  <div class="menu-header">
+    <?php if ($isLoggedIn): ?>
+      <div class="menu-user">
+        <div class="menu-user-avatar">
+          <?php echo strtoupper(substr($userName, 0, 1)); ?>
+        </div>
+        <div class="menu-user-info">
+          <h3><?php echo htmlspecialchars($userName); ?></h3>
+          <p>Bienvenido de nuevo</p>
+        </div>
+      </div>
+    <?php else: ?>
+      <div class="menu-user">
+        <div class="menu-user-avatar">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="menu-user-info">
+          <h3>Hola, Invitado</h3>
+          <p>Inicia sesión para más opciones</p>
+        </div>
+      </div>
+    <?php endif; ?>
+  </div>
+
+  <div class="menu-body">
+    <?php if ($isLoggedIn): ?>
+      <a href="my_orders.php" class="menu-item">
+        <i class="fas fa-box"></i>
+        <span>Mis Órdenes</span>
+      </a>
+      <a href="cart.php" class="menu-item">
+        <i class="fas fa-shopping-cart"></i>
+        <span>Mi Carrito</span>
+      </a>
+      <div class="menu-divider"></div>
+    <?php else: ?>
+      <a href="login.php" class="menu-item primary">
+        <i class="fas fa-sign-in-alt"></i>
+        <span>Iniciar Sesión</span>
+      </a>
+      <div class="menu-divider"></div>
+    <?php endif; ?>
+
+    <a href="index.php" class="menu-item">
+      <i class="fas fa-home"></i>
+      <span>Inicio</span>
+    </a>
+
+    <a href="servicios.php" class="menu-item">
+      <i class="fas fa-briefcase"></i>
+      <span>Servicios</span>
+    </a>
+
+    <a href="venta-garaje.php" class="menu-item">
+      <i class="fas fa-tags"></i>
+      <span>Venta de Garaje</span>
+    </a>
+
+    <a href="emprendedores.php" class="menu-item">
+      <i class="fas fa-rocket"></i>
+      <span>Emprendedores</span>
+    </a>
+
+    <a href="emprendedoras.php" class="menu-item">
+      <i class="fas fa-crown"></i>
+      <span>Emprendedoras</span>
+    </a>
+
+    <div class="menu-divider"></div>
+
+    <a href="affiliate/register.php" class="menu-item">
+      <i class="fas fa-bullhorn"></i>
+      <span>Publicar mi venta</span>
+    </a>
+
+    <a href="affiliate/login.php" class="menu-item">
+      <i class="fas fa-user-tie"></i>
+      <span>Portal Afiliados</span>
+    </a>
+
+    <a href="admin/login.php" class="menu-item">
+      <i class="fas fa-user-shield"></i>
+      <span>Administrador</span>
+    </a>
+
+    <?php if ($isLoggedIn): ?>
+      <div class="menu-divider"></div>
+      <a href="logout.php" class="menu-item danger">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Cerrar Sesión</span>
+      </a>
+    <?php endif; ?>
+  </div>
+</aside>
 
 <div class="main-wrapper">
   <!-- Hero Section -->
@@ -748,11 +1225,227 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
   </div>
 </div>
 
-<script src="/assets/js/services.js"></script>
 <script>
+// MENÚ HAMBURGUESA
+const menuButton = document.getElementById('menuButton');
+const menuOverlay = document.getElementById('menu-overlay');
+const hamburgerMenu = document.getElementById('hamburger-menu');
+const menuClose = document.getElementById('menu-close');
+
+function openMenu() {
+  menuOverlay.classList.add('show');
+  hamburgerMenu.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMenu() {
+  menuOverlay.classList.remove('show');
+  hamburgerMenu.classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+if (menuButton) {
+  menuButton.addEventListener('click', openMenu);
+}
+
+if (menuClose) {
+  menuClose.addEventListener('click', closeMenu);
+}
+
+if (menuOverlay) {
+  menuOverlay.addEventListener('click', closeMenu);
+}
+
+// Cerrar con ESC
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && hamburgerMenu.classList.contains('show')) {
+    closeMenu();
+  }
+});
+
+// ============= CARRITO =============
+const API = '/api/cart.php';
+
+function groupCartItems(groups) {
+  const productMap = new Map();
+
+  groups.forEach(group => {
+    group.items.forEach(item => {
+      const key = `${item.product_id}_${item.unit_price}`;
+
+      if (productMap.has(key)) {
+        const existing = productMap.get(key);
+        existing.qty += item.qty;
+        existing.line_total += item.line_total;
+      } else {
+        productMap.set(key, {
+          ...item,
+          sale_id: group.sale_id,
+          sale_title: group.sale_title,
+          currency: group.currency
+        });
+      }
+    });
+  });
+
+  return Array.from(productMap.values());
+}
+
+function fmtPrice(n, currency = 'CRC') {
+  currency = currency.toUpperCase();
+  if (currency === 'USD') {
+    return '$' + n.toFixed(2);
+  }
+  return '₡' + Math.round(n).toLocaleString('es-CR');
+}
+
+function renderCart(data) {
+  const cartItemsContainer = document.getElementById('cart-items');
+  const cartTotal = document.getElementById('cart-total');
+  const cartEmpty = document.getElementById('cart-empty');
+  const cartBadge = document.getElementById('cartBadge');
+  const checkoutBtn = document.getElementById('checkoutBtn');
+
+  if (!data || !data.ok || !data.groups || data.groups.length === 0) {
+    cartBadge.textContent = '0';
+    cartBadge.style.display = 'none';
+    cartEmpty.style.display = 'block';
+    cartItemsContainer.innerHTML = '';
+    cartTotal.textContent = '₡0';
+    if (checkoutBtn) {
+      checkoutBtn.href = 'cart.php';
+      checkoutBtn.textContent = 'Pagar';
+    }
+    return;
+  }
+
+  const groupedItems = groupCartItems(data.groups);
+
+  let totalCount = 0;
+  let totalAmount = 0;
+  let mainCurrency = 'CRC';
+
+  groupedItems.forEach(item => {
+    totalCount += item.qty;
+    totalAmount += item.line_total;
+    mainCurrency = item.currency || 'CRC';
+  });
+
+  cartBadge.textContent = totalCount;
+  cartBadge.style.display = totalCount > 0 ? 'inline-block' : 'none';
+  cartEmpty.style.display = totalCount === 0 ? 'block' : 'none';
+
+  if (checkoutBtn) {
+    if (data.groups.length === 1) {
+      checkoutBtn.href = `checkout.php?sale_id=${data.groups[0].sale_id}`;
+      checkoutBtn.innerHTML = '<i class="fas fa-credit-card"></i> Pagar';
+    } else {
+      checkoutBtn.href = 'cart.php';
+      checkoutBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Ver carrito';
+    }
+  }
+
+  cartItemsContainer.innerHTML = groupedItems.map(item => `
+    <div class="cart-popover-item" data-pid="${item.product_id}" data-sale-id="${item.sale_id}">
+      <img
+        src="${item.product_image_url || '/assets/placeholder.jpg'}"
+        alt="${item.product_name}"
+        class="cart-popover-item-img"
+      >
+      <div class="cart-popover-item-info">
+        <div class="cart-popover-item-name">${item.product_name}</div>
+        <div class="cart-popover-item-price">
+          ${fmtPrice(item.unit_price, item.currency)} × ${item.qty}
+        </div>
+        <div class="cart-popover-item-total">
+          ${fmtPrice(item.line_total, item.currency)}
+        </div>
+      </div>
+      <button
+        class="cart-popover-item-remove"
+        data-pid="${item.product_id}"
+        data-sale-id="${item.sale_id}"
+        title="Eliminar"
+      >
+        ×
+      </button>
+    </div>
+  `).join('');
+
+  cartTotal.textContent = fmtPrice(totalAmount, mainCurrency);
+}
+
+async function loadCart() {
+  try {
+    const response = await fetch(API + '?action=get', {
+      credentials: 'include',
+      cache: 'no-store'
+    });
+    const data = await response.json();
+    renderCart(data);
+  } catch (error) {
+    console.error('Error al cargar carrito:', error);
+  }
+}
+
+// Toggle popover carrito
+const cartBtn = document.getElementById('cartButton');
+const cartPopover = document.getElementById('cart-popover');
+
+if (cartBtn && cartPopover) {
+  cartBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = cartPopover.classList.contains('show');
+
+    if (!isOpen) {
+      loadCart();
+    }
+
+    cartPopover.classList.toggle('show');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!cartPopover.contains(e.target) && !cartBtn.contains(e.target)) {
+      cartPopover.classList.remove('show');
+    }
+  });
+}
+
+// Eliminar item del carrito
+document.addEventListener('click', async (e) => {
+  const removeBtn = e.target.closest('.cart-popover-item-remove');
+  if (!removeBtn) return;
+
+  const pid = parseInt(removeBtn.dataset.pid);
+  const saleId = parseInt(removeBtn.dataset.saleId);
+
+  try {
+    const token = (document.cookie.match(/(?:^|;\s*)vg_csrf=([^;]+)/) || [])[1] || '';
+    const response = await fetch(API + '?action=remove', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': token
+      },
+      body: JSON.stringify({ product_id: pid, sale_id: saleId }),
+      credentials: 'include'
+    });
+
+    const data = await response.json();
+    if (data.ok) {
+      loadCart();
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
+});
+
+// Cargar carrito al inicio
+loadCart();
+
+// Badge inicial del carrito
 const cartBadge = document.getElementById('cartBadge');
 const cantidadInicial = <?php echo $cantidadProductos; ?>;
-
 if (cartBadge) {
   cartBadge.style.display = cantidadInicial > 0 ? 'flex' : 'none';
 }
