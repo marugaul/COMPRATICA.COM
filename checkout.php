@@ -933,8 +933,18 @@ foreach ($_SESSION['cart'] as $it) {
             </h4>
             <div class="form-group">
               <label>Dirección completa <span style="color:var(--danger)">*</span></label>
-              <input type="text" name="delivery_address" id="delivery_address" 
-                     placeholder="Ej: Avenida Central, Calle 5, San José">
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" name="delivery_address" id="delivery_address"
+                       style="flex: 1;"
+                       placeholder="Ej: Avenida Central, Calle 5, San José">
+                <button type="button" id="geolocate-btn" class="btn-secondary"
+                        style="white-space: nowrap; padding: 0.75rem 1rem; background: var(--accent); color: white; border: none; cursor: pointer; border-radius: var(--radius);"
+                        title="Usar mi ubicación actual">
+                  <i class="fas fa-crosshairs"></i> Mi Ubicación
+                </button>
+              </div>
+              <input type="hidden" name="delivery_lat" id="delivery_lat">
+              <input type="hidden" name="delivery_lng" id="delivery_lng">
             </div>
             <div class="form-group">
               <label>Apartamento, piso, oficina (opcional)</label>
@@ -1129,6 +1139,76 @@ document.querySelectorAll('.payment-option').forEach(opt => {
   });
 });
 
+// ⭐ GEOLOCALIZACIÓN EN TIEMPO REAL
+document.getElementById('geolocate-btn')?.addEventListener('click', async function() {
+  if (!navigator.geolocation) {
+    alert('Tu navegador no soporta geolocalización');
+    return;
+  }
+
+  const btn = this;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ubicando...';
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      // Guardar coordenadas
+      document.getElementById('delivery_lat').value = lat;
+      document.getElementById('delivery_lng').value = lng;
+
+      // Hacer reverse geocoding para obtener la dirección
+      try {
+        // Usar servicio de geocoding inverso
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`);
+        const data = await response.json();
+
+        if (data && data.display_name) {
+          document.getElementById('delivery_address').value = data.display_name;
+          alert('✅ Ubicación detectada correctamente');
+        } else {
+          alert('📍 Coordenadas obtenidas. Por favor completa tu dirección manualmente.');
+        }
+      } catch (error) {
+        console.error('Error en reverse geocoding:', error);
+        alert('📍 Coordenadas obtenidas: ' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '\nPor favor completa tu dirección manualmente.');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-crosshairs"></i> Mi Ubicación';
+    },
+    (error) => {
+      console.error('Error de geolocalización:', error);
+      let errorMsg = 'No se pudo obtener tu ubicación. ';
+
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          errorMsg += 'Debes permitir el acceso a tu ubicación.';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMsg += 'Ubicación no disponible.';
+          break;
+        case error.TIMEOUT:
+          errorMsg += 'Tiempo de espera agotado.';
+          break;
+        default:
+          errorMsg += 'Error desconocido.';
+      }
+
+      alert(errorMsg);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-crosshairs"></i> Mi Ubicación';
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
+});
+
 // ⭐ CALCULAR COSTO DE UBER
 document.getElementById('calculate-uber-btn')?.addEventListener('click', async function() {
   const address = document.getElementById('delivery_address').value.trim();
@@ -1142,6 +1222,9 @@ document.getElementById('calculate-uber-btn')?.addEventListener('click', async f
   this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculando...';
   
   try {
+    const lat = document.getElementById('delivery_lat').value;
+    const lng = document.getElementById('delivery_lng').value;
+
     const response = await fetch('uber/ajax_uber_quote.php', {
       method: 'POST',
       headers: {
@@ -1150,7 +1233,9 @@ document.getElementById('calculate-uber-btn')?.addEventListener('click', async f
       body: JSON.stringify({
         sale_id: <?= $sale_id ?>,
         delivery_address: address,
-        delivery_city: 'San José', // Puedes agregar campo para ciudad
+        delivery_city: 'San José',
+        delivery_lat: lat ? parseFloat(lat) : null,
+        delivery_lng: lng ? parseFloat(lng) : null,
         csrf_token: '<?= $csrf_token ?>'
       })
     });

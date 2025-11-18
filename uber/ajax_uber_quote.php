@@ -37,6 +37,8 @@ if (!isset($data['csrf_token']) || $data['csrf_token'] !== ($_SESSION['csrf_toke
 $sale_id = (int)($data['sale_id'] ?? 0);
 $delivery_address = trim($data['delivery_address'] ?? '');
 $delivery_city = trim($data['delivery_city'] ?? 'San José');
+$delivery_lat = isset($data['delivery_lat']) ? (float)$data['delivery_lat'] : null;
+$delivery_lng = isset($data['delivery_lng']) ? (float)$data['delivery_lng'] : null;
 
 if ($sale_id <= 0 || !$delivery_address) {
     echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
@@ -72,35 +74,59 @@ try {
         exit;
     }
     
-    // TODO: Geocodificar la dirección de entrega para obtener lat/lng
-    // Por ahora usaremos coordenadas de ejemplo o el usuario debe proporcionar coordenadas
-    // Se puede integrar con Google Geocoding API u otro servicio
-    
-    // Coordenadas de ejemplo para San José centro (cambiar por geocoding real)
-    $delivery_lat = 9.9281; // Ejemplo
-    $delivery_lng = -84.0907; // Ejemplo
-    
+    // Si no se enviaron coordenadas, usar coordenadas por defecto
+    if ($delivery_lat === null || $delivery_lng === null) {
+        $delivery_lat = 9.9281; // San José centro
+        $delivery_lng = -84.0907;
+    }
+
+    // Obtener items del carrito
+    $cart_id = 0;
+    $user_id = (int)($_SESSION['user_id'] ?? 0);
+    if ($user_id > 0) {
+        $stmt = $pdo->prepare("SELECT id FROM carts WHERE user_id = ? ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$user_id]);
+        $cart_id = (int)$stmt->fetchColumn();
+    }
+
+    $items = [];
+    if ($cart_id > 0) {
+        $stmt = $pdo->prepare("
+            SELECT p.id, p.name, p.price, p.weight_kg, p.size_cm_length,
+                   p.size_cm_width, p.size_cm_height, ci.qty as quantity
+            FROM cart_items ci
+            JOIN products p ON p.id = ci.product_id
+            WHERE ci.cart_id = ? AND p.sale_id = ?
+        ");
+        $stmt->execute([$cart_id, $sale_id]);
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // 🎯 MODO SANDBOX: Verificar si hay credenciales configuradas
     $use_sandbox = false;
     $sandbox_reason = '';
-    
+    $vehicle_type = 'auto';
+
     try {
         $uber = new UberDirectAPI($pdo);
+        // Recomendar tipo de vehículo
+        if (!empty($items)) {
+            $vehicle_type = $uber->recommendVehicleType($items);
+        }
     } catch (Exception $e) {
-        // Si no hay credenciales, usar modo sandbox
         $error_msg = $e->getMessage();
-        if (strpos($error_msg, 'no configuradas') !== false || 
+        if (strpos($error_msg, 'no configuradas') !== false ||
             strpos($error_msg, 'no encontrada') !== false) {
             $use_sandbox = true;
             $sandbox_reason = 'Credenciales de Uber no configuradas';
         } else {
-            throw $e; // Re-lanzar si es otro tipo de error
+            throw $e;
         }
     }
-    
+
     if ($use_sandbox) {
         // 🎮 MODO SANDBOX: Generar cotización simulada
-        $quote = generateSandboxQuote($pickup, $delivery_address);
+        $quote = generateSandboxQuote($pickup, $delivery_address, $items);
         $is_sandbox = true;
     } else {
         // 🚀 MODO PRODUCCIÓN: Obtener cotización real de Uber
@@ -114,7 +140,9 @@ try {
                 'address' => $delivery_address . ', ' . $delivery_city,
                 'lat' => $delivery_lat,
                 'lng' => $delivery_lng
-            ]
+            ],
+            'vehicle_type' => $vehicle_type,
+            'items' => $items
         ]);
         $is_sandbox = false;
     }
@@ -162,16 +190,27 @@ try {
 /**
  * 🎮 MODO SANDBOX: Generar cotización simulada
  */
-function generateSandboxQuote(array $pickup, string $delivery_address): array {
+function generateSandboxQuote(array $pickup, string $delivery_address, array $items = []): array {
     // Calcular distancia aproximada basada en la longitud de la dirección
-    // (esto es solo para simular, en producción se usaría geocoding real)
     $address_length = strlen($delivery_address);
-    
+
     // Simular distancia en km (entre 2 y 15 km)
     $estimated_distance_km = min(15, max(2, $address_length / 10));
-    
-    // Calcular costo base simulado (₡500 base + ₡200 por km)
-    $uber_base_cost = 500 + ($estimated_distance_km * 200);
+
+    // Calcular peso total de items
+    $total_weight = 0;
+    foreach ($items as $item) {
+        $total_weight += ((float)($item['weight_kg'] ?? 0)) * ((int)($item['quantity'] ?? 1));
+    }
+
+    // Ajustar costo según peso
+    $weight_surcharge = 0;
+    if ($total_weight > 10) {
+        $weight_surcharge = 500; // Surcharge para paquetes pesados
+    }
+
+    // Calcular costo base simulado (₡500 base + ₡200 por km + surcharge de peso)
+    $uber_base_cost = 500 + ($estimated_distance_km * 200) + $weight_surcharge;
     
     // Agregar variación aleatoria ±10%
     $variation = mt_rand(-10, 10) / 100;
@@ -180,8 +219,8 @@ function generateSandboxQuote(array $pickup, string $delivery_address): array {
     // Redondear a múltiplos de 50 colones
     $uber_base_cost = round($uber_base_cost / 50) * 50;
     
-    // Comisión de plataforma (15%)
-    $commission = $uber_base_cost * 0.15;
+    // Comisión de plataforma (10%)
+    $commission = $uber_base_cost * 0.10;
     $total_cost = $uber_base_cost + $commission;
     
     // Tiempo estimado (5-30 minutos)

@@ -160,6 +160,108 @@ class UberDirectAPI {
     }
     
     /**
+     * Mapear tipo de vehículo al formato de Uber
+     */
+    private function mapVehicleType(string $type): string {
+        $map = [
+            'moto' => 'motorcycle',
+            'bike' => 'bicycle',
+            'auto' => 'car',
+            'suv' => 'suv',
+            'car' => 'car'
+        ];
+        return $map[strtolower($type)] ?? 'car';
+    }
+
+    /**
+     * Construir manifest con items y sus dimensiones
+     */
+    private function buildManifest(array $items): array {
+        $manifestItems = [];
+        $totalValue = 0;
+
+        foreach ($items as $item) {
+            $weight = (float)($item['weight_kg'] ?? 0);
+            $length = (float)($item['size_cm_length'] ?? 0);
+            $width = (float)($item['size_cm_width'] ?? 0);
+            $height = (float)($item['size_cm_height'] ?? 0);
+            $qty = (int)($item['quantity'] ?? 1);
+            $price = (float)($item['price'] ?? 0);
+
+            // Determinar tamaño según dimensiones o peso
+            $size = $this->calculateItemSize($weight, $length, $width, $height);
+
+            $manifestItems[] = [
+                'name' => $item['name'] ?? 'Producto',
+                'quantity' => $qty,
+                'size' => $size,
+                'price' => (int)($price * 100), // Uber espera centavos
+                'dimensions' => [
+                    'length' => (int)$length,
+                    'width' => (int)$width,
+                    'height' => (int)$height
+                ],
+                'weight' => (int)($weight * 1000) // Uber espera gramos
+            ];
+
+            $totalValue += ($price * $qty);
+        }
+
+        return [
+            'items' => $manifestItems,
+            'total_value' => (int)($totalValue * 100) // En centavos
+        ];
+    }
+
+    /**
+     * Calcular tamaño del item según peso y dimensiones
+     * Retorna: small, medium, large, xlarge
+     */
+    private function calculateItemSize(float $weight, float $length, float $width, float $height): string {
+        // Calcular volumen en cm³
+        $volume = $length * $width * $height;
+
+        // Clasificar por peso (kg) y volumen
+        if ($weight <= 2 && $volume <= 10000) { // 2kg, 10x10x10cm
+            return 'small';
+        } elseif ($weight <= 8 && $volume <= 125000) { // 8kg, 50x50x50cm
+            return 'medium';
+        } elseif ($weight <= 15 && $volume <= 343000) { // 15kg, 70x70x70cm
+            return 'large';
+        } else {
+            return 'xlarge';
+        }
+    }
+
+    /**
+     * Determinar tipo de vehículo recomendado según items
+     */
+    public function recommendVehicleType(array $items): string {
+        $totalWeight = 0;
+        $maxDimension = 0;
+
+        foreach ($items as $item) {
+            $totalWeight += (float)($item['weight_kg'] ?? 0) * (int)($item['quantity'] ?? 1);
+            $maxDimension = max($maxDimension,
+                (float)($item['size_cm_length'] ?? 0),
+                (float)($item['size_cm_width'] ?? 0),
+                (float)($item['size_cm_height'] ?? 0)
+            );
+        }
+
+        // Lógica de recomendación
+        if ($totalWeight <= 5 && $maxDimension <= 40) {
+            return 'moto'; // Paquetes pequeños
+        } elseif ($totalWeight <= 3 && $maxDimension <= 30) {
+            return 'bike'; // Muy pequeño y liviano
+        } elseif ($totalWeight > 25 || $maxDimension > 100) {
+            return 'suv'; // Paquetes grandes o pesados
+        } else {
+            return 'auto'; // Caso estándar
+        }
+    }
+
+    /**
      * Obtener cotización de envío
      */
     public function getQuote(array $params): array {
@@ -174,10 +276,12 @@ class UberDirectAPI {
                 'address' => 'Dirección completa',
                 'lat' => 9.9355,
                 'lng' => -84.0834
-            ]
+            ],
+            'vehicle_type' => 'auto', // opcional: auto, moto, bike, suv
+            'items' => [] // opcional: array de items con peso/dimensiones
         ];
         */
-        
+
         $payload = [
             'pickup' => [
                 'location' => [
@@ -194,6 +298,16 @@ class UberDirectAPI {
                 ]
             ]
         ];
+
+        // Agregar tipo de vehículo si se especifica
+        if (!empty($params['vehicle_type'])) {
+            $payload['vehicle_type'] = $this->mapVehicleType($params['vehicle_type']);
+        }
+
+        // Agregar manifest si hay items
+        if (!empty($params['items'])) {
+            $payload['manifest'] = $this->buildManifest($params['items']);
+        }
         
         $response = $this->request('POST', "/customers/{$this->customer_id}/delivery_quotes", $payload);
         
@@ -282,17 +396,14 @@ class UberDirectAPI {
             ]
         ];
         
-        // Agregar items si existen
+        // Agregar items si existen (usar manifest mejorado)
         if (!empty($params['items'])) {
-            $payload['manifest'] = [
-                'items' => array_map(function($item) {
-                    return [
-                        'name' => $item['title'] ?? '',
-                        'quantity' => (int)($item['quantity'] ?? 1),
-                        'size' => 'small' // small, medium, large, xlarge
-                    ];
-                }, $params['items'])
-            ];
+            $payload['manifest'] = $this->buildManifest($params['items']);
+        }
+
+        // Agregar tipo de vehículo si se especifica
+        if (!empty($params['vehicle_type'])) {
+            $payload['vehicle_type'] = $this->mapVehicleType($params['vehicle_type']);
         }
         
         $response = $this->request('POST', "/customers/{$this->customer_id}/deliveries", $payload);
@@ -337,11 +448,103 @@ class UberDirectAPI {
     }
     
     /**
-     * Geocodificar dirección (obtener lat/lng)
+     * Geocodificar dirección (obtener lat/lng) usando Google Maps API
+     *
+     * IMPORTANTE: Configurar GOOGLE_MAPS_API_KEY en config.php o .env
      */
-    public function geocodeAddress(string $address): ?array {
-        // Usar Google Geocoding API o similar
-        // Por ahora retornar null para implementación manual
+    public function geocodeAddress(string $address, string $country = 'CR'): ?array {
+        // Verificar si hay API key configurada
+        $apiKey = defined('GOOGLE_MAPS_API_KEY') ? GOOGLE_MAPS_API_KEY : '';
+
+        if (empty($apiKey)) {
+            // Si no hay API key, retornar coordenadas por defecto de San José, CR
+            error_log("Google Maps API key no configurada. Usando coordenadas por defecto.");
+            return [
+                'lat' => 9.9281,
+                'lng' => -84.0907,
+                'formatted_address' => $address,
+                'warning' => 'Coordenadas aproximadas - configurar Google Maps API key'
+            ];
+        }
+
+        $url = 'https://maps.googleapis.com/maps/api/geocode/json?' . http_build_query([
+            'address' => $address,
+            'components' => "country:$country",
+            'key' => $apiKey
+        ]);
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            error_log("Google Maps API error: HTTP $httpCode");
+            return null;
+        }
+
+        $data = json_decode($response, true);
+
+        if ($data['status'] === 'OK' && !empty($data['results'][0])) {
+            $result = $data['results'][0];
+            return [
+                'lat' => $result['geometry']['location']['lat'],
+                'lng' => $result['geometry']['location']['lng'],
+                'formatted_address' => $result['formatted_address'],
+                'place_id' => $result['place_id'] ?? null
+            ];
+        }
+
+        error_log("Google Maps geocoding failed: " . ($data['status'] ?? 'unknown'));
+        return null;
+    }
+
+    /**
+     * Obtener distancia y tiempo estimado entre dos puntos
+     */
+    public function getDistance(array $origin, array $destination): ?array {
+        $apiKey = defined('GOOGLE_MAPS_API_KEY') ? GOOGLE_MAPS_API_KEY : '';
+
+        if (empty($apiKey)) {
+            return null;
+        }
+
+        $url = 'https://maps.googleapis.com/maps/api/distancematrix/json?' . http_build_query([
+            'origins' => $origin['lat'] . ',' . $origin['lng'],
+            'destinations' => $destination['lat'] . ',' . $destination['lng'],
+            'mode' => 'driving',
+            'key' => $apiKey
+        ]);
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10
+        ]);
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        $data = json_decode($response, true);
+
+        if ($data['status'] === 'OK' && !empty($data['rows'][0]['elements'][0])) {
+            $element = $data['rows'][0]['elements'][0];
+
+            if ($element['status'] === 'OK') {
+                return [
+                    'distance_meters' => $element['distance']['value'],
+                    'distance_text' => $element['distance']['text'],
+                    'duration_seconds' => $element['duration']['value'],
+                    'duration_text' => $element['duration']['text']
+                ];
+            }
+        }
+
         return null;
     }
 }
