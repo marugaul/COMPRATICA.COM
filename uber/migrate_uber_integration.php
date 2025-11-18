@@ -113,19 +113,124 @@ try {
     // ==================================================
     echo "\n[4/6] Creando tablas de Uber...\n";
 
-    // Leer el script SQL de creación de tablas
-    $sqlFile = __DIR__ . '/create_uber_tables.sql';
-    if (file_exists($sqlFile)) {
-        $sql = file_get_contents($sqlFile);
+    // Crear tabla sale_pickup_locations
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sale_pickup_locations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sale_id INTEGER NOT NULL,
+        affiliate_id INTEGER NOT NULL,
+        address TEXT NOT NULL,
+        address_line2 TEXT,
+        city TEXT NOT NULL,
+        state TEXT NOT NULL,
+        country TEXT DEFAULT 'Costa Rica',
+        postal_code TEXT,
+        lat REAL,
+        lng REAL,
+        contact_name TEXT NOT NULL,
+        contact_phone TEXT NOT NULL,
+        pickup_instructions TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
+        FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE CASCADE
+    )");
+    echo "  ✓ Tabla sale_pickup_locations creada\n";
 
-        // Ejecutar el script SQL (ya tiene CREATE TABLE IF NOT EXISTS)
-        $pdo->exec($sql);
-        echo "  ✓ Tablas de Uber creadas/verificadas\n";
-        echo "    - uber_config\n";
-        echo "    - uber_deliveries\n";
-        echo "    - sale_pickup_locations\n";
-    } else {
-        throw new Exception("Archivo create_uber_tables.sql no encontrado");
+    // Crear tabla uber_deliveries
+    $pdo->exec("CREATE TABLE IF NOT EXISTS uber_deliveries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER NOT NULL,
+        order_number TEXT NOT NULL,
+        sale_id INTEGER NOT NULL,
+        affiliate_id INTEGER NOT NULL,
+        pickup_location_id INTEGER,
+        pickup_address TEXT NOT NULL,
+        pickup_address_line2 TEXT,
+        pickup_city TEXT,
+        pickup_state TEXT,
+        pickup_postal_code TEXT,
+        pickup_lat REAL,
+        pickup_lng REAL,
+        pickup_contact_name TEXT,
+        pickup_contact_phone TEXT,
+        pickup_instructions TEXT,
+        delivery_address TEXT NOT NULL,
+        delivery_address_line2 TEXT,
+        delivery_city TEXT,
+        delivery_state TEXT,
+        delivery_postal_code TEXT,
+        delivery_lat REAL,
+        delivery_lng REAL,
+        delivery_contact_name TEXT,
+        delivery_contact_phone TEXT,
+        delivery_instructions TEXT,
+        uber_quote_id TEXT,
+        uber_delivery_id TEXT,
+        uber_tracking_url TEXT,
+        uber_courier_name TEXT,
+        uber_courier_phone TEXT,
+        uber_courier_img TEXT,
+        uber_courier_vehicle TEXT,
+        uber_courier_license_plate TEXT,
+        uber_base_cost REAL DEFAULT 0,
+        uber_currency TEXT DEFAULT 'CRC',
+        platform_commission REAL DEFAULT 0,
+        total_shipping_cost REAL DEFAULT 0,
+        commission_percentage REAL DEFAULT 10,
+        status TEXT DEFAULT 'pending',
+        quoted_at TEXT,
+        confirmed_at TEXT,
+        scheduled_at TEXT,
+        courier_assigned_at TEXT,
+        estimated_pickup_time TEXT,
+        actual_pickup_time TEXT,
+        estimated_delivery_time TEXT,
+        actual_delivery_time TEXT,
+        delivery_notes TEXT,
+        cancellation_reason TEXT,
+        failure_reason TEXT,
+        uber_quote_response TEXT,
+        uber_delivery_response TEXT,
+        uber_webhook_data TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+        FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
+        FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE CASCADE,
+        FOREIGN KEY (pickup_location_id) REFERENCES sale_pickup_locations(id) ON DELETE SET NULL
+    )");
+    echo "  ✓ Tabla uber_deliveries creada\n";
+
+    // Crear tabla uber_config
+    $pdo->exec("CREATE TABLE IF NOT EXISTS uber_config (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        affiliate_id INTEGER,
+        client_id TEXT,
+        client_secret TEXT,
+        customer_id TEXT,
+        is_sandbox INTEGER DEFAULT 1,
+        commission_percentage REAL DEFAULT 10.0,
+        access_token TEXT,
+        token_expires_at TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE CASCADE
+    )");
+    echo "  ✓ Tabla uber_config creada\n";
+
+    // Crear índices
+    try {
+        $pdo->exec("CREATE INDEX IF NOT EXISTS idx_uber_deliveries_order ON uber_deliveries(order_id)");
+        $pdo->exec("CREATE INDEX IF NOT EXISTS idx_uber_deliveries_sale ON uber_deliveries(sale_id)");
+        $pdo->exec("CREATE INDEX IF NOT EXISTS idx_uber_deliveries_status ON uber_deliveries(status)");
+        $pdo->exec("CREATE INDEX IF NOT EXISTS idx_uber_deliveries_affiliate ON uber_deliveries(affiliate_id)");
+        $pdo->exec("CREATE INDEX IF NOT EXISTS idx_pickup_locations_sale ON sale_pickup_locations(sale_id)");
+        $pdo->exec("CREATE INDEX IF NOT EXISTS idx_pickup_locations_active ON sale_pickup_locations(is_active)");
+        echo "  ✓ Índices creados\n";
+    } catch (Exception $e) {
+        echo "  ⚠️  Algunos índices no se pudieron crear (no crítico)\n";
     }
 
     // ==================================================
