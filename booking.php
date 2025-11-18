@@ -21,14 +21,29 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-$isLoggedIn = isset($_SESSION['uid']) && $_SESSION['uid'] > 0;
-$userName = $_SESSION['name'] ?? '';
-$userEmail = $_SESSION['email'] ?? '';
-
 $pdo = db();
 
-// Obtener servicio
+// Obtener servicio primero para tenerlo en la URL de redirect
 $service_id = isset($_GET['service_id']) ? (int)$_GET['service_id'] : 0;
+
+// Requiere login para hacer reservas
+$isLoggedIn = isset($_SESSION['uid']) && $_SESSION['uid'] > 0;
+if (!$isLoggedIn) {
+    // Redirigir al login y volver después
+    $currentUrl = urlencode($_SERVER['REQUEST_URI']);
+    header("Location: login.php?redirect=$currentUrl");
+    exit;
+}
+
+// Obtener información del usuario logueado
+$userId = (int)$_SESSION['uid'];
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
+$stmt->execute([$userId]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$userName = $user['name'] ?? $_SESSION['name'] ?? '';
+$userEmail = $user['email'] ?? $_SESSION['email'] ?? '';
+$userPhone = $user['phone'] ?? '';
 
 $stmt = $pdo->prepare("
     SELECT
@@ -479,6 +494,7 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
                         type="tel"
                         name="customer_phone"
                         class="form-input"
+                        value="<?php echo htmlspecialchars($userPhone); ?>"
                         placeholder="8888-8888"
                         required
                     >
