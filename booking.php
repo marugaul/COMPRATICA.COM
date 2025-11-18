@@ -580,18 +580,49 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
             </div>
 
             <?php
-            // Verificar si es un servicio de turismo (shuttle al aeropuerto)
-            $isTourismService = ($service['category_name'] === 'Turismo');
-            $isAirportShuttle = (strpos(strtolower($service['title']), 'aeropuerto') !== false ||
-                                 strpos(strtolower($service['title']), 'shuttle') !== false);
+            // Verificar si es un servicio de shuttle
+            $isShuttleService = ($service['category_name'] === 'Shuttle Aeropuerto');
 
-            if ($isTourismService && $isAirportShuttle):
+            if ($isShuttleService):
             ?>
+            <!-- ORIGEN -->
             <div class="form-group">
                 <label class="form-label">
-                    Aeropuerto de Destino <span class="required">*</span>
+                    Tipo de Origen <span class="required">*</span>
                 </label>
-                <select name="destination" id="destination" class="form-select" required>
+                <select id="origin-type" class="form-select" required>
+                    <option value="address">Dirección</option>
+                    <option value="airport">Aeropuerto</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="origin-address-group">
+                <label class="form-label">
+                    Dirección de Origen <span class="required">*</span>
+                </label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <textarea
+                        id="origin-address"
+                        class="form-textarea"
+                        rows="2"
+                        placeholder="Ej: San José, Escazú, Plaza del Sol"
+                        style="flex: 1;"
+                    ></textarea>
+                    <button type="button" id="geolocation-btn" class="btn" style="background: #4caf50; color: white; min-width: 140px;">
+                        <i class="fas fa-map-marker-alt"></i>
+                        AQUÍ ESTOY
+                    </button>
+                </div>
+                <small style="color: var(--gray-500); font-size: 0.875rem;">
+                    <i class="fas fa-info-circle"></i> Click en "AQUÍ ESTOY" para usar tu ubicación actual
+                </small>
+            </div>
+
+            <div class="form-group" id="origin-airport-group" style="display: none;">
+                <label class="form-label">
+                    Aeropuerto de Origen <span class="required">*</span>
+                </label>
+                <select id="origin-airport" class="form-select">
                     <option value="">Seleccione un aeropuerto</option>
                     <option value="SJO">Aeropuerto Juan Santamaría (SJO) - Alajuela</option>
                     <option value="LIR">Aeropuerto Daniel Oduber (LIR) - Liberia</option>
@@ -599,6 +630,43 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
                     <option value="SYQ">Aeropuerto Tobías Bolaños (SYQ) - Pavas</option>
                     <option value="TOO">Aeropuerto de San Vito (TOO)</option>
                 </select>
+            </div>
+
+            <!-- DESTINO -->
+            <div class="form-group">
+                <label class="form-label">
+                    Tipo de Destino <span class="required">*</span>
+                </label>
+                <select id="dest-type" class="form-select" required>
+                    <option value="airport">Aeropuerto</option>
+                    <option value="address">Dirección</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="dest-airport-group">
+                <label class="form-label">
+                    Aeropuerto de Destino <span class="required">*</span>
+                </label>
+                <select id="dest-airport" class="form-select">
+                    <option value="">Seleccione un aeropuerto</option>
+                    <option value="SJO">Aeropuerto Juan Santamaría (SJO) - Alajuela</option>
+                    <option value="LIR">Aeropuerto Daniel Oduber (LIR) - Liberia</option>
+                    <option value="LIO">Aeropuerto de Limón (LIO)</option>
+                    <option value="SYQ">Aeropuerto Tobías Bolaños (SYQ) - Pavas</option>
+                    <option value="TOO">Aeropuerto de San Vito (TOO)</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="dest-address-group" style="display: none;">
+                <label class="form-label">
+                    Dirección de Destino <span class="required">*</span>
+                </label>
+                <textarea
+                    id="dest-address"
+                    class="form-textarea"
+                    rows="2"
+                    placeholder="Ej: Heredia, Centro, frente al Parque Central"
+                ></textarea>
             </div>
 
             <button type="button" id="calculate-quote-btn" class="btn btn-primary" style="margin-top: 1rem;">
@@ -719,23 +787,118 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
 </div>
 
 <script>
-// Cotización automática para servicios de turismo
+// Sistema de cotización para shuttles
 document.addEventListener('DOMContentLoaded', function() {
+    // Elementos del formulario
+    const originTypeSelect = document.getElementById('origin-type');
+    const destTypeSelect = document.getElementById('dest-type');
+    const originAddressGroup = document.getElementById('origin-address-group');
+    const originAirportGroup = document.getElementById('origin-airport-group');
+    const destAddressGroup = document.getElementById('dest-address-group');
+    const destAirportGroup = document.getElementById('dest-airport-group');
+    const geolocationBtn = document.getElementById('geolocation-btn');
     const calculateBtn = document.getElementById('calculate-quote-btn');
 
+    // Manejar cambio de tipo de origen
+    if (originTypeSelect) {
+        originTypeSelect.addEventListener('change', function() {
+            if (this.value === 'address') {
+                originAddressGroup.style.display = 'block';
+                originAirportGroup.style.display = 'none';
+            } else {
+                originAddressGroup.style.display = 'none';
+                originAirportGroup.style.display = 'block';
+            }
+        });
+    }
+
+    // Manejar cambio de tipo de destino
+    if (destTypeSelect) {
+        destTypeSelect.addEventListener('change', function() {
+            if (this.value === 'address') {
+                destAddressGroup.style.display = 'block';
+                destAirportGroup.style.display = 'none';
+            } else {
+                destAddressGroup.style.display = 'none';
+                destAirportGroup.style.display = 'block';
+            }
+        });
+    }
+
+    // Geolocalización - Botón "AQUÍ ESTOY"
+    if (geolocationBtn) {
+        geolocationBtn.addEventListener('click', function() {
+            if (!navigator.geolocation) {
+                alert('Tu navegador no soporta geolocalización');
+                return;
+            }
+
+            // Mostrar loading
+            geolocationBtn.disabled = true;
+            geolocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ubicando...';
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+
+                    // Guardar coordenadas en el textarea
+                    document.getElementById('origin-address').value = lat + ',' + lon;
+
+                    // Restaurar botón
+                    geolocationBtn.disabled = false;
+                    geolocationBtn.innerHTML = '<i class="fas fa-check"></i> Ubicado!';
+
+                    setTimeout(function() {
+                        geolocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> AQUÍ ESTOY';
+                    }, 2000);
+                },
+                function(error) {
+                    console.error('Error de geolocalización:', error);
+                    alert('No se pudo obtener tu ubicación. Por favor verifica los permisos del navegador.');
+                    geolocationBtn.disabled = false;
+                    geolocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> AQUÍ ESTOY';
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        });
+    }
+
+    // Calcular cotización
     if (calculateBtn) {
         calculateBtn.addEventListener('click', async function() {
-            const pickupAddress = document.getElementById('pickup_address').value.trim();
-            const destination = document.getElementById('destination').value;
             const serviceId = <?php echo $service_id; ?>;
+            const originType = document.getElementById('origin-type').value;
+            const destType = document.getElementById('dest-type').value;
 
-            if (!pickupAddress) {
-                alert('Por favor ingresa la dirección de recogida');
+            let origin, destination;
+
+            // Obtener origen
+            if (originType === 'address') {
+                origin = document.getElementById('origin-address').value.trim();
+            } else {
+                origin = document.getElementById('origin-airport').value;
+            }
+
+            // Obtener destino
+            if (destType === 'address') {
+                destination = document.getElementById('dest-address').value.trim();
+            } else {
+                destination = document.getElementById('dest-airport').value;
+            }
+
+            // Validar
+            if (!origin) {
+                alert('Por favor ingresa el origen');
                 return;
             }
 
             if (!destination) {
-                alert('Por favor selecciona un aeropuerto de destino');
+                alert('Por favor ingresa el destino');
                 return;
             }
 
@@ -751,8 +914,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: JSON.stringify({
                         service_id: serviceId,
-                        pickup_address: pickupAddress,
-                        destination: destination
+                        origin: origin,
+                        origin_type: originType,
+                        destination: destination,
+                        destination_type: destType
                     })
                 });
 

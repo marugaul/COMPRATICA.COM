@@ -247,11 +247,13 @@ $servicesData = [
         'max_distance_km' => 250,
         'accepts_online_payment' => 1
     ],
+
+    // SHUTTLE AEROPUERTO
     [
-        'category_slug' => 'turismo',
+        'category_slug' => 'shuttle-aeropuerto',
         'title' => 'Shuttle al Aeropuerto - Juan Santamaría (SJO)',
         'slug' => 'shuttle-aeropuerto-sjo',
-        'description' => 'Servicio de transporte privado al Aeropuerto Juan Santamaría. Puntualidad garantizada, seguimiento de vuelos, vehículos cómodos y seguros. Recogida en cualquier punto de San José y alrededores. Precio se calcula automáticamente según distancia.',
+        'description' => 'Servicio de transporte privado al Aeropuerto Juan Santamaría. Puntualidad garantizada, seguimiento de vuelos, vehículos cómodos y seguros. Recogida en cualquier punto de San José y alrededores. Precio se calcula automáticamente según origen y destino.',
         'short_description' => 'Shuttle privado al Aeropuerto SJO',
         'cover_image' => 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600&h=400&fit=crop',
         'price_per_hour' => 25000,
@@ -261,10 +263,10 @@ $servicesData = [
         'accepts_online_payment' => 1
     ],
     [
-        'category_slug' => 'turismo',
+        'category_slug' => 'shuttle-aeropuerto',
         'title' => 'Shuttle al Aeropuerto - Daniel Oduber Liberia (LIR)',
         'slug' => 'shuttle-aeropuerto-lir',
-        'description' => 'Transporte seguro al Aeropuerto de Liberia. Ideal para playas de Guanacaste: Tamarindo, Flamingo, Conchal, Potrero. Vehículos modernos, conductores profesionales, monitoreo de vuelos. Cotización automática por distancia.',
+        'description' => 'Transporte seguro al Aeropuerto de Liberia. Ideal para playas de Guanacaste: Tamarindo, Flamingo, Conchal, Potrero. Vehículos modernos, conductores profesionales, monitoreo de vuelos. Cotización automática por origen y destino.',
         'short_description' => 'Shuttle privado al Aeropuerto Liberia',
         'cover_image' => 'https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?w=600&h=400&fit=crop',
         'price_per_hour' => 35000,

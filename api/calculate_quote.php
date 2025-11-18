@@ -19,11 +19,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = json_decode(file_get_contents('php://input'), true);
 
 $serviceId = (int)($input['service_id'] ?? 0);
-$pickupAddress = trim($input['pickup_address'] ?? '');
-$destination = trim($input['destination'] ?? ''); // Aeropuerto o destino
+$origin = trim($input['origin'] ?? '');
+$originType = trim($input['origin_type'] ?? 'address'); // 'address' o 'airport'
+$destination = trim($input['destination'] ?? '');
+$destType = trim($input['destination_type'] ?? 'address'); // 'address' o 'airport'
 
-if (!$serviceId || !$pickupAddress) {
-    echo json_encode(['ok' => false, 'error' => 'Servicio y dirección de recogida son requeridos']);
+if (!$serviceId || !$origin || !$destination) {
+    echo json_encode(['ok' => false, 'error' => 'Servicio, origen y destino son requeridos']);
     exit;
 }
 
@@ -66,32 +68,60 @@ try {
         'limon' => ['lat' => 10.0000, 'lon' => -83.0333]
     ];
 
-    // Determinar destino (coordenadas)
-    $destLat = null;
-    $destLon = null;
-    $destName = '';
+    // Función para obtener coordenadas según tipo
+    function getCoordinates($value, $type, $airports, $locations) {
+        if ($type === 'airport' && isset($airports[$value])) {
+            return [
+                'lat' => $airports[$value]['lat'],
+                'lon' => $airports[$value]['lon'],
+                'name' => $airports[$value]['name']
+            ];
+        } else {
+            // Es una dirección o coordenadas
+            // Si viene como "lat,lon" (desde geolocalización)
+            if (strpos($value, ',') !== false) {
+                $parts = explode(',', $value);
+                if (count($parts) === 2) {
+                    return [
+                        'lat' => (float)trim($parts[0]),
+                        'lon' => (float)trim($parts[1]),
+                        'name' => 'Ubicación actual'
+                    ];
+                }
+            }
 
-    if ($destination && isset($airports[$destination])) {
-        $destLat = $airports[$destination]['lat'];
-        $destLon = $airports[$destination]['lon'];
-        $destName = $airports[$destination]['name'];
-    }
+            // Detectar ciudad en la dirección
+            $addressLower = strtolower($value);
+            foreach ($locations as $city => $coords) {
+                if (strpos($addressLower, $city) !== false) {
+                    return [
+                        'lat' => $coords['lat'],
+                        'lon' => $coords['lon'],
+                        'name' => ucfirst($city)
+                    ];
+                }
+            }
 
-    // Calcular coordenadas aproximadas de la dirección de recogida
-    // (En producción usarías Google Maps Geocoding API)
-    // Por ahora usaremos San José como centro por defecto
-    $pickupLat = 9.9281;
-    $pickupLon = -84.0907;
-
-    // Detectar ciudad en la dirección
-    $addressLower = strtolower($pickupAddress);
-    foreach ($locations as $city => $coords) {
-        if (strpos($addressLower, $city) !== false) {
-            $pickupLat = $coords['lat'];
-            $pickupLon = $coords['lon'];
-            break;
+            // Por defecto: San José centro
+            return [
+                'lat' => 9.9281,
+                'lon' => -84.0907,
+                'name' => 'San José'
+            ];
         }
     }
+
+    // Obtener coordenadas de origen y destino
+    $originCoords = getCoordinates($origin, $originType, $airports, $locations);
+    $destCoords = getCoordinates($destination, $destType, $airports, $locations);
+
+    $originLat = $originCoords['lat'];
+    $originLon = $originCoords['lon'];
+    $originName = $originCoords['name'];
+
+    $destLat = $destCoords['lat'];
+    $destLon = $destCoords['lon'];
+    $destName = $destCoords['name'];
 
     // Calcular distancia usando fórmula de Haversine
     function calculateDistance($lat1, $lon1, $lat2, $lon2) {
@@ -110,13 +140,8 @@ try {
         return $distance;
     }
 
-    $distanceKm = 0;
-    if ($destLat && $destLon) {
-        $distanceKm = calculateDistance($pickupLat, $pickupLon, $destLat, $destLon);
-    } else {
-        // Si no hay destino específico, usar la distancia base del servicio
-        $distanceKm = 20; // Default 20km
-    }
+    // Calcular distancia entre origen y destino
+    $distanceKm = calculateDistance($originLat, $originLon, $destLat, $destLon);
 
     // Calcular precio basado en distancia
     // Precio base + (₡500 por km adicional sobre los primeros 10km)
@@ -134,9 +159,20 @@ try {
         'ok' => true,
         'service_id' => $serviceId,
         'service_title' => $service['title'],
-        'pickup_address' => $pickupAddress,
-        'destination' => $destination,
-        'destination_name' => $destName,
+        'origin' => [
+            'value' => $origin,
+            'type' => $originType,
+            'name' => $originName,
+            'lat' => $originLat,
+            'lon' => $originLon
+        ],
+        'destination' => [
+            'value' => $destination,
+            'type' => $destType,
+            'name' => $destName,
+            'lat' => $destLat,
+            'lon' => $destLon
+        ],
         'distance_km' => round($distanceKm, 1),
         'base_price' => $basePrice,
         'price_per_km' => $pricePerKm,
