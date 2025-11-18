@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Uber UI</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+    .shipping-option { border: 2px solid #ddd; padding: 15px; margin: 10px 0; cursor: pointer; border-radius: 8px; }
+    .shipping-option:hover { background: #f0f9ff; }
+    .shipping-option.selected { border-color: #3b82f6; background: #eff6ff; }
+    #delivery-address-section { display: none; margin-top: 20px; padding: 20px; background: #f0f9ff; border: 2px dashed #3b82f6; border-radius: 8px; }
+    #delivery-address-section.show { display: block; }
+    .form-group { margin: 15px 0; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+    button { padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test Integración Uber Direct</h1>
+
+  <h2>Método de Envío</h2>
+
+  <label class="shipping-option">
+    <input type="radio" name="shipping_method" value="pickup">
+    🏪 Retiro en persona
+  </label>
+
+  <label class="shipping-option" id="uber-option">
+    <input type="radio" name="shipping_method" value="uber">
+    🚗 Envío por Uber
+  </label>
+
+  <div id="delivery-address-section">
+    <h3>📍 Dirección de Entrega</h3>
+
+    <div class="form-group">
+      <label>Dirección completa *</label>
+      <input type="text" id="delivery_address" placeholder="Ej: Avenida Central, Calle 5, San José">
+      <button type="button" id="geolocate-btn" style="margin-top: 10px;">
+        🎯 Mi Ubicación
+      </button>
+      <input type="hidden" id="delivery_lat">
+      <input type="hidden" id="delivery_lng">
+    </div>
+
+    <div class="form-group">
+      <label>Ciudad *</label>
+      <input type="text" placeholder="San José">
+    </div>
+
+    <button type="button" id="calculate-uber-btn" style="margin-top: 20px;">
+      💰 Calcular Costo de Envío
+    </button>
+
+    <div id="result" style="margin-top: 20px; padding: 15px; background: #ecfdf5; border-radius: 8px; display: none;">
+      <!-- Resultado aquí -->
+    </div>
+  </div>
+
+  <script>
+    console.log('✅ JavaScript cargado correctamente');
+
+    // Shipping options
+    document.querySelectorAll('.shipping-option').forEach(function(opt) {
+      opt.addEventListener('click', function() {
+        document.querySelectorAll('.shipping-option').forEach(function(o) {
+          o.classList.remove('selected');
+        });
+        this.classList.add('selected');
+
+        var radio = this.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+
+        var deliverySection = document.getElementById('delivery-address-section');
+        if (radio && radio.value === 'uber') {
+          console.log('✅ Mostrando sección de Uber');
+          deliverySection.classList.add('show');
+        } else {
+          console.log('❌ Ocultando sección de Uber');
+          deliverySection.classList.remove('show');
+        }
+      });
+    });
+
+    // Geolocalización
+    var geoBtn = document.getElementById('geolocate-btn');
+    if (geoBtn) {
+      geoBtn.addEventListener('click', function() {
+        console.log('🎯 Botón de geolocalización clickeado');
+
+        if (!navigator.geolocation) {
+          alert('Tu navegador no soporta geolocalización');
+          return;
+        }
+
+        geoBtn.disabled = true;
+        geoBtn.textContent = '🔄 Ubicando...';
+
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            var lat = position.coords.latitude;
+            var lng = position.coords.longitude;
+
+            console.log('📍 Ubicación obtenida:', lat, lng);
+
+            document.getElementById('delivery_lat').value = lat;
+            document.getElementById('delivery_lng').value = lng;
+
+            // Reverse geocoding
+            fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&accept-language=es')
+              .then(function(response) { return response.json(); })
+              .then(function(data) {
+                if (data && data.display_name) {
+                  document.getElementById('delivery_address').value = data.display_name;
+                  console.log('✅ Dirección obtenida:', data.display_name);
+                }
+                geoBtn.disabled = false;
+                geoBtn.textContent = '🎯 Mi Ubicación';
+              });
+          },
+          function(error) {
+            console.error('❌ Error de geolocalización:', error);
+            alert('No se pudo obtener tu ubicación: ' + error.message);
+            geoBtn.disabled = false;
+            geoBtn.textContent = '🎯 Mi Ubicación';
+          }
+        );
+      });
+    }
+
+    // Calcular costo
+    document.getElementById('calculate-uber-btn').addEventListener('click', function() {
+      var lat = document.getElementById('delivery_lat').value;
+      var lng = document.getElementById('delivery_lng').value;
+
+      console.log('💰 Calculando costo para:', lat, lng);
+
+      var resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '<strong>✅ Cotización Simulada (Sandbox)</strong><br>' +
+        '🚗 Vehículo: Auto<br>' +
+        '📦 Distancia estimada: 5 km<br>' +
+        '💵 Costo Uber: ₡2,500<br>' +
+        '💸 Comisión (10%): ₡250<br>' +
+        '<strong>Total: ₡2,750</strong>';
+      resultDiv.style.display = 'block';
+    });
+
+    console.log('🎉 Todo inicializado correctamente');
+  </script>
+</body>
+</html>
