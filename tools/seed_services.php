@@ -231,6 +231,47 @@ $servicesData = [
         'requires_address' => 1,
         'max_distance_km' => 50,
         'accepts_online_payment' => 1
+    ],
+
+    // TURISMO
+    [
+        'category_slug' => 'turismo',
+        'title' => 'Tour de Playa - Día Completo',
+        'slug' => 'tour-playa-samara',
+        'description' => 'Día completo en Playa Sámara: transporte ida y vuelta desde San José o alrededores. Incluye vehículo con aire acondicionado, conductor bilingüe. Salida 6am, regreso 6pm. Ideal para familias y grupos.',
+        'short_description' => 'Transporte a Playa Sámara - Día completo',
+        'cover_image' => 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=600&h=400&fit=crop',
+        'price_per_hour' => 80000,
+        'duration_minutes' => 720,
+        'requires_address' => 1,
+        'max_distance_km' => 250,
+        'accepts_online_payment' => 1
+    ],
+    [
+        'category_slug' => 'turismo',
+        'title' => 'Shuttle al Aeropuerto - Juan Santamaría (SJO)',
+        'slug' => 'shuttle-aeropuerto-sjo',
+        'description' => 'Servicio de transporte privado al Aeropuerto Juan Santamaría. Puntualidad garantizada, seguimiento de vuelos, vehículos cómodos y seguros. Recogida en cualquier punto de San José y alrededores. Precio se calcula automáticamente según distancia.',
+        'short_description' => 'Shuttle privado al Aeropuerto SJO',
+        'cover_image' => 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600&h=400&fit=crop',
+        'price_per_hour' => 25000,
+        'duration_minutes' => 60,
+        'requires_address' => 1,
+        'max_distance_km' => 100,
+        'accepts_online_payment' => 1
+    ],
+    [
+        'category_slug' => 'turismo',
+        'title' => 'Shuttle al Aeropuerto - Daniel Oduber Liberia (LIR)',
+        'slug' => 'shuttle-aeropuerto-lir',
+        'description' => 'Transporte seguro al Aeropuerto de Liberia. Ideal para playas de Guanacaste: Tamarindo, Flamingo, Conchal, Potrero. Vehículos modernos, conductores profesionales, monitoreo de vuelos. Cotización automática por distancia.',
+        'short_description' => 'Shuttle privado al Aeropuerto Liberia',
+        'cover_image' => 'https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?w=600&h=400&fit=crop',
+        'price_per_hour' => 35000,
+        'duration_minutes' => 90,
+        'requires_address' => 1,
+        'max_distance_km' => 150,
+        'accepts_online_payment' => 1
     ]
 ];
 

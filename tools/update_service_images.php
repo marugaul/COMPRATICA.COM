@@ -21,7 +21,10 @@ $images = [
     'programacion-web' => 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&h=400&fit=crop',
     'flete-pickup' => 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=600&h=400&fit=crop',
     'mudanzas-completas' => 'https://images.unsplash.com/photo-1600518464441-9154a4dea21b?w=600&h=400&fit=crop',
-    'transporte-materiales' => 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=600&h=400&fit=crop'
+    'transporte-materiales' => 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=600&h=400&fit=crop',
+    'tour-playa-samara' => 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=600&h=400&fit=crop',
+    'shuttle-aeropuerto-sjo' => 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600&h=400&fit=crop',
+    'shuttle-aeropuerto-lir' => 'https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?w=600&h=400&fit=crop'
 ];
 
 $updated = 0;

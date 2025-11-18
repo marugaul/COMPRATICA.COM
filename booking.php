@@ -562,7 +562,7 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
         <?php if ($service['requires_address']): ?>
         <div class="form-card">
             <h2 class="form-section-title">
-                <i class="fas fa-map-marker-alt"></i> Dirección
+                <i class="fas fa-map-marker-alt"></i> Dirección de Recogida
             </h2>
 
             <div class="form-group">
@@ -571,12 +571,69 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
                 </label>
                 <textarea
                     name="address"
+                    id="pickup_address"
                     class="form-textarea"
                     rows="3"
-                    placeholder="Incluye señas específicas para facilitar la ubicación"
+                    placeholder="Incluye señas específicas para facilitar la ubicación (ej: San José, Escazú, Plaza del Sol)"
                     required
                 ></textarea>
             </div>
+
+            <?php
+            // Verificar si es un servicio de turismo (shuttle al aeropuerto)
+            $isTourismService = ($service['category_name'] === 'Turismo');
+            $isAirportShuttle = (strpos(strtolower($service['title']), 'aeropuerto') !== false ||
+                                 strpos(strtolower($service['title']), 'shuttle') !== false);
+
+            if ($isTourismService && $isAirportShuttle):
+            ?>
+            <div class="form-group">
+                <label class="form-label">
+                    Aeropuerto de Destino <span class="required">*</span>
+                </label>
+                <select name="destination" id="destination" class="form-select" required>
+                    <option value="">Seleccione un aeropuerto</option>
+                    <option value="SJO">Aeropuerto Juan Santamaría (SJO) - Alajuela</option>
+                    <option value="LIR">Aeropuerto Daniel Oduber (LIR) - Liberia</option>
+                    <option value="LIO">Aeropuerto de Limón (LIO)</option>
+                    <option value="SYQ">Aeropuerto Tobías Bolaños (SYQ) - Pavas</option>
+                    <option value="TOO">Aeropuerto de San Vito (TOO)</option>
+                </select>
+            </div>
+
+            <button type="button" id="calculate-quote-btn" class="btn btn-primary" style="margin-top: 1rem;">
+                <i class="fas fa-calculator"></i>
+                Calcular Cotización
+            </button>
+
+            <div id="quote-result" style="display: none; margin-top: 1.5rem; padding: 1.5rem; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #4caf50;">
+                <h3 style="margin: 0 0 1rem 0; color: #2e7d32;">
+                    <i class="fas fa-check-circle"></i> Cotización Calculada
+                </h3>
+                <div style="display: grid; gap: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><strong>Distancia:</strong></span>
+                        <span id="quote-distance">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><strong>Precio base:</strong></span>
+                        <span id="quote-base">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><strong>Kilómetros adicionales:</strong></span>
+                        <span id="quote-additional-km">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><strong>Costo adicional:</strong></span>
+                        <span id="quote-additional-cost">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 0.75rem; border-top: 2px solid #4caf50; font-size: 1.25rem;">
+                        <span><strong>Total:</strong></span>
+                        <span id="quote-total" style="color: #2e7d32; font-weight: 700;">-</span>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
 
@@ -631,10 +688,25 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
                 ></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-check"></i>
-                Confirmar Reserva
-            </button>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button type="submit" class="btn btn-primary" style="flex: 2; min-width: 200px;">
+                    <i class="fas fa-check"></i>
+                    Confirmar Reserva
+                </button>
+
+                <?php if (!empty($service['affiliate_phone'])): ?>
+                <a
+                    href="https://wa.me/506<?php echo preg_replace('/[^0-9]/', '', $service['affiliate_phone']); ?>?text=Hola%2C%20estoy%20interesado%20en%20el%20servicio%20<?php echo urlencode($service['title']); ?>"
+                    target="_blank"
+                    class="btn"
+                    style="flex: 1; min-width: 200px; background: #25d366; color: white; text-align: center; justify-content: center;"
+                    title="Contactar por WhatsApp"
+                >
+                    <i class="fab fa-whatsapp"></i>
+                    Consultar por WhatsApp
+                </a>
+                <?php endif; ?>
+            </div>
         </div>
     </form>
     <?php else: ?>
@@ -645,6 +717,75 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+// Cotización automática para servicios de turismo
+document.addEventListener('DOMContentLoaded', function() {
+    const calculateBtn = document.getElementById('calculate-quote-btn');
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', async function() {
+            const pickupAddress = document.getElementById('pickup_address').value.trim();
+            const destination = document.getElementById('destination').value;
+            const serviceId = <?php echo $service_id; ?>;
+
+            if (!pickupAddress) {
+                alert('Por favor ingresa la dirección de recogida');
+                return;
+            }
+
+            if (!destination) {
+                alert('Por favor selecciona un aeropuerto de destino');
+                return;
+            }
+
+            // Mostrar loading
+            calculateBtn.disabled = true;
+            calculateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculando...';
+
+            try {
+                const response = await fetch('/api/calculate_quote.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        service_id: serviceId,
+                        pickup_address: pickupAddress,
+                        destination: destination
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    // Mostrar resultado
+                    document.getElementById('quote-distance').textContent = data.breakdown.distance;
+                    document.getElementById('quote-base').textContent = data.breakdown.base;
+                    document.getElementById('quote-additional-km').textContent = data.breakdown.additional_km;
+                    document.getElementById('quote-additional-cost').textContent = data.breakdown.additional_cost;
+                    document.getElementById('quote-total').textContent = data.formatted_price;
+                    document.getElementById('quote-result').style.display = 'block';
+
+                    // Scroll suave al resultado
+                    document.getElementById('quote-result').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest'
+                    });
+                } else {
+                    alert('Error al calcular cotización: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al conectar con el servidor. Por favor intenta nuevamente.');
+            } finally {
+                calculateBtn.disabled = false;
+                calculateBtn.innerHTML = '<i class="fas fa-calculator"></i> Calcular Cotización';
+            }
+        });
+    }
+});
+</script>
 
 </body>
 </html>
