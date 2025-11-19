@@ -24,26 +24,42 @@ echo "<strong>Query:</strong><pre>" . htmlspecialchars($query) . "</pre>";
 
 $url = 'https://overpass-api.de/api/interpreter';
 
-$context = stream_context_create([
-    'http' => [
-        'method' => 'POST',
-        'header' => "Content-Type: application/x-www-form-urlencoded\r\n" .
-                   "User-Agent: CompraTica/1.0 (shuttle service)\r\n",
-        'content' => 'data=' . urlencode($query),
-        'timeout' => 120
-    ]
-]);
-
-echo "<p>Ejecutando query...</p>";
+echo "<p>Ejecutando query con cURL...</p>";
 $startTime = microtime(true);
 
-$response = @file_get_contents($url, false, $context);
+// Usar cURL (file_get_contents no funciona porque allow_url_fopen está deshabilitado)
+$ch = curl_init($url);
+
+curl_setopt_array($ch, [
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => 'data=' . urlencode($query),
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_TIMEOUT => 120,
+    CURLOPT_CONNECTTIMEOUT => 30,
+    CURLOPT_USERAGENT => 'CompraTica/1.0 (shuttle service)',
+    CURLOPT_HTTPHEADER => [
+        'Content-Type: application/x-www-form-urlencoded'
+    ],
+    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_FOLLOWLOCATION => true
+]);
+
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlError = curl_error($ch);
+curl_close($ch);
+
 $elapsed = round((microtime(true) - $startTime) * 1000);
 
 if ($response === false) {
-    echo "<p class='error'>❌ Error: No se pudo conectar a Overpass API</p>";
-    $error = error_get_last();
-    echo "<pre>" . print_r($error, true) . "</pre>";
+    echo "<p class='error'>❌ Error cURL: No se pudo conectar a Overpass API</p>";
+    echo "<pre>Error: " . htmlspecialchars($curlError) . "</pre>";
+    exit;
+}
+
+if ($httpCode !== 200) {
+    echo "<p class='error'>❌ Error HTTP: Código {$httpCode}</p>";
+    echo "<pre>" . htmlspecialchars(substr($response, 0, 500)) . "</pre>";
     exit;
 }
 

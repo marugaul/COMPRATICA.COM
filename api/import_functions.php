@@ -108,27 +108,37 @@ out skel qt;";
 function fetchFromOverpass($query) {
     $url = 'https://overpass-api.de/api/interpreter';
 
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'POST',
-            'header' => "Content-Type: application/x-www-form-urlencoded\r\n" .
-                       "User-Agent: CompraTica/1.0 (shuttle service)\r\n",
-            'content' => 'data=' . urlencode($query),
-            'timeout' => 120
-        ]
+    // Usar cURL en lugar de file_get_contents (cPanel tiene allow_url_fopen deshabilitado)
+    $ch = curl_init($url);
+
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => 'data=' . urlencode($query),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 120,
+        CURLOPT_CONNECTTIMEOUT => 30,
+        CURLOPT_USERAGENT => 'CompraTica/1.0 (shuttle service)',
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/x-www-form-urlencoded'
+        ],
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_FOLLOWLOCATION => true
     ]);
 
-    $response = @file_get_contents($url, false, $context);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
 
-    if ($response === false) {
-        error_log("Error fetching from Overpass API");
+    if ($response === false || $httpCode !== 200) {
+        error_log("Error fetching from Overpass API: HTTP $httpCode, Error: $error");
         return false;
     }
 
     $data = json_decode($response, true);
 
     if (!isset($data['elements'])) {
-        error_log("Invalid response from Overpass API");
+        error_log("Invalid response from Overpass API: " . substr($response, 0, 200));
         return false;
     }
 
