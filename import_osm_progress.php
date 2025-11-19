@@ -441,10 +441,56 @@
             }
         }
 
-        // Actualizar cada 2 segundos si ya hay una importación en curso
-        window.addEventListener('load', function() {
-            updateProgress();
-            updateInterval = setInterval(updateProgress, 2000);
+        // Al cargar, verificar estado y reanudar si es necesario
+        window.addEventListener('load', async function() {
+            // Obtener estado actual
+            const response = await fetch('api/import_status.php');
+            const data = await response.json();
+
+            if (data.success) {
+                if (data.status === 'running' && data.current_category_index < data.total_categories) {
+                    // Hay una importación en curso, reanudarla automáticamente
+                    addLog('🔄 Reanudando importación en curso...');
+
+                    const startBtn = document.getElementById('startBtn');
+                    const stopBtn = document.getElementById('stopBtn');
+
+                    isImporting = true;
+                    startTime = Date.now() - ((data.current_category_index / data.total_categories) * 60000); // Estimar tiempo
+                    startBtn.style.display = 'none';
+                    stopBtn.style.display = 'inline-block';
+
+                    // Iniciar actualización
+                    updateInterval = setInterval(updateProgress, 2000);
+                    updateProgress(); // Actualización inmediata
+
+                    // Continuar importación
+                    setTimeout(() => runImportBatch(), 1000);
+                } else if (data.status === 'paused') {
+                    // Está pausado, mostrar botón de reanudar
+                    addLog('⏸️ Importación pausada. Click en Reanudar para continuar.');
+                    document.getElementById('startBtn').innerHTML = '▶️ Reanudar Importación';
+                    document.getElementById('startBtn').style.display = 'inline-block';
+                    updateProgress();
+                } else if (data.status === 'completed') {
+                    // Ya completado
+                    addLog('✅ Importación previamente completada: ' + data.total_imported + ' lugares');
+                    document.getElementById('testBtn').style.display = 'inline-block';
+                    document.getElementById('startBtn').style.display = 'none';
+                    updateProgress();
+                } else {
+                    // Estado idle, listo para iniciar
+                    updateProgress();
+                }
+            } else {
+                // Error obteniendo estado, solo actualizar
+                updateProgress();
+            }
+
+            // Mantener actualización de progreso
+            if (!updateInterval) {
+                updateInterval = setInterval(updateProgress, 2000);
+            }
         });
     </script>
 </body>
