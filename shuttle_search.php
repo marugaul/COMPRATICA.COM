@@ -29,6 +29,9 @@ $userName = $_SESSION['name'] ?? 'Usuario';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Soporte de emojis para todas las plataformas -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --primary: #1a73e8;
@@ -54,6 +57,14 @@ $userName = $_SESSION['name'] ?? 'Usuario';
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        /* Clase para emojis - Asegura visibilidad en todas las plataformas */
+        .emoji {
+            font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+            font-style: normal;
+            font-weight: normal;
+            line-height: 1;
         }
 
         body {
@@ -278,7 +289,7 @@ $userName = $_SESSION['name'] ?? 'Usuario';
     </a>
 
     <div class="header">
-        <h1><i class="fas fa-shuttle-van"></i> Shuttle Pura Vida 🇨🇷</h1>
+        <h1><i class="fas fa-shuttle-van"></i> Shuttle Pura Vida <span class="emoji">🇨🇷</span></h1>
         <p>Transporte privado en Costa Rica - Aeropuertos, playas, hoteles y más</p>
     </div>
 
