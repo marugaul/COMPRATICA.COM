@@ -1,0 +1,37 @@
+🚀 Iniciando importación remota de lugares OSM...
+
+📋 Paso 1: Reseteando estado de importación...
+✅ Estado reseteado correctamente
+
+📋 Paso 2: Ejecutando importación por categorías...
+======================================================================
+
+PHP Warning:  Undefined array key "completed" in /home/user/COMPRATICA.COM/run_import_remote.php on line 68
+✓ Hoteles y Alojamientos: 2305 lugares importados (recibidos: 12994, sin nombre: 203, sin coords: 1173, errores: 0)
+   📊 Progreso total: 12.5% - Total acumulado: 2,305 lugares
+
+PHP Warning:  Undefined array key "completed" in /home/user/COMPRATICA.COM/run_import_remote.php on line 68
+✓ Bancos y Cajeros: 431 lugares importados (recibidos: 4849, sin nombre: 204, sin coords: 566, errores: 1)
+   📊 Progreso total: 37.5% - Total acumulado: 2,736 lugares
+
+PHP Warning:  Undefined array key "completed" in /home/user/COMPRATICA.COM/run_import_remote.php on line 68
+✓ Supermercados y Tiendas: 1899 lugares importados (recibidos: 23471, sin nombre: 460, sin coords: 2594, errores: 0)
+   📊 Progreso total: 62.5% - Total acumulado: 4,635 lugares
+
+PHP Warning:  Undefined array key "completed" in /home/user/COMPRATICA.COM/run_import_remote.php on line 68
+✓ Atracciones Turísticas: 523 lugares importados (recibidos: 2627, sin nombre: 294, sin coords: 89, errores: 0)
+   📊 Progreso total: 87.5% - Total acumulado: 5,158 lugares
+
+
+======================================================================
+🎉 ¡Importación completada!
+📊 Total de lugares importados: 5,158
+
+📋 Paso 3: Verificando estado final...
+✅ Estado: completed
+✅ Total importado: 5,158 lugares
+✅ Progreso: 100%
+
+======================================================================
+✅ Proceso completado - Base de datos cargada al 100%
+🔗 Puedes verificar en: https://compratica.com/import_osm_progress.php

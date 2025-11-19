@@ -16,7 +16,7 @@ try {
             status ENUM('idle', 'running', 'paused', 'completed', 'error') DEFAULT 'idle',
             current_category VARCHAR(100),
             current_category_index INT DEFAULT 0,
-            total_categories INT DEFAULT 8,
+            total_categories INT DEFAULT 24,
             total_imported INT DEFAULT 0,
             progress DECIMAL(5,2) DEFAULT 0,
             message TEXT,

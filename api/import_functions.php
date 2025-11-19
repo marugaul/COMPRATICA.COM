@@ -5,61 +5,198 @@
 
 function getImportCategories() {
     return [
+        // ALOJAMIENTO Y TURISMO
         [
             'name' => 'Hoteles y Alojamientos',
-            'query' => '["tourism"~"hotel|hostel|guest_house|motel|apartment"]',
+            'query' => '["tourism"~"hotel|hostel|guest_house|motel|apartment|chalet|camp_site"]',
             'type' => 'hotel',
-            'category' => 'hotels',
+            'category' => 'accommodation',
+            'priority' => 8
+        ],
+        [
+            'name' => 'Atracciones Turísticas',
+            'query' => '["tourism"~"attraction|museum|gallery|viewpoint|zoo|aquarium|theme_park|artwork"]',
+            'type' => 'attraction',
+            'category' => 'tourism',
+            'priority' => 7
+        ],
+
+        // COMIDA Y BEBIDA
+        [
+            'name' => 'Restaurantes y Cafés',
+            'query' => '["amenity"~"restaurant|cafe|fast_food|food_court|ice_cream|bistro"]',
+            'type' => 'restaurant',
+            'category' => 'food',
             'priority' => 7
         ],
         [
-            'name' => 'Restaurantes y Cafés',
-            'query' => '["amenity"~"restaurant|cafe|fast_food|bar|food_court"]',
-            'type' => 'restaurant',
-            'category' => 'restaurants',
+            'name' => 'Bares y Vida Nocturna',
+            'query' => '["amenity"~"bar|pub|nightclub|biergarten"]',
+            'type' => 'bar',
+            'category' => 'nightlife',
             'priority' => 6
         ],
+
+        // COMPRAS
+        [
+            'name' => 'Supermercados',
+            'query' => '["shop"~"supermarket|convenience|department_store|mall"]',
+            'type' => 'supermarket',
+            'category' => 'shopping',
+            'priority' => 7
+        ],
+        [
+            'name' => 'Tiendas Especializadas',
+            'query' => '["shop"~"clothes|shoes|electronics|furniture|bakery|butcher|florist|jewelry|books|sports"]',
+            'type' => 'shop',
+            'category' => 'shopping',
+            'priority' => 5
+        ],
+
+        // SERVICIOS FINANCIEROS
         [
             'name' => 'Bancos y Cajeros',
             'query' => '["amenity"~"bank|atm"]',
             'type' => 'bank',
-            'category' => 'banks',
-            'priority' => 6
+            'category' => 'finance',
+            'priority' => 7
         ],
+
+        // TRANSPORTE
         [
             'name' => 'Gasolineras',
             'query' => '["amenity"="fuel"]',
             'type' => 'gas_station',
-            'category' => 'gas_stations',
-            'priority' => 6
+            'category' => 'transport',
+            'priority' => 7
         ],
         [
-            'name' => 'Supermercados y Tiendas',
-            'query' => '["shop"~"supermarket|mall|department_store|convenience"]',
-            'type' => 'supermarket',
-            'category' => 'supermarkets',
-            'priority' => 6
+            'name' => 'Transporte Público',
+            'query' => '["amenity"~"bus_station|taxi"]',
+            'type' => 'public_transport',
+            'category' => 'transport',
+            'priority' => 7
         ],
         [
-            'name' => 'Hospitales y Farmacias',
-            'query' => '["amenity"~"hospital|clinic|pharmacy|doctors"]',
+            'name' => 'Aeropuertos y Terminales',
+            'query' => '["aeroway"~"aerodrome|terminal"]',
+            'type' => 'airport',
+            'category' => 'transport',
+            'priority' => 8
+        ],
+        [
+            'name' => 'Estacionamientos',
+            'query' => '["amenity"="parking"]',
+            'type' => 'parking',
+            'category' => 'transport',
+            'priority' => 5
+        ],
+
+        // SALUD
+        [
+            'name' => 'Hospitales y Clínicas',
+            'query' => '["amenity"~"hospital|clinic|doctors|dentist"]',
             'type' => 'hospital',
-            'category' => 'hospitals',
-            'priority' => 7
+            'category' => 'health',
+            'priority' => 8
         ],
         [
-            'name' => 'Atracciones Turísticas',
-            'query' => '["tourism"~"attraction|museum|viewpoint|zoo|theme_park"]',
-            'type' => 'attraction',
-            'category' => 'attractions',
+            'name' => 'Farmacias',
+            'query' => '["amenity"="pharmacy"]',
+            'type' => 'pharmacy',
+            'category' => 'health',
             'priority' => 7
         ],
+
+        // EDUCACIÓN
+        [
+            'name' => 'Escuelas y Colegios',
+            'query' => '["amenity"~"school|college|kindergarten"]',
+            'type' => 'school',
+            'category' => 'education',
+            'priority' => 6
+        ],
+        [
+            'name' => 'Universidades',
+            'query' => '["amenity"="university"]',
+            'type' => 'university',
+            'category' => 'education',
+            'priority' => 7
+        ],
+
+        // GOBIERNO Y SERVICIOS PÚBLICOS
+        [
+            'name' => 'Oficinas Gubernamentales',
+            'query' => '["amenity"~"townhall|courthouse|embassy|police|fire_station|post_office"]',
+            'type' => 'government',
+            'category' => 'public_service',
+            'priority' => 7
+        ],
+
+        // CULTURA Y ENTRETENIMIENTO
+        [
+            'name' => 'Cines y Teatros',
+            'query' => '["amenity"~"cinema|theatre|arts_centre"]',
+            'type' => 'entertainment',
+            'category' => 'culture',
+            'priority' => 6
+        ],
+        [
+            'name' => 'Bibliotecas',
+            'query' => '["amenity"="library"]',
+            'type' => 'library',
+            'category' => 'culture',
+            'priority' => 6
+        ],
+
+        // DEPORTES Y RECREACIÓN
+        [
+            'name' => 'Instalaciones Deportivas',
+            'query' => '["leisure"~"sports_centre|stadium|swimming_pool|fitness_centre|pitch"]',
+            'type' => 'sports',
+            'category' => 'recreation',
+            'priority' => 6
+        ],
+        [
+            'name' => 'Parques y Áreas Verdes',
+            'query' => '["leisure"~"park|garden|playground|nature_reserve"]',
+            'type' => 'park',
+            'category' => 'recreation',
+            'priority' => 6
+        ],
+        [
+            'name' => 'Playas',
+            'query' => '["natural"="beach"]',
+            'type' => 'beach',
+            'category' => 'recreation',
+            'priority' => 8
+        ],
+
+        // RELIGIÓN
+        [
+            'name' => 'Iglesias y Lugares de Culto',
+            'query' => '["amenity"="place_of_worship"]',
+            'type' => 'worship',
+            'category' => 'religion',
+            'priority' => 6
+        ],
+
+        // SERVICIOS PERSONALES
+        [
+            'name' => 'Servicios Personales',
+            'query' => '["shop"~"hairdresser|beauty|laundry"]',
+            'type' => 'personal_service',
+            'category' => 'services',
+            'priority' => 5
+        ],
+
+        // LUGARES (SIEMPRE AL FINAL - MÁS IMPORTANTE)
         [
             'name' => 'Ciudades y Poblaciones',
-            'query' => '["place"~"city|town|village|hamlet"]',
+            'query' => '["place"~"city|town|village|hamlet|suburb|neighbourhood"]',
             'type' => 'city',
-            'category' => 'cities',
-            'priority' => 8
+            'category' => 'places',
+            'priority' => 9
         ]
     ];
 }
