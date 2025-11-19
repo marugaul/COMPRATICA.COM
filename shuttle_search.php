@@ -177,14 +177,19 @@ $userName = $_SESSION['name'] ?? 'Usuario';
         }
 
         .autocomplete-item {
-            padding: 0.875rem 1rem;
+            padding: 1rem;
             cursor: pointer;
             transition: var(--transition);
             border-bottom: 1px solid var(--gray-100);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
         .autocomplete-item:hover {
-            background: var(--gray-50);
+            background: linear-gradient(90deg, var(--gray-50) 0%, var(--white) 100%);
+            border-left: 3px solid var(--primary);
+            padding-left: calc(1rem - 3px);
         }
 
         .autocomplete-item:last-child {
@@ -192,32 +197,41 @@ $userName = $_SESSION['name'] ?? 'Usuario';
         }
 
         .autocomplete-item .item-icon {
-            display: inline-block;
-            width: 32px;
-            height: 32px;
-            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: var(--white);
-            border-radius: 8px;
-            text-align: center;
-            line-height: 32px;
-            margin-right: 0.75rem;
-            font-size: 0.9rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(26, 115, 232, 0.2);
         }
 
         .autocomplete-item .item-text {
-            display: inline-block;
-            vertical-align: middle;
+            flex: 1;
+            min-width: 0;
         }
 
         .autocomplete-item .item-title {
             font-weight: 600;
             color: var(--gray-900);
             display: block;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .autocomplete-item .item-subtitle {
             font-size: 0.85rem;
             color: var(--gray-500);
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .form-row {
@@ -422,38 +436,95 @@ $userName = $_SESSION['name'] ?? 'Usuario';
 </div>
 
 <script>
-// Sistema de autocompletado para lugares de Costa Rica
+// Sistema de autocompletado expandido para lugares de Costa Rica - Estilo Kiwi
 const places = {
     airports: [
-        { id: 'SJO', type: 'airport', name: 'Aeropuerto Juan Santamaría (SJO)', city: 'Alajuela', icon: 'plane' },
-        { id: 'LIR', type: 'airport', name: 'Aeropuerto Daniel Oduber (LIR)', city: 'Liberia', icon: 'plane' },
-        { id: 'LIO', type: 'airport', name: 'Aeropuerto de Limón (LIO)', city: 'Limón', icon: 'plane' },
-        { id: 'SYQ', type: 'airport', name: 'Aeropuerto Tobías Bolaños (SYQ)', city: 'Pavas', icon: 'plane' },
-        { id: 'TOO', type: 'airport', name: 'Aeropuerto de San Vito (TOO)', city: 'San Vito', icon: 'plane' }
+        { id: 'SJO', type: 'airport', name: 'Aeropuerto Juan Santamaría (SJO)', city: 'Alajuela', province: 'Alajuela', icon: 'plane', priority: 10 },
+        { id: 'LIR', type: 'airport', name: 'Aeropuerto Daniel Oduber (LIR)', city: 'Liberia', province: 'Guanacaste', icon: 'plane', priority: 10 },
+        { id: 'LIO', type: 'airport', name: 'Aeropuerto de Limón (LIO)', city: 'Limón', province: 'Limón', icon: 'plane', priority: 9 },
+        { id: 'SYQ', type: 'airport', name: 'Aeropuerto Tobías Bolaños (SYQ)', city: 'Pavas', province: 'San José', icon: 'plane', priority: 8 },
+        { id: 'TOO', type: 'airport', name: 'Aeropuerto de San Vito (TOO)', city: 'San Vito', province: 'Puntarenas', icon: 'plane', priority: 7 }
     ],
     ports: [
-        { id: 'PCL', type: 'port', name: 'Puerto Caldera', city: 'Puntarenas', icon: 'ship' },
-        { id: 'PLI', type: 'port', name: 'Puerto Limón', city: 'Limón', icon: 'ship' },
-        { id: 'PGO', type: 'port', name: 'Golfo de Papagayo', city: 'Guanacaste', icon: 'ship' }
+        { id: 'PCL', type: 'port', name: 'Puerto Caldera', city: 'Puntarenas', province: 'Puntarenas', icon: 'ship', priority: 8 },
+        { id: 'PLI', type: 'port', name: 'Puerto Limón', city: 'Limón', province: 'Limón', icon: 'ship', priority: 8 },
+        { id: 'PGO', type: 'port', name: 'Golfo de Papagayo', city: 'Guanacaste', province: 'Guanacaste', icon: 'ship', priority: 7 }
     ],
     cities: [
-        { id: 'SJO-CITY', type: 'city', name: 'San José Centro', city: 'San José', icon: 'city' },
-        { id: 'ESC', type: 'city', name: 'Escazú', city: 'San José', icon: 'city' },
-        { id: 'SAN', type: 'city', name: 'Santa Ana', city: 'San José', icon: 'city' },
-        { id: 'HER', type: 'city', name: 'Heredia', city: 'Heredia', icon: 'city' },
-        { id: 'CAR', type: 'city', name: 'Cartago', city: 'Cartago', icon: 'city' },
-        { id: 'TAM', type: 'city', name: 'Tamarindo', city: 'Guanacaste', icon: 'city' },
-        { id: 'JAC', type: 'city', name: 'Jacó', city: 'Puntarenas', icon: 'city' },
-        { id: 'PUN', type: 'city', name: 'Puntarenas', city: 'Puntarenas', icon: 'city' },
-        { id: 'QUE', type: 'city', name: 'Quepos', city: 'Puntarenas', icon: 'city' },
-        { id: 'SAM', type: 'city', name: 'Sámara', city: 'Guanacaste', icon: 'city' },
-        { id: 'FLA', type: 'city', name: 'Flamingo', city: 'Guanacaste', icon: 'city' },
-        { id: 'CON', type: 'city', name: 'Conchal', city: 'Guanacaste', icon: 'city' }
+        // San José
+        { id: 'SJO-CITY', type: 'city', name: 'San José Centro', city: 'San José', province: 'San José', icon: 'city', priority: 10 },
+        { id: 'ESC', type: 'city', name: 'Escazú', city: 'Escazú', province: 'San José', icon: 'city', priority: 9 },
+        { id: 'SAN', type: 'city', name: 'Santa Ana', city: 'Santa Ana', province: 'San José', icon: 'city', priority: 9 },
+        { id: 'CUR', type: 'city', name: 'Curridabat', city: 'Curridabat', province: 'San José', icon: 'city', priority: 7 },
+        { id: 'MOR', type: 'city', name: 'Moravia', city: 'Moravia', province: 'San José', icon: 'city', priority: 6 },
+        { id: 'DES', type: 'city', name: 'Desamparados', city: 'Desamparados', province: 'San José', icon: 'city', priority: 7 },
+        // Alajuela
+        { id: 'ALA', type: 'city', name: 'Alajuela Centro', city: 'Alajuela', province: 'Alajuela', icon: 'city', priority: 8 },
+        { id: 'GRE', type: 'city', name: 'Grecia', city: 'Grecia', province: 'Alajuela', icon: 'city', priority: 6 },
+        { id: 'SAR', type: 'city', name: 'Sarchí', city: 'Sarchí', province: 'Alajuela', icon: 'city', priority: 6 },
+        { id: 'LFO', type: 'city', name: 'La Fortuna', city: 'San Carlos', province: 'Alajuela', icon: 'city', priority: 9 },
+        // Heredia
+        { id: 'HER', type: 'city', name: 'Heredia Centro', city: 'Heredia', province: 'Heredia', icon: 'city', priority: 8 },
+        { id: 'SBA', type: 'city', name: 'San Pablo de Heredia', city: 'San Pablo', province: 'Heredia', icon: 'city', priority: 6 },
+        { id: 'SAR2', type: 'city', name: 'Sarapiquí', city: 'Sarapiquí', province: 'Heredia', icon: 'city', priority: 6 },
+        // Cartago
+        { id: 'CAR', type: 'city', name: 'Cartago Centro', city: 'Cartago', province: 'Cartago', icon: 'city', priority: 8 },
+        { id: 'TUR', type: 'city', name: 'Turrialba', city: 'Turrialba', province: 'Cartago', icon: 'city', priority: 7 },
+        // Guanacaste
+        { id: 'LIB', type: 'city', name: 'Liberia', city: 'Liberia', province: 'Guanacaste', icon: 'city', priority: 9 },
+        { id: 'TAM', type: 'city', name: 'Tamarindo', city: 'Santa Cruz', province: 'Guanacaste', icon: 'city', priority: 9 },
+        { id: 'SAM', type: 'city', name: 'Sámara', city: 'Nicoya', province: 'Guanacaste', icon: 'city', priority: 8 },
+        { id: 'FLA', type: 'city', name: 'Flamingo', city: 'Santa Cruz', province: 'Guanacaste', icon: 'city', priority: 8 },
+        { id: 'CON', type: 'city', name: 'Playa Conchal', city: 'Santa Cruz', province: 'Guanacaste', icon: 'city', priority: 8 },
+        { id: 'COC', type: 'city', name: 'Coco (Playas del Coco)', city: 'Liberia', province: 'Guanacaste', icon: 'city', priority: 8 },
+        { id: 'NOS', type: 'city', name: 'Nosara', city: 'Nicoya', province: 'Guanacaste', icon: 'city', priority: 8 },
+        // Puntarenas
+        { id: 'PUN', type: 'city', name: 'Puntarenas Centro', city: 'Puntarenas', province: 'Puntarenas', icon: 'city', priority: 8 },
+        { id: 'JAC', type: 'city', name: 'Jacó', city: 'Garabito', province: 'Puntarenas', icon: 'city', priority: 9 },
+        { id: 'QUE', type: 'city', name: 'Quepos', city: 'Quepos', province: 'Puntarenas', icon: 'city', priority: 9 },
+        { id: 'MAN', type: 'city', name: 'Manuel Antonio', city: 'Quepos', province: 'Puntarenas', icon: 'city', priority: 9 },
+        { id: 'MON', type: 'city', name: 'Monteverde', city: 'Puntarenas', province: 'Puntarenas', icon: 'city', priority: 8 },
+        { id: 'UVI', type: 'city', name: 'Uvita', city: 'Osa', province: 'Puntarenas', icon: 'city', priority: 7 },
+        { id: 'DOM', type: 'city', name: 'Dominical', city: 'Osa', province: 'Puntarenas', icon: 'city', priority: 7 },
+        // Limón
+        { id: 'LIM', type: 'city', name: 'Limón Centro', city: 'Limón', province: 'Limón', icon: 'city', priority: 7 },
+        { id: 'CAH', type: 'city', name: 'Cahuita', city: 'Talamanca', province: 'Limón', icon: 'city', priority: 8 },
+        { id: 'PVI', type: 'city', name: 'Puerto Viejo', city: 'Talamanca', province: 'Limón', icon: 'city', priority: 9 },
+        { id: 'TOR', type: 'city', name: 'Tortuguero', city: 'Pococi', province: 'Limón', icon: 'city', priority: 7 }
+    ],
+    beaches: [
+        { id: 'TAM-BEACH', type: 'beach', name: 'Playa Tamarindo', city: 'Santa Cruz', province: 'Guanacaste', icon: 'umbrella-beach', priority: 9 },
+        { id: 'HER-BEACH', type: 'beach', name: 'Playa Hermosa', city: 'Liberia', province: 'Guanacaste', icon: 'umbrella-beach', priority: 8 },
+        { id: 'CON-BEACH', type: 'beach', name: 'Playa Conchal', city: 'Santa Cruz', province: 'Guanacaste', icon: 'umbrella-beach', priority: 8 },
+        { id: 'FLA-BEACH', type: 'beach', name: 'Playa Flamingo', city: 'Santa Cruz', province: 'Guanacaste', icon: 'umbrella-beach', priority: 8 },
+        { id: 'POT-BEACH', type: 'beach', name: 'Playa Potrero', city: 'Santa Cruz', province: 'Guanacaste', icon: 'umbrella-beach', priority: 7 },
+        { id: 'GRA-BEACH', type: 'beach', name: 'Playa Grande', city: 'Santa Cruz', province: 'Guanacaste', icon: 'umbrella-beach', priority: 8 },
+        { id: 'NOS-BEACH', type: 'beach', name: 'Playa Nosara', city: 'Nicoya', province: 'Guanacaste', icon: 'umbrella-beach', priority: 8 },
+        { id: 'SAM-BEACH', type: 'beach', name: 'Playa Sámara', city: 'Nicoya', province: 'Guanacaste', icon: 'umbrella-beach', priority: 8 },
+        { id: 'JAC-BEACH', type: 'beach', name: 'Playa Jacó', city: 'Garabito', province: 'Puntarenas', icon: 'umbrella-beach', priority: 9 },
+        { id: 'HER2-BEACH', type: 'beach', name: 'Playa Herradura', city: 'Garabito', province: 'Puntarenas', icon: 'umbrella-beach', priority: 7 },
+        { id: 'ESM-BEACH', type: 'beach', name: 'Playa Espadilla (Manuel Antonio)', city: 'Quepos', province: 'Puntarenas', icon: 'umbrella-beach', priority: 9 },
+        { id: 'CAR-BEACH', type: 'beach', name: 'Playa Carrillo', city: 'Nicoya', province: 'Guanacaste', icon: 'umbrella-beach', priority: 7 },
+        { id: 'CAH-BEACH', type: 'beach', name: 'Playa Cahuita', city: 'Talamanca', province: 'Limón', icon: 'umbrella-beach', priority: 8 },
+        { id: 'PVI-BEACH', type: 'beach', name: 'Playa Puerto Viejo', city: 'Talamanca', province: 'Limón', icon: 'umbrella-beach', priority: 9 },
+        { id: 'MAN-BEACH', type: 'beach', name: 'Playa Manzanillo', city: 'Talamanca', province: 'Limón', icon: 'umbrella-beach', priority: 7 }
+    ],
+    parks: [
+        { id: 'PNM-ANT', type: 'park', name: 'Parque Nacional Manuel Antonio', city: 'Quepos', province: 'Puntarenas', icon: 'tree', priority: 9 },
+        { id: 'PNV-ARE', type: 'park', name: 'Parque Nacional Volcán Arenal', city: 'San Carlos', province: 'Alajuela', icon: 'mountain', priority: 9 },
+        { id: 'PNV-POA', type: 'park', name: 'Parque Nacional Volcán Poás', city: 'Alajuela', province: 'Alajuela', icon: 'mountain', priority: 8 },
+        { id: 'PNV-IRA', type: 'park', name: 'Parque Nacional Volcán Irazú', city: 'Cartago', province: 'Cartago', icon: 'mountain', priority: 8 },
+        { id: 'PNT-TOR', type: 'park', name: 'Parque Nacional Tortuguero', city: 'Pococi', province: 'Limón', icon: 'tree', priority: 8 },
+        { id: 'PNM-NUB', type: 'park', name: 'Reserva Monteverde', city: 'Monteverde', province: 'Puntarenas', icon: 'tree', priority: 9 },
+        { id: 'PNC-COR', type: 'park', name: 'Parque Nacional Corcovado', city: 'Osa', province: 'Puntarenas', icon: 'tree', priority: 7 },
+        { id: 'PNR-SIL', type: 'park', name: 'Parque Nacional Rincón de la Vieja', city: 'Liberia', province: 'Guanacaste', icon: 'mountain', priority: 7 }
     ]
 };
 
 // Combinar todos los lugares
-const allPlaces = [...places.airports, ...places.ports, ...places.cities];
+const allPlaces = [...places.airports, ...places.ports, ...places.cities, ...places.beaches, ...places.parks];
+
+let searchTimeout = null;
 
 function setupAutocomplete(inputId, dropdownId, typeHiddenId, idHiddenId) {
     const input = document.getElementById(inputId);
@@ -464,44 +535,82 @@ function setupAutocomplete(inputId, dropdownId, typeHiddenId, idHiddenId) {
     input.addEventListener('input', function() {
         const query = this.value.toLowerCase().trim();
 
+        // Limpiar timeout anterior
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+
         if (query.length < 2) {
             dropdown.classList.remove('show');
             return;
         }
 
-        const filtered = allPlaces.filter(place =>
-            place.name.toLowerCase().includes(query) ||
-            place.city.toLowerCase().includes(query)
-        );
+        // Esperar 300ms antes de buscar (debounce)
+        searchTimeout = setTimeout(async () => {
+            // Buscar en lugares locales
+            let filtered = allPlaces.filter(place =>
+                place.name.toLowerCase().includes(query) ||
+                place.city.toLowerCase().includes(query) ||
+                place.province.toLowerCase().includes(query)
+            );
 
-        if (filtered.length === 0) {
-            dropdown.classList.remove('show');
-            return;
-        }
+            // Ordenar por prioridad
+            filtered.sort((a, b) => b.priority - a.priority);
 
-        dropdown.innerHTML = filtered.map(place => `
-            <div class="autocomplete-item" data-id="${place.id}" data-type="${place.type}" data-name="${place.name}">
-                <span class="item-icon">
-                    <i class="fas fa-${place.icon}"></i>
-                </span>
-                <span class="item-text">
-                    <span class="item-title">${place.name}</span>
-                    <span class="item-subtitle">${place.city}</span>
-                </span>
-            </div>
-        `).join('');
+            // Limitar a 10 resultados
+            filtered = filtered.slice(0, 10);
 
-        dropdown.classList.add('show');
+            let results = filtered.map(place => ({
+                id: place.id,
+                type: place.type,
+                name: place.name,
+                subtitle: `${place.city}, ${place.province}`,
+                icon: place.icon,
+                source: 'local'
+            }));
 
-        // Click en item
-        dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
-            item.addEventListener('click', function() {
-                input.value = this.dataset.name;
-                typeHidden.value = this.dataset.type;
-                idHidden.value = this.dataset.id;
+            // Si hay menos de 5 resultados locales, buscar en API de direcciones
+            if (results.length < 5 && query.length >= 3) {
+                try {
+                    const apiResults = await searchAddresses(query);
+                    results = [...results, ...apiResults];
+                } catch (error) {
+                    console.log('Error en búsqueda de direcciones:', error);
+                }
+            }
+
+            if (results.length === 0) {
                 dropdown.classList.remove('show');
+                return;
+            }
+
+            dropdown.innerHTML = results.map(place => `
+                <div class="autocomplete-item"
+                     data-id="${place.id}"
+                     data-type="${place.type}"
+                     data-name="${place.name}">
+                    <span class="item-icon">
+                        <i class="fas fa-${place.icon}"></i>
+                    </span>
+                    <span class="item-text">
+                        <span class="item-title">${place.name}</span>
+                        <span class="item-subtitle">${place.subtitle}</span>
+                    </span>
+                </div>
+            `).join('');
+
+            dropdown.classList.add('show');
+
+            // Click en item
+            dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    input.value = this.dataset.name;
+                    typeHidden.value = this.dataset.type;
+                    idHidden.value = this.dataset.id;
+                    dropdown.classList.remove('show');
+                });
             });
-        });
+        }, 300);
     });
 
     // Cerrar dropdown al hacer click fuera
@@ -510,6 +619,63 @@ function setupAutocomplete(inputId, dropdownId, typeHiddenId, idHiddenId) {
             dropdown.classList.remove('show');
         }
     });
+}
+
+// Buscar direcciones en OpenStreetMap Nominatim
+async function searchAddresses(query) {
+    try {
+        const url = `https://nominatim.openstreetmap.org/search?` +
+            `q=${encodeURIComponent(query)},Costa Rica&` +
+            `format=json&` +
+            `addressdetails=1&` +
+            `limit=5&` +
+            `countrycodes=cr`;
+
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'ShuttlePuraVida/1.0 (compratica.com)'
+            }
+        });
+
+        if (!response.ok) return [];
+
+        const data = await response.json();
+
+        return data.map(item => {
+            // Determinar tipo de lugar
+            let type = 'address';
+            let icon = 'map-pin';
+
+            if (item.type === 'city' || item.type === 'town' || item.type === 'village') {
+                type = 'city';
+                icon = 'city';
+            } else if (item.type === 'hotel' || item.type === 'motel') {
+                type = 'hotel';
+                icon = 'hotel';
+            } else if (item.type === 'beach') {
+                type = 'beach';
+                icon = 'umbrella-beach';
+            }
+
+            const address = item.address || {};
+            const subtitle = [
+                address.city || address.town || address.village,
+                address.state || address.province || 'Costa Rica'
+            ].filter(Boolean).join(', ');
+
+            return {
+                id: `OSM-${item.osm_id}`,
+                type: type,
+                name: item.display_name.split(',')[0],
+                subtitle: subtitle || item.display_name,
+                icon: icon,
+                source: 'osm'
+            };
+        });
+    } catch (error) {
+        console.error('Error buscando direcciones:', error);
+        return [];
+    }
 }
 
 // Inicializar autocompletado
