@@ -488,9 +488,10 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
 
     .categories-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 2rem;
       margin-bottom: 3rem;
+      align-items: stretch;
     }
 
     .category-card {
@@ -503,6 +504,9 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
       position: relative;
       overflow: hidden;
       border: 3px solid transparent;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
 
     .category-card::before {
@@ -558,6 +562,7 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
       color: var(--gray-600);
       line-height: 1.7;
       margin-bottom: 1.5rem;
+      flex: 1 0 auto;
     }
 
     .category-footer {
@@ -567,6 +572,8 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
       padding-top: 1.5rem;
       border-top: 2px solid var(--gray-100);
       font-size: 0.9rem;
+      gap: 1rem;
+      flex-wrap: wrap;
     }
 
     .category-count {
@@ -575,6 +582,8 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
       gap: 0.5rem;
       font-weight: 600;
       color: var(--gray-700);
+      flex: 1 1 auto;
+      min-width: fit-content;
     }
 
     .category-count .badge {
@@ -584,6 +593,7 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
       border-radius: 50px;
       font-size: 0.85rem;
       font-weight: 700;
+      flex-shrink: 0;
     }
 
     .payment-badge {
@@ -596,6 +606,8 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
       font-weight: 600;
       background: var(--warning);
       color: var(--white);
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .category-link {
@@ -613,6 +625,13 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
     }
 
     /* Responsive */
+    @media (max-width: 1024px) {
+      .categories-grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1.5rem;
+      }
+    }
+
     @media (max-width: 768px) {
       .header {
         padding: 1rem 1.25rem;
@@ -639,7 +658,45 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
         gap: 1.5rem;
       }
 
+      .category-card {
+        padding: 2rem;
+      }
+
+      .category-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .category-count {
+        width: 100%;
+      }
+
+      .payment-badge {
+        align-self: flex-start;
+      }
+
       .stat-number {
+        font-size: 2rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .category-card {
+        padding: 1.5rem;
+      }
+
+      .category-icon {
+        width: 64px;
+        height: 64px;
+        font-size: 1.75rem;
+      }
+
+      .category-title {
+        font-size: 1.5rem;
+      }
+
+      .section-title {
         font-size: 2rem;
       }
     }
