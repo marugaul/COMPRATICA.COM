@@ -160,15 +160,7 @@ logDebug("RENDERING_PAGE");
 <!-- HEADER -->
 <header class="header">
   <a href="index.php" class="logo">
-    <span class="flag-container">
-      <svg class="flag-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 5 3" width="40" height="24">
-        <rect width="5" height="3" fill="#002b7f"/>
-        <rect width="5" height="2.4" y="0.3" fill="#fff"/>
-        <rect width="5" height="1.8" y="0.6" fill="#ce1126"/>
-        <rect width="5" height="1.2" y="0.9" fill="#fff"/>
-        <rect width="5" height="0.6" y="1.2" fill="#002b7f"/>
-      </svg>
-    </span>
+    <span class="flag emoji">🇨🇷</span>
     <div class="text">
       <span class="main">CompraTica</span>
       <span class="sub">100% COSTARRICENSE</span>
@@ -324,14 +316,7 @@ logDebug("RENDERING_PAGE");
 <section class="hero">
   <div class="hero-content">
     <div class="hero-badge">
-      <svg class="badge-flag" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 5 3" width="24" height="14">
-        <rect width="5" height="3" fill="#002b7f"/>
-        <rect width="5" height="2.4" y="0.3" fill="#fff"/>
-        <rect width="5" height="1.8" y="0.6" fill="#ce1126"/>
-        <rect width="5" height="1.2" y="0.9" fill="#fff"/>
-        <rect width="5" height="0.6" y="1.2" fill="#002b7f"/>
-      </svg>
-      ORGULLO COSTARRICENSE
+      <span class="flag-emoji emoji">🇨🇷</span> ORGULLO COSTARRICENSE
     </div>
     <h1>
       Hecho en Costa Rica, Para Ticos

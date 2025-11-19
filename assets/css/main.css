@@ -75,19 +75,6 @@
       line-height: 1;
     }
 
-    /* Bandera SVG en el header */
-    .flag-container {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .flag-svg {
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-      border-radius: 3px;
-      overflow: hidden;
-    }
-
     .logo .text {
       display: flex;
       flex-direction: column;
@@ -222,15 +209,6 @@
       font-size: 1.2rem;
       margin-right: 0.5rem;
       line-height: 1;
-    }
-
-    /* Bandera SVG en el hero badge */
-    .hero-badge .badge-flag {
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: 0.5rem;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-      border-radius: 2px;
     }
 
     .hero h1 {
@@ -715,17 +693,6 @@
 
       .logo .text .sub {
         font-size: 0.65rem;
-      }
-
-      /* Ajustar bandera SVG en móvil */
-      .flag-svg {
-        width: 32px;
-        height: 19px;
-      }
-
-      .badge-flag {
-        width: 20px;
-        height: 12px;
       }
 
       /* Mejorar header en móvil */
