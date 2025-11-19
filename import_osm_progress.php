@@ -313,36 +313,93 @@
             }
         }
 
+        let isImporting = false;
+
         async function startImport() {
             const startBtn = document.getElementById('startBtn');
             const stopBtn = document.getElementById('stopBtn');
 
+            if (isImporting) {
+                return; // Prevenir múltiples llamadas
+            }
+
+            isImporting = true;
             startBtn.disabled = true;
             startBtn.innerHTML = '<span class="spinner"></span> Iniciando...';
 
+            startTime = Date.now();
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+
+            addLog('✅ Importación iniciada correctamente');
+
+            // Iniciar actualización de progreso cada 2 segundos
+            updateInterval = setInterval(updateProgress, 2000);
+
+            // Ejecutar importación por lotes
+            await runImportBatch();
+        }
+
+        async function runImportBatch() {
             try {
-                const response = await fetch('api/start_import.php', { method: 'POST' });
+                const response = await fetch('api/start_import.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
                 const data = await response.json();
 
-                if (data.success) {
-                    startTime = Date.now();
-                    startBtn.style.display = 'none';
-                    stopBtn.style.display = 'inline-block';
-
-                    addLog('✅ Importación iniciada correctamente');
-
-                    // Iniciar actualización cada 2 segundos
-                    updateInterval = setInterval(updateProgress, 2000);
-                    updateProgress(); // Actualizar inmediatamente
-                } else {
-                    alert('Error al iniciar: ' + data.message);
-                    startBtn.disabled = false;
-                    startBtn.innerHTML = '🚀 Iniciar Importación';
+                if (!data.success) {
+                    addLog('❌ Error: ' + (data.error || 'Error desconocido'));
+                    isImporting = false;
+                    return;
                 }
+
+                if (data.paused) {
+                    addLog('⏸️ Importación pausada');
+                    isImporting = false;
+                    return;
+                }
+
+                if (data.completed) {
+                    addLog('🎉 ¡Importación completada! Total: ' + data.total_imported + ' lugares');
+                    document.getElementById('testBtn').style.display = 'inline-block';
+                    document.getElementById('stopBtn').style.display = 'none';
+                    isImporting = false;
+                    if (updateInterval) {
+                        clearInterval(updateInterval);
+                    }
+                    updateProgress(); // Actualización final
+                    return;
+                }
+
+                if (data.continue) {
+                    addLog(`✓ ${data.category}: ${data.imported} lugares importados`);
+
+                    // Actualizar progreso inmediatamente
+                    updateProgress();
+
+                    // Esperar 2 segundos antes del siguiente lote (rate limit de Overpass)
+                    setTimeout(() => {
+                        if (isImporting) {
+                            runImportBatch(); // Continuar con el siguiente lote
+                        }
+                    }, 2000);
+                }
+
             } catch (error) {
-                alert('Error de conexión: ' + error.message);
-                startBtn.disabled = false;
-                startBtn.innerHTML = '🚀 Iniciar Importación';
+                addLog('❌ Error de conexión: ' + error.message);
+                isImporting = false;
+
+                // Reintentar en 5 segundos
+                addLog('⏳ Reintentando en 5 segundos...');
+                setTimeout(() => {
+                    if (isImporting !== false) { // Si no fue pausado manualmente
+                        runImportBatch();
+                    }
+                }, 5000);
             }
         }
 
@@ -352,6 +409,8 @@
             }
 
             try {
+                isImporting = false; // Detener el loop
+
                 const response = await fetch('api/stop_import.php', { method: 'POST' });
                 const data = await response.json();
 
@@ -360,6 +419,7 @@
                     document.getElementById('stopBtn').style.display = 'none';
                     document.getElementById('startBtn').style.display = 'inline-block';
                     document.getElementById('startBtn').innerHTML = '▶️ Reanudar Importación';
+                    document.getElementById('startBtn').disabled = false;
 
                     if (updateInterval) {
                         clearInterval(updateInterval);

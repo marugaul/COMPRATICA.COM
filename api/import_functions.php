@@ -1,28 +1,10 @@
 <?php
 /**
- * Script de importación OSM - Ejecuta en background
- * Importa lugares de Costa Rica desde OpenStreetMap Overpass API
+ * Funciones compartidas para importación OSM
  */
 
-// Aumentar tiempo de ejecución
-set_time_limit(0);
-ini_set('max_execution_time', 0);
-ignore_user_abort(true);
-
-require_once __DIR__ . '/../includes/db_places.php';
-
-// Verificar token simple para evitar ejecuciones no autorizadas
-$expectedToken = md5('osm_import_' . date('Y-m-d'));
-if (!isset($_GET['token']) || $_GET['token'] !== $expectedToken) {
-    http_response_code(403);
-    die('Token inválido');
-}
-
-try {
-    $pdo = db_places();
-
-    // Definir categorías a importar
-    $categories = [
+function getImportCategories() {
+    return [
         [
             'name' => 'Hoteles y Alojamientos',
             'query' => '["tourism"~"hotel|hostel|guest_house|motel|apartment"]',
@@ -80,62 +62,7 @@ try {
             'priority' => 8
         ]
     ];
-
-    $totalCategories = count($categories);
-    $totalImported = 0;
-
-    // Procesar cada categoría
-    for ($i = 0; $i < $totalCategories; $i++) {
-        // Verificar si se pausó
-        $stmt = $pdo->query("SELECT status FROM import_progress WHERE id = 1");
-        $status = $stmt->fetchColumn();
-
-        if ($status === 'paused') {
-            updateProgress($pdo, 'paused', $categories[$i]['name'], $i, $totalCategories, $totalImported,
-                'Importación pausada', 'Importación detenida por el usuario');
-            exit;
-        }
-
-        $cat = $categories[$i];
-        updateProgress($pdo, 'running', $cat['name'], $i + 1, $totalCategories, $totalImported,
-            "Importando {$cat['name']}...", "Consultando Overpass API...");
-
-        // Construir query Overpass QL
-        $overpassQuery = buildOverpassQuery($cat['query']);
-
-        // Ejecutar query
-        $places = fetchFromOverpass($overpassQuery);
-
-        if ($places === false) {
-            updateProgress($pdo, 'error', $cat['name'], $i + 1, $totalCategories, $totalImported,
-                'Error al consultar Overpass API', "Error en categoría: {$cat['name']}");
-            sleep(10); // Esperar antes de continuar
-            continue;
-        }
-
-        // Importar lugares
-        $imported = importPlaces($pdo, $places, $cat);
-        $totalImported += $imported;
-
-        $progress = (($i + 1) / $totalCategories) * 100;
-        updateProgress($pdo, 'running', $cat['name'], $i + 1, $totalCategories, $totalImported,
-            "Importados {$imported} lugares de {$cat['name']}", "Categoría {$cat['name']} completada");
-
-        // Esperar para no sobrecargar la API
-        sleep(2);
-    }
-
-    // Completado
-    updateProgress($pdo, 'completed', 'Completado', $totalCategories, $totalCategories, $totalImported,
-        "Importación completada: {$totalImported} lugares", "¡Importación finalizada exitosamente!");
-
-} catch (Exception $e) {
-    error_log("Error en importación OSM: " . $e->getMessage());
-    updateProgress($pdo, 'error', 'Error', 0, 8, 0,
-        'Error: ' . $e->getMessage(), 'Error crítico en la importación');
 }
-
-// === FUNCIONES AUXILIARES ===
 
 function updateProgress($pdo, $status, $category, $catIndex, $totalCat, $totalImported, $message, $log) {
     $progress = ($catIndex / $totalCat) * 100;
@@ -184,7 +111,8 @@ function fetchFromOverpass($query) {
     $context = stream_context_create([
         'http' => [
             'method' => 'POST',
-            'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+            'header' => "Content-Type: application/x-www-form-urlencoded\r\n" .
+                       "User-Agent: CompraTica/1.0 (shuttle service)\r\n",
             'content' => 'data=' . urlencode($query),
             'timeout' => 120
         ]
@@ -193,12 +121,14 @@ function fetchFromOverpass($query) {
     $response = @file_get_contents($url, false, $context);
 
     if ($response === false) {
+        error_log("Error fetching from Overpass API");
         return false;
     }
 
     $data = json_decode($response, true);
 
     if (!isset($data['elements'])) {
+        error_log("Invalid response from Overpass API");
         return false;
     }
 
@@ -274,7 +204,6 @@ function importPlaces($pdo, $places, $category) {
             $imported++;
         } catch (PDOException $e) {
             // Ignorar duplicados y otros errores
-            error_log("Error importando lugar: " . $e->getMessage());
             continue;
         }
     }
