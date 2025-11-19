@@ -108,9 +108,6 @@ try {
     updateProgress($pdo, 'running', $cat['name'], $currentIndex + 1, $totalCategories,
         $newTotal, "Importados {$imported} lugares de {$cat['name']}", "Completada categoría {$cat['name']}");
 
-    // Avanzar al siguiente índice
-    $pdo->exec("UPDATE import_progress SET current_category_index = current_category_index + 1 WHERE id = 1");
-
     echo json_encode([
         'success' => true,
         'continue' => true,
