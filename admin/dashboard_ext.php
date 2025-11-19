@@ -37,6 +37,7 @@ $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
   <a class="btn" href="sales_admin.php">Espacios</a>
   <a class="btn" href="affiliates.php">Afiliados</a>
   <a class="btn" href="settings_fee.php">Costo por espacio</a>
+  <a class="btn" href="email_marketing.php">📧 Email Marketing</a>
 </nav></header>
 
 <div class="container">

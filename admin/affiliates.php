@@ -77,6 +77,7 @@ $rows = $pdo->query("SELECT id, name, email, phone, created_at FROM affiliates O
   <nav>
     <a class="btn" href="dashboard.php">Dashboard</a>
     <a class="btn" href="sales_admin.php">Espacios</a>
+    <a class="btn" href="email_marketing.php">📧 Email Marketing</a>
   </nav>
 </header>
 

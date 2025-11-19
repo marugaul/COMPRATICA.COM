@@ -285,6 +285,7 @@ $affiliates = $pdo->query("
     <a class="btn" href="sales_admin.php">Espacios</a>
     <a class="btn" href="affiliates.php">Afiliados</a>
     <a class="btn" href="settings_fee.php">Costo por espacio</a>
+    <a class="btn" href="email_marketing.php">📧 Email Marketing</a>
     <a class="btn" href="../tools/sql_exec.php" target="_blank">🧩 SQL Tools</a>
     <a class="btn" href="logout.php">Salir</a>
   </nav>

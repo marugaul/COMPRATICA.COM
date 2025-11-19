@@ -51,7 +51,10 @@ $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 </head><body>
 <header class="header">
   <div class="logo">🛒 Admin — Espacios</div>
-  <nav><a class="btn" href="dashboard.php">Dashboard</a></nav>
+  <nav>
+    <a class="btn" href="dashboard.php">Dashboard</a>
+    <a class="btn" href="email_marketing.php">📧 Email Marketing</a>
+  </nav>
 </header>
 <div class="container">
 <?php if($msg): ?><div class="alert"><strong>Aviso:</strong> <?= htmlspecialchars($msg) ?></div><?php endif; ?>
