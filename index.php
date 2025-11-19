@@ -148,6 +148,9 @@ logDebug("RENDERING_PAGE");
   <!-- Font Awesome cargado de forma asíncrona -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
 
+  <!-- Soporte de emojis para todas las plataformas -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+
   <!-- Fallback para navegadores sin JS -->
   <noscript>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
