@@ -32,8 +32,9 @@ try {
     $pdo = db_places();
     $startTime = microtime(true);
 
-    // Buscar usando FULLTEXT y LIKE combinados para mejores resultados
+    // Buscar usando LIKE para compatibilidad
     $searchQuery = '%' . $query . '%';
+    $queryStart = $query . '%';
 
     $stmt = $pdo->prepare("
         SELECT
@@ -53,31 +54,35 @@ try {
         WHERE
             is_active = 1
             AND (
-                name LIKE :query
-                OR city LIKE :query
-                OR district LIKE :query
-                OR province LIKE :query
-                OR address LIKE :query
+                name LIKE ?
+                OR city LIKE ?
+                OR district LIKE ?
+                OR province LIKE ?
+                OR address LIKE ?
             )
         ORDER BY
             -- Priorizar coincidencias exactas al inicio
             CASE
-                WHEN name LIKE :query_start THEN 1
-                WHEN city LIKE :query_start THEN 2
+                WHEN name LIKE ? THEN 1
+                WHEN city LIKE ? THEN 2
                 ELSE 3
             END,
             priority DESC,
             name ASC
-        LIMIT :limit
+        LIMIT ?
     ");
 
-    $queryStart = $query . '%';
+    $stmt->execute([
+        $searchQuery,
+        $searchQuery,
+        $searchQuery,
+        $searchQuery,
+        $searchQuery,
+        $queryStart,
+        $queryStart,
+        $limit
+    ]);
 
-    $stmt->bindValue(':query', $searchQuery, PDO::PARAM_STR);
-    $stmt->bindValue(':query_start', $queryStart, PDO::PARAM_STR);
-    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-
-    $stmt->execute();
     $results = $stmt->fetchAll();
 
     // Calcular tiempo de búsqueda
