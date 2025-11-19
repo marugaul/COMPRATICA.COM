@@ -87,13 +87,19 @@ try {
             'continue' => true,
             'imported' => 0,
             'category' => $cat['name'],
-            'error' => 'Error consultando Overpass API'
+            'error' => 'Error consultando Overpass API',
+            'debug' => 'Overpass API returned false'
         ]);
         exit;
     }
 
+    // DEBUG: Contar elementos recibidos
+    $receivedCount = count($places);
+
     // Importar lugares
-    $imported = importPlaces($pdo, $places, $cat);
+    $result = importPlacesWithDebug($pdo, $places, $cat);
+    $imported = $result['imported'];
+    $debugInfo = $result['debug'];
 
     // Actualizar contador total
     $newTotal = $current['total_imported'] + $imported;
@@ -111,7 +117,11 @@ try {
         'imported' => $imported,
         'total_imported' => $newTotal,
         'category' => $cat['name'],
-        'progress' => $progress
+        'progress' => $progress,
+        'debug' => [
+            'received' => $receivedCount,
+            'details' => $debugInfo
+        ]
     ]);
 
 } catch (Exception $e) {

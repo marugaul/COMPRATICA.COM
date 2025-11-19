@@ -136,7 +136,15 @@ function fetchFromOverpass($query) {
 }
 
 function importPlaces($pdo, $places, $category) {
+    $result = importPlacesWithDebug($pdo, $places, $category);
+    return $result['imported'];
+}
+
+function importPlacesWithDebug($pdo, $places, $category) {
     $imported = 0;
+    $noName = 0;
+    $noCoords = 0;
+    $errors = 0;
 
     $stmt = $pdo->prepare("
         INSERT INTO places_cr (
@@ -154,12 +162,18 @@ function importPlaces($pdo, $places, $category) {
     ");
 
     foreach ($places as $place) {
-        // Filtrar lugares sin nombre
-        if (empty($place['tags']['name'])) {
+        // Filtrar lugares sin tags
+        if (!isset($place['tags']) || empty($place['tags'])) {
             continue;
         }
 
-        $tags = $place['tags'] ?? [];
+        // Filtrar lugares sin nombre
+        if (empty($place['tags']['name'])) {
+            $noName++;
+            continue;
+        }
+
+        $tags = $place['tags'];
 
         // Determinar lat/lng
         $lat = $place['lat'] ?? null;
@@ -169,6 +183,12 @@ function importPlaces($pdo, $places, $category) {
         if (!$lat && isset($place['center'])) {
             $lat = $place['center']['lat'];
             $lng = $place['center']['lon'];
+        }
+
+        // Saltar si no tiene coordenadas
+        if (!$lat || !$lng) {
+            $noCoords++;
+            continue;
         }
 
         // Extraer información de dirección
@@ -203,11 +223,19 @@ function importPlaces($pdo, $places, $category) {
 
             $imported++;
         } catch (PDOException $e) {
-            // Ignorar duplicados y otros errores
+            $errors++;
+            error_log("Error importing place: " . $e->getMessage());
             continue;
         }
     }
 
-    return $imported;
+    return [
+        'imported' => $imported,
+        'debug' => [
+            'no_name' => $noName,
+            'no_coords' => $noCoords,
+            'errors' => $errors
+        ]
+    ];
 }
 ?>

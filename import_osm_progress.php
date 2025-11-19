@@ -376,7 +376,18 @@
                 }
 
                 if (data.continue) {
-                    addLog(`✓ ${data.category}: ${data.imported} lugares importados`);
+                    let logMsg = `✓ ${data.category}: ${data.imported} lugares importados`;
+
+                    // Agregar debug info si está disponible
+                    if (data.debug) {
+                        logMsg += ` (recibidos: ${data.debug.received}`;
+                        if (data.debug.details) {
+                            logMsg += `, sin nombre: ${data.debug.details.no_name}, sin coords: ${data.debug.details.no_coords}, errores: ${data.debug.details.errors}`;
+                        }
+                        logMsg += ')';
+                    }
+
+                    addLog(logMsg);
 
                     // Actualizar progreso inmediatamente
                     updateProgress();
