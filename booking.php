@@ -138,17 +138,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $customer_name = trim($_POST['customer_name'] ?? '');
         $customer_email = trim($_POST['customer_email'] ?? '');
         $customer_phone = trim($_POST['customer_phone'] ?? '');
-        $booking_date = $_POST['booking_date'] ?? '';
-        $booking_time = $_POST['booking_time'] ?? '';
         $payment_method = $_POST['payment_method'] ?? '';
         $address = trim($_POST['address'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
 
+        // Para shuttles, usar fecha/hora de los parámetros del shuttle
+        $isShuttleBooking = isset($_POST['shuttle_origin']) && isset($_POST['shuttle_destination']);
+        if ($isShuttleBooking && isset($_POST['shuttle_date']) && isset($_POST['shuttle_time'])) {
+            $booking_date = $_POST['shuttle_date'];
+            $booking_time = $_POST['shuttle_time'];
+        } else {
+            $booking_date = $_POST['booking_date'] ?? date('Y-m-d', strtotime('+1 day'));
+            $booking_time = $_POST['booking_time'] ?? '09:00';
+        }
+
         if (empty($customer_name)) throw new Exception('El nombre es obligatorio');
         if (empty($customer_email)) throw new Exception('El email es obligatorio');
         if (empty($customer_phone)) throw new Exception('El teléfono es obligatorio');
-        if (empty($booking_date)) throw new Exception('Debes seleccionar una fecha');
-        if (empty($booking_time)) throw new Exception('Debes seleccionar una hora');
         if (empty($payment_method)) throw new Exception('Debes seleccionar un método de pago');
 
         if ($service['requires_address'] && empty($address)) {
@@ -213,6 +219,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         ]);
 
         $booking_id = $pdo->lastInsertId();
+
+        // Si es pago SINPE, redirigir a página de carga de comprobante
+        if ($payment_method === 'sinpe') {
+            header("Location: upload-booking-proof.php?booking_id=$booking_id");
+            exit;
+        }
+
         $success = '¡Reserva creada exitosamente! Te contactaremos pronto para confirmar.';
 
         // Limpiar formulario
@@ -634,61 +647,6 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
             </div>
         </div>
 
-        <!-- Fecha y Hora -->
-        <div class="form-card">
-            <h2 class="form-section-title">
-                <i class="fas fa-calendar"></i> Fecha y Hora
-            </h2>
-
-            <?php if (!empty($availability)): ?>
-                <div class="availability-info">
-                    <strong>Horarios disponibles:</strong>
-                    <?php
-                    $scheduleByDay = [];
-                    foreach ($availability as $slot) {
-                        $scheduleByDay[$slot['day_of_week']][] = $slot;
-                    }
-                    foreach ($scheduleByDay as $day => $slots):
-                    ?>
-                        <div class="availability-item">
-                            <span><?php echo $daysOfWeek[$day]; ?></span>
-                            <span>
-                                <?php foreach ($slots as $slot): ?>
-                                    <?php echo substr($slot['start_time'], 0, 5); ?> - <?php echo substr($slot['end_time'], 0, 5); ?>
-                                <?php endforeach; ?>
-                            </span>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">
-                        Fecha <span class="required">*</span>
-                    </label>
-                    <input
-                        type="date"
-                        name="booking_date"
-                        class="form-input"
-                        min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>"
-                        required
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">
-                        Hora <span class="required">*</span>
-                    </label>
-                    <input
-                        type="time"
-                        name="booking_time"
-                        class="form-input"
-                        required
-                    >
-                </div>
-            </div>
-        </div>
 
         <!-- Dirección -->
         <?php if ($service['requires_address'] && !$isShuttle): ?>
