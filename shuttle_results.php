@@ -25,10 +25,11 @@ $destination = $_GET['destination'] ?? '';
 $destinationType = $_GET['destination_type'] ?? '';
 $destinationId = $_GET['destination_id'] ?? '';
 $date = $_GET['date'] ?? '';
+$time = $_GET['time'] ?? '';
 $passengers = (int)($_GET['passengers'] ?? 2);
 $luggage = (int)($_GET['luggage'] ?? 2);
 
-if (!$origin || !$destination || !$date) {
+if (!$origin || !$destination || !$date || !$time) {
     header('Location: shuttle_search.php');
     exit;
 }
@@ -330,6 +331,10 @@ function calculateEstimatedPrice($basePrice) {
                 <span><?php echo date('d M Y', strtotime($date)); ?></span>
             </div>
             <div class="summary-item">
+                <i class="fas fa-clock"></i>
+                <span><?php echo date('g:i A', strtotime($time)); ?></span>
+            </div>
+            <div class="summary-item">
                 <i class="fas fa-users"></i>
                 <span><?php echo $passengers; ?> pasajeros</span>
             </div>
@@ -406,7 +411,7 @@ function calculateEstimatedPrice($basePrice) {
                 <div class="service-price-block">
                     <div class="price-label">Precio estimado</div>
                     <div class="price">₡<?php echo number_format(calculateEstimatedPrice($service['price_per_hour']), 0, ',', '.'); ?></div>
-                    <a href="booking.php?service_id=<?php echo $service['id']; ?>&origin=<?php echo urlencode($origin); ?>&destination=<?php echo urlencode($destination); ?>&date=<?php echo urlencode($date); ?>&passengers=<?php echo $passengers; ?>&luggage=<?php echo $luggage; ?>" class="btn-book">
+                    <a href="booking.php?service_id=<?php echo $service['id']; ?>&origin=<?php echo urlencode($origin); ?>&destination=<?php echo urlencode($destination); ?>&date=<?php echo urlencode($date); ?>&time=<?php echo urlencode($time); ?>&passengers=<?php echo $passengers; ?>&luggage=<?php echo $luggage; ?>" class="btn-book">
                         <i class="fas fa-calendar-check"></i> Reservar ahora
                     </a>
                 </div>

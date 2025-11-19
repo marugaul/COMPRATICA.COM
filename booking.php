@@ -78,6 +78,7 @@ if ($isShuttle) {
         'origin' => $_GET['origin'] ?? '',
         'destination' => $_GET['destination'] ?? '',
         'date' => $_GET['date'] ?? '',
+        'time' => $_GET['time'] ?? '',
         'passengers' => (int)($_GET['passengers'] ?? 2),
         'luggage' => (int)($_GET['luggage'] ?? 2)
     ];
@@ -170,6 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 "Origen: %s\n" .
                 "Destino: %s\n" .
                 "Fecha: %s\n" .
+                "Hora de recogida: %s\n" .
                 "Pasajeros: %d\n" .
                 "Maletas: %d\n" .
                 "Distancia: %s km\n" .
@@ -177,6 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $_POST['shuttle_origin'] ?? '',
                 $_POST['shuttle_destination'] ?? '',
                 $_POST['shuttle_date'] ?? '',
+                $_POST['shuttle_time'] ?? '',
                 (int)($_POST['shuttle_passengers'] ?? 0),
                 (int)($_POST['shuttle_luggage'] ?? 0),
                 $_POST['shuttle_distance'] ?? '0',
@@ -515,6 +518,10 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
                         <span><?php echo date('d/m/Y', strtotime($shuttleData['date'])); ?></span>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
+                        <span><i class="fas fa-clock"></i> <strong>Hora de recogida:</strong></span>
+                        <span><?php echo date('g:i A', strtotime($shuttleData['time'])); ?></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
                         <span><i class="fas fa-users"></i> <strong>Pasajeros:</strong></span>
                         <span><?php echo $shuttleData['passengers']; ?> personas</span>
                     </div>
@@ -569,6 +576,7 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
             <input type="hidden" name="shuttle_origin" value="<?php echo htmlspecialchars($shuttleData['origin']); ?>">
             <input type="hidden" name="shuttle_destination" value="<?php echo htmlspecialchars($shuttleData['destination']); ?>">
             <input type="hidden" name="shuttle_date" value="<?php echo htmlspecialchars($shuttleData['date']); ?>">
+            <input type="hidden" name="shuttle_time" value="<?php echo htmlspecialchars($shuttleData['time']); ?>">
             <input type="hidden" name="shuttle_passengers" value="<?php echo htmlspecialchars($shuttleData['passengers']); ?>">
             <input type="hidden" name="shuttle_luggage" value="<?php echo htmlspecialchars($shuttleData['luggage']); ?>">
             <?php if ($shuttleQuote && isset($shuttleQuote['ok']) && $shuttleQuote['ok']): ?>

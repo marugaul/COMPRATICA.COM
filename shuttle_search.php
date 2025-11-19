@@ -341,20 +341,37 @@ $userName = $_SESSION['name'] ?? 'Usuario';
                 </div>
             </div>
 
-            <!-- Fecha -->
-            <div class="form-group">
-                <label class="form-label">
-                    <i class="fas fa-calendar"></i> Fecha del servicio
-                </label>
-                <div class="input-icon">
-                    <i class="fas fa-calendar-day"></i>
-                    <input
-                        type="date"
-                        class="form-input"
-                        name="date"
-                        min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>"
-                        required
-                    >
+            <!-- Fecha y Hora -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-calendar"></i> Fecha del servicio
+                    </label>
+                    <div class="input-icon">
+                        <i class="fas fa-calendar-day"></i>
+                        <input
+                            type="date"
+                            class="form-input"
+                            name="date"
+                            min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-clock"></i> Hora de recogida
+                    </label>
+                    <div class="input-icon">
+                        <i class="fas fa-clock"></i>
+                        <input
+                            type="time"
+                            class="form-input"
+                            name="time"
+                            required
+                        >
+                    </div>
                 </div>
             </div>
 
