@@ -264,14 +264,36 @@ function importPlacesWithDebug($pdo, $places, $category) {
         // Website
         $website = $place['tags']['website'] ?? $place['tags']['contact:website'] ?? null;
 
+        // Email
+        $email = $place['tags']['email'] ?? $place['tags']['contact:email'] ?? null;
+
+        // Operador/Dueño
+        $operator = $place['tags']['operator'] ?? null;
+        $brand = $place['tags']['brand'] ?? null;
+
         // Descripción
         $description = $place['tags']['description'] ?? null;
+
+        // Tags adicionales como JSON
+        $tags = [];
+        if ($email) $tags['email'] = $email;
+        if ($operator) $tags['operator'] = $operator;
+        if ($brand) $tags['brand'] = $brand;
+        if ($description) $tags['description'] = $description;
+
+        // Agregar otros tags útiles
+        if (isset($place['tags']['opening_hours'])) $tags['opening_hours'] = $place['tags']['opening_hours'];
+        if (isset($place['tags']['internet_access'])) $tags['internet_access'] = $place['tags']['internet_access'];
+        if (isset($place['tags']['wheelchair'])) $tags['wheelchair'] = $place['tags']['wheelchair'];
+        if (isset($place['tags']['smoking'])) $tags['smoking'] = $place['tags']['smoking'];
+
+        $tagsJson = !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : null;
 
         try {
             $stmt = $pdo->prepare("
                 INSERT INTO places_cr
-                (name, type, category, lat, lng, city, address, phone, website, priority, osm_id, osm_type, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                (name, type, category, lat, lng, city, address, phone, website, tags, priority, osm_id, osm_type, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                 ON DUPLICATE KEY UPDATE
                     name = VALUES(name),
                     type = VALUES(type),
@@ -282,6 +304,7 @@ function importPlacesWithDebug($pdo, $places, $category) {
                     address = VALUES(address),
                     phone = VALUES(phone),
                     website = VALUES(website),
+                    tags = VALUES(tags),
                     priority = VALUES(priority)
             ");
 
@@ -295,6 +318,7 @@ function importPlacesWithDebug($pdo, $places, $category) {
                 $address,
                 $phone,
                 $website,
+                $tagsJson,
                 $category['priority'],
                 $place['id'],
                 $place['type']

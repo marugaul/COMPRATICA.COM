@@ -27,7 +27,9 @@ $stats = [
     'total' => count($places),
     'con_nombre' => 0,
     'con_telefono' => 0,
+    'con_email' => 0,
     'con_website' => 0,
+    'con_operador' => 0,
     'con_ciudad' => 0,
     'con_calle' => 0,
     'con_provincia' => 0,
@@ -40,7 +42,9 @@ $stats = [
 foreach ($places as $place) {
     if (!empty($place['tags']['name'])) $stats['con_nombre']++;
     if (!empty($place['tags']['phone']) || !empty($place['tags']['contact:phone'])) $stats['con_telefono']++;
+    if (!empty($place['tags']['email']) || !empty($place['tags']['contact:email'])) $stats['con_email']++;
     if (!empty($place['tags']['website']) || !empty($place['tags']['contact:website'])) $stats['con_website']++;
+    if (!empty($place['tags']['operator']) || !empty($place['tags']['brand'])) $stats['con_operador']++;
     if (!empty($place['tags']['addr:city'])) $stats['con_ciudad']++;
     if (!empty($place['tags']['addr:street'])) $stats['con_calle']++;
     if (!empty($place['tags']['addr:province'])) $stats['con_provincia']++;
@@ -61,7 +65,9 @@ $pct = function($n) use ($stats) {
 
 printf("%-30s %10d %10s\n", "Nombre", $stats['con_nombre'], $pct($stats['con_nombre']));
 printf("%-30s %10d %10s\n", "Teléfono ☎️", $stats['con_telefono'], $pct($stats['con_telefono']));
+printf("%-30s %10d %10s\n", "Email 📧", $stats['con_email'], $pct($stats['con_email']));
 printf("%-30s %10d %10s\n", "Website 🌐", $stats['con_website'], $pct($stats['con_website']));
+printf("%-30s %10d %10s\n", "Operador/Dueño 👤", $stats['con_operador'], $pct($stats['con_operador']));
 printf("%-30s %10d %10s\n", "Coordenadas 📍", $stats['con_coords'], $pct($stats['con_coords']));
 printf("%-30s %10d %10s\n", "Ciudad", $stats['con_ciudad'], $pct($stats['con_ciudad']));
 printf("%-30s %10d %10s\n", "Calle", $stats['con_calle'], $pct($stats['con_calle']));
@@ -81,8 +87,17 @@ foreach ($places as $place) {
     $tags = $place['tags'];
 
     echo "\n🏨 " . $tags['name'] . "\n";
-    if (!empty($tags['phone'])) echo "   ☎️  Teléfono: " . $tags['phone'] . "\n";
-    if (!empty($tags['website'])) echo "   🌐 Website: " . $tags['website'] . "\n";
+    if (!empty($tags['phone']) || !empty($tags['contact:phone'])) {
+        echo "   ☎️  Teléfono: " . ($tags['phone'] ?? $tags['contact:phone']) . "\n";
+    }
+    if (!empty($tags['email']) || !empty($tags['contact:email'])) {
+        echo "   📧 Email: " . ($tags['email'] ?? $tags['contact:email']) . "\n";
+    }
+    if (!empty($tags['website']) || !empty($tags['contact:website'])) {
+        echo "   🌐 Website: " . ($tags['website'] ?? $tags['contact:website']) . "\n";
+    }
+    if (!empty($tags['operator'])) echo "   👤 Operador: " . $tags['operator'] . "\n";
+    if (!empty($tags['brand'])) echo "   🏷️  Marca: " . $tags['brand'] . "\n";
     if (!empty($tags['addr:city'])) echo "   🏙️  Ciudad: " . $tags['addr:city'] . "\n";
     if (!empty($tags['addr:street'])) echo "   📍 Calle: " . $tags['addr:street'] . "\n";
     if (!empty($tags['addr:province'])) echo "   🗺️  Provincia: " . $tags['addr:province'] . "\n";

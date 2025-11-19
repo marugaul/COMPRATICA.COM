@@ -50,16 +50,26 @@ try {
     // Intentar insertar
     echo "🔨 Intentando insertar...\n";
 
+    // Construir tags JSON
+    $tags = [];
+    if (isset($testPlace['tags']['email'])) $tags['email'] = $testPlace['tags']['email'];
+    if (isset($testPlace['tags']['contact:email'])) $tags['email'] = $testPlace['tags']['contact:email'];
+    if (isset($testPlace['tags']['operator'])) $tags['operator'] = $testPlace['tags']['operator'];
+    if (isset($testPlace['tags']['brand'])) $tags['brand'] = $testPlace['tags']['brand'];
+    if (isset($testPlace['tags']['description'])) $tags['description'] = $testPlace['tags']['description'];
+    $tagsJson = !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : null;
+
     $stmt = $pdo->prepare("
         INSERT INTO places_cr
-        (name, type, category, lat, lng, city, address, phone, website, priority, osm_id, osm_type, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        (name, type, category, lat, lng, city, address, phone, website, tags, priority, osm_id, osm_type, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ON DUPLICATE KEY UPDATE
             name = VALUES(name),
             type = VALUES(type),
             category = VALUES(category),
             lat = VALUES(lat),
             lng = VALUES(lng),
+            tags = VALUES(tags),
             priority = VALUES(priority)
     ");
 
@@ -73,6 +83,7 @@ try {
         $testPlace['tags']['addr:street'] ?? null,
         $testPlace['tags']['phone'] ?? null,
         $testPlace['tags']['website'] ?? null,
+        $tagsJson,
         $testCat['priority'],
         $testPlace['id'],
         $testPlace['type']
