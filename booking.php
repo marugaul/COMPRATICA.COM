@@ -68,6 +68,48 @@ if (!$service) {
     exit;
 }
 
+// Detectar si es una reserva de shuttle (viene de shuttle_results.php)
+$isShuttle = isset($_GET['origin']) && isset($_GET['destination']);
+$shuttleData = [];
+$shuttleQuote = null;
+
+if ($isShuttle) {
+    $shuttleData = [
+        'origin' => $_GET['origin'] ?? '',
+        'destination' => $_GET['destination'] ?? '',
+        'date' => $_GET['date'] ?? '',
+        'passengers' => (int)($_GET['passengers'] ?? 2),
+        'luggage' => (int)($_GET['luggage'] ?? 2)
+    ];
+
+    // Calcular cotización automática
+    // Usamos origen/destino como ID para la API de cotización
+    // (En este caso, usaremos el nombre directamente como dirección)
+    $quoteData = [
+        'service_id' => $service_id,
+        'origin' => $shuttleData['origin'],
+        'origin_type' => 'address',
+        'destination' => $shuttleData['destination'],
+        'destination_type' => 'address'
+    ];
+
+    // Simular llamada a la API de cotización
+    // En producción, harías un curl o file_get_contents a la API
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://compratica.com/api/calculate_quote.php');
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($quoteData));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    if ($response) {
+        $shuttleQuote = json_decode($response, true);
+    }
+}
+
 // Obtener disponibilidad
 $stmt = $pdo->prepare("
     SELECT * FROM service_availability
@@ -116,6 +158,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $duration = $service['duration_minutes'];
         $hours = $duration / 60;
         $total_amount = $service['price_per_hour'] * $hours;
+
+        // Si es shuttle, usar precio de cotización y datos específicos
+        $isShuttleBooking = isset($_POST['shuttle_origin']) && isset($_POST['shuttle_destination']);
+        if ($isShuttleBooking && isset($_POST['shuttle_total']) && $_POST['shuttle_total'] > 0) {
+            $total_amount = (float)$_POST['shuttle_total'];
+
+            // Agregar información del shuttle a las notas
+            $shuttleInfo = sprintf(
+                "SHUTTLE PURA VIDA 🇨🇷\n" .
+                "Origen: %s\n" .
+                "Destino: %s\n" .
+                "Fecha: %s\n" .
+                "Pasajeros: %d\n" .
+                "Maletas: %d\n" .
+                "Distancia: %s km\n" .
+                "---\n%s",
+                $_POST['shuttle_origin'] ?? '',
+                $_POST['shuttle_destination'] ?? '',
+                $_POST['shuttle_date'] ?? '',
+                (int)($_POST['shuttle_passengers'] ?? 0),
+                (int)($_POST['shuttle_luggage'] ?? 0),
+                $_POST['shuttle_distance'] ?? '0',
+                $notes
+            );
+            $notes = $shuttleInfo;
+        }
 
         // Insertar reserva
         $stmt = $pdo->prepare("
@@ -427,12 +495,55 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
             </div>
         </div>
 
-        <div class="price-display">
-            <div>Precio total del servicio</div>
-            <div class="price-amount">
-                ₡<?php echo number_format(($service['price_per_hour'] * $service['duration_minutes'] / 60), 0, ',', '.'); ?>
+        <?php if ($isShuttle && $shuttleQuote && isset($shuttleQuote['ok']) && $shuttleQuote['ok']): ?>
+            <!-- Información del Shuttle -->
+            <div style="background: #e8f5e9; padding: 1.5rem; border-radius: 12px; margin-top: 1.5rem; border-left: 4px solid #4caf50;">
+                <h3 style="margin: 0 0 1rem 0; color: #2e7d32;">
+                    <i class="fas fa-route"></i> Detalles de tu viaje
+                </h3>
+                <div style="display: grid; gap: 0.75rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><i class="fas fa-location-dot"></i> <strong>Desde:</strong></span>
+                        <span><?php echo htmlspecialchars($shuttleData['origin']); ?></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><i class="fas fa-flag-checkered"></i> <strong>Hasta:</strong></span>
+                        <span><?php echo htmlspecialchars($shuttleData['destination']); ?></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><i class="fas fa-calendar"></i> <strong>Fecha:</strong></span>
+                        <span><?php echo date('d/m/Y', strtotime($shuttleData['date'])); ?></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><i class="fas fa-users"></i> <strong>Pasajeros:</strong></span>
+                        <span><?php echo $shuttleData['passengers']; ?> personas</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><i class="fas fa-suitcase"></i> <strong>Maletas:</strong></span>
+                        <span><?php echo $shuttleData['luggage']; ?> maletas</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><i class="fas fa-route"></i> <strong>Distancia:</strong></span>
+                        <span><?php echo $shuttleQuote['distance_km']; ?> km</span>
+                    </div>
+                </div>
+                <div style="border-top: 2px solid #4caf50; padding-top: 0.75rem; margin-top: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 1.25rem;">
+                        <span><strong>Total del servicio:</strong></span>
+                        <span style="color: #2e7d32; font-weight: 700; font-size: 1.5rem;">
+                            <?php echo $shuttleQuote['formatted_price']; ?>
+                        </span>
+                    </div>
+                </div>
             </div>
-        </div>
+        <?php else: ?>
+            <div class="price-display">
+                <div>Precio total del servicio</div>
+                <div class="price-amount">
+                    ₡<?php echo number_format(($service['price_per_hour'] * $service['duration_minutes'] / 60), 0, ',', '.'); ?>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 
     <?php if ($success): ?>
@@ -452,6 +563,19 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
     <?php if (!$success): ?>
     <form method="POST" action="">
         <input type="hidden" name="action" value="create_booking">
+
+        <?php if ($isShuttle): ?>
+            <!-- Preserve shuttle data for form submission -->
+            <input type="hidden" name="shuttle_origin" value="<?php echo htmlspecialchars($shuttleData['origin']); ?>">
+            <input type="hidden" name="shuttle_destination" value="<?php echo htmlspecialchars($shuttleData['destination']); ?>">
+            <input type="hidden" name="shuttle_date" value="<?php echo htmlspecialchars($shuttleData['date']); ?>">
+            <input type="hidden" name="shuttle_passengers" value="<?php echo htmlspecialchars($shuttleData['passengers']); ?>">
+            <input type="hidden" name="shuttle_luggage" value="<?php echo htmlspecialchars($shuttleData['luggage']); ?>">
+            <?php if ($shuttleQuote && isset($shuttleQuote['ok']) && $shuttleQuote['ok']): ?>
+                <input type="hidden" name="shuttle_distance" value="<?php echo htmlspecialchars($shuttleQuote['distance_km']); ?>">
+                <input type="hidden" name="shuttle_total" value="<?php echo htmlspecialchars($shuttleQuote['total_price']); ?>">
+            <?php endif; ?>
+        <?php endif; ?>
 
         <!-- Datos de Contacto -->
         <div class="form-card">

@@ -364,10 +364,10 @@ function calculateEstimatedPrice($basePrice) {
                 >
 
                 <div class="service-info">
-                    <h3><?php echo htmlspecialchars($service['title']); ?></h3>
+                    <h3><?php echo htmlspecialchars($service['affiliate_name']); ?></h3>
                     <p class="service-provider">
-                        <i class="fas fa-user-circle"></i>
-                        <?php echo htmlspecialchars($service['affiliate_name']); ?>
+                        <i class="fas fa-shuttle-van"></i>
+                        <?php echo htmlspecialchars($service['title']); ?>
                     </p>
 
                     <div class="service-features">
@@ -380,12 +380,12 @@ function calculateEstimatedPrice($basePrice) {
                             <span>Hasta 4 maletas</span>
                         </div>
                         <div class="feature">
-                            <i class="fas fa-clock"></i>
-                            <span><?php echo $service['duration_minutes']; ?> min</span>
+                            <i class="fas fa-shield-check"></i>
+                            <span>Vehículo asegurado</span>
                         </div>
                         <div class="feature">
-                            <i class="fas fa-shield-alt"></i>
-                            <span>Seguro incluido</span>
+                            <i class="fas fa-star"></i>
+                            <span>Conductor profesional</span>
                         </div>
                     </div>
 
