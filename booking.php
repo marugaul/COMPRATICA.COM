@@ -691,7 +691,7 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
         </div>
 
         <!-- Dirección -->
-        <?php if ($service['requires_address']): ?>
+        <?php if ($service['requires_address'] && !$isShuttle): ?>
         <div class="form-card">
             <h2 class="form-section-title">
                 <i class="fas fa-map-marker-alt"></i> Dirección de Recogida
