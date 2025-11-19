@@ -1189,7 +1189,13 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
       </div>
     <?php else: ?>
       <?php foreach ($categories as $cat): ?>
-        <a href="services_list.php?category=<?php echo urlencode($cat['slug']); ?>" class="category-card <?php echo $cat['requires_online_payment'] ? 'payment-required' : ''; ?>">
+        <?php
+        // Shuttle Aeropuerto usa página de búsqueda especial
+        $categoryUrl = ($cat['slug'] === 'shuttle-aeropuerto')
+            ? 'shuttle_search.php'
+            : 'services_list.php?category=' . urlencode($cat['slug']);
+        ?>
+        <a href="<?php echo $categoryUrl; ?>" class="category-card <?php echo $cat['requires_online_payment'] ? 'payment-required' : ''; ?>">
           <div class="category-icon">
             <i class="<?php echo htmlspecialchars($cat['icon']); ?>"></i>
           </div>
