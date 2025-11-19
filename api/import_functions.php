@@ -270,8 +270,8 @@ function importPlacesWithDebug($pdo, $places, $category) {
         try {
             $stmt = $pdo->prepare("
                 INSERT INTO places_cr
-                (name, type, category, lat, lng, city, address, phone, website, description, priority, osm_id, osm_type, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                (name, type, category, lat, lng, city, address, phone, website, priority, osm_id, osm_type, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                 ON DUPLICATE KEY UPDATE
                     name = VALUES(name),
                     type = VALUES(type),
@@ -282,7 +282,6 @@ function importPlacesWithDebug($pdo, $places, $category) {
                     address = VALUES(address),
                     phone = VALUES(phone),
                     website = VALUES(website),
-                    description = VALUES(description),
                     priority = VALUES(priority)
             ");
 
@@ -296,7 +295,6 @@ function importPlacesWithDebug($pdo, $places, $category) {
                 $address,
                 $phone,
                 $website,
-                $description,
                 $category['priority'],
                 $place['id'],
                 $place['type']

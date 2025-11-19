@@ -52,8 +52,8 @@ try {
 
     $stmt = $pdo->prepare("
         INSERT INTO places_cr
-        (name, type, category, lat, lng, city, address, phone, website, description, priority, osm_id, osm_type, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        (name, type, category, lat, lng, city, address, phone, website, priority, osm_id, osm_type, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ON DUPLICATE KEY UPDATE
             name = VALUES(name),
             type = VALUES(type),
@@ -73,7 +73,6 @@ try {
         $testPlace['tags']['addr:street'] ?? null,
         $testPlace['tags']['phone'] ?? null,
         $testPlace['tags']['website'] ?? null,
-        $testPlace['tags']['description'] ?? null,
         $testCat['priority'],
         $testPlace['id'],
         $testPlace['type']
