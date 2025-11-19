@@ -649,26 +649,54 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
         </div>
 
 
-        <!-- Dirección -->
-        <?php if ($service['requires_address'] && !$isShuttle): ?>
-        <div class="form-card">
-            <h2 class="form-section-title">
-                <i class="fas fa-map-marker-alt"></i> Dirección de Recogida
-            </h2>
-
-            <div class="form-group">
-                <label class="form-label">
-                    Dirección Completa <span class="required">*</span>
-                </label>
-                <textarea
-                    name="address"
-                    id="pickup_address"
-                    class="form-textarea"
-                    rows="3"
-                    placeholder="Incluye señas específicas para facilitar la ubicación (ej: San José, Escazú, Plaza del Sol)"
-                    required
-                ></textarea>
+        <!-- Dirección / Señas -->
+        <?php if ($isShuttle): ?>
+            <!-- Para shuttles: solo señas adicionales opcionales -->
+            <div class="form-card">
+                <h2 class="form-section-title">
+                    <i class="fas fa-map-marker-alt"></i> Señas Adicionales
+                </h2>
+                <div class="form-group">
+                    <label class="form-label">
+                        Señas o instrucciones de recogida (opcional)
+                    </label>
+                    <textarea
+                        name="address"
+                        class="form-textarea"
+                        rows="3"
+                        placeholder="Ej: Casa color azul, portón negro, frente al supermercado. Cualquier instrucción que ayude al conductor a encontrarte."
+                    ></textarea>
+                    <small style="color: var(--gray-500); margin-top: 0.5rem; display: block;">
+                        <i class="fas fa-info-circle"></i> Opcional: Agrega detalles que ayuden al conductor a ubicarte fácilmente en el punto de recogida.
+                    </small>
+                </div>
             </div>
+        <?php elseif ($service['requires_address']): ?>
+            <!-- Para otros servicios: dirección obligatoria -->
+            <div class="form-card">
+                <h2 class="form-section-title">
+                    <i class="fas fa-map-marker-alt"></i> Dirección de Recogida
+                </h2>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Dirección Completa <span class="required">*</span>
+                    </label>
+                    <textarea
+                        name="address"
+                        id="pickup_address"
+                        class="form-textarea"
+                        rows="3"
+                        placeholder="Incluye señas específicas para facilitar la ubicación (ej: San José, Escazú, Plaza del Sol)"
+                        required
+                    ></textarea>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($service['requires_address'] && !$isShuttle): ?>
+        <div class="form-card" style="margin-top: 0; padding-top: 0; border-top: none;">
+            <div class="form-group" style="margin-top: 0;">
 
             <?php
             // Verificar si es un servicio de shuttle
