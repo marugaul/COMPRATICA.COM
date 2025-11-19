@@ -518,11 +518,59 @@ const places = {
         { id: 'PNM-NUB', type: 'park', name: 'Reserva Monteverde', city: 'Monteverde', province: 'Puntarenas', icon: 'tree', priority: 9 },
         { id: 'PNC-COR', type: 'park', name: 'Parque Nacional Corcovado', city: 'Osa', province: 'Puntarenas', icon: 'tree', priority: 7 },
         { id: 'PNR-SIL', type: 'park', name: 'Parque Nacional Rincón de la Vieja', city: 'Liberia', province: 'Guanacaste', icon: 'mountain', priority: 7 }
+    ],
+    hotels: [
+        // San José
+        { id: 'HTL-MAR-CR', type: 'hotel', name: 'Hotel Marriott San José', city: 'San Antonio de Belén', province: 'Heredia', icon: 'hotel', priority: 8 },
+        { id: 'HTL-RAD-SJ', type: 'hotel', name: 'Radisson San José', city: 'San José', province: 'San José', icon: 'hotel', priority: 7 },
+        { id: 'HTL-HOL-ESC', type: 'hotel', name: 'Holiday Inn Escazú', city: 'Escazú', province: 'San José', icon: 'hotel', priority: 7 },
+        { id: 'HTL-INT-SJ', type: 'hotel', name: 'InterContinental San José', city: 'Escazú', province: 'San José', icon: 'hotel', priority: 8 },
+        // Guanacaste
+        { id: 'HTL-RIU-GUA', type: 'hotel', name: 'RIU Guanacaste', city: 'Matapalo', province: 'Guanacaste', icon: 'hotel', priority: 8 },
+        { id: 'HTL-HIL-PAP', type: 'hotel', name: 'Hilton Papagayo', city: 'Papagayo', province: 'Guanacaste', icon: 'hotel', priority: 9 },
+        { id: 'HTL-WES-CON', type: 'hotel', name: 'Westin Conchal', city: 'Conchal', province: 'Guanacaste', icon: 'hotel', priority: 9 },
+        { id: 'HTL-TAM-DIA', type: 'hotel', name: 'Tamarindo Diria', city: 'Tamarindo', province: 'Guanacaste', icon: 'hotel', priority: 7 },
+        // Manuel Antonio
+        { id: 'HTL-ARE-DEL', type: 'hotel', name: 'Arenas del Mar', city: 'Manuel Antonio', province: 'Puntarenas', icon: 'hotel', priority: 8 },
+        { id: 'HTL-SIP-MAR', type: 'hotel', name: 'Si Como No', city: 'Manuel Antonio', province: 'Puntarenas', icon: 'hotel', priority: 8 },
+        // Arenal
+        { id: 'HTL-TAB-ARE', type: 'hotel', name: 'Tabacón Resort', city: 'La Fortuna', province: 'Alajuela', icon: 'hotel', priority: 9 },
+        { id: 'HTL-SPR-ARE', type: 'hotel', name: 'The Springs Resort', city: 'La Fortuna', province: 'Alajuela', icon: 'hotel', priority: 9 }
+    ],
+    malls: [
+        { id: 'MALL-MUL', type: 'mall', name: 'Multiplaza Escazú', city: 'Escazú', province: 'San José', icon: 'shopping-bag', priority: 9 },
+        { id: 'MALL-LIN', type: 'mall', name: 'Lincoln Plaza', city: 'Moravia', province: 'San José', icon: 'shopping-bag', priority: 8 },
+        { id: 'MALL-TER', type: 'mall', name: 'Terramall', city: 'Tres Ríos', province: 'Cartago', icon: 'shopping-bag', priority: 8 },
+        { id: 'MALL-OXI', type: 'mall', name: 'Oxígeno', city: 'Heredia', province: 'Heredia', icon: 'shopping-bag', priority: 8 },
+        { id: 'MALL-PAS', type: 'mall', name: 'Paseo de las Flores', city: 'Heredia', province: 'Heredia', icon: 'shopping-bag', priority: 7 },
+        { id: 'MALL-CIT', type: 'mall', name: 'City Mall Alajuela', city: 'Alajuela', province: 'Alajuela', icon: 'shopping-bag', priority: 7 },
+        { id: 'MALL-MOM', type: 'mall', name: 'Mall San Pedro', city: 'San Pedro', province: 'San José', icon: 'shopping-bag', priority: 8 }
+    ],
+    supermarkets: [
+        { id: 'SUPER-AM-ESC', type: 'supermarket', name: 'AutoMercado Escazú', city: 'Escazú', province: 'San José', icon: 'store', priority: 7 },
+        { id: 'SUPER-AM-LIN', type: 'supermarket', name: 'AutoMercado Lincoln Plaza', city: 'Moravia', province: 'San José', icon: 'store', priority: 7 },
+        { id: 'SUPER-PV-MAS', type: 'supermarket', name: 'PriceSmart Zapote', city: 'San José', province: 'San José', icon: 'store', priority: 7 },
+        { id: 'SUPER-WAL-ESC', type: 'supermarket', name: 'Walmart Escazú', city: 'Escazú', province: 'San José', icon: 'store', priority: 7 }
+    ],
+    hospitals: [
+        { id: 'HOSP-CIM', type: 'hospital', name: 'Hospital CIMA San José', city: 'Escazú', province: 'San José', icon: 'hospital', priority: 8 },
+        { id: 'HOSP-CLI', type: 'hospital', name: 'Clínica Bíblica', city: 'San José', province: 'San José', icon: 'hospital', priority: 8 },
+        { id: 'HOSP-CAT', type: 'hospital', name: 'Hospital Católica', city: 'San José', province: 'San José', icon: 'hospital', priority: 7 }
     ]
 };
 
 // Combinar todos los lugares
-const allPlaces = [...places.airports, ...places.ports, ...places.cities, ...places.beaches, ...places.parks];
+const allPlaces = [
+    ...places.airports,
+    ...places.ports,
+    ...places.cities,
+    ...places.beaches,
+    ...places.parks,
+    ...places.hotels,
+    ...places.malls,
+    ...places.supermarkets,
+    ...places.hospitals
+];
 
 let searchTimeout = null;
 
@@ -621,15 +669,16 @@ function setupAutocomplete(inputId, dropdownId, typeHiddenId, idHiddenId) {
     });
 }
 
-// Buscar direcciones en OpenStreetMap Nominatim
+// Buscar direcciones y POIs en OpenStreetMap Nominatim
 async function searchAddresses(query) {
     try {
         const url = `https://nominatim.openstreetmap.org/search?` +
             `q=${encodeURIComponent(query)},Costa Rica&` +
             `format=json&` +
             `addressdetails=1&` +
-            `limit=5&` +
-            `countrycodes=cr`;
+            `limit=8&` +
+            `countrycodes=cr&` +
+            `extratags=1`;
 
         const response = await fetch(url, {
             headers: {
@@ -642,32 +691,66 @@ async function searchAddresses(query) {
         const data = await response.json();
 
         return data.map(item => {
-            // Determinar tipo de lugar
+            // Determinar tipo de lugar e ícono según el tipo OSM
             let type = 'address';
             let icon = 'map-pin';
+
+            // Mapeo de tipos de OpenStreetMap a nuestros iconos
+            const osmType = item.type || item.class;
 
             if (item.type === 'city' || item.type === 'town' || item.type === 'village') {
                 type = 'city';
                 icon = 'city';
-            } else if (item.type === 'hotel' || item.type === 'motel') {
+            } else if (item.type === 'hotel' || item.type === 'motel' || item.type === 'guest_house' || osmType === 'hotel') {
                 type = 'hotel';
                 icon = 'hotel';
-            } else if (item.type === 'beach') {
+            } else if (item.type === 'beach' || osmType === 'beach') {
                 type = 'beach';
                 icon = 'umbrella-beach';
+            } else if (item.type === 'hospital' || osmType === 'hospital' || osmType === 'clinic') {
+                type = 'hospital';
+                icon = 'hospital';
+            } else if (osmType === 'bank' || osmType === 'atm') {
+                type = 'bank';
+                icon = 'building-columns';
+            } else if (osmType === 'fuel' || osmType === 'gas' || osmType === 'fuel_station') {
+                type = 'gas_station';
+                icon = 'gas-pump';
+            } else if (osmType === 'restaurant' || osmType === 'cafe' || osmType === 'fast_food') {
+                type = 'restaurant';
+                icon = 'utensils';
+            } else if (osmType === 'supermarket' || osmType === 'mall' || osmType === 'shopping_center') {
+                type = 'shopping';
+                icon = 'shopping-cart';
+            } else if (osmType === 'pharmacy') {
+                type = 'pharmacy';
+                icon = 'pills';
+            } else if (osmType === 'park' || osmType === 'nature_reserve') {
+                type = 'park';
+                icon = 'tree';
+            } else if (osmType === 'attraction' || osmType === 'tourist') {
+                type = 'attraction';
+                icon = 'camera';
+            } else if (item.class === 'amenity') {
+                // Amenity genérico
+                icon = 'building';
             }
 
             const address = item.address || {};
             const subtitle = [
+                address.road,
                 address.city || address.town || address.village,
-                address.state || address.province || 'Costa Rica'
-            ].filter(Boolean).join(', ');
+                address.state || address.province
+            ].filter(Boolean).join(', ') || 'Costa Rica';
+
+            // Usar el nombre si existe, sino usar display_name truncado
+            let displayName = item.name || item.display_name.split(',')[0];
 
             return {
                 id: `OSM-${item.osm_id}`,
                 type: type,
-                name: item.display_name.split(',')[0],
-                subtitle: subtitle || item.display_name,
+                name: displayName,
+                subtitle: subtitle,
                 icon: icon,
                 source: 'osm'
             };
