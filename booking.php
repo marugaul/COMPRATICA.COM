@@ -801,34 +801,50 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
                 <i class="fas fa-credit-card"></i> Método de Pago
             </h2>
 
-            <div class="radio-group">
-                <?php foreach ($paymentMethods as $pm): ?>
-                    <div class="radio-option">
-                        <input
-                            type="radio"
-                            name="payment_method"
-                            value="<?php echo htmlspecialchars($pm['method_type']); ?>"
-                            id="pm_<?php echo $pm['id']; ?>"
-                            required
-                        >
-                        <label for="pm_<?php echo $pm['id']; ?>">
-                            <?php
-                            $icons = [
-                                'efectivo' => 'fa-money-bill-wave',
-                                'sinpe' => 'fa-mobile-alt',
-                                'transferencia' => 'fa-exchange-alt'
-                            ];
-                            $icon = $icons[$pm['method_type']] ?? 'fa-credit-card';
-                            ?>
-                            <i class="fas <?php echo $icon; ?>"></i>
-                            <?php echo ucfirst($pm['method_type']); ?>
-                            <?php if ($pm['details']): ?>
-                                <br><small style="color: var(--gray-500);"><?php echo htmlspecialchars($pm['details']); ?></small>
-                            <?php endif; ?>
-                        </label>
-                    </div>
-                <?php endforeach; ?>
-            </div>
+            <?php if (empty($paymentMethods)): ?>
+                <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 1rem; border-radius: 8px; color: #856404;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    El proveedor aún no ha configurado métodos de pago para este servicio.
+                </div>
+            <?php else: ?>
+                <div class="radio-group">
+                    <?php foreach ($paymentMethods as $pm): ?>
+                        <div class="radio-option">
+                            <input
+                                type="radio"
+                                name="payment_method"
+                                value="<?php echo htmlspecialchars($pm['method_type']); ?>"
+                                id="pm_<?php echo $pm['id']; ?>"
+                                required
+                            >
+                            <label for="pm_<?php echo $pm['id']; ?>" style="width: 100%;">
+                                <?php
+                                $icons = [
+                                    'efectivo' => 'fa-money-bill-wave',
+                                    'sinpe' => 'fa-mobile-alt',
+                                    'transferencia' => 'fa-exchange-alt',
+                                    'tarjeta' => 'fa-credit-card'
+                                ];
+                                $icon = $icons[strtolower($pm['method_type'])] ?? 'fa-credit-card';
+                                ?>
+                                <i class="fas <?php echo $icon; ?>"></i>
+                                <?php echo ucfirst($pm['method_type']); ?>
+
+                                <?php if ($pm['details']): ?>
+                                    <br><small style="color: var(--gray-500);"><?php echo htmlspecialchars($pm['details']); ?></small>
+                                <?php endif; ?>
+
+                                <?php if (strtolower($pm['method_type']) === 'sinpe' && !empty($service['affiliate_phone'])): ?>
+                                    <br>
+                                    <small style="color: var(--primary); font-weight: 600; background: #e8f5e9; padding: 0.5rem; border-radius: 4px; display: inline-block; margin-top: 0.5rem;">
+                                        <i class="fas fa-phone"></i> Transferir a: <?php echo htmlspecialchars($service['affiliate_phone']); ?>
+                                    </small>
+                                <?php endif; ?>
+                            </label>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Notas Adicionales -->
