@@ -157,7 +157,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         if (empty($customer_phone)) throw new Exception('El teléfono es obligatorio');
         if (empty($payment_method)) throw new Exception('Debes seleccionar un método de pago');
 
-        if ($service['requires_address'] && empty($address)) {
+        // Solo requiere dirección si el servicio lo necesita Y NO es un shuttle
+        if ($service['requires_address'] && !$isShuttleBooking && empty($address)) {
             throw new Exception('La dirección es obligatoria para este servicio');
         }
 
