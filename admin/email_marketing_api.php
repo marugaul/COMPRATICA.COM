@@ -73,16 +73,15 @@ function handleCreateCampaign() {
     // Crear la campaña
     $stmt = $pdo->prepare("
         INSERT INTO email_campaigns
-        (name, smtp_config_id, template_id, subject, source_type, created_by, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'draft')
+        (name, smtp_config_id, template_id, subject, source_type, status)
+        VALUES (?, ?, ?, ?, ?, 'draft')
     ");
     $stmt->execute([
         $campaign_name,
         $smtp_config_id,
         $template_id,
         $subject,
-        $source_type,
-        1  // Admin user ID
+        $source_type
     ]);
 
     $campaign_id = $pdo->lastInsertId();
