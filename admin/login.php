@@ -76,21 +76,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($okUser && $okPass) {
         debugLog('LOGIN EXITOSO - CONFIGURANDO SESION');
 
-        // Login exitoso
+        // Login exitoso - NO regenerar ID para evitar problemas de cookie
         $_SESSION['is_admin'] = true;
         $_SESSION['admin_user'] = ADMIN_USER;
 
         debugLog('SESION CONFIGURADA', [
             'is_admin' => $_SESSION['is_admin'],
             'admin_user' => $_SESSION['admin_user'],
-            'session_id_antes_regenerate' => session_id()
+            'session_id' => session_id()
         ]);
 
-        session_regenerate_id(true);
-
-        debugLog('SESSION REGENERADO', [
-            'nuevo_session_id' => session_id()
-        ]);
+        // Guardar sesión antes de redirigir
+        session_write_close();
 
         // Redirigir
         $redirect = $_GET['redirect'] ?? 'dashboard.php';
