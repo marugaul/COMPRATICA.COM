@@ -38,21 +38,21 @@ try {
         [
             'name' => 'Mixtico - Transporte Privado',
             'company' => 'mixtico',
-            'subject' => 'Transporte Privado de Calidad en Costa Rica 🚐',
+            'subject_default' => 'Transporte Privado de Calidad en Costa Rica 🚐',
             'file' => 'mixtico_template.html',
             'variables' => json_encode(['nombre', 'email', 'telefono', 'empresa', 'campaign_id', 'tracking_pixel', 'unsubscribe_link'])
         ],
         [
             'name' => 'CRV-SOFT - Soluciones Tecnológicas',
             'company' => 'crv-soft',
-            'subject' => 'Transforme su Negocio con Tecnología 💻',
+            'subject_default' => 'Transforme su Negocio con Tecnología 💻',
             'file' => 'crv_soft_template.html',
             'variables' => json_encode(['nombre', 'email', 'telefono', 'empresa', 'campaign_id', 'tracking_pixel', 'unsubscribe_link'])
         ],
         [
             'name' => 'CompraTica - Marketplace Costarricense',
             'company' => 'compratica',
-            'subject' => 'Descubrí el Marketplace 100% Tico 🇨🇷',
+            'subject_default' => 'Descubrí el Marketplace 100% Tico 🇨🇷',
             'file' => 'compratica_template.html',
             'variables' => json_encode(['nombre', 'email', 'telefono', 'empresa', 'campaign_id', 'tracking_pixel', 'unsubscribe_link'])
         ]
@@ -86,12 +86,12 @@ try {
             // Actualizar
             $stmt = $pdo->prepare("
                 UPDATE email_templates
-                SET name=?, subject=?, html_content=?, variables=?, is_active=1, updated_at=NOW()
+                SET name=?, subject_default=?, html_content=?, variables=?, is_active=1, updated_at=NOW()
                 WHERE company=?
             ");
             $stmt->execute([
                 $template['name'],
-                $template['subject'],
+                $template['subject_default'],
                 $htmlContent,
                 $template['variables'],
                 $template['company']
@@ -100,13 +100,13 @@ try {
         } else {
             // Insertar nueva
             $stmt = $pdo->prepare("
-                INSERT INTO email_templates (name, company, subject, html_content, variables, is_active)
+                INSERT INTO email_templates (name, company, subject_default, html_content, variables, is_active)
                 VALUES (?, ?, ?, ?, ?, 1)
             ");
             $stmt->execute([
                 $template['name'],
                 $template['company'],
-                $template['subject'],
+                $template['subject_default'],
                 $htmlContent,
                 $template['variables']
             ]);
@@ -128,7 +128,7 @@ try {
             echo "<td>{$t['id']}</td>";
             echo "<td>{$t['name']}</td>";
             echo "<td><strong>{$t['company']}</strong></td>";
-            echo "<td>{$t['subject']}</td>";
+            echo "<td>{$t['subject_default']}</td>";
             echo "<td>" . number_format(strlen($t['html_content'])) . " bytes</td>";
             echo "<td>" . ($t['is_active'] ? '<span class="ok">✓ Sí</span>' : '✗ No') . "</td>";
             echo "</tr>";
