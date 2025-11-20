@@ -93,7 +93,7 @@ function handleCreateCampaign() {
     if ($source_type === 'excel') {
         $recipients = processExcelUpload($campaign_id);
     } elseif ($source_type === 'database') {
-        $recipients = processDatabase Campaign($campaign_id);
+        $recipients = processDatabaseCampaign($campaign_id);
     } elseif ($source_type === 'manual') {
         $recipients = processManualRecipients($campaign_id);
     }
@@ -144,6 +144,55 @@ function handleCreateCampaign() {
     ];
 
     header('Location: email_marketing.php?page=campaigns');
+    exit;
+}
+
+/**
+ * Programar o enviar campaña
+ */
+function handleSendCampaign() {
+    global $pdo;
+
+    $campaign_id = $_POST['campaign_id'] ?? '';
+    $send_type = $_POST['send_type'] ?? 'now'; // 'now' o 'scheduled'
+    $scheduled_datetime = $_POST['scheduled_datetime'] ?? null;
+
+    if (empty($campaign_id)) {
+        throw new Exception('ID de campaña no válido');
+    }
+
+    // Verificar que la campaña existe
+    $campaign = $pdo->query("SELECT * FROM email_campaigns WHERE id = $campaign_id")->fetch(PDO::FETCH_ASSOC);
+
+    if (!$campaign) {
+        throw new Exception('Campaña no encontrada');
+    }
+
+    if ($campaign['total_recipients'] == 0) {
+        throw new Exception('La campaña no tiene destinatarios');
+    }
+
+    if ($send_type === 'scheduled' && $scheduled_datetime) {
+        // Programar envío
+        $stmt = $pdo->prepare("UPDATE email_campaigns SET status = 'scheduled', scheduled_at = ? WHERE id = ?");
+        $stmt->execute([$scheduled_datetime, $campaign_id]);
+
+        $_SESSION['message'] = [
+            'type' => 'success',
+            'text' => "Campaña programada para: " . date('d/m/Y H:i', strtotime($scheduled_datetime))
+        ];
+    } else {
+        // Enviar ahora - cambiar estado a 'sending'
+        $stmt = $pdo->prepare("UPDATE email_campaigns SET status = 'sending', started_at = NOW() WHERE id = ?");
+        $stmt->execute([$campaign_id]);
+
+        $_SESSION['message'] = [
+            'type' => 'success',
+            'text' => "Campaña iniciada. Los emails se están enviando en segundo plano."
+        ];
+    }
+
+    header('Location: email_marketing.php?page=campaign-detail&id=' . $campaign_id);
     exit;
 }
 
