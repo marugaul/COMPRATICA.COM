@@ -1,0 +1,159 @@
+<?php
+/**
+ * Script de Envío de Campañas
+ * Procesa el envío de emails en batch con rate limiting
+ */
+
+session_start();
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/email_sender.php';
+
+// Verificar auth
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+    header('Location: login.php');
+    exit;
+}
+
+$config = require __DIR__ . '/../config/database.php';
+$pdo = new PDO(
+    "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
+    $config['username'],
+    $config['password'],
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+);
+
+$campaign_id = $_GET['campaign_id'] ?? 0;
+
+if (!$campaign_id) {
+    die('Campaign ID required');
+}
+
+// Obtener campaña
+$campaign = $pdo->query("SELECT * FROM email_campaigns WHERE id = $campaign_id")->fetch();
+
+if (!$campaign) {
+    die('Campaña no encontrada');
+}
+
+// Obtener SMTP config
+$smtp_config = $pdo->query("SELECT * FROM email_smtp_configs WHERE id = {$campaign['smtp_config_id']}")->fetch();
+
+if (!$smtp_config) {
+    die('Configuración SMTP no encontrada');
+}
+
+$mailer = new EmailSender($smtp_config, $pdo);
+
+// Procesar en modo batch
+$batch_size = 50; // Enviar 50 emails por batch
+$delay = 2; // 2 segundos entre emails
+
+$result = $mailer->sendCampaign($campaign_id, $batch_size, $delay);
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enviando Campaña</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            max-width: 600px;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 25px;
+            text-align: center;
+        }
+        .progress {
+            height: 30px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="card w-100">
+        <div class="card-header">
+            <h3 style="margin: 0;"><i class="fas fa-paper-plane"></i> Enviando Campaña</h3>
+        </div>
+        <div class="card-body p-4">
+            <h5><?= htmlspecialchars($campaign['name']) ?></h5>
+
+            <div class="alert alert-info">
+                <strong>Progreso del Envío:</strong><br>
+                Enviados: <strong><?= $result['sent'] ?></strong><br>
+                Fallidos: <strong><?= $result['failed'] ?></strong><br>
+                Pendientes: <strong><?= $result['pending'] ?></strong>
+            </div>
+
+            <?php if ($result['pending'] > 0): ?>
+                <div class="alert alert-warning">
+                    <i class="fas fa-spinner fa-spin"></i> Quedan <?= $result['pending'] ?> emails pendientes.
+                    La página se recargará automáticamente para continuar enviando...
+                </div>
+
+                <div class="progress mb-3">
+                    <?php
+                    $total = $campaign['total_recipients'];
+                    $sent_total = $campaign['sent_count'] + $result['sent'];
+                    $percentage = round(($sent_total / $total) * 100);
+                    ?>
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                         style="width: <?= $percentage ?>%">
+                        <?= $percentage ?>%
+                    </div>
+                </div>
+
+                <p class="text-center text-muted">
+                    Procesando batch de <?= $batch_size ?> emails cada 5 segundos...
+                </p>
+
+                <script>
+                // Auto-recargar para continuar enviando
+                setTimeout(function() {
+                    window.location.reload();
+                }, 5000);
+                </script>
+
+            <?php else: ?>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> <strong>¡Campaña Enviada Completamente!</strong><br>
+                    Total enviados: <?= $campaign['sent_count'] + $result['sent'] ?><br>
+                    Total fallidos: <?= $campaign['failed_count'] + $result['failed'] ?>
+                </div>
+
+                <div class="progress mb-3">
+                    <div class="progress-bar bg-success" style="width: 100%">
+                        100%
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <a href="email_marketing.php?page=campaigns" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Volver a Campañas
+                    </a>
+                    <a href="email_marketing.php?page=reports" class="btn btn-outline-secondary">
+                        <i class="fas fa-chart-bar"></i> Ver Reportes
+                    </a>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</body>
+</html>

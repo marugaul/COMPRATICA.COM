@@ -29,6 +29,7 @@ $fee_val = get_sale_fee_crc($pdo);
   <a class="btn" href="dashboard.php">Dashboard</a>
   <a class="btn" href="sales_admin.php">Espacios</a>
   <a class="btn" href="affiliates.php">Afiliados</a>
+  <a class="btn" href="email_marketing.php">📧 Email Marketing</a>
 </nav></header>
 <div class="container">
   <?php if($msg): ?><div class="success"><?= htmlspecialchars($msg) ?></div><?php endif; ?>

@@ -8,7 +8,11 @@ sessions/
 logs/
 
 # Uploads (comentar si quieres incluirlos)
-# uploads/
+uploads/
+
+# Composer
+vendor/
+composer.lock
 
 # Configuración local
 .user.ini
