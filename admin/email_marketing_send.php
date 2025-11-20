@@ -4,12 +4,11 @@
  * Procesa el envío de emails en batch con rate limiting
  */
 
-session_start();
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/email_sender.php';
 
 // Verificar auth
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
     header('Location: login.php');
     exit;
 }
