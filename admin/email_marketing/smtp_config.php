@@ -18,7 +18,7 @@ $smtp_configs = $pdo->query("SELECT * FROM email_smtp_configs ORDER BY name")->f
                 <?php endif; ?>
             </div>
             <div class="card-body">
-                <form action="email_marketing_api.php" method="POST">
+                <form action="email_marketing_api_debug.php" method="POST">
                     <input type="hidden" name="action" value="save_smtp_config">
                     <input type="hidden" name="config_id" value="<?= $config['id'] ?>">
 
