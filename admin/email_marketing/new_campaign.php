@@ -204,10 +204,10 @@ $categories = $pdo->query("
                                     <div class="card-body text-center">
                                         <i class="fas fa-envelope fa-3x mb-3" style="color: var(--<?= $template['company'] === 'mixtico' ? 'secondary' : ($template['company'] === 'crv-soft' ? 'secondary' : 'primary') ?>);"></i>
                                         <h6><?= h($template['name']) ?></h6>
-                                        <span class="badge" style="background-color: <?= $template['company'] === 'mixtico' ? '#3b82f6' : ($template['company'] === 'crv-soft' ? '#06b6d4' : '#dc2626') ?>;">
+                                        <span class="badge" style="background-color: <?= $template['company'] === 'mixtico' ? '#f97316' : ($template['company'] === 'crv-soft' ? '#06b6d4' : '#dc2626') ?>;">
                                             <?= ucfirst(h($template['company'])) ?>
                                         </span>
-                                        <p class="small text-muted mt-2 mb-0"><?= h($template['subject']) ?></p>
+                                        <p class="small text-muted mt-2 mb-0"><?= h($template['subject_default']) ?></p>
                                     </div>
                                 </div>
                             </div>
@@ -259,6 +259,44 @@ $categories = $pdo->query("
         </div>
     </div>
 
+    <!-- Programación de Envío -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-clock"></i> Programación de Envío
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">¿Cuándo enviar los emails? *</label>
+                <select name="send_type" id="sendType" class="form-control" required>
+                    <option value="">Seleccione...</option>
+                    <option value="draft">💾 Guardar como Borrador (enviar después)</option>
+                    <option value="now">🚀 Enviar Inmediatamente</option>
+                    <option value="scheduled">📅 Programar para Fecha/Hora</option>
+                </select>
+            </div>
+
+            <div id="scheduledOption" class="mt-3" style="display: none;">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha y Hora de Envío</label>
+                        <input type="datetime-local" name="scheduled_datetime" id="scheduledDatetime" class="form-control">
+                        <small class="text-muted">Los emails se enviarán automáticamente en esta fecha/hora</small>
+                    </div>
+                </div>
+            </div>
+
+            <div id="nowOption" class="mt-3 alert alert-warning" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i> <strong>Atención:</strong>
+                Los emails comenzarán a enviarse inmediatamente después de crear la campaña.
+            </div>
+
+            <div id="draftOption" class="mt-3 alert alert-info" style="display: none;">
+                <i class="fas fa-info-circle"></i> <strong>Nota:</strong>
+                La campaña se guardará como borrador. Podrá enviarla más tarde desde el panel de campañas.
+            </div>
+        </div>
+    </div>
+
     <!-- Botones de Acción -->
     <div class="card">
         <div class="card-body text-end">
@@ -268,8 +306,8 @@ $categories = $pdo->query("
             <button type="button" class="btn btn-outline-primary" onclick="previewCampaign()">
                 <i class="fas fa-eye"></i> Vista Previa
             </button>
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-paper-plane"></i> Crear y Programar Campaña
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                <i class="fas fa-save"></i> Crear Campaña
             </button>
         </div>
     </div>
@@ -288,6 +326,30 @@ document.getElementById('sourceType').addEventListener('change', function() {
         document.getElementById('databaseOption').style.display = 'block';
     } else if (this.value === 'manual') {
         document.getElementById('manualOption').style.display = 'block';
+    }
+});
+
+// Manejo de tipo de envío
+document.getElementById('sendType').addEventListener('change', function() {
+    const submitBtn = document.getElementById('submitBtn');
+    document.getElementById('scheduledOption').style.display = 'none';
+    document.getElementById('nowOption').style.display = 'none';
+    document.getElementById('draftOption').style.display = 'none';
+
+    if (this.value === 'scheduled') {
+        document.getElementById('scheduledOption').style.display = 'block';
+        document.getElementById('scheduledDatetime').required = true;
+        submitBtn.innerHTML = '<i class="fas fa-calendar-check"></i> Crear y Programar';
+    } else if (this.value === 'now') {
+        document.getElementById('nowOption').style.display = 'block';
+        document.getElementById('scheduledDatetime').required = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Crear y Enviar Ahora';
+    } else if (this.value === 'draft') {
+        document.getElementById('draftOption').style.display = 'block';
+        document.getElementById('scheduledDatetime').required = false;
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar como Borrador';
+    } else {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Crear Campaña';
     }
 });
 
@@ -315,6 +377,7 @@ function previewCampaign() {
 // Validación antes de enviar
 document.getElementById('campaignForm').addEventListener('submit', function(e) {
     const sourceType = document.getElementById('sourceType').value;
+    const sendType = document.getElementById('sendType').value;
 
     if (sourceType === 'database') {
         const checked = document.querySelectorAll('.category-checkbox:checked').length;
@@ -325,7 +388,25 @@ document.getElementById('campaignForm').addEventListener('submit', function(e) {
         }
     }
 
-    if (!confirm('¿Está seguro de crear esta campaña? Los emails se programarán para envío.')) {
+    // Mensaje de confirmación según el tipo de envío
+    let confirmMessage = '';
+    if (sendType === 'now') {
+        confirmMessage = '¿Está seguro? Los emails comenzarán a enviarse INMEDIATAMENTE.';
+    } else if (sendType === 'scheduled') {
+        const datetime = document.getElementById('scheduledDatetime').value;
+        if (!datetime) {
+            e.preventDefault();
+            alert('Por favor seleccione una fecha y hora para el envío programado');
+            return false;
+        }
+        confirmMessage = '¿Está seguro de programar esta campaña para: ' + datetime + '?';
+    } else if (sendType === 'draft') {
+        confirmMessage = '¿Crear esta campaña como borrador?';
+    } else {
+        confirmMessage = '¿Está seguro de crear esta campaña?';
+    }
+
+    if (!confirm(confirmMessage)) {
         e.preventDefault();
         return false;
     }

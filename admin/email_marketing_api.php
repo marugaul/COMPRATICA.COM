@@ -65,23 +65,41 @@ function handleCreateCampaign() {
     $source_type = $_POST['source_type'] ?? '';
     $template_id = $_POST['template_id'] ?? '';
     $smtp_config_id = $_POST['smtp_config_id'] ?? '';
+    $send_type = $_POST['send_type'] ?? 'draft';
+    $scheduled_datetime = $_POST['scheduled_datetime'] ?? null;
 
     if (empty($campaign_name) || empty($subject) || empty($template_id) || empty($smtp_config_id)) {
         throw new Exception('Todos los campos son obligatorios');
     }
 
+    // Determinar el estado inicial de la campaña
+    $initial_status = 'draft';
+    $scheduled_at = null;
+    $started_at = null;
+
+    if ($send_type === 'now') {
+        $initial_status = 'sending';
+        $started_at = date('Y-m-d H:i:s');
+    } elseif ($send_type === 'scheduled' && !empty($scheduled_datetime)) {
+        $initial_status = 'scheduled';
+        $scheduled_at = $scheduled_datetime;
+    }
+
     // Crear la campaña
     $stmt = $pdo->prepare("
         INSERT INTO email_campaigns
-        (name, smtp_config_id, template_id, subject, source_type, status)
-        VALUES (?, ?, ?, ?, ?, 'draft')
+        (name, smtp_config_id, template_id, subject, source_type, status, scheduled_at, started_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $stmt->execute([
         $campaign_name,
         $smtp_config_id,
         $template_id,
         $subject,
-        $source_type
+        $source_type,
+        $initial_status,
+        $scheduled_at,
+        $started_at
     ]);
 
     $campaign_id = $pdo->lastInsertId();
@@ -137,9 +155,20 @@ function handleCreateCampaign() {
         }
     }
 
+    // Mensaje de éxito según el tipo de envío
+    $message_text = "Campaña creada exitosamente con {$total} destinatarios. ";
+
+    if ($send_type === 'now') {
+        $message_text .= "Los emails se están enviando en segundo plano.";
+    } elseif ($send_type === 'scheduled') {
+        $message_text .= "Programada para: " . date('d/m/Y H:i', strtotime($scheduled_datetime));
+    } else {
+        $message_text .= "<a href='email_marketing.php?page=campaign-detail&id={$campaign_id}'>Ver detalles</a>";
+    }
+
     $_SESSION['message'] = [
         'type' => 'success',
-        'text' => "Campaña creada exitosamente con {$total} destinatarios. <a href='email_marketing.php?page=campaign-send&id={$campaign_id}'>Enviar ahora</a>"
+        'text' => $message_text
     ];
 
     header('Location: email_marketing.php?page=campaigns');
