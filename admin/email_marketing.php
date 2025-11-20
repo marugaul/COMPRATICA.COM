@@ -4,10 +4,8 @@
  * Sistema de envío masivo de correos con tracking
  */
 
-// Iniciar sesión si no está iniciada
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Cargar configuración (que ya maneja sesiones)
+require_once __DIR__ . '/../includes/config.php';
 
 // Verificar que sea admin
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
@@ -15,6 +13,7 @@ if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
     exit;
 }
 
+// Cargar configuración de BD
 $config = require __DIR__ . '/../config/database.php';
 $pdo = new PDO(
     "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
