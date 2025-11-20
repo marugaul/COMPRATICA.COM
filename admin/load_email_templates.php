@@ -36,9 +36,9 @@ try {
     // Definir plantillas
     $templates = [
         [
-            'name' => 'Mixtico - Transporte Privado',
+            'name' => 'Mixtico - Mezclas para Cocteles',
             'company' => 'mixtico',
-            'subject_default' => 'Transporte Privado de Calidad en Costa Rica 🚐',
+            'subject_default' => 'Descubrí nuestras Mezclas Premium para Cocteles 🍹',
             'file' => 'mixtico_template.html',
             'variables' => json_encode(['nombre', 'email', 'telefono', 'empresa', 'campaign_id', 'tracking_pixel', 'unsubscribe_link'])
         ],
