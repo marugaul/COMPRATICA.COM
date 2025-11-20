@@ -1,0 +1,116 @@
+========================================
+INSTALACIÓN FÁCIL - EMAIL MARKETING
+Sin SSH - Solo Navegador Web
+========================================
+
+PASO 1: HACER PULL DEL REPOSITORIO
+-----------------------------------
+Ve a tu cPanel → Git Version Control
+O descarga: https://github.com/marugaul/COMPRATICA.COM/archive/refs/heads/main.zip
+
+Actualiza los archivos en tu servidor.
+
+
+PASO 2: EJECUTAR SQL DESDE TU NAVEGADOR
+----------------------------------------
+1. Abre en tu navegador:
+   https://compratica.com/tools/sql_exec.php
+
+2. Copia TODO el contenido del archivo:
+   admin/INSTALAR_EMAIL_MARKETING.sql
+
+3. Pega en el campo de SQL Tools
+
+4. Click en "Ejecutar"
+
+✅ Esto creará:
+   - 5 tablas MySQL
+   - 3 configuraciones SMTP
+
+
+PASO 3: SUBIR LAS 3 PLANTILLAS HTML
+------------------------------------
+1. Abre: https://compratica.com/admin/email_marketing.php?page=templates
+
+2. Click en "Nueva Plantilla" para cada una:
+
+   PLANTILLA 1 - MIXTICO:
+   - Nombre: Mixtico - Transporte Privado
+   - Compañía: Mixtico
+   - Asunto: Su Transporte Privado en Costa Rica 🚐
+   - HTML: Copiar contenido de admin/email_templates/mixtico_template.html
+
+   PLANTILLA 2 - CRV-SOFT:
+   - Nombre: CRV-SOFT - Soluciones Tecnológicas
+   - Compañía: CRV-SOFT
+   - Asunto: Transforme su Negocio con Tecnología 💻
+   - HTML: Copiar contenido de admin/email_templates/crv_soft_template.html
+
+   PLANTILLA 3 - COMPRATICA:
+   - Nombre: CompraTica - Marketplace Costa Rica
+   - Compañía: CompraTica
+   - Asunto: ¡Descubre las Mejores Ofertas en CompraTica! 🇨🇷
+   - HTML: Copiar contenido de admin/email_templates/compratica_template.html
+
+
+PASO 4: CONFIGURAR CONTRASEÑAS SMTP
+------------------------------------
+1. Abre: https://compratica.com/admin/email_marketing.php?page=smtp-config
+
+2. Para CADA cuenta (Mixtico, CRV-SOFT, Compratica):
+   - Click en "Editar"
+   - Completar:
+     * SMTP Host (ejemplo: smtp.gmail.com)
+     * Puerto: 587
+     * Usuario SMTP
+     * Contraseña SMTP
+   - Guardar
+
+
+PASO 5: CREAR PRIMERA CAMPAÑA DE PRUEBA
+----------------------------------------
+1. Abre: https://compratica.com/admin/email_marketing.php?page=new-campaign
+
+2. Completar:
+   - Nombre: Prueba Email Marketing
+   - Cuenta SMTP: Seleccionar una configurada
+   - Plantilla: Seleccionar una de las 3
+   - Asunto: Prueba de envío
+   - Origen: Manual
+   - Email de prueba: TU EMAIL PERSONAL
+
+3. Click "Crear Campaña"
+
+4. Click "Enviar"
+
+5. Revisar tu bandeja de entrada
+
+
+VERIFICAR QUE TODO FUNCIONA:
+----------------------------
+✓ Recibiste el email de prueba
+✓ El diseño se ve bien
+✓ Los links funcionan
+✓ No fue a SPAM
+
+
+PRÓXIMOS PASOS:
+--------------
+1. Configurar DNS (SPF/DKIM) para evitar SPAM
+   Ver: admin/EMAIL_MARKETING_README.md
+
+2. Crear campañas masivas:
+   - Subir Excel con contactos
+   - O seleccionar de base de datos por categorías
+
+3. Ver reportes y estadísticas en:
+   https://compratica.com/admin/email_marketing.php?page=reports
+
+
+SOPORTE:
+--------
+Documentación completa: admin/EMAIL_MARKETING_README.md
+Guía rápida: QUICK_START_EMAIL_MARKETING.txt
+
+
+¡LISTO! El sistema está instalado y funcionando.
