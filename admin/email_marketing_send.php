@@ -4,50 +4,79 @@
  * Procesa el envío de emails en batch con rate limiting
  */
 
-require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/email_sender.php';
+// Habilitar error reporting completo
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-// Verificar auth
-if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
-    header('Location: login.php');
-    exit;
+$error_message = '';
+$result = null;
+$campaign = null;
+
+try {
+    require_once __DIR__ . '/../includes/config.php';
+
+    // Verificar auth
+    if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
+        header('Location: login.php');
+        exit;
+    }
+
+    $config = require __DIR__ . '/../config/database.php';
+    $pdo = new PDO(
+        "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
+        $config['username'],
+        $config['password'],
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+
+    $campaign_id = $_GET['campaign_id'] ?? 0;
+
+    if (!$campaign_id) {
+        throw new Exception('Campaign ID requerido');
+    }
+
+    // Obtener campaña
+    $stmt = $pdo->prepare("SELECT * FROM email_campaigns WHERE id = ?");
+    $stmt->execute([$campaign_id]);
+    $campaign = $stmt->fetch();
+
+    if (!$campaign) {
+        throw new Exception('Campaña no encontrada (ID: ' . $campaign_id . ')');
+    }
+
+    // Obtener SMTP config
+    $stmt = $pdo->prepare("SELECT * FROM email_smtp_configs WHERE id = ?");
+    $stmt->execute([$campaign['smtp_config_id']]);
+    $smtp_config = $stmt->fetch();
+
+    if (!$smtp_config) {
+        throw new Exception('Configuración SMTP no encontrada (ID: ' . $campaign['smtp_config_id'] . ')');
+    }
+
+    // Verificar que PHPMailer esté disponible
+    if (!file_exists(__DIR__ . '/../vendor/autoload.php')) {
+        throw new Exception('Vendor autoload no encontrado. PHPMailer no instalado.');
+    }
+
+    require_once __DIR__ . '/email_sender.php';
+
+    if (!class_exists('EmailSender')) {
+        throw new Exception('Clase EmailSender no encontrada');
+    }
+
+    $mailer = new EmailSender($smtp_config, $pdo);
+
+    // Procesar en modo batch
+    $batch_size = 50; // Enviar 50 emails por batch
+    $delay = 2; // 2 segundos entre emails
+
+    $result = $mailer->sendCampaign($campaign_id, $batch_size, $delay);
+
+} catch (Exception $e) {
+    $error_message = $e->getMessage();
+    error_log("Email Marketing Send Error: " . $error_message);
 }
-
-$config = require __DIR__ . '/../config/database.php';
-$pdo = new PDO(
-    "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
-    $config['username'],
-    $config['password'],
-    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-);
-
-$campaign_id = $_GET['campaign_id'] ?? 0;
-
-if (!$campaign_id) {
-    die('Campaign ID required');
-}
-
-// Obtener campaña
-$campaign = $pdo->query("SELECT * FROM email_campaigns WHERE id = $campaign_id")->fetch();
-
-if (!$campaign) {
-    die('Campaña no encontrada');
-}
-
-// Obtener SMTP config
-$smtp_config = $pdo->query("SELECT * FROM email_smtp_configs WHERE id = {$campaign['smtp_config_id']}")->fetch();
-
-if (!$smtp_config) {
-    die('Configuración SMTP no encontrada');
-}
-
-$mailer = new EmailSender($smtp_config, $pdo);
-
-// Procesar en modo batch
-$batch_size = 50; // Enviar 50 emails por batch
-$delay = 2; // 2 segundos entre emails
-
-$result = $mailer->sendCampaign($campaign_id, $batch_size, $delay);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -92,14 +121,45 @@ $result = $mailer->sendCampaign($campaign_id, $batch_size, $delay);
             <h3 style="margin: 0;"><i class="fas fa-paper-plane"></i> Enviando Campaña</h3>
         </div>
         <div class="card-body p-4">
-            <h5><?= htmlspecialchars($campaign['name']) ?></h5>
+            <?php if ($error_message): ?>
+                <!-- MOSTRAR ERROR -->
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Error al Enviar Campaña</h5>
+                    <hr>
+                    <strong>Mensaje de Error:</strong><br>
+                    <code><?= htmlspecialchars($error_message) ?></code>
+                    <hr>
+                    <p class="mb-0">
+                        <a href="email_diagnostic.php" class="btn btn-warning btn-sm">
+                            <i class="fas fa-stethoscope"></i> Ejecutar Diagnóstico
+                        </a>
+                        <a href="email_marketing.php?page=campaigns" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Volver a Campañas
+                        </a>
+                    </p>
+                </div>
 
-            <div class="alert alert-info">
-                <strong>Progreso del Envío:</strong><br>
-                Enviados: <strong><?= $result['sent'] ?></strong><br>
-                Fallidos: <strong><?= $result['failed'] ?></strong><br>
-                Pendientes: <strong><?= $result['pending'] ?></strong>
-            </div>
+                <?php if ($campaign): ?>
+                    <h6 class="mt-3">Información de la Campaña:</h6>
+                    <pre><?= print_r($campaign, true) ?></pre>
+                <?php endif; ?>
+
+            <?php elseif (!$result): ?>
+                <!-- NO HAY RESULTADO -->
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle"></i> No se pudo procesar la campaña. Sin resultado.
+                </div>
+
+            <?php else: ?>
+                <!-- PROCESO NORMAL -->
+                <h5><?= htmlspecialchars($campaign['name']) ?></h5>
+
+                <div class="alert alert-info">
+                    <strong>Progreso del Envío:</strong><br>
+                    Enviados: <strong><?= $result['sent'] ?></strong><br>
+                    Fallidos: <strong><?= $result['failed'] ?></strong><br>
+                    Pendientes: <strong><?= $result['pending'] ?></strong>
+                </div>
 
             <?php if ($result['pending'] > 0): ?>
                 <div class="alert alert-warning">
@@ -152,6 +212,7 @@ $result = $mailer->sendCampaign($campaign_id, $batch_size, $delay);
                     </a>
                 </div>
             <?php endif; ?>
+            <?php endif; ?> <!-- Cierre del else principal -->
         </div>
     </div>
 </body>
