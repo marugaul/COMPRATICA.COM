@@ -4,11 +4,13 @@
  * Sistema de envío masivo de correos con tracking
  */
 
-session_start();
-require_once __DIR__ . '/../config/database.php';
+// Iniciar sesión si no está iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Verificar que sea admin
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
     header('Location: login.php');
     exit;
 }
