@@ -4,11 +4,12 @@
  * Maneja creación de campañas, procesamiento de Excel, envío de emails
  */
 
-session_start();
-require_once __DIR__ . '/../config/database.php';
+// Cargar config que maneja sesiones
+require_once __DIR__ . '/../includes/config.php';
 
 // Verificar autenticación de admin
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
+    http_response_code(403);
     die(json_encode(['error' => 'No autorizado']));
 }
 
@@ -81,7 +82,7 @@ function handleCreateCampaign() {
         $template_id,
         $subject,
         $source_type,
-        $_SESSION['user_id']
+        1  // Admin user ID
     ]);
 
     $campaign_id = $pdo->lastInsertId();
@@ -322,7 +323,6 @@ function saveSMTPConfig() {
     global $pdo;
 
     $id = $_POST['config_id'] ?? null;
-    $name = $_POST['name'] ?? '';
     $from_email = $_POST['from_email'] ?? '';
     $from_name = $_POST['from_name'] ?? '';
     $smtp_host = $_POST['smtp_host'] ?? '';
@@ -331,32 +331,37 @@ function saveSMTPConfig() {
     $smtp_password = $_POST['smtp_password'] ?? '';
     $smtp_encryption = $_POST['smtp_encryption'] ?? 'tls';
 
-    if ($id) {
-        // Actualizar
+    if (!$id) {
+        throw new Exception('ID de configuración no válido');
+    }
+
+    // Si la contraseña está vacía, no actualizarla (mantener la actual)
+    if (empty($smtp_password)) {
         $stmt = $pdo->prepare("
             UPDATE email_smtp_configs
-            SET name=?, from_email=?, from_name=?, smtp_host=?, smtp_port=?,
-                smtp_username=?, smtp_password=?, smtp_encryption=?
+            SET from_email=?, from_name=?, smtp_host=?, smtp_port=?,
+                smtp_username=?, smtp_encryption=?, updated_at=NOW()
             WHERE id=?
         ");
         $stmt->execute([
-            $name, $from_email, $from_name, $smtp_host, $smtp_port,
-            $smtp_username, $smtp_password, $smtp_encryption, $id
+            $from_email, $from_name, $smtp_host, $smtp_port,
+            $smtp_username, $smtp_encryption, $id
         ]);
     } else {
-        // Crear nuevo
+        // Actualizar incluyendo contraseña
         $stmt = $pdo->prepare("
-            INSERT INTO email_smtp_configs
-            (name, from_email, from_name, smtp_host, smtp_port, smtp_username, smtp_password, smtp_encryption)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            UPDATE email_smtp_configs
+            SET from_email=?, from_name=?, smtp_host=?, smtp_port=?,
+                smtp_username=?, smtp_password=?, smtp_encryption=?, updated_at=NOW()
+            WHERE id=?
         ");
         $stmt->execute([
-            $name, $from_email, $from_name, $smtp_host, $smtp_port,
-            $smtp_username, $smtp_password, $smtp_encryption
+            $from_email, $from_name, $smtp_host, $smtp_port,
+            $smtp_username, $smtp_password, $smtp_encryption, $id
         ]);
     }
 
-    $_SESSION['message'] = ['type' => 'success', 'text' => 'Configuración SMTP guardada'];
+    $_SESSION['message'] = ['type' => 'success', 'text' => 'Configuración SMTP guardada exitosamente'];
     header('Location: email_marketing.php?page=smtp-config');
     exit;
 }
