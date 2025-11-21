@@ -36,12 +36,12 @@ try {
     echo "<div class='step'>";
     echo "<h3>1. Conectar BD</h3>";
 
-    require __DIR__ . '/../config/database.php';
+    $config = require __DIR__ . '/../config/database.php';
 
     $pdo = new PDO(
-        "mysql:host={$host};dbname={$database};charset=utf8mb4",
-        $username,
-        $password,
+        "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
+        $config['username'],
+        $config['password'],
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 

@@ -37,16 +37,16 @@ try {
     echo "<div class='step'>";
     echo "<h3>PASO 1: Conectar Base de Datos</h3>";
 
-    require __DIR__ . '/../config/database.php';
+    $config = require __DIR__ . '/../config/database.php';
 
     $pdo = new PDO(
-        "mysql:host={$host};dbname={$database};charset=utf8mb4",
-        $username,
-        $password,
+        "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
+        $config['username'],
+        $config['password'],
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
-    echo "<p class='ok'>✓ Conectado a: $database</p>";
+    echo "<p class='ok'>✓ Conectado a: {$config['database']}</p>";
     echo "</div>";
 
     // PASO 2: Config SMTP
