@@ -158,7 +158,7 @@ try {
 
         <?php foreach ($configs as $cfg): ?>
             <div class="config">
-                <strong><?= htmlspecialchars($cfg['config_name']) ?></strong><br>
+                <strong><?= htmlspecialchars($cfg['config_name'] ?? 'Config SMTP - ' . $cfg['smtp_username']) ?></strong><br>
                 <small>
                     Host: <?= $cfg['smtp_host'] ?>:<?= $cfg['smtp_port'] ?> |
                     Usuario: <?= $cfg['smtp_username'] ?> |
@@ -183,7 +183,7 @@ try {
             <select name="smtp_id" required>
                 <?php foreach ($configs as $cfg): ?>
                     <option value="<?= $cfg['id'] ?>">
-                        <?= htmlspecialchars($cfg['config_name']) ?> (<?= $cfg['smtp_host'] ?>)
+                        <?= htmlspecialchars($cfg['config_name'] ?? 'Config SMTP - ' . $cfg['smtp_username']) ?> (<?= $cfg['smtp_host'] ?>)
                     </option>
                 <?php endforeach; ?>
             </select>
