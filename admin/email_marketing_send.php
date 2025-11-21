@@ -45,6 +45,23 @@ try {
         throw new Exception('Campaña no encontrada (ID: ' . $campaign_id . ')');
     }
 
+    // Si es reenvío, resetear destinatarios a pending
+    $resend = isset($_GET['resend']) && $_GET['resend'] == '1';
+    if ($resend) {
+        // Resetear todos los destinatarios a pending
+        $pdo->prepare("UPDATE email_recipients SET status = 'pending', sent_at = NULL WHERE campaign_id = ?")
+            ->execute([$campaign_id]);
+
+        // Resetear contadores de la campaña
+        $pdo->prepare("UPDATE email_campaigns SET status = 'sending', sent_count = 0, failed_count = 0, started_at = NOW(), completed_at = NULL WHERE id = ?")
+            ->execute([$campaign_id]);
+
+        // Recargar campaña actualizada
+        $stmt = $pdo->prepare("SELECT * FROM email_campaigns WHERE id = ?");
+        $stmt->execute([$campaign_id]);
+        $campaign = $stmt->fetch();
+    }
+
     // Obtener SMTP config
     $stmt = $pdo->prepare("SELECT * FROM email_smtp_configs WHERE id = ?");
     $stmt->execute([$campaign['smtp_config_id']]);
