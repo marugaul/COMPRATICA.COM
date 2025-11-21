@@ -106,6 +106,12 @@ $campaigns = $pdo->query("
                                                title="Enviar/Continuar">
                                                 <i class="fas fa-paper-plane"></i> Enviar
                                             </a>
+                                        <?php elseif ($campaign['status'] === 'scheduled'): ?>
+                                            <a href="email_marketing_send.php?campaign_id=<?= $campaign['id'] ?>"
+                                               class="btn btn-sm btn-warning"
+                                               title="Enviar ahora (programada para <?= date('d/m/Y H:i', strtotime($campaign['scheduled_at'])) ?>)">
+                                                <i class="fas fa-clock"></i> Enviar Ahora
+                                            </a>
                                         <?php elseif ($campaign['status'] === 'completed'): ?>
                                             <a href="email_marketing_send.php?campaign_id=<?= $campaign['id'] ?>&resend=1"
                                                class="btn btn-sm btn-success"
