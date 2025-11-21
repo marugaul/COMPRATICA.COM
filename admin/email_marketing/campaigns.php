@@ -104,7 +104,13 @@ $campaigns = $pdo->query("
                                             <a href="email_marketing_send.php?campaign_id=<?= $campaign['id'] ?>"
                                                class="btn btn-sm btn-success"
                                                title="Enviar/Continuar">
-                                                <i class="fas fa-paper-plane"></i>
+                                                <i class="fas fa-paper-plane"></i> Enviar
+                                            </a>
+                                        <?php elseif ($campaign['status'] === 'completed'): ?>
+                                            <a href="email_marketing_send.php?campaign_id=<?= $campaign['id'] ?>&resend=1"
+                                               class="btn btn-sm btn-success"
+                                               title="Reenviar campaña">
+                                                <i class="fas fa-redo"></i> Reenviar
                                             </a>
                                         <?php endif; ?>
                                         <a href="?page=campaign-details&id=<?= $campaign['id'] ?>"
