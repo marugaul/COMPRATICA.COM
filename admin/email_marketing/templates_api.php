@@ -73,6 +73,7 @@ function handleUploadTemplate($pdo) {
     $company = trim($_POST['template_company'] ?? '');
     $subject = trim($_POST['template_subject'] ?? '');
     $setAsDefault = isset($_POST['set_as_default']);
+    $imageDisplay = $_POST['image_display'] ?? 'none';
 
     if (empty($name) || empty($company) || empty($subject)) {
         echo json_encode(['success' => false, 'error' => 'Todos los campos son requeridos']);
@@ -93,9 +94,9 @@ function handleUploadTemplate($pdo) {
         return;
     }
 
-    // Verificar archivo
+    // Verificar archivo HTML
     if (!isset($_FILES['template_file']) || $_FILES['template_file']['error'] !== UPLOAD_ERR_OK) {
-        echo json_encode(['success' => false, 'error' => 'Error al subir archivo']);
+        echo json_encode(['success' => false, 'error' => 'Error al subir archivo HTML']);
         return;
     }
 
@@ -115,6 +116,56 @@ function handleUploadTemplate($pdo) {
         return;
     }
 
+    // Procesar imagen si existe
+    $imagePath = null;
+    $imageCid = null;
+
+    if (isset($_FILES['template_image']) && $_FILES['template_image']['error'] === UPLOAD_ERR_OK) {
+        $imageFile = $_FILES['template_image'];
+
+        // Validar tipo de imagen
+        $imageType = exif_imagetype($imageFile['tmp_name']);
+        $allowedTypes = [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF];
+
+        if (!in_array($imageType, $allowedTypes)) {
+            echo json_encode(['success' => false, 'error' => 'Solo se permiten imágenes JPG, PNG, GIF']);
+            return;
+        }
+
+        // Validar tamaño (5MB)
+        if ($imageFile['size'] > 5 * 1024 * 1024) {
+            echo json_encode(['success' => false, 'error' => 'La imagen no debe superar 5MB']);
+            return;
+        }
+
+        // Crear directorio si no existe
+        $imageDir = __DIR__ . '/../../uploads/template_images';
+        if (!is_dir($imageDir)) {
+            mkdir($imageDir, 0755, true);
+        }
+
+        // Generar nombre único para la imagen
+        $imageExtension = image_type_to_extension($imageType, false);
+        $imageName = $company . '_' . time() . '.' . $imageExtension;
+        $imageFullPath = $imageDir . '/' . $imageName;
+
+        // Mover imagen
+        if (!move_uploaded_file($imageFile['tmp_name'], $imageFullPath)) {
+            echo json_encode(['success' => false, 'error' => 'Error al guardar la imagen']);
+            return;
+        }
+
+        $imagePath = $imageName;
+
+        // Si es inline, generar CID único
+        if ($imageDisplay === 'inline') {
+            $imageCid = 'template_' . uniqid() . '@compratica.com';
+        }
+    } else {
+        // Si no hay imagen, forzar display a 'none'
+        $imageDisplay = 'none';
+    }
+
     // Si se marca como default, desmarcar otras
     if ($setAsDefault) {
         $pdo->exec("UPDATE email_templates SET is_default = 0");
@@ -123,24 +174,27 @@ function handleUploadTemplate($pdo) {
     // Insertar plantilla
     $stmt = $pdo->prepare("
         INSERT INTO email_templates (
-            name, company, subject, html_content, variables, is_active, is_default
-        ) VALUES (?, ?, ?, ?, ?, 1, ?)
+            name, company, subject, html_content, image_path, image_display, image_cid, variables, is_active, is_default
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     ");
 
-    $variables = json_encode(['nombre', 'email', 'telefono', 'empresa', 'campaign_id', 'tracking_pixel', 'unsubscribe_link']);
+    $variables = json_encode(['nombre', 'email', 'telefono', 'empresa', 'campaign_id', 'tracking_pixel', 'unsubscribe_link', 'template_image']);
 
     $stmt->execute([
         $name,
         $company,
         $subject,
         $htmlContent,
+        $imagePath,
+        $imageDisplay,
+        $imageCid,
         $variables,
         $setAsDefault ? 1 : 0
     ]);
 
     $templateId = $pdo->lastInsertId();
 
-    // Opcional: Guardar también el archivo físico
+    // Guardar también el archivo HTML físico
     $templateDir = __DIR__ . '/../email_templates';
     if (!is_dir($templateDir)) {
         mkdir($templateDir, 0755, true);
@@ -150,8 +204,10 @@ function handleUploadTemplate($pdo) {
 
     echo json_encode([
         'success' => true,
-        'message' => 'Plantilla subida exitosamente',
-        'template_id' => $templateId
+        'message' => 'Plantilla subida exitosamente' . ($imagePath ? ' con imagen' : ''),
+        'template_id' => $templateId,
+        'has_image' => !empty($imagePath),
+        'image_display' => $imageDisplay
     ]);
 }
 
@@ -220,14 +276,29 @@ function handleTestTemplate($pdo) {
         'empresa' => 'Empresa Ejemplo S.A.'
     ];
 
-    $subject = '[TEST] ' . $template['subject'];
+    $subject = '[TEST] ' . ($template['subject_default'] ?? $template['subject'] ?? 'Email de prueba');
 
-    $result = $emailSender->send($recipient, $html, $subject, null, null);
+    // Preparar datos de imagen si existen
+    $templateData = null;
+    if (!empty($template['image_path'])) {
+        $templateData = [
+            'image_path' => $template['image_path'],
+            'image_display' => $template['image_display'] ?? 'none',
+            'image_cid' => $template['image_cid'] ?? null
+        ];
+    }
+
+    // Enviar usando el método con soporte de imágenes
+    $result = $emailSender->sendWithTemplateImage($recipient, $html, $subject, null, $templateData, null);
 
     if ($result['success']) {
+        $message = '✓ Email de prueba enviado exitosamente a ' . $testEmail;
+        if (!empty($templateData)) {
+            $message .= ' (con imagen ' . ($templateData['image_display'] === 'inline' ? 'inline' : 'adjunta') . ')';
+        }
         echo json_encode([
             'success' => true,
-            'message' => '✓ Email de prueba enviado exitosamente a ' . $testEmail
+            'message' => $message
         ]);
     } else {
         echo json_encode([

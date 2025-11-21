@@ -382,5 +382,143 @@ class EmailSender {
             'pending' => $pending
         ];
     }
+
+    /**
+     * Enviar email con soporte para imágenes de plantilla (inline/adjuntas)
+     */
+    public function sendWithTemplateImage($recipient, $template_html, $subject, $tracking_code = null, $template_data = null, $attachment = null) {
+        // Si no hay datos de plantilla, usar método normal
+        if (!$template_data || empty($template_data['image_path']) || $template_data['image_display'] === 'none') {
+            return $this->send($recipient, $template_html, $subject, $tracking_code, $attachment);
+        }
+
+        // VERIFICAR BLACKLIST ANTES DE ENVIAR
+        if ($this->isBlacklisted($recipient['email'])) {
+            return [
+                'success' => false,
+                'message' => 'Email en blacklist (desuscrito)',
+                'smtp_response' => 'Blocked by blacklist'
+            ];
+        }
+
+        $mail = new PHPMailer(true);
+
+        try {
+            // Configuración del servidor SMTP
+            $mail->isSMTP();
+            $mail->Host = $this->smtp_config['smtp_host'];
+            $mail->SMTPAuth = true;
+            $mail->Username = $this->smtp_config['smtp_username'];
+            $mail->Password = $this->smtp_config['smtp_password'];
+            $mail->Port = $this->smtp_config['smtp_port'];
+
+            // Encriptación
+            if ($this->smtp_config['smtp_encryption'] === 'tls') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            } elseif ($this->smtp_config['smtp_encryption'] === 'ssl') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            }
+
+            // Configuración anti-spam
+            $mail->CharSet = 'UTF-8';
+            $mail->Encoding = 'base64';
+            $mail->SMTPKeepAlive = true;
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                ]
+            ];
+
+            // Headers anti-spam
+            $mail->XMailer = ' ';
+            $mail->addCustomHeader('X-Priority', '3');
+            $mail->addCustomHeader('X-MSMail-Priority', 'Normal');
+            $mail->addCustomHeader('Importance', 'Normal');
+            $mail->addCustomHeader('X-Mailer', 'PHP/' . phpversion());
+
+            // Remitente
+            $mail->setFrom(
+                $this->smtp_config['from_email'],
+                $this->smtp_config['from_name']
+            );
+
+            // Destinatario
+            $mail->addAddress($recipient['email'], $recipient['name'] ?? '');
+
+            // Reply-To
+            $mail->addReplyTo($this->smtp_config['from_email'], $this->smtp_config['from_name']);
+
+            // Construir ruta completa de la imagen
+            $imageFullPath = __DIR__ . '/../uploads/template_images/' . $template_data['image_path'];
+
+            if (!file_exists($imageFullPath)) {
+                throw new Exception('Imagen de plantilla no encontrada: ' . $template_data['image_path']);
+            }
+
+            // Manejar imagen según el modo de visualización
+            if ($template_data['image_display'] === 'inline') {
+                // Imagen inline (embebida en el HTML)
+                $cid = $template_data['image_cid'] ?? 'template_image@compratica.com';
+
+                // Agregar imagen como inline
+                $mail->addEmbeddedImage($imageFullPath, $cid);
+
+                // Reemplazar variable {template_image} con el CID
+                $template_html = str_replace('{template_image}', 'cid:' . $cid, $template_html);
+
+            } elseif ($template_data['image_display'] === 'attachment') {
+                // Imagen como adjunto
+                $mail->addAttachment($imageFullPath, basename($template_data['image_path']));
+
+                // Eliminar variable {template_image} del HTML si existe
+                $template_html = str_replace('{template_image}', '', $template_html);
+            }
+
+            // Adjunto adicional (si existe)
+            if ($attachment && file_exists($attachment)) {
+                $mail->addAttachment($attachment);
+            }
+
+            // Contenido
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+
+            // Personalizar template
+            $html_body = $this->personalizeTemplate($template_html, $recipient, $tracking_code);
+
+            // Agregar tracking pixel
+            if ($tracking_code) {
+                $tracking_pixel = $this->getTrackingPixelURL($tracking_code);
+                $html_body = str_replace('{tracking_pixel}', $tracking_pixel, $html_body);
+                $html_body = str_replace('{unsubscribe_link}', $this->getUnsubscribeURL($tracking_code), $html_body);
+
+                // Agregar tracking a links
+                $html_body = $this->addClickTracking($html_body, $tracking_code);
+            }
+
+            $mail->Body = $html_body;
+
+            // Versión texto plano
+            $mail->AltBody = $this->htmlToText($html_body);
+
+            // Enviar
+            $result = $mail->send();
+
+            return [
+                'success' => true,
+                'message' => 'Email enviado correctamente',
+                'smtp_response' => $mail->ErrorInfo
+            ];
+
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Error al enviar: ' . $e->getMessage(),
+                'smtp_response' => $mail->ErrorInfo
+            ];
+        }
+    }
 }
 ?>

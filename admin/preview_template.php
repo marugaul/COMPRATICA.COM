@@ -47,6 +47,15 @@ if (isset($_GET['render']) && $selectedTemplate) {
         '{unsubscribe_link}' => 'https://compratica.com/admin/email_track.php?c=123&r=456&t=unsubscribe'
     ];
 
+    // Si hay imagen de plantilla, reemplazar la variable
+    if (!empty($selectedTemplate['image_path']) && $selectedTemplate['image_display'] === 'inline') {
+        $imageUrl = '/uploads/template_images/' . $selectedTemplate['image_path'];
+        $variables['{template_image}'] = $imageUrl;
+    } else {
+        // Si no hay imagen o es adjunto, eliminar la variable
+        $variables['{template_image}'] = '';
+    }
+
     $html = str_replace(array_keys($variables), array_values($variables), $html);
 
     echo $html;

@@ -161,6 +161,18 @@ $template_files = [
                         <i class="fas fa-file-code"></i> <?= number_format(strlen($template['html_content'])) ?> bytes
                     </p>
 
+                    <?php if (!empty($template['image_path'])): ?>
+                        <div class="alert alert-info p-2 mb-2" style="font-size:12px;">
+                            <i class="fas fa-image"></i>
+                            <strong>Imagen:</strong>
+                            <?php if ($template['image_display'] === 'inline'): ?>
+                                <span class="badge bg-primary">Inline</span>
+                            <?php elseif ($template['image_display'] === 'attachment'): ?>
+                                <span class="badge bg-secondary">Adjunto</span>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
                     <!-- Botones de acción -->
                     <div class="d-flex flex-wrap gap-2 mt-3">
                         <button class="btn btn-sm btn-outline-primary flex-grow-1" onclick="previewTemplate(<?= $template['id'] ?>)">
@@ -237,6 +249,36 @@ $template_files = [
                     <input type="file" id="fileInput" name="template_file" accept=".html,.htm" style="display:none;" required onchange="showFileName(this)">
                 </div>
 
+                <!-- Sección de Imagen -->
+                <div class="mb-3">
+                    <label class="form-label"><strong>🖼️ Imagen (Opcional)</strong></label>
+                    <input type="file" name="template_image" class="form-control" accept="image/*" id="imageInput" onchange="previewImage(this)">
+                    <small class="text-muted">JPG, PNG, GIF - Máx 5MB</small>
+
+                    <!-- Preview de imagen -->
+                    <div id="imagePreview" style="display:none;margin-top:10px;">
+                        <img id="imagePreviewImg" src="" style="max-width:200px;max-height:200px;border:2px solid #e2e8f0;border-radius:8px;padding:5px;">
+                    </div>
+                </div>
+
+                <div class="mb-3" id="imageDisplayOptions" style="display:none;">
+                    <label class="form-label"><strong>¿Cómo mostrar la imagen?</strong></label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="image_display" id="imageInline" value="inline" checked>
+                        <label class="form-check-label" for="imageInline">
+                            <strong>Dentro del cuerpo del email</strong> (inline)
+                            <small class="text-muted d-block">La imagen aparece embebida en el HTML usando {template_image}</small>
+                        </label>
+                    </div>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="radio" name="image_display" id="imageAttachment" value="attachment">
+                        <label class="form-check-label" for="imageAttachment">
+                            <strong>Como archivo adjunto</strong>
+                            <small class="text-muted d-block">La imagen se envía como adjunto del email</small>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="mb-3">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="set_as_default" id="setAsDefault">
@@ -249,7 +291,8 @@ $template_files = [
                 <div class="alert alert-warning">
                     <strong><i class="fas fa-exclamation-triangle"></i> Importante:</strong><br>
                     Asegúrate de incluir las variables entre llaves en tu HTML: <code>{nombre}</code>, <code>{email}</code>, etc.<br>
-                    También incluye: <code>{tracking_pixel}</code> y <code>{unsubscribe_link}</code>
+                    También incluye: <code>{tracking_pixel}</code> y <code>{unsubscribe_link}</code><br>
+                    <strong>Para la imagen inline:</strong> Usa <code>{template_image}</code> en tu HTML
                 </div>
 
                 <div class="d-flex gap-2">
@@ -362,6 +405,8 @@ function closeUploadModal() {
     document.getElementById('uploadModal').style.display = 'none';
     document.getElementById('uploadForm').reset();
     document.getElementById('fileName').style.display = 'none';
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('imageDisplayOptions').style.display = 'none';
 }
 
 function showFileName(input) {
@@ -369,6 +414,38 @@ function showFileName(input) {
     if (input.files.length > 0) {
         fileName.textContent = '✓ ' + input.files[0].name;
         fileName.style.display = 'block';
+    }
+}
+
+// Preview de imagen
+function previewImage(input) {
+    const preview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('imagePreviewImg');
+    const displayOptions = document.getElementById('imageDisplayOptions');
+
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+
+        // Validar tamaño (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('La imagen es muy grande. Máximo 5MB.');
+            input.value = '';
+            preview.style.display = 'none';
+            displayOptions.style.display = 'none';
+            return;
+        }
+
+        // Mostrar preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+            displayOptions.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.style.display = 'none';
+        displayOptions.style.display = 'none';
     }
 }
 
