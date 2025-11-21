@@ -237,11 +237,16 @@ try {
 $settings = $pdo->query("SELECT * FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC);
 $ex = (float)($settings['exchange_rate'] ?? 540.00);
 
-$affiliates = $pdo->query("
-  SELECT id, name, email, phone, is_active, created_at
-  FROM affiliates
-  ORDER BY created_at DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+// Cargar affiliates (con manejo de error si tabla no existe)
+try {
+    $affiliates = $pdo->query("
+      SELECT id, name, email, phone, is_active, created_at
+      FROM affiliates
+      ORDER BY created_at DESC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $affiliates = [];
+}
 ?>
 <!doctype html>
 <html lang="es">
