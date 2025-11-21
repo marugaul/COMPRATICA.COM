@@ -4,6 +4,9 @@
  * Prueba la conexión al servidor SMTP y opcionalmente envía un email de prueba
  */
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 // Iniciar sesión si no está iniciada
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -52,9 +55,6 @@ $test_error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_test'])) {
     try {
         require_once __DIR__ . '/../vendor/autoload.php';
-
-        use PHPMailer\PHPMailer\PHPMailer;
-        use PHPMailer\PHPMailer\Exception;
 
         $test_email = $_POST['test_email'];
 

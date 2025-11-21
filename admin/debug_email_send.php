@@ -155,7 +155,8 @@ try {
         if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
             echo "<p><span class='ok'>✓ Clase PHPMailer disponible</span></p>";
             $mail = new PHPMailer\PHPMailer\PHPMailer();
-            echo "<p><span class='ok'>✓ PHPMailer instanciado - Versión: {$mail::VERSION}</span></p>";
+            $version = $mail::VERSION;
+            echo "<p><span class='ok'>✓ PHPMailer instanciado - Versión: $version</span></p>";
         } else {
             echo "<p><span class='error'>✗ Clase PHPMailer NO disponible</span></p>";
         }
