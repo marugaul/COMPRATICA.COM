@@ -4,7 +4,10 @@
  * Sistema de envío con prevención de spam, tracking y validación
  */
 
-require_once __DIR__ . '/../vendor/autoload.php';
+// Cargar PHPMailer desde la ubicación correcta
+require_once __DIR__ . '/../includes/PHPMailer/PHPMailer.php';
+require_once __DIR__ . '/../includes/PHPMailer/SMTP.php';
+require_once __DIR__ . '/../includes/PHPMailer/Exception.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;

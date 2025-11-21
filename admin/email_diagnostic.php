@@ -28,8 +28,10 @@ echo "<h1>🔍 Diagnóstico del Sistema de Email Marketing</h1>";
 // Test 1: PHPMailer
 echo "<div class='step'><h3>1. PHPMailer</h3>";
 try {
-    require_once __DIR__ . '/../vendor/autoload.php';
-    echo "<p><span class='ok'>✓ Autoloader cargado correctamente</span></p>";
+    require_once __DIR__ . '/../includes/PHPMailer/PHPMailer.php';
+    require_once __DIR__ . '/../includes/PHPMailer/SMTP.php';
+    require_once __DIR__ . '/../includes/PHPMailer/Exception.php';
+    echo "<p><span class='ok'>✓ PHPMailer cargado desde /includes/PHPMailer/</span></p>";
 
     if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
         echo "<p><span class='ok'>✓ Clase PHPMailer disponible</span></p>";

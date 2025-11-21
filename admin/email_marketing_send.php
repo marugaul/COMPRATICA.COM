@@ -55,8 +55,8 @@ try {
     }
 
     // Verificar que PHPMailer esté disponible
-    if (!file_exists(__DIR__ . '/../vendor/autoload.php')) {
-        throw new Exception('Vendor autoload no encontrado. PHPMailer no instalado.');
+    if (!file_exists(__DIR__ . '/../includes/PHPMailer/PHPMailer.php')) {
+        throw new Exception('PHPMailer no encontrado en /includes/PHPMailer/');
     }
 
     require_once __DIR__ . '/email_sender.php';
