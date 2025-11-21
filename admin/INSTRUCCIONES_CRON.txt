@@ -1,0 +1,55 @@
+================================================================================
+INSTRUCCIONES PARA ACTIVAR ENVÍO AUTOMÁTICO DE CAMPAÑAS PROGRAMADAS
+================================================================================
+
+PROBLEMA:
+Las campañas programadas NO se envían automáticamente porque falta agregar
+una línea al crontab que ejecute el procesador cada minuto.
+
+SOLUCIÓN:
+Agregar la siguiente línea al crontab:
+
+* * * * * cd /home/comprati/public_html/admin && php process_scheduled_campaigns.php >> /tmp/scheduled_campaigns.log 2>&1
+
+CÓMO AGREGARLO:
+
+1. Acceder al panel de control de tu hosting (cPanel, Plesk, etc.)
+
+2. Buscar la sección "Cron Jobs" o "Tareas Programadas"
+
+3. Agregar un nuevo cron job con estos parámetros:
+   - Minuto: *
+   - Hora: *
+   - Día del mes: *
+   - Mes: *
+   - Día de la semana: *
+   - Comando: cd /home/comprati/public_html/admin && php process_scheduled_campaigns.php >> /tmp/scheduled_campaigns.log 2>&1
+
+O si tu panel permite ingresar directamente la expresión cron completa:
+   * * * * * cd /home/comprati/public_html/admin && php process_scheduled_campaigns.php >> /tmp/scheduled_campaigns.log 2>&1
+
+4. Guardar el cron job
+
+QUÉ HACE:
+- Se ejecuta cada minuto (*)
+- Revisa si hay campañas con status='scheduled' cuya hora programada ya llegó
+- Las marca como 'sending' y comienza a enviar emails
+- Guarda log en /tmp/scheduled_campaigns.log
+
+VERIFICAR QUE FUNCIONA:
+1. Después de agregar el cron, espera 1 minuto
+2. Ve a: https://compratica.com/admin/SEND_SCHEDULED_NOW.php
+3. Debería mostrar el procesamiento de campañas programadas
+
+ALTERNATIVA MANUAL (mientras configuras el cron):
+Si necesitas enviar una campaña programada AHORA sin esperar:
+1. Ve a: https://compratica.com/admin/email_marketing.php?page=campaigns
+2. Busca la campaña con estado "Programada"
+3. Haz clic en el botón amarillo "Enviar Ahora"
+
+NOTAS:
+- La hora del servidor está en UTC (6 horas adelante de Costa Rica)
+- Si programas para las 4:30 PM CR, el sistema guarda 22:30 UTC
+- El cron revisa campañas donde scheduled_at <= NOW() en UTC
+
+================================================================================
