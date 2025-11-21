@@ -279,7 +279,7 @@ class EmailSender {
                     'email' => $recipient['email'],
                     'name' => $recipient['name'],
                     'phone' => $recipient['phone'],
-                    'custom_data' => json_decode($recipient['custom_data'], true) ?? []
+                    'custom_data' => $recipient['custom_data'] ? json_decode($recipient['custom_data'], true) : []
                 ],
                 $template['html_content'],
                 $campaign['subject'],
