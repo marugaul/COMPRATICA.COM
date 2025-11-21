@@ -4,12 +4,18 @@
  * Permite actualizar la contraseña y otros datos de configuración SMTP
  */
 
-require_once __DIR__ . '/../includes/config.php';
+// Iniciar sesión si no está iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
+// Verificar autenticación
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
     header('Location: login.php');
     exit;
 }
+
+require_once __DIR__ . '/../includes/config.php';
 
 $config = require __DIR__ . '/../config/database.php';
 $pdo = new PDO(

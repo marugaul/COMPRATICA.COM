@@ -4,11 +4,28 @@
  * Prueba la conexión al servidor SMTP y opcionalmente envía un email de prueba
  */
 
-require_once __DIR__ . '/../includes/config.php';
-
-if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
-    die('Acceso denegado');
+// Iniciar sesión si no está iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
+
+// Verificar autenticación - si no está logueado, mostrar error amigable
+$is_authenticated = isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
+
+if (!$is_authenticated) {
+    echo "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Acceso Denegado</title>";
+    echo "<style>body{font-family:Arial;padding:40px;text-align:center;background:#fef3c7}";
+    echo ".error-box{background:white;padding:30px;border-radius:12px;max-width:500px;margin:0 auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)}";
+    echo "h1{color:#dc2626}</style></head><body>";
+    echo "<div class='error-box'>";
+    echo "<h1>🔒 Acceso Denegado</h1>";
+    echo "<p>Debes iniciar sesión como administrador para acceder a esta página.</p>";
+    echo "<p><a href='login.php' style='display:inline-block;background:#dc2626;color:white;padding:10px 20px;text-decoration:none;border-radius:6px;margin-top:10px'>Iniciar Sesión</a></p>";
+    echo "</div></body></html>";
+    exit;
+}
+
+require_once __DIR__ . '/../includes/config.php';
 
 $config = require __DIR__ . '/../config/database.php';
 $pdo = new PDO(
