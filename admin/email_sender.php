@@ -24,9 +24,36 @@ class EmailSender {
     }
 
     /**
+     * Verificar si un email está en la blacklist
+     */
+    private function isBlacklisted($email) {
+        if (!$this->pdo) {
+            return false;
+        }
+
+        try {
+            $stmt = $this->pdo->prepare("SELECT id FROM email_blacklist WHERE email = ?");
+            $stmt->execute([$email]);
+            return $stmt->fetch() !== false;
+        } catch (Exception $e) {
+            // Si la tabla no existe, continuar normalmente
+            return false;
+        }
+    }
+
+    /**
      * Enviar email individual
      */
     public function send($recipient, $template_html, $subject, $tracking_code = null, $attachment = null) {
+        // VERIFICAR BLACKLIST ANTES DE ENVIAR
+        if ($this->isBlacklisted($recipient['email'])) {
+            return [
+                'success' => false,
+                'message' => 'Email en blacklist (desuscrito)',
+                'smtp_response' => 'Blocked by blacklist'
+            ];
+        }
+
         $mail = new PHPMailer(true);
 
         try {

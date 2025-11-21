@@ -72,9 +72,33 @@ switch ($action) {
         die('No URL specified');
 
     case 'unsubscribe':
-        // Marcar como bounced (no volverá a recibir emails)
+        // Marcar como bounced en esta campaña
         $pdo->prepare("UPDATE email_recipients SET status = 'bounced' WHERE id = ?")
             ->execute([$recipient['id']]);
+
+        // AGREGAR A BLACKLIST GLOBAL (nueva funcionalidad)
+        try {
+            $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+
+            $pdo->prepare("
+                INSERT INTO email_blacklist (email, reason, campaign_id, source, ip_address, user_agent)
+                VALUES (?, ?, ?, 'unsubscribe', ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    campaign_id = VALUES(campaign_id),
+                    ip_address = VALUES(ip_address),
+                    user_agent = VALUES(user_agent)
+            ")->execute([
+                $recipient['email'],
+                'Usuario solicitó desuscripción via link',
+                $recipient['campaign_id'],
+                $ip,
+                $userAgent
+            ]);
+        } catch (Exception $e) {
+            // Si la tabla no existe aún, continuar normalmente
+            error_log("Error adding to blacklist: " . $e->getMessage());
+        }
 
         // Mostrar página de confirmación
         ?>

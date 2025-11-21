@@ -211,6 +211,9 @@ function h($str) {
                     <li><a href="?page=reports" class="<?= $page === 'reports' ? 'active' : '' ?>">
                         <i class="fas fa-chart-bar"></i> Reportes
                     </a></li>
+                    <li><a href="?page=blacklist" class="<?= $page === 'blacklist' ? 'active' : '' ?>">
+                        <i class="fas fa-ban"></i> Blacklist
+                    </a></li>
                     <li><hr style="border-color: #334155; margin: 20px 15px;"></li>
                     <li><a href="../admin/dashboard.php">
                         <i class="fas fa-arrow-left"></i> Volver al Admin
@@ -247,6 +250,9 @@ function h($str) {
                         break;
                     case 'reports':
                         include __DIR__ . '/email_marketing/reports.php';
+                        break;
+                    case 'blacklist':
+                        include __DIR__ . '/email_marketing/blacklist.php';
                         break;
                     default:
                         echo '<div class="alert alert-warning">Página no encontrada</div>';
