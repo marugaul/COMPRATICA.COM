@@ -118,6 +118,12 @@ $campaigns = $pdo->query("
                                            title="Ver detalles">
                                             <i class="fas fa-eye"></i>
                                         </a>
+                                        <a href="email_marketing_api.php?action=delete_campaign&campaign_id=<?= $campaign['id'] ?>"
+                                           class="btn btn-sm btn-outline-danger"
+                                           title="Eliminar campaña"
+                                           onclick="return confirm('¿Está seguro de eliminar esta campaña? Esta acción no se puede deshacer.')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>

@@ -33,6 +33,10 @@ try {
             handleSendCampaign();
             break;
 
+        case 'delete_campaign':
+            handleDeleteCampaign();
+            break;
+
         case 'download_template':
             downloadExcelTemplate();
             break;
@@ -479,6 +483,51 @@ function testSMTPConnection() {
     ];
 
     header('Location: email_marketing.php?page=smtp-config');
+    exit;
+}
+
+/**
+ * Eliminar campaña y sus destinatarios
+ */
+function handleDeleteCampaign() {
+    global $pdo;
+
+    $campaign_id = $_REQUEST['campaign_id'] ?? '';
+
+    if (empty($campaign_id)) {
+        throw new Exception('ID de campaña no válido');
+    }
+
+    // Verificar que la campaña existe
+    $campaign = $pdo->query("SELECT * FROM email_campaigns WHERE id = $campaign_id")->fetch(PDO::FETCH_ASSOC);
+
+    if (!$campaign) {
+        throw new Exception('Campaña no encontrada');
+    }
+
+    // Eliminar archivo adjunto si existe
+    if (!empty($campaign['attachment_path'])) {
+        $attachment_file = __DIR__ . '/../uploads/email_attachments/' . $campaign['attachment_path'];
+        if (file_exists($attachment_file)) {
+            @unlink($attachment_file);
+        }
+    }
+
+    // Eliminar logs de envío
+    $pdo->prepare("DELETE FROM email_send_logs WHERE campaign_id = ?")->execute([$campaign_id]);
+
+    // Eliminar destinatarios
+    $pdo->prepare("DELETE FROM email_recipients WHERE campaign_id = ?")->execute([$campaign_id]);
+
+    // Eliminar campaña
+    $pdo->prepare("DELETE FROM email_campaigns WHERE id = ?")->execute([$campaign_id]);
+
+    $_SESSION['message'] = [
+        'type' => 'success',
+        'text' => "Campaña '{$campaign['name']}' eliminada exitosamente"
+    ];
+
+    header('Location: email_marketing.php?page=campaigns');
     exit;
 }
 ?>
