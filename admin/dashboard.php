@@ -200,24 +200,39 @@ if (isset($_POST['toggle_affiliate'])) {
 }
 
 /* ----------------------- Cargas para vista ----------------------- */
-$products = $pdo->query("
-SELECT
-  p.*, s.id AS sale_id, s.title AS sale_title, s.is_active AS sale_active,
-  a.id AS aff_id, a.email AS aff_email,
-  (SELECT status FROM sale_fees f WHERE f.sale_id = s.id ORDER BY f.id DESC LIMIT 1) AS fee_status
-FROM products p
-LEFT JOIN sales s ON s.id = p.sale_id
-LEFT JOIN affiliates a ON a.id = s.affiliate_id
-ORDER BY p.created_at DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+// Cargar productos (con manejo de error si tablas no existen)
+try {
+    $products = $pdo->query("
+    SELECT
+      p.*, s.id AS sale_id, s.title AS sale_title, s.is_active AS sale_active,
+      a.id AS aff_id, a.email AS aff_email,
+      (SELECT status FROM sale_fees f WHERE f.sale_id = s.id ORDER BY f.id DESC LIMIT 1) AS fee_status
+    FROM products p
+    LEFT JOIN sales s ON s.id = p.sale_id
+    LEFT JOIN affiliates a ON a.id = s.affiliate_id
+    ORDER BY p.created_at DESC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    // Si tablas sales/affiliates no existen, cargar solo productos
+    try {
+        $products = $pdo->query("SELECT * FROM products ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e2) {
+        $products = [];
+    }
+}
 
-$orders = $pdo->query("
-  SELECT o.*, p.name AS product_name
-  FROM orders o
-  JOIN products p ON p.id=o.product_id
-  ORDER BY o.created_at DESC
-  LIMIT 100
-")->fetchAll(PDO::FETCH_ASSOC);
+// Cargar órdenes
+try {
+    $orders = $pdo->query("
+      SELECT o.*, p.name AS product_name
+      FROM orders o
+      JOIN products p ON p.id=o.product_id
+      ORDER BY o.created_at DESC
+      LIMIT 100
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $orders = [];
+}
 
 $settings = $pdo->query("SELECT * FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC);
 $ex = (float)($settings['exchange_rate'] ?? 540.00);
