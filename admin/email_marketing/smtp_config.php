@@ -5,11 +5,43 @@ $smtp_configs = $pdo->query("SELECT * FROM email_smtp_configs ORDER BY name")->f
 
 <h1 class="mb-4"><i class="fas fa-cog"></i> Configuración SMTP</h1>
 
+<?php
+// Verificar si existe "Otro Correo"
+$hasOtroCorreo = false;
+foreach ($smtp_configs as $cfg) {
+    if ($cfg['name'] === 'Otro Correo') {
+        $hasOtroCorreo = true;
+        break;
+    }
+}
+
+if (!$hasOtroCorreo):
+?>
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i>
+    <strong>¿Necesitas una 4ta configuración SMTP personalizada?</strong><br>
+    Puedes agregar la opción "Otro Correo" completamente parametrizable:
+    <a href="../add_otro_correo_smtp.php" class="btn btn-sm btn-success ms-2">
+        <i class="fas fa-plus"></i> Agregar "Otro Correo"
+    </a>
+</div>
+<?php endif; ?>
+
 <div class="row">
     <?php foreach ($smtp_configs as $config): ?>
     <div class="col-md-6 mb-4">
         <div class="card">
-            <div class="card-header" style="background: <?= $config['name'] === 'Mixtico' ? '#3b82f6' : ($config['name'] === 'CRV-SOFT' ? '#06b6d4' : '#dc2626') ?>; color: white;">
+            <?php
+            // Colores para cada configuración
+            $colors = [
+                'Mixtico' => '#3b82f6',      // Azul
+                'CRV-SOFT' => '#06b6d4',     // Cyan
+                'COMPRATICA' => '#dc2626',   // Rojo
+                'Otro Correo' => '#16a34a'   // Verde
+            ];
+            $bgColor = $colors[$config['name']] ?? '#6b7280'; // Gris por defecto
+            ?>
+            <div class="card-header" style="background: <?= $bgColor ?>; color: white;">
                 <strong><?= h($config['name']) ?></strong>
                 <?php if ($config['is_active']): ?>
                     <span class="badge bg-success float-end">Activo</span>
