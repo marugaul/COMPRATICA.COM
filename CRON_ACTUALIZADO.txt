@@ -1,0 +1,32 @@
+# ============================================
+# CRON ACTUALIZADO PARA COMPRATICA
+# Copia este comando completo en tu cPanel Cron Jobs
+# Frecuencia: Cada minuto  */1 * * * *
+# ============================================
+
+cd /home/comprati/compratica_repo && git fetch --all >> /home/comprati/deploy.log 2>&1 && git reset --hard origin/main >> /home/comprati/deploy.log 2>&1 && git clean -fd >> /home/comprati/deploy.log 2>&1 && rsync -av --delete --exclude='.git' --exclude='.gitignore' --exclude='vendor/' --exclude='sessions/' --exclude='logs/' --exclude='uploads/' --exclude='.env' --exclude='config/database.php' --exclude='php_error.log' --exclude='includes/config.local.php' --exclude='verificar_archivos.php' --exclude='diagnostico.php' --exclude='reset_repo.php' /home/comprati/compratica_repo/ /home/comprati/public_html/ >> /home/comprati/deploy.log 2>&1
+
+# ============================================
+# CAMBIOS vs CRON ANTERIOR:
+# ============================================
+# AGREGADO: --exclude='vendor/'        (PHPMailer ya está instalado, no borrar)
+# AGREGADO: --exclude='uploads/'       (archivos subidos por usuarios)
+# AGREGADO: --exclude='.env'           (configuración sensible)
+# AGREGADO: --exclude='config/database.php'  (credenciales BD)
+#
+# MANTIENE:
+# - git fetch --all
+# - git reset --hard origin/main
+# - git clean -fd
+# - rsync con --delete
+# - Log a /home/comprati/deploy.log
+# ============================================
+
+# PASOS PARA ACTUALIZAR:
+# 1. Accede a cPanel
+# 2. Busca "Cron Jobs"
+# 3. Encuentra el cron actual
+# 4. Reemplaza el comando con la línea de arriba (sin los comentarios)
+# 5. Guarda
+# 6. Espera 1 minuto
+# 7. Verifica que funcione accediendo a: https://compratica.com/admin/SEND_EMAIL_NOW.php

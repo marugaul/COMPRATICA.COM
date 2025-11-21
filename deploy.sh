@@ -1,15 +1,13 @@
 #!/bin/bash
-# Script de auto-deployment con instalación de dependencias
+# Script de auto-deployment - SIN COMPOSER
 # Ubicación: /home/comprati/public_html/deploy.sh
+# NOTA: Composer deshabilitado porque no está en PATH del cron
 
 cd /home/comprati/public_html || exit 1
 
 # Git pull
 git pull origin main
 
-# Composer install (solo si cambió composer.json)
-if [ -f composer.json ]; then
-    if command -v composer &> /dev/null; then
-        composer install --no-dev --optimize-autoloader --no-interaction
-    fi
-fi
+# Composer install DESHABILITADO
+# PHPMailer ya está instalado en vendor/
+# No ejecutar composer porque no está disponible en el cron
