@@ -169,6 +169,58 @@ $categories = $pdo->query("
                     Solo se enviarán emails a lugares que tengan un email registrado en el campo <code>tags</code>.
                     Actualmente hay aproximadamente <strong>192 lugares con email</strong> en la base de datos.
                 </div>
+
+                <!-- Botón para ver lugares específicos -->
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-primary" id="loadPlacesBtn" onclick="loadPlacesByCategories()" disabled>
+                        <i class="fas fa-eye"></i> Ver Lugares Específicos para Seleccionar
+                    </button>
+                    <div id="placesLoadingMsg" style="display: none;" class="mt-2">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                        Cargando lugares...
+                    </div>
+                </div>
+
+                <!-- Tabla de lugares específicos -->
+                <div id="placesTable" style="display: none;" class="mt-4">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-map-marker-alt"></i> Seleccionar Lugares Específicos (<span id="placesCount">0</span> encontrados)</span>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-light" onclick="selectAllPlaces()">
+                                    <i class="fas fa-check-square"></i> Todos
+                                </button>
+                                <button type="button" class="btn btn-sm btn-light" onclick="deselectAllPlaces()">
+                                    <i class="fas fa-square"></i> Ninguno
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="sticky-top bg-light">
+                                        <tr>
+                                            <th width="40"><input type="checkbox" id="selectAllCheckbox" onchange="toggleAllPlaces(this)"></th>
+                                            <th>Nombre del Lugar</th>
+                                            <th>Email</th>
+                                            <th>Dueño/Contacto</th>
+                                            <th>Teléfono</th>
+                                            <th>Dirección</th>
+                                            <th>Ciudad</th>
+                                            <th>Tipo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="placesTableBody">
+                                        <!-- Se llena dinámicamente con JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <strong>Seleccionados: <span id="selectedCount" class="text-primary">0</span></strong>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Opción: Manual -->
@@ -363,10 +415,132 @@ function selectTemplate(id) {
 // Seleccionar/Deseleccionar todas las categorías
 function selectAllCategories() {
     document.querySelectorAll('.category-checkbox').forEach(cb => cb.checked = true);
+    updateLoadPlacesButton();
 }
 
 function deselectAllCategories() {
     document.querySelectorAll('.category-checkbox').forEach(cb => cb.checked = false);
+    updateLoadPlacesButton();
+    document.getElementById('placesTable').style.display = 'none';
+}
+
+// Actualizar botón de cargar lugares según checkboxes
+document.querySelectorAll('.category-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', updateLoadPlacesButton);
+});
+
+function updateLoadPlacesButton() {
+    const checked = document.querySelectorAll('.category-checkbox:checked').length;
+    const loadBtn = document.getElementById('loadPlacesBtn');
+    if (checked > 0) {
+        loadBtn.disabled = false;
+        loadBtn.classList.add('btn-pulse');
+    } else {
+        loadBtn.disabled = true;
+        loadBtn.classList.remove('btn-pulse');
+    }
+}
+
+// Cargar lugares por categorías seleccionadas via AJAX
+function loadPlacesByCategories() {
+    const selectedCategories = Array.from(document.querySelectorAll('.category-checkbox:checked'))
+        .map(cb => cb.value);
+
+    if (selectedCategories.length === 0) {
+        alert('Seleccione al menos una categoría');
+        return;
+    }
+
+    // Mostrar loading
+    document.getElementById('loadPlacesBtn').disabled = true;
+    document.getElementById('placesLoadingMsg').style.display = 'block';
+    document.getElementById('placesTable').style.display = 'none';
+
+    // AJAX request
+    const formData = new FormData();
+    selectedCategories.forEach(cat => formData.append('categories[]', cat));
+
+    fetch('get_places_by_categories.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayPlaces(data.places);
+            document.getElementById('placesCount').textContent = data.count;
+            document.getElementById('placesTable').style.display = 'block';
+        } else {
+            alert('Error al cargar lugares');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al cargar lugares');
+    })
+    .finally(() => {
+        document.getElementById('loadPlacesBtn').disabled = false;
+        document.getElementById('placesLoadingMsg').style.display = 'none';
+    });
+}
+
+// Mostrar lugares en la tabla
+function displayPlaces(places) {
+    const tbody = document.getElementById('placesTableBody');
+    tbody.innerHTML = '';
+
+    if (places.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">No se encontraron lugares con email en estas categorías</td></tr>';
+        return;
+    }
+
+    places.forEach(place => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="checkbox" class="place-checkbox" value="${place.id}" data-place='${JSON.stringify(place)}' onchange="updateSelectedCount()"></td>
+            <td><strong>${escapeHtml(place.name)}</strong></td>
+            <td><small>${escapeHtml(place.email)}</small></td>
+            <td>${escapeHtml(place.owner)}</td>
+            <td>${escapeHtml(place.phone)}</td>
+            <td><small>${escapeHtml(place.address)}</small></td>
+            <td>${escapeHtml(place.city)}</td>
+            <td><span class="badge bg-secondary">${escapeHtml(place.type)}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    updateSelectedCount();
+}
+
+// Escape HTML para prevenir XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Seleccionar/Deseleccionar todos los lugares
+function toggleAllPlaces(checkbox) {
+    document.querySelectorAll('.place-checkbox').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateSelectedCount();
+}
+
+function selectAllPlaces() {
+    document.getElementById('selectAllCheckbox').checked = true;
+    toggleAllPlaces(document.getElementById('selectAllCheckbox'));
+}
+
+function deselectAllPlaces() {
+    document.getElementById('selectAllCheckbox').checked = false;
+    toggleAllPlaces(document.getElementById('selectAllCheckbox'));
+}
+
+// Actualizar contador de seleccionados
+function updateSelectedCount() {
+    const count = document.querySelectorAll('.place-checkbox:checked').length;
+    document.getElementById('selectedCount').textContent = count;
 }
 
 // Vista previa
@@ -385,6 +559,23 @@ document.getElementById('campaignForm').addEventListener('submit', function(e) {
             e.preventDefault();
             alert('Por favor seleccione al menos una categoría');
             return false;
+        }
+
+        // Si hay lugares específicos seleccionados, agregarlos al formulario
+        const selectedPlaces = document.querySelectorAll('.place-checkbox:checked');
+        if (selectedPlaces.length > 0) {
+            // Limpiar campos previos
+            document.querySelectorAll('input[name="selected_places[]"]').forEach(el => el.remove());
+
+            // Agregar los lugares seleccionados como campos hidden
+            selectedPlaces.forEach(checkbox => {
+                const placeData = JSON.parse(checkbox.getAttribute('data-place'));
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'selected_places[]';
+                input.value = JSON.stringify(placeData);
+                this.appendChild(input);
+            });
         }
     }
 

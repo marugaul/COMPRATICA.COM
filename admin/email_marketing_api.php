@@ -320,6 +320,7 @@ function processDatabaseCampaign($campaign_id) {
     global $pdo;
 
     $categories = $_POST['categories'] ?? [];
+    $selected_places = $_POST['selected_places'] ?? [];
 
     if (empty($categories)) {
         throw new Exception('Debe seleccionar al menos una categoría');
@@ -329,31 +330,47 @@ function processDatabaseCampaign($campaign_id) {
     $pdo->prepare("UPDATE email_campaigns SET filter_categories = ? WHERE id = ?")
         ->execute([json_encode($categories), $campaign_id]);
 
-    // Extraer lugares con emails
-    $placeholders = str_repeat('?,', count($categories) - 1) . '?';
-
-    $stmt = $pdo->prepare("
-        SELECT name, phone, tags
-        FROM places_cr
-        WHERE type IN ($placeholders)
-        AND tags IS NOT NULL
-        AND tags != ''
-    ");
-    $stmt->execute($categories);
-
     $recipients = [];
 
-    while ($place = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $tags = json_decode($place['tags'], true);
-        $email = $tags['email'] ?? null;
+    // Si hay lugares específicos seleccionados, usar solo esos
+    if (!empty($selected_places)) {
+        foreach ($selected_places as $placeJson) {
+            $place = json_decode($placeJson, true);
 
-        if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $recipients[] = [
-                'email' => $email,
-                'name' => $place['name'],
-                'phone' => $place['phone'] ?? $tags['phone'] ?? null,
-                'custom_data' => $tags
-            ];
+            if ($place && isset($place['email']) && filter_var($place['email'], FILTER_VALIDATE_EMAIL)) {
+                $recipients[] = [
+                    'email' => $place['email'],
+                    'name' => $place['name'],
+                    'phone' => $place['phone'] !== 'N/A' ? $place['phone'] : null,
+                    'custom_data' => $place['tags'] ?? []
+                ];
+            }
+        }
+    } else {
+        // Si no hay lugares específicos, usar todas las categorías seleccionadas
+        $placeholders = str_repeat('?,', count($categories) - 1) . '?';
+
+        $stmt = $pdo->prepare("
+            SELECT name, phone, tags
+            FROM places_cr
+            WHERE type IN ($placeholders)
+            AND tags IS NOT NULL
+            AND tags != ''
+        ");
+        $stmt->execute($categories);
+
+        while ($place = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $tags = json_decode($place['tags'], true);
+            $email = $tags['email'] ?? null;
+
+            if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $recipients[] = [
+                    'email' => $email,
+                    'name' => $place['name'],
+                    'phone' => $place['phone'] ?? $tags['phone'] ?? null,
+                    'custom_data' => $tags
+                ];
+            }
         }
     }
 
