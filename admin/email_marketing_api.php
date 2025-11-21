@@ -159,7 +159,13 @@ function handleCreateCampaign() {
     $message_text = "Campaña creada exitosamente con {$total} destinatarios. ";
 
     if ($send_type === 'now') {
-        $message_text .= "Los emails se están enviando en segundo plano.";
+        // Redirigir directamente a la pantalla de envío
+        $_SESSION['message'] = [
+            'type' => 'success',
+            'text' => "Campaña creada. Iniciando envío de {$total} emails..."
+        ];
+        header('Location: email_marketing_send.php?campaign_id=' . $campaign_id);
+        exit;
     } elseif ($send_type === 'scheduled') {
         $message_text .= "Programada para: " . date('d/m/Y H:i', strtotime($scheduled_datetime));
     } else {
