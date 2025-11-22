@@ -381,6 +381,27 @@ document.getElementById('sourceType').addEventListener('change', function() {
     }
 });
 
+// Habilitar/deshabilitar botón de cargar lugares según categorías seleccionadas
+document.addEventListener('DOMContentLoaded', function() {
+    const updateLoadPlacesButton = () => {
+        const checkedCount = document.querySelectorAll('.category-checkbox:checked').length;
+        const btn = document.getElementById('loadPlacesBtn');
+        if (btn) {
+            btn.disabled = (checkedCount === 0);
+        }
+    };
+
+    // Escuchar cambios en todos los checkboxes de categorías
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('category-checkbox')) {
+            updateLoadPlacesButton();
+        }
+    });
+
+    // Actualizar al cargar la página
+    updateLoadPlacesButton();
+});
+
 // Manejo de tipo de envío
 document.getElementById('sendType').addEventListener('change', function() {
     const submitBtn = document.getElementById('submitBtn');
