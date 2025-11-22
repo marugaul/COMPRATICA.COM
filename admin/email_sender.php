@@ -154,8 +154,17 @@ class EmailSender {
     private function personalizeTemplate($template, $recipient, $tracking_code = null) {
         $html = $template;
 
+        // Determinar el nombre a usar
+        $name = $recipient['name'] ?? '';
+        $genericGreeting = $recipient['generic_greeting'] ?? 'Estimado/a';
+
+        // Usar saludo genérico si el nombre está vacío o es "N/A"
+        if (empty($name) || trim(strtoupper($name)) === 'N/A') {
+            $name = $genericGreeting;
+        }
+
         // Variables básicas
-        $html = str_replace('{nombre}', $recipient['name'] ?? 'Estimado/a', $html);
+        $html = str_replace('{nombre}', $name, $html);
         $html = str_replace('{email}', $recipient['email'], $html);
         $html = str_replace('{telefono}', $recipient['phone'] ?? '', $html);
         $html = str_replace('{empresa}', $recipient['custom_data']['business_name'] ?? '', $html);
@@ -285,6 +294,9 @@ class EmailSender {
             throw new Exception('Template no encontrado');
         }
 
+        // Obtener saludo genérico de la campaña
+        $generic_greeting = $campaign['generic_greeting'] ?? 'Estimado propietario';
+
         // Marcar campaña como enviando
         $this->pdo->exec("UPDATE email_campaigns SET status = 'sending', started_at = NOW() WHERE id = $campaign_id");
 
@@ -306,7 +318,8 @@ class EmailSender {
                     'email' => $recipient['email'],
                     'name' => $recipient['name'],
                     'phone' => $recipient['phone'],
-                    'custom_data' => $recipient['custom_data'] ? json_decode($recipient['custom_data'], true) : []
+                    'custom_data' => $recipient['custom_data'] ? json_decode($recipient['custom_data'], true) : [],
+                    'generic_greeting' => $generic_greeting
                 ],
                 $template['html_content'],
                 $campaign['subject'],

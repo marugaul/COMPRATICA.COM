@@ -71,6 +71,7 @@ function handleCreateCampaign() {
     $smtp_config_id = $_POST['smtp_config_id'] ?? '';
     $send_type = $_POST['send_type'] ?? 'draft';
     $scheduled_datetime = $_POST['scheduled_datetime'] ?? null;
+    $generic_greeting = trim($_POST['generic_greeting'] ?? 'Estimado propietario');
 
     if (empty($campaign_name) || empty($subject) || empty($template_id) || empty($smtp_config_id)) {
         throw new Exception('Todos los campos son obligatorios');
@@ -92,14 +93,15 @@ function handleCreateCampaign() {
     // Crear la campaña
     $stmt = $pdo->prepare("
         INSERT INTO email_campaigns
-        (name, smtp_config_id, template_id, subject, source_type, status, scheduled_at, started_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (name, smtp_config_id, template_id, subject, generic_greeting, source_type, status, scheduled_at, started_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $stmt->execute([
         $campaign_name,
         $smtp_config_id,
         $template_id,
         $subject,
+        $generic_greeting,
         $source_type,
         $initial_status,
         $scheduled_at,
