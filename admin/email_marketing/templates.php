@@ -480,7 +480,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
 
     try {
-        const response = await fetch('/admin/email_marketing/templates_api.php', {
+        const response = await fetch('/admin/email_marketing/debug_upload.php', {
             method: 'POST',
             body: formData
         });
@@ -488,16 +488,20 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         const result = await response.json();
 
         if (result.success) {
-            alert('✓ Plantilla subida exitosamente');
+            alert('✓ DEBUG COMPLETADO - Todo OK!\n\nLog:\n' + (result.debug_log || []).join('\n'));
             closeUploadModal();
             location.reload();
         } else {
-            alert('Error: ' + result.error);
+            // Mostrar log de debug completo
+            const debugInfo = result.debug_log ? '\n\nDEBUG LOG:\n' + result.debug_log.join('\n') : '';
+            alert('❌ ERROR: ' + result.error + debugInfo);
+            console.error('Debug completo:', result);
             btn.disabled = false;
             btn.innerHTML = originalText;
         }
     } catch (error) {
         alert('Error al subir plantilla: ' + error);
+        console.error('Error completo:', error);
         btn.disabled = false;
         btn.innerHTML = originalText;
     }
