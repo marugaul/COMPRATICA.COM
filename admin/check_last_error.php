@@ -122,5 +122,12 @@
         }
         ?>
     </div>
+
+    <script>
+    // Auto-refresh cada 10 segundos si está en modo "enviando"
+    setTimeout(function() {
+        location.reload();
+    }, 10000);
+    </script>
 </body>
 </html>
