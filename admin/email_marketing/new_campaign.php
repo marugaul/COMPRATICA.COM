@@ -38,6 +38,23 @@ $categories = $pdo->query("
                            placeholder="Ej: Oferta Especial para Hoteles en Costa Rica" required>
                 </div>
             </div>
+
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">
+                        Saludo Genérico
+                        <span class="text-muted">(opcional)</span>
+                    </label>
+                    <input type="text" name="generic_greeting" class="form-control"
+                           placeholder="Ej: Estimado propietario, Hola, Buenos días, etc."
+                           value="Estimado propietario">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Este saludo se usará cuando no tengamos el nombre del destinatario.
+                        En la plantilla aparecerá en lugar de <code>{nombre}</code>
+                    </small>
+                </div>
+            </div>
         </div>
     </div>
 
