@@ -487,15 +487,21 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
         const result = await response.json();
 
+        // Siempre mostrar en consola para poder copiarlo
+        console.log('=== DEBUG RESULTADO ===');
+        console.log(result);
+        if (result.debug_log) {
+            console.log('=== DEBUG LOG COMPLETO ===');
+            result.debug_log.forEach(line => console.log(line));
+        }
+
         if (result.success) {
-            alert('✓ DEBUG COMPLETADO - Todo OK!\n\nLog:\n' + (result.debug_log || []).join('\n'));
+            alert('✓ DEBUG COMPLETADO - Todo OK!\n\nRevisa la CONSOLA del navegador (F12) para ver el log completo');
             closeUploadModal();
             location.reload();
         } else {
-            // Mostrar log de debug completo
-            const debugInfo = result.debug_log ? '\n\nDEBUG LOG:\n' + result.debug_log.join('\n') : '';
-            alert('❌ ERROR: ' + result.error + debugInfo);
-            console.error('Debug completo:', result);
+            // Mostrar solo error principal, el resto en consola
+            alert('❌ ERROR: ' + result.error + '\n\nRevisa la CONSOLA del navegador (F12 > pestaña Console) para ver el log completo');
             btn.disabled = false;
             btn.innerHTML = originalText;
         }
