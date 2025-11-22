@@ -105,9 +105,16 @@ function handleUploadTemplate($pdo) {
         return;
     }
 
-    // Validar slug
-    if (!preg_match('/^[a-z0-9-]+$/', $company)) {
-        echo json_encode(['success' => false, 'error' => 'El identificador solo puede contener letras minúsculas, números y guiones']);
+    // Convertir identificador a formato slug válido automáticamente
+    $company = strtolower($company); // Convertir a minúsculas
+    $company = str_replace(['_', ' ', '.'], '-', $company); // Reemplazar espacios, guiones bajos y puntos por guiones
+    $company = preg_replace('/[^a-z0-9-]/', '', $company); // Eliminar caracteres no permitidos
+    $company = preg_replace('/-+/', '-', $company); // Eliminar guiones múltiples consecutivos
+    $company = trim($company, '-'); // Eliminar guiones al inicio/final
+
+    // Validar que quedó algo después de la conversión
+    if (empty($company)) {
+        echo json_encode(['success' => false, 'error' => 'El identificador debe contener al menos una letra o número']);
         return;
     }
 
