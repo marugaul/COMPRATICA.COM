@@ -460,7 +460,7 @@ function loadPlacesByCategories() {
     const formData = new FormData();
     selectedCategories.forEach(cat => formData.append('categories[]', cat));
 
-    fetch('../get_places_by_categories.php', {
+    fetch('/admin/get_places_by_categories.php', {
         method: 'POST',
         body: formData
     })
