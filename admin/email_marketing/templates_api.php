@@ -64,6 +64,10 @@ try {
             handleTestTemplate($pdo);
             break;
 
+        case 'get_template_preview':
+            handleGetTemplatePreview($pdo);
+            break;
+
         case 'set_default':
             handleSetDefault($pdo);
             break;
@@ -345,6 +349,61 @@ function handleTestTemplate($pdo) {
             'error' => 'Error al enviar: ' . $result['message']
         ]);
     }
+}
+
+/**
+ * Obtener vista previa de plantilla con variables de ejemplo
+ */
+function handleGetTemplatePreview($pdo) {
+    $templateId = intval($_GET['template_id'] ?? $_POST['template_id'] ?? 0);
+    $genericGreeting = trim($_GET['generic_greeting'] ?? $_POST['generic_greeting'] ?? 'Estimado/a');
+
+    if (!$templateId) {
+        echo json_encode(['success' => false, 'error' => 'ID de plantilla no válido']);
+        return;
+    }
+
+    // Obtener plantilla
+    $stmt = $pdo->prepare("SELECT * FROM email_templates WHERE id = ?");
+    $stmt->execute([$templateId]);
+    $template = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$template) {
+        echo json_encode(['success' => false, 'error' => 'Plantilla no encontrada']);
+        return;
+    }
+
+    // Reemplazar variables con datos de ejemplo
+    $html = $template['html_content'];
+
+    // Usar el saludo genérico si fue proporcionado, sino usar un nombre de ejemplo
+    $nombreEjemplo = !empty($genericGreeting) ? $genericGreeting : 'Juan Pérez';
+
+    $variables = [
+        '{nombre}' => $nombreEjemplo,
+        '{email}' => 'ejemplo@email.com',
+        '{telefono}' => '+506-1234-5678',
+        '{empresa}' => 'Empresa Ejemplo S.A.',
+        '{campaign_id}' => 'PREVIEW',
+        '{tracking_pixel}' => 'https://compratica.com/admin/email_track.php?c=preview&r=preview&t=open',
+        '{unsubscribe_link}' => 'https://compratica.com/admin/email_track.php?c=preview&r=preview&t=unsubscribe'
+    ];
+
+    // Manejar imagen de plantilla si existe
+    if (!empty($template['image_path']) && $template['image_display'] === 'inline' && !empty($template['image_cid'])) {
+        $variables['{template_image}'] = 'cid:' . $template['image_cid'];
+    } else {
+        $variables['{template_image}'] = '';
+    }
+
+    $html = str_replace(array_keys($variables), array_values($variables), $html);
+
+    // Devolver HTML directamente
+    echo json_encode([
+        'success' => true,
+        'html' => $html,
+        'template_name' => $template['name']
+    ]);
 }
 
 /**

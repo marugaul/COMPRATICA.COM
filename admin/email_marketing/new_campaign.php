@@ -382,6 +382,31 @@ $categories = $pdo->query("
     </div>
 </form>
 
+<!-- Modal de Vista Previa -->
+<div id="previewModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6);">
+    <div style="background-color: #fefefe; margin: 2% auto; padding: 0; border: 1px solid #888; width: 90%; max-width: 1000px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <!-- Header -->
+        <div style="padding: 20px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0; color: #333;">
+                <i class="fas fa-eye"></i> Vista Previa del Email
+            </h4>
+            <button onclick="document.getElementById('previewModal').style.display='none'" style="background: none; border: none; font-size: 28px; font-weight: bold; color: #aaa; cursor: pointer; line-height: 1;">
+                &times;
+            </button>
+        </div>
+        <!-- Body -->
+        <div id="previewModalBody" style="padding: 30px; max-height: 70vh; overflow-y: auto;">
+            <!-- El contenido se cargará aquí dinámicamente -->
+        </div>
+        <!-- Footer -->
+        <div style="padding: 15px 20px; background-color: #f8f9fa; border-top: 1px solid #dee2e6; border-radius: 0 0 8px 8px; text-align: right;">
+            <button onclick="document.getElementById('previewModal').style.display='none'" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 // Manejo de selección de origen de datos
 document.getElementById('sourceType').addEventListener('change', function() {
@@ -587,7 +612,58 @@ function updateSelectedCount() {
 
 // Vista previa
 function previewCampaign() {
-    alert('Vista previa en desarrollo. Esta función mostrará un preview del email antes de enviar.');
+    // Obtener template seleccionado
+    const selectedTemplate = document.querySelector('input[name="template_id"]:checked');
+    if (!selectedTemplate) {
+        alert('Por favor seleccione una plantilla primero');
+        return;
+    }
+
+    const templateId = selectedTemplate.value;
+    const genericGreeting = document.querySelector('input[name="generic_greeting"]')?.value || '';
+
+    // Mostrar loading
+    const modal = document.getElementById('previewModal');
+    const modalBody = document.getElementById('previewModalBody');
+    modalBody.innerHTML = '<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-3x"></i><p class="mt-3">Cargando vista previa...</p></div>';
+    modal.style.display = 'block';
+
+    // Hacer fetch a la API
+    fetch(`/admin/email_marketing/templates_api.php?action=get_template_preview&template_id=${templateId}&generic_greeting=${encodeURIComponent(genericGreeting)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mostrar el HTML en un iframe para aislarlo del CSS del admin
+                modalBody.innerHTML = `
+                    <div class="mb-3">
+                        <strong>Plantilla:</strong> ${data.template_name}
+                        ${genericGreeting ? `<br><strong>Saludo:</strong> ${genericGreeting}` : ''}
+                    </div>
+                    <iframe id="previewFrame" style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 8px;"></iframe>
+                `;
+
+                // Escribir el HTML en el iframe
+                const iframe = document.getElementById('previewFrame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                iframeDoc.open();
+                iframeDoc.write(data.html);
+                iframeDoc.close();
+            } else {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Error: ${data.error || 'No se pudo cargar la vista previa'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Error al cargar la vista previa: ${error.message}
+                </div>
+            `;
+        });
 }
 
 // Validación antes de enviar
@@ -644,4 +720,12 @@ document.getElementById('campaignForm').addEventListener('submit', function(e) {
         return false;
     }
 });
+
+// Cerrar modal al hacer clic fuera de él
+window.onclick = function(event) {
+    const modal = document.getElementById('previewModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+}
 </script>
