@@ -192,12 +192,19 @@ try {
     $debugLog[] = "\n=== ✓ TODOS LOS CHECKS PASARON ===";
     $debugLog[] = "La plantilla se puede insertar sin problemas";
 
+    // Guardar log en archivo
+    $logDir = __DIR__ . '/../../logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    file_put_contents($logDir . '/template_upload_debug.log', implode("\n", $debugLog) . "\n");
+
     // Limpiar buffer y enviar respuesta
     ob_clean();
     header('Content-Type: application/json');
     echo json_encode([
         'success' => true,
-        'message' => 'Debug completado - Todo OK',
+        'message' => 'Debug completado - Todo OK. Log guardado en /logs/template_upload_debug.log',
         'debug_log' => $debugLog
     ], JSON_PRETTY_PRINT);
     exit;
@@ -208,11 +215,19 @@ try {
     $debugLog[] = "Archivo: " . basename($e->getFile());
     $debugLog[] = "Línea: " . $e->getLine();
 
+    // Guardar log en archivo
+    $logDir = __DIR__ . '/../../logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    file_put_contents($logDir . '/template_upload_debug.log', implode("\n", $debugLog) . "\n");
+
     ob_clean();
     header('Content-Type: application/json');
     echo json_encode([
         'success' => false,
         'error' => $e->getMessage(),
+        'log_file' => '/logs/template_upload_debug.log',
         'debug_log' => $debugLog
     ], JSON_PRETTY_PRINT);
     exit;
@@ -221,11 +236,19 @@ try {
     $debugLog[] = "Tipo: " . get_class($e);
     $debugLog[] = "Mensaje: " . $e->getMessage();
 
+    // Guardar log en archivo
+    $logDir = __DIR__ . '/../../logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    file_put_contents($logDir . '/template_upload_debug.log', implode("\n", $debugLog) . "\n");
+
     ob_clean();
     header('Content-Type: application/json');
     echo json_encode([
         'success' => false,
         'error' => 'Error fatal: ' . $e->getMessage(),
+        'log_file' => '/logs/template_upload_debug.log',
         'debug_log' => $debugLog
     ], JSON_PRETTY_PRINT);
     exit;
