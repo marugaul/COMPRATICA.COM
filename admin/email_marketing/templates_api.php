@@ -174,7 +174,7 @@ function handleUploadTemplate($pdo) {
     // Insertar plantilla
     $stmt = $pdo->prepare("
         INSERT INTO email_templates (
-            name, company, subject, html_content, image_path, image_display, image_cid, variables, is_active, is_default
+            name, company, subject_default, html_content, image_path, image_display, image_cid, variables, is_active, is_default
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     ");
 
