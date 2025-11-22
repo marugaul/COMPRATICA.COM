@@ -480,7 +480,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
 
     try {
-        const response = await fetch('templates_api.php', {
+        const response = await fetch('/admin/email_marketing/templates_api.php', {
             method: 'POST',
             body: formData
         });
@@ -506,7 +506,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 // Preview Modal
 function previewTemplate(templateId) {
     document.getElementById('previewModal').style.display = 'block';
-    document.getElementById('previewFrame').src = '../preview_template.php?template_id=' + templateId + '&render=1';
+    document.getElementById('previewFrame').src = '/admin/preview_template.php?template_id=' + templateId + '&render=1';
 }
 
 function closePreviewModal() {
@@ -540,7 +540,7 @@ document.getElementById('testForm').addEventListener('submit', async (e) => {
     resultDiv.innerHTML = '';
 
     try {
-        const response = await fetch('templates_api.php', {
+        const response = await fetch('/admin/email_marketing/templates_api.php', {
             method: 'POST',
             body: formData
         });
@@ -573,7 +573,7 @@ async function setDefault(templateId) {
         formData.append('action', 'set_default');
         formData.append('template_id', templateId);
 
-        const response = await fetch('templates_api.php', {
+        const response = await fetch('/admin/email_marketing/templates_api.php', {
             method: 'POST',
             body: formData
         });
@@ -598,7 +598,7 @@ async function toggleActive(templateId, active) {
         formData.append('template_id', templateId);
         formData.append('is_active', active);
 
-        const response = await fetch('templates_api.php', {
+        const response = await fetch('/admin/email_marketing/templates_api.php', {
             method: 'POST',
             body: formData
         });
@@ -624,7 +624,7 @@ async function deleteTemplate(templateId) {
         formData.append('action', 'delete_template');
         formData.append('template_id', templateId);
 
-        const response = await fetch('templates_api.php', {
+        const response = await fetch('/admin/email_marketing/templates_api.php', {
             method: 'POST',
             body: formData
         });
