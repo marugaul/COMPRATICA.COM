@@ -480,28 +480,19 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
 
     try {
-        const response = await fetch('/admin/email_marketing/debug_upload.php', {
+        const response = await fetch('/admin/email_marketing/templates_api.php', {
             method: 'POST',
             body: formData
         });
 
         const result = await response.json();
 
-        // Siempre mostrar en consola para poder copiarlo
-        console.log('=== DEBUG RESULTADO ===');
-        console.log(result);
-        if (result.debug_log) {
-            console.log('=== DEBUG LOG COMPLETO ===');
-            result.debug_log.forEach(line => console.log(line));
-        }
-
         if (result.success) {
-            alert('✓ DEBUG COMPLETADO - Todo OK!\n\nRevisa la CONSOLA del navegador (F12) para ver el log completo');
+            alert('✓ Plantilla subida exitosamente');
             closeUploadModal();
             location.reload();
         } else {
-            // Mostrar solo error principal, el resto en consola
-            alert('❌ ERROR: ' + result.error + '\n\nRevisa la CONSOLA del navegador (F12 > pestaña Console) para ver el log completo');
+            alert('Error: ' + result.error);
             btn.disabled = false;
             btn.innerHTML = originalText;
         }

@@ -155,8 +155,15 @@ function handleUploadTemplate($pdo) {
     if (isset($_FILES['template_image']) && $_FILES['template_image']['error'] === UPLOAD_ERR_OK) {
         $imageFile = $_FILES['template_image'];
 
-        // Validar tipo de imagen
-        $imageType = exif_imagetype($imageFile['tmp_name']);
+        // Validar tipo de imagen usando getimagesize (más compatible que exif_imagetype)
+        $imageInfo = @getimagesize($imageFile['tmp_name']);
+
+        if ($imageInfo === false) {
+            echo json_encode(['success' => false, 'error' => 'El archivo no es una imagen válida']);
+            return;
+        }
+
+        $imageType = $imageInfo[2]; // IMAGETYPE_XXX constant
         $allowedTypes = [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF];
 
         if (!in_array($imageType, $allowedTypes)) {
