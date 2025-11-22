@@ -15,7 +15,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Verificar admin
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
-    die('Acceso denegado. Solo administradores. <a href="login.php">Login</a>');
+    die('Acceso denegado. Solo administradores. <a href="/admin/login.php">Login</a>');
 }
 
 echo "<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><title>Instalador Email Marketing</title>";
