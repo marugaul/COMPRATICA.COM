@@ -4,30 +4,55 @@
  * Maneja: subida, preview, test de envío, default, activar/desactivar, eliminar
  */
 
+// Configurar manejo de errores
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+
+// Convertir todos los errores PHP a excepciones
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
+});
+
+// Iniciar output buffering
 ob_start();
 
-require_once __DIR__ . '/../../includes/config.php';
+try {
+    require_once __DIR__ . '/../../includes/config.php';
 
-// Verificar admin
-if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
+    // Verificar admin
+    if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
+        ob_clean();
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Acceso denegado']);
+        exit;
+    }
+
+    // Conectar a BD
+    $config = require __DIR__ . '/../../config/database.php';
+    $pdo = new PDO(
+        "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
+        $config['username'],
+        $config['password'],
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+
+    $action = $_REQUEST['action'] ?? '';
+
+    // Limpiar buffer y establecer header
+    ob_clean();
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'error' => 'Acceso denegado']);
+} catch (Exception $e) {
+    // Si hay error en la inicialización
+    ob_clean();
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Error de inicialización: ' . $e->getMessage(),
+        'file' => basename($e->getFile()),
+        'line' => $e->getLine()
+    ]);
     exit;
 }
-
-// Conectar a BD
-$config = require __DIR__ . '/../../config/database.php';
-$pdo = new PDO(
-    "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
-    $config['username'],
-    $config['password'],
-    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-);
-
-$action = $_REQUEST['action'] ?? '';
-
-ob_clean();
-header('Content-Type: application/json');
 
 try {
     switch ($action) {
