@@ -35,23 +35,27 @@ https://www.compratica.com
 
 **URIs de redirección autorizadas:**
 ```
-https://compratica.com/login.php
-https://www.compratica.com/login.php
+https://compratica.com/login.php?oauth=google
 ```
 
 ### Paso 5: Copiar credenciales
 
 Copia:
-- **ID de cliente** (Client ID)
-- **Secreto de cliente** (Client Secret)
+- **ID de cliente** (Client ID) - formato: `123456789-abc...apps.googleusercontent.com`
+- **Secreto de cliente** (Client Secret) - formato: `GOCSPX-abc...xyz`
 
-### Paso 6: Agregar a config.php
+### Paso 6: Agregar a config.local.php
 
-Edita `/includes/config.php` y agrega:
+**IMPORTANTE:** Crea el archivo `/includes/config.local.php` (NO edites config.php):
+
 ```php
+<?php
 define('GOOGLE_CLIENT_ID', 'TU_CLIENT_ID_AQUI');
 define('GOOGLE_CLIENT_SECRET', 'TU_CLIENT_SECRET_AQUI');
+?>
 ```
+
+**Nota:** Este archivo NO se sube a Git por seguridad (está en .gitignore).
 
 ---
 
@@ -76,8 +80,7 @@ define('GOOGLE_CLIENT_SECRET', 'TU_CLIENT_SECRET_AQUI');
 1. Ve a **Facebook Login** → **Configuración**
 2. **URI de redirección de OAuth válidos:**
 ```
-https://compratica.com/login.php
-https://www.compratica.com/login.php
+https://compratica.com/login.php?oauth=facebook
 ```
 
 ### Paso 4: Configurar Dominio de la App
@@ -91,37 +94,58 @@ compratica.com
 ### Paso 5: Copiar credenciales
 
 En **Configuración** → **Básica**, copia:
-- **ID de la aplicación** (App ID)
+- **ID de la aplicación** (App ID) - número de 15-16 dígitos
 - **Clave secreta de la aplicación** (App Secret) - Clic en "Mostrar"
 
 ### Paso 6: Cambiar a modo producción
 
-1. En la parte superior, cambia de **Desarrollo** a **Activo**
+1. En la parte superior, cambia de **Desarrollo** a **Activo** (Producción)
 2. Completa los campos requeridos (URL de política de privacidad, etc.)
 
-### Paso 7: Agregar a config.php
+### Paso 7: Agregar a config.local.php
 
-Edita `/includes/config.php` y agrega:
+**IMPORTANTE:** Agrega al mismo archivo `/includes/config.local.php`:
+
 ```php
+<?php
+define('GOOGLE_CLIENT_ID', '...');
+define('GOOGLE_CLIENT_SECRET', '...');
+
+// Agrega estas líneas:
 define('FACEBOOK_APP_ID', 'TU_APP_ID_AQUI');
 define('FACEBOOK_APP_SECRET', 'TU_APP_SECRET_AQUI');
+?>
 ```
 
 ---
 
 ## ✅ 3. Verificar que funciona
 
-### Probar Google Login
+### Paso 1: Verificar credenciales
+
+Primero verifica que las credenciales están correctamente configuradas:
+
+```
+https://compratica.com/check_oauth.php
+```
+
+Debe mostrar:
+- ✓ Google OAuth: Configurado
+- ✓ Facebook OAuth: Configurado
+
+Si no están configuradas, revisa que `config.local.php` esté en el servidor.
+
+### Paso 2: Probar Google Login
 
 1. Abre https://compratica.com/login.php
 2. Deberías ver botón "Continuar con Google"
 3. Haz clic y completa el flujo
 4. Deberías entrar automáticamente
 
-### Probar Facebook Login
+### Paso 3: Probar Facebook Login
 
 1. En la misma página de login
-2. Deberías ver botón "Registrarse con Facebook"
+2. Deberías ver botón "Continuar con Facebook"
 3. Haz clic y completa el flujo
 4. Deberías entrar automáticamente
 
@@ -129,14 +153,27 @@ define('FACEBOOK_APP_SECRET', 'TU_APP_SECRET_AQUI');
 
 ## 🔍 Solución de problemas
 
-### Error: redirect_uri_mismatch
-**Solución:** Verifica que las URIs de redirección sean EXACTAMENTE iguales en la configuración de Google/Facebook y en tu sitio.
+### No aparecen los botones de Google/Facebook
+1. Abre `https://compratica.com/check_oauth.php` para verificar
+2. Si muestra "NO configurado", revisa que `config.local.php` exista en `/includes/`
+3. Verifica que las credenciales no estén vacías
 
-### No aparecen los botones
-**Solución:** Verifica que las constantes en `config.php` no estén vacías.
+### Error: redirect_uri_mismatch (Google)
+**Causa:** La URI configurada en Google no coincide exactamente.
 
-### Error: App not active
-**Facebook:** Asegúrate de que la app esté en modo "Activo" (no "Desarrollo").
+**Solución:** Debe ser exactamente:
+```
+https://compratica.com/login.php?oauth=google
+```
+Sin www., sin espacios, con `?oauth=google` al final.
+
+### Error: URL not allowed (Facebook)
+**Causa:** La URI no está autorizada en Facebook.
+
+**Solución:**
+1. Ve a Facebook Login → Configuración
+2. Agrega exactamente: `https://compratica.com/login.php?oauth=facebook`
+3. Verifica que la app esté en modo **Producción** (no Desarrollo)
 
 ---
 
@@ -171,10 +208,30 @@ define('FACEBOOK_APP_SECRET', 'TU_APP_SECRET_AQUI');
 
 ---
 
+## 🛠️ Herramienta de Diagnóstico
+
+Creamos una herramienta para verificar el estado de OAuth:
+
+```
+https://compratica.com/check_oauth.php
+```
+
+Esta página te muestra:
+- ✅ Si `config.local.php` existe
+- ✅ Si Google OAuth está configurado
+- ✅ Si Facebook OAuth está configurado
+- ✅ Las URIs de redirección correctas
+- ⚠️ Qué falta configurar si algo no funciona
+
+**Úsala ANTES de probar el login** para asegurarte que todo está bien.
+
+---
+
 ## 🆘 ¿Necesitas ayuda?
 
-Si tienes problemas configurando, revisa:
-1. Que las URLs de redirección sean exactas
-2. Que las apps estén en modo activo/producción
-3. Que las credenciales estén correctas en `config.php`
-4. Los logs en `/logs/login_debug.log` para ver errores específicos
+Si tienes problemas configurando, revisa en orden:
+1. **Verificador:** `https://compratica.com/check_oauth.php`
+2. **URLs exactas:** Las URIs deben incluir `?oauth=google` y `?oauth=facebook`
+3. **Modo producción:** Apps de Facebook deben estar activas
+4. **Archivo correcto:** Usa `/includes/config.local.php` (NO config.php)
+5. **Logs:** Revisa `/logs/login_debug.log` para errores específicos
