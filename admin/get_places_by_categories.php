@@ -52,6 +52,12 @@ try {
 
     while ($place = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $tags = json_decode($place['tags'], true);
+
+        // Validar que tags sea un array
+        if (!is_array($tags)) {
+            continue;
+        }
+
         $email = $tags['email'] ?? null;
 
         // Solo incluir lugares con email válido
