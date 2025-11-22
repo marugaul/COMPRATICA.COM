@@ -39,7 +39,7 @@ try {
     $placeholders = str_repeat('?,', count($categories) - 1) . '?';
 
     $stmt = $pdo->prepare("
-        SELECT id, name, phone, tags, lat, lon, category, type
+        SELECT id, name, phone, tags, lat, lng as lon, category, type
         FROM places_cr
         WHERE type IN ($placeholders)
         AND tags IS NOT NULL
