@@ -1,137 +1,232 @@
 <?php
 /**
- * Debug script para encontrar el error de subida de plantillas
+ * Debug ultra-robusto - captura TODOS los errores posibles
  */
 
-// Capturar TODOS los errores
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
-ini_set('log_errors', '1');
+// Función de shutdown para capturar errores fatales
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'error' => 'Error fatal de PHP',
+            'details' => $error['message'],
+            'file' => $error['file'],
+            'line' => $error['line']
+        ]);
+        exit;
+    }
+});
 
-// Log de inicio
+// Iniciar output buffering inmediatamente
+ob_start();
+
+// Configurar manejo de errores
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+
 $debugLog = [];
-$debugLog[] = "=== INICIO DEBUG ===";
+$debugLog[] = "=== DEBUG ULTRA-ROBUSTO ===";
 $debugLog[] = "Timestamp: " . date('Y-m-d H:i:s');
+$debugLog[] = "PHP Version: " . PHP_VERSION;
+$debugLog[] = "Server: " . ($_SERVER['SERVER_SOFTWARE'] ?? 'Unknown');
 
 try {
-    $debugLog[] = "1. Cargando config...";
-    require_once __DIR__ . '/../../includes/config.php';
-    $debugLog[] = "✓ Config cargado";
+    // 1. Verificar que es POST
+    $debugLog[] = "1. Método: " . ($_SERVER['REQUEST_METHOD'] ?? 'Unknown');
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        throw new Exception("Debe ser POST, es: " . $_SERVER['REQUEST_METHOD']);
+    }
 
-    $debugLog[] = "2. Verificando sesión admin...";
+    // 2. Verificar action
+    $debugLog[] = "2. Action recibido: " . ($_POST['action'] ?? ($_REQUEST['action'] ?? 'NO RECIBIDO'));
+
+    // 3. Intentar cargar config
+    $debugLog[] = "3. Intentando cargar config...";
+    $configPath = __DIR__ . '/../../includes/config.php';
+    $debugLog[] = "   Config path: $configPath";
+    $debugLog[] = "   Config existe: " . (file_exists($configPath) ? 'SI' : 'NO');
+
+    if (!file_exists($configPath)) {
+        throw new Exception("Config no existe en: $configPath");
+    }
+
+    require_once $configPath;
+    $debugLog[] = "   ✓ Config cargado";
+
+    // 4. Verificar sesión
+    $debugLog[] = "4. Verificando sesión...";
+    $debugLog[] = "   Session ID: " . (session_id() ?: 'No iniciada');
+    $debugLog[] = "   is_admin: " . (isset($_SESSION['is_admin']) ? ($_SESSION['is_admin'] ? 'true' : 'false') : 'no definido');
+
     if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
         throw new Exception("No es admin");
     }
-    $debugLog[] = "✓ Admin verificado";
+    $debugLog[] = "   ✓ Admin verificado";
 
-    $debugLog[] = "3. Conectando a BD...";
-    $config = require __DIR__ . '/../../config/database.php';
+    // 5. Conectar BD
+    $debugLog[] = "5. Conectando a BD...";
+    $dbConfigPath = __DIR__ . '/../../config/database.php';
+    $debugLog[] = "   DB config path: $dbConfigPath";
+    $debugLog[] = "   DB config existe: " . (file_exists($dbConfigPath) ? 'SI' : 'NO');
+
+    if (!file_exists($dbConfigPath)) {
+        throw new Exception("DB config no existe");
+    }
+
+    $config = require $dbConfigPath;
+    $debugLog[] = "   Host: " . ($config['host'] ?? 'no definido');
+    $debugLog[] = "   Database: " . ($config['database'] ?? 'no definido');
+
     $pdo = new PDO(
         "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
         $config['username'],
         $config['password'],
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
-    $debugLog[] = "✓ BD conectada";
+    $debugLog[] = "   ✓ BD conectada";
 
-    $debugLog[] = "4. Verificando datos POST...";
-    $debugLog[] = "POST keys: " . implode(', ', array_keys($_POST));
-    $debugLog[] = "FILES keys: " . implode(', ', array_keys($_FILES));
+    // 6. Verificar datos POST
+    $debugLog[] = "6. Datos POST recibidos:";
+    $debugLog[] = "   template_name: " . ($_POST['template_name'] ?? 'NO');
+    $debugLog[] = "   template_company: " . ($_POST['template_company'] ?? 'NO');
+    $debugLog[] = "   template_subject: " . ($_POST['template_subject'] ?? 'NO');
+    $debugLog[] = "   set_as_default: " . (isset($_POST['set_as_default']) ? 'SI' : 'NO');
+    $debugLog[] = "   image_display: " . ($_POST['image_display'] ?? 'NO');
 
+    // 7. Verificar FILES
+    $debugLog[] = "7. Archivos recibidos:";
+    $debugLog[] = "   template_file isset: " . (isset($_FILES['template_file']) ? 'SI' : 'NO');
+    if (isset($_FILES['template_file'])) {
+        $debugLog[] = "   template_file error: " . $_FILES['template_file']['error'];
+        $debugLog[] = "   template_file name: " . $_FILES['template_file']['name'];
+        $debugLog[] = "   template_file size: " . $_FILES['template_file']['size'];
+        $debugLog[] = "   template_file type: " . $_FILES['template_file']['type'];
+    }
+
+    $debugLog[] = "   template_image isset: " . (isset($_FILES['template_image']) ? 'SI' : 'NO');
+    if (isset($_FILES['template_image'])) {
+        $debugLog[] = "   template_image error: " . $_FILES['template_image']['error'];
+        $debugLog[] = "   template_image name: " . ($_FILES['template_image']['name'] ?? 'sin nombre');
+        $debugLog[] = "   template_image size: " . ($_FILES['template_image']['size'] ?? 0);
+    }
+
+    // 8. Validar campos requeridos
+    $debugLog[] = "8. Validando campos...";
     $name = trim($_POST['template_name'] ?? '');
     $company = trim($_POST['template_company'] ?? '');
     $subject = trim($_POST['template_subject'] ?? '');
 
-    $debugLog[] = "Nombre: '$name'";
-    $debugLog[] = "Company: '$company'";
-    $debugLog[] = "Subject: '$subject'";
+    if (empty($name)) throw new Exception("Nombre vacío");
+    if (empty($company)) throw new Exception("Company vacío");
+    if (empty($subject)) throw new Exception("Subject vacío");
+    $debugLog[] = "   ✓ Campos básicos OK";
 
-    if (empty($name) || empty($company) || empty($subject)) {
-        throw new Exception("Campos vacíos");
-    }
-    $debugLog[] = "✓ Datos básicos OK";
-
-    $debugLog[] = "5. Procesando company slug...";
+    // 9. Procesar company slug
+    $debugLog[] = "9. Procesando slug...";
+    $debugLog[] = "   Original: '$company'";
     $company = strtolower($company);
     $company = str_replace(['_', ' ', '.'], '-', $company);
     $company = preg_replace('/[^a-z0-9-]/', '', $company);
     $company = preg_replace('/-+/', '-', $company);
     $company = trim($company, '-');
-    $debugLog[] = "Company procesado: '$company'";
+    $debugLog[] = "   Procesado: '$company'";
 
-    if (empty($company)) {
-        throw new Exception("Company slug vacío después de procesar");
-    }
-    $debugLog[] = "✓ Company slug OK";
+    if (empty($company)) throw new Exception("Slug vacío después de procesar");
+    $debugLog[] = "   ✓ Slug OK";
 
-    $debugLog[] = "6. Verificando archivo HTML...";
+    // 10. Verificar archivo HTML
+    $debugLog[] = "10. Verificando archivo HTML...";
     if (!isset($_FILES['template_file'])) {
-        throw new Exception("No se recibió archivo template_file");
+        throw new Exception("No se recibió template_file en FILES");
     }
-    $debugLog[] = "Error code: " . $_FILES['template_file']['error'];
-    $debugLog[] = "Nombre: " . $_FILES['template_file']['name'];
-    $debugLog[] = "Tamaño: " . $_FILES['template_file']['size'];
-    $debugLog[] = "Tipo: " . $_FILES['template_file']['type'];
 
-    if ($_FILES['template_file']['error'] !== UPLOAD_ERR_OK) {
-        throw new Exception("Error al subir archivo: " . $_FILES['template_file']['error']);
+    $uploadError = $_FILES['template_file']['error'];
+    if ($uploadError !== UPLOAD_ERR_OK) {
+        $errorMessages = [
+            UPLOAD_ERR_INI_SIZE => 'Archivo excede upload_max_filesize',
+            UPLOAD_ERR_FORM_SIZE => 'Archivo excede MAX_FILE_SIZE',
+            UPLOAD_ERR_PARTIAL => 'Archivo subido parcialmente',
+            UPLOAD_ERR_NO_FILE => 'No se subió archivo',
+            UPLOAD_ERR_NO_TMP_DIR => 'Falta carpeta temporal',
+            UPLOAD_ERR_CANT_WRITE => 'Error al escribir en disco',
+            UPLOAD_ERR_EXTENSION => 'Extensión de PHP detuvo la subida'
+        ];
+        throw new Exception("Error upload: " . ($errorMessages[$uploadError] ?? "Código: $uploadError"));
     }
-    $debugLog[] = "✓ Archivo recibido OK";
+    $debugLog[] = "   ✓ Archivo recibido sin errores";
 
-    $debugLog[] = "7. Leyendo contenido HTML...";
-    $htmlContent = file_get_contents($_FILES['template_file']['tmp_name']);
-    $debugLog[] = "Tamaño HTML: " . strlen($htmlContent) . " bytes";
+    // 11. Leer HTML
+    $debugLog[] = "11. Leyendo contenido HTML...";
+    $tmpName = $_FILES['template_file']['tmp_name'];
+    $debugLog[] = "   Temp file: $tmpName";
+    $debugLog[] = "   Temp file exists: " . (file_exists($tmpName) ? 'SI' : 'NO');
+
+    if (!file_exists($tmpName)) {
+        throw new Exception("Archivo temporal no existe");
+    }
+
+    $htmlContent = file_get_contents($tmpName);
+    $debugLog[] = "   HTML size: " . strlen($htmlContent) . " bytes";
 
     if (empty($htmlContent)) {
-        throw new Exception("HTML vacío");
+        throw new Exception("HTML está vacío");
     }
-    $debugLog[] = "✓ HTML leído OK";
+    $debugLog[] = "   ✓ HTML leído correctamente";
 
-    $debugLog[] = "8. Verificando imagen...";
-    if (isset($_FILES['template_image']) && $_FILES['template_image']['error'] === UPLOAD_ERR_OK) {
-        $debugLog[] = "Imagen recibida";
-        $debugLog[] = "Imagen tamaño: " . $_FILES['template_image']['size'];
-        $debugLog[] = "Imagen tipo: " . $_FILES['template_image']['type'];
+    // 12. Verificar exif_imagetype
+    $debugLog[] = "12. Verificando función exif_imagetype...";
+    $debugLog[] = "   Disponible: " . (function_exists('exif_imagetype') ? 'SI' : 'NO');
 
-        // Verificar si exif_imagetype está disponible
-        if (!function_exists('exif_imagetype')) {
-            throw new Exception("FUNCIÓN exif_imagetype NO DISPONIBLE EN ESTE SERVIDOR");
-        }
-        $debugLog[] = "✓ exif_imagetype disponible";
-
-        $imageType = @exif_imagetype($_FILES['template_image']['tmp_name']);
-        $debugLog[] = "Image type: " . $imageType;
-    } else {
-        $debugLog[] = "Sin imagen";
-    }
-
-    $debugLog[] = "9. Verificando duplicados...";
+    // 13. Verificar duplicados
+    $debugLog[] = "13. Verificando duplicados...";
     $stmt = $pdo->prepare("SELECT id FROM email_templates WHERE company = ?");
     $stmt->execute([$company]);
     if ($stmt->fetch()) {
-        throw new Exception("Ya existe plantilla con ese slug");
+        throw new Exception("Ya existe plantilla con slug: $company");
     }
-    $debugLog[] = "✓ No hay duplicados";
+    $debugLog[] = "   ✓ No hay duplicados";
 
-    $debugLog[] = "\n=== TODO OK - LISTO PARA INSERTAR ===";
+    // ÉXITO
+    $debugLog[] = "\n=== ✓ TODOS LOS CHECKS PASARON ===";
+    $debugLog[] = "La plantilla se puede insertar sin problemas";
 
-    // Mostrar resultado
+    // Limpiar buffer y enviar respuesta
+    ob_clean();
     header('Content-Type: application/json');
     echo json_encode([
         'success' => true,
-        'message' => 'Debug completado sin errores',
+        'message' => 'Debug completado - Todo OK',
         'debug_log' => $debugLog
     ], JSON_PRETTY_PRINT);
+    exit;
 
 } catch (Exception $e) {
-    $debugLog[] = "❌ ERROR: " . $e->getMessage();
-    $debugLog[] = "Archivo: " . $e->getFile();
+    $debugLog[] = "\n❌ ERROR CAPTURADO:";
+    $debugLog[] = "Mensaje: " . $e->getMessage();
+    $debugLog[] = "Archivo: " . basename($e->getFile());
     $debugLog[] = "Línea: " . $e->getLine();
 
+    ob_clean();
     header('Content-Type: application/json');
     echo json_encode([
         'success' => false,
         'error' => $e->getMessage(),
         'debug_log' => $debugLog
     ], JSON_PRETTY_PRINT);
+    exit;
+} catch (Throwable $e) {
+    $debugLog[] = "\n❌ ERROR FATAL:";
+    $debugLog[] = "Tipo: " . get_class($e);
+    $debugLog[] = "Mensaje: " . $e->getMessage();
+
+    ob_clean();
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Error fatal: ' . $e->getMessage(),
+        'debug_log' => $debugLog
+    ], JSON_PRETTY_PRINT);
+    exit;
 }
