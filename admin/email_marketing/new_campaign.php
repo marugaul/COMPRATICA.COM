@@ -471,12 +471,16 @@ function loadPlacesByCategories() {
             document.getElementById('placesCount').textContent = data.count;
             document.getElementById('placesTable').style.display = 'block';
         } else {
-            alert('Error al cargar lugares');
+            // Mostrar error detallado del servidor
+            const errorMsg = data.error || 'Error desconocido';
+            const errorDetails = data.file && data.line ? `\n\nArchivo: ${data.file}\nLínea: ${data.line}` : '';
+            alert('Error al cargar lugares:\n' + errorMsg + errorDetails);
+            console.error('Error completo:', data);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error de conexión al cargar lugares');
+        alert('Error de conexión al cargar lugares:\n' + error.message);
     })
     .finally(() => {
         document.getElementById('loadPlacesBtn').disabled = false;
