@@ -293,17 +293,17 @@ logDebug("RENDERING_PAGE");
     
     <div class="menu-divider"></div>
     
-    <a href="affiliate/register.php" class="menu-item">
+    <a href="/affiliate/register.php" class="menu-item">
       <i class="fas fa-bullhorn"></i>
       <span>Publicar mi venta</span>
     </a>
-    
-    <a href="affiliate/login.php" class="menu-item">
+
+    <a href="/affiliate/login.php" class="menu-item">
       <i class="fas fa-user-tie"></i>
       <span>Portal Afiliados</span>
     </a>
-    
-    <a href="admin/login.php" class="menu-item">
+
+    <a href="/admin/login.php" class="menu-item">
       <i class="fas fa-user-shield"></i>
       <span>Administrador</span>
     </a>
@@ -495,9 +495,9 @@ logDebug("RENDERING_PAGE");
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>
-      <a href="affiliate/login.php">Portal de Afiliados</a>
-      <a href="register.php">Registrarse</a>
-      <a href="admin/login.php">Administración</a>
+      <a href="/affiliate/login.php">Portal de Afiliados</a>
+      <a href="/register.php">Registrarse</a>
+      <a href="/admin/login.php">Administración</a>
     </div>
     <div class="footer-section">
       <h3>Contacto</h3>

@@ -1158,17 +1158,17 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
 
     <div class="menu-divider"></div>
 
-    <a href="affiliate/register.php" class="menu-item">
+    <a href="/affiliate/register.php" class="menu-item">
       <i class="fas fa-bullhorn"></i>
       <span>Publicar mi venta</span>
     </a>
 
-    <a href="affiliate/login.php" class="menu-item">
+    <a href="/affiliate/login.php" class="menu-item">
       <i class="fas fa-user-tie"></i>
       <span>Portal Afiliados</span>
     </a>
 
-    <a href="admin/login.php" class="menu-item">
+    <a href="/admin/login.php" class="menu-item">
       <i class="fas fa-user-shield"></i>
       <span>Administrador</span>
     </a>

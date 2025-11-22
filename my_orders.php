@@ -609,10 +609,10 @@ foreach ($_SESSION['cart'] as $it) {
 
     <div class="menu-section">
       <div class="menu-section-title">Enlaces</div>
-      <a href="affiliate/login.php" class="menu-link">
+      <a href="/affiliate/login.php" class="menu-link">
         <i class="fas fa-handshake"></i> Afiliados
       </a>
-      <a href="admin/login.php" class="menu-link">
+      <a href="/admin/login.php" class="menu-link">
         <i class="fas fa-shield-alt"></i> Administrador
       </a>
     </div>
