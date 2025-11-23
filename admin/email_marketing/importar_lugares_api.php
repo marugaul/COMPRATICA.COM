@@ -115,53 +115,37 @@ if ($action === 'importar') {
             exit;
         }
 
-        // Query de Overpass API para Costa Rica
-        $overpass_query = '[out:json][timeout:180];
-area["name"="Costa Rica"]["type"="boundary"]->.a;
-(
-  node["amenity"~"restaurant|bar|cafe|fast_food|pub|food_court|ice_cream|biergarten"](area.a);
-  way["amenity"~"restaurant|bar|cafe|fast_food|pub|food_court|ice_cream|biergarten"](area.a);
-  node["tourism"~"hotel|motel|guest_house|hostel|apartment|chalet|alpine_hut"](area.a);
-  way["tourism"~"hotel|motel|guest_house|hostel|apartment|chalet|alpine_hut"](area.a);
-  node["shop"](area.a);
-  way["shop"](area.a);
-  node["amenity"~"bank|pharmacy|clinic|dentist|doctors|hospital|veterinary|fuel|car_wash|car_rental|parking"](area.a);
-  way["amenity"~"bank|pharmacy|clinic|dentist|doctors|hospital|veterinary|fuel|car_wash|car_rental|parking"](area.a);
-  node["amenity"~"cinema|theatre|nightclub|casino|arts_centre|community_centre"](area.a);
-  way["amenity"~"cinema|theatre|nightclub|casino|arts_centre|community_centre"](area.a);
-  node["leisure"~"sports_centre|fitness_centre|swimming_pool|marina|golf_course|stadium"](area.a);
-  way["leisure"~"sports_centre|fitness_centre|swimming_pool|marina|golf_course|stadium"](area.a);
-  node["tourism"~"attraction|museum|gallery|viewpoint|theme_park|zoo|aquarium"](area.a);
-  way["tourism"~"attraction|museum|gallery|viewpoint|theme_park|zoo|aquarium"](area.a);
-  node["office"](area.a);
-  way["office"](area.a);
-  node["amenity"~"school|kindergarten|college|university|language_school|driving_school"](area.a);
-  way["amenity"~"school|kindergarten|college|university|language_school|driving_school"](area.a);
-  node["shop"~"beauty|hairdresser|cosmetics|massage"](area.a);
-  way["shop"~"beauty|hairdresser|cosmetics|massage"](area.a);
-  node["amenity"~"spa"](area.a);
-  way["amenity"~"spa"](area.a);
-);
-out center;';
+        // Query de Overpass API para Costa Rica - Compacta en una línea
+        $overpass_query = '[out:json][timeout:180];area["name"="Costa Rica"]["type"="boundary"]->.a;(node["amenity"~"restaurant|bar|cafe|fast_food|pub|food_court|ice_cream|biergarten"](area.a);way["amenity"~"restaurant|bar|cafe|fast_food|pub|food_court|ice_cream|biergarten"](area.a);node["tourism"~"hotel|motel|guest_house|hostel|apartment|chalet|alpine_hut"](area.a);way["tourism"~"hotel|motel|guest_house|hostel|apartment|chalet|alpine_hut"](area.a);node["shop"](area.a);way["shop"](area.a);node["amenity"~"bank|pharmacy|clinic|dentist|doctors|hospital|veterinary|fuel|car_wash|car_rental|parking"](area.a);way["amenity"~"bank|pharmacy|clinic|dentist|doctors|hospital|veterinary|fuel|car_wash|car_rental|parking"](area.a);node["amenity"~"cinema|theatre|nightclub|casino|arts_centre|community_centre"](area.a);way["amenity"~"cinema|theatre|nightclub|casino|arts_centre|community_centre"](area.a);node["leisure"~"sports_centre|fitness_centre|swimming_pool|marina|golf_course|stadium"](area.a);way["leisure"~"sports_centre|fitness_centre|swimming_pool|marina|golf_course|stadium"](area.a);node["tourism"~"attraction|museum|gallery|viewpoint|theme_park|zoo|aquarium"](area.a);way["tourism"~"attraction|museum|gallery|viewpoint|theme_park|zoo|aquarium"](area.a);node["office"](area.a);way["office"](area.a);node["amenity"~"school|kindergarten|college|university|language_school|driving_school"](area.a);way["amenity"~"school|kindergarten|college|university|language_school|driving_school"](area.a);node["shop"~"beauty|hairdresser|cosmetics|massage"](area.a);way["shop"~"beauty|hairdresser|cosmetics|massage"](area.a);node["amenity"~"spa"](area.a);way["amenity"~"spa"](area.a););out center;';
 
         // Hacer request a Overpass API
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "http://overpass-api.de/api/interpreter");
+        curl_setopt($ch, CURLOPT_URL, "https://overpass-api.de/api/interpreter");
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, 'data=' . urlencode($overpass_query));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 180);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curl_error = curl_error($ch);
         curl_close($ch);
 
+        if ($response === false) {
+            throw new Exception("Error de conexión con Overpass API: " . $curl_error);
+        }
+
         if ($http_code !== 200) {
-            throw new Exception("Error en Overpass API: HTTP $http_code - $curl_error");
+            throw new Exception("Error HTTP $http_code de Overpass API. Respuesta: " . substr($response, 0, 200));
         }
 
         $data = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception("Error al decodificar JSON: " . json_last_error_msg() . ". Respuesta: " . substr($response, 0, 200));
+        }
         if (!isset($data['elements'])) {
             throw new Exception("Respuesta inválida de Overpass API");
         }
