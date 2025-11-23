@@ -222,6 +222,9 @@ function h($str) {
                     <li><a href="?page=blacklist" class="<?= $page === 'blacklist' ? 'active' : '' ?>">
                         <i class="fas fa-ban"></i> Blacklist
                     </a></li>
+                    <li><a href="?page=importar-lugares" class="<?= $page === 'importar-lugares' ? 'active' : '' ?>">
+                        <i class="fas fa-cloud-download-alt"></i> Importar Lugares
+                    </a></li>
                     <li><hr style="border-color: #334155; margin: 20px 15px;"></li>
                     <li><a href="../admin/dashboard.php">
                         <i class="fas fa-arrow-left"></i> Volver al Admin
@@ -261,6 +264,9 @@ function h($str) {
                         break;
                     case 'blacklist':
                         include __DIR__ . '/email_marketing/blacklist.php';
+                        break;
+                    case 'importar-lugares':
+                        include __DIR__ . '/email_marketing/importar_lugares.php';
                         break;
                     default:
                         echo '<div class="alert alert-warning">Página no encontrada</div>';
