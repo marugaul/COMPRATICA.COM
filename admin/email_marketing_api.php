@@ -115,6 +115,8 @@ function handleCreateCampaign() {
         $recipients = processExcelUpload($campaign_id);
     } elseif ($source_type === 'database') {
         $recipients = processDatabaseCampaign($campaign_id);
+    } elseif ($source_type === 'lugares_comerciales') {
+        $recipients = processLugaresComercialesCampaign($campaign_id);
     } elseif ($source_type === 'manual') {
         $recipients = processManualRecipients($campaign_id);
     }
@@ -369,6 +371,77 @@ function processDatabaseCampaign($campaign_id) {
                     'name' => $place['name'],
                     'phone' => $place['phone'] ?? $tags['phone'] ?? null,
                     'custom_data' => $tags
+                ];
+            }
+        }
+    }
+
+    return $recipients;
+}
+
+/**
+ * Procesar destinatarios de lugares comerciales (OpenStreetMap)
+ */
+function processLugaresComercialesCampaign($campaign_id) {
+    global $pdo;
+
+    $tipos = $_POST['lugares_tipos'] ?? [];
+    $selected_lugares = $_POST['selected_lugares'] ?? [];
+
+    if (empty($tipos) && empty($selected_lugares)) {
+        throw new Exception('Debe seleccionar al menos un tipo de lugar');
+    }
+
+    // Guardar filtro de tipos
+    $pdo->prepare("UPDATE email_campaigns SET filter_categories = ? WHERE id = ?")
+        ->execute([json_encode($tipos), $campaign_id]);
+
+    $recipients = [];
+
+    // Si hay lugares específicos seleccionados, usar solo esos
+    if (!empty($selected_lugares)) {
+        foreach ($selected_lugares as $lugarJson) {
+            $lugar = json_decode($lugarJson, true);
+
+            if ($lugar && isset($lugar['email']) && filter_var($lugar['email'], FILTER_VALIDATE_EMAIL)) {
+                $recipients[] = [
+                    'email' => $lugar['email'],
+                    'name' => $lugar['nombre'] ?? 'Estimado propietario',
+                    'phone' => $lugar['telefono'] ?? null,
+                    'custom_data' => [
+                        'ciudad' => $lugar['ciudad'] ?? '',
+                        'direccion' => $lugar['direccion'] ?? '',
+                        'tipo' => $lugar['tipo'] ?? '',
+                        'categoria' => $lugar['categoria'] ?? ''
+                    ]
+                ];
+            }
+        }
+    } else {
+        // Si no hay lugares específicos, usar todos los tipos seleccionados
+        $placeholders = str_repeat('?,', count($tipos) - 1) . '?';
+
+        $stmt = $pdo->prepare("
+            SELECT nombre, email, telefono, direccion, ciudad, tipo, categoria
+            FROM lugares_comerciales
+            WHERE tipo IN ($placeholders)
+            AND email IS NOT NULL
+            AND email != ''
+        ");
+        $stmt->execute($tipos);
+
+        while ($lugar = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            if (filter_var($lugar['email'], FILTER_VALIDATE_EMAIL)) {
+                $recipients[] = [
+                    'email' => $lugar['email'],
+                    'name' => $lugar['nombre'] ?? 'Estimado propietario',
+                    'phone' => $lugar['telefono'] ?? null,
+                    'custom_data' => [
+                        'ciudad' => $lugar['ciudad'] ?? '',
+                        'direccion' => $lugar['direccion'] ?? '',
+                        'tipo' => $lugar['tipo'] ?? '',
+                        'categoria' => $lugar['categoria'] ?? ''
+                    ]
                 ];
             }
         }

@@ -5,6 +5,15 @@
 $smtp_configs = $pdo->query("SELECT * FROM email_smtp_configs WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC);
 $templates = $pdo->query("SELECT * FROM email_templates WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC);
 
+// Verificar si existe la tabla lugares_comerciales
+$table_lugares_exists = false;
+try {
+    $check = $pdo->query("SHOW TABLES LIKE 'lugares_comerciales'")->fetch();
+    $table_lugares_exists = (bool)$check;
+} catch (Exception $e) {
+    $table_lugares_exists = false;
+}
+
 // Obtener categorías únicas de places_cr
 $categories = $pdo->query("
     SELECT DISTINCT category, COUNT(*) as count
@@ -13,6 +22,22 @@ $categories = $pdo->query("
     GROUP BY category
     ORDER BY category
 ")->fetchAll(PDO::FETCH_ASSOC);
+
+// Obtener categorías de lugares_comerciales si existe la tabla
+$categorias_lugares = [];
+if ($table_lugares_exists) {
+    try {
+        $categorias_lugares = $pdo->query("
+            SELECT DISTINCT categoria, COUNT(*) as count
+            FROM lugares_comerciales
+            WHERE categoria IS NOT NULL AND categoria != ''
+            GROUP BY categoria
+            ORDER BY count DESC
+        ")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $categorias_lugares = [];
+    }
+}
 ?>
 
 <h1 class="mb-4"><i class="fas fa-plus-circle"></i> Nueva Campaña de Email</h1>
@@ -54,6 +79,9 @@ $categories = $pdo->query("
                         <option value="">Seleccione...</option>
                         <option value="excel">📄 Subir Excel (.xlsx, .csv)</option>
                         <option value="database">🗄️ Base de Datos (places_cr)</option>
+                        <?php if ($table_lugares_exists): ?>
+                        <option value="lugares_comerciales">🏪 Lugares Comerciales (OpenStreetMap)</option>
+                        <?php endif; ?>
                         <option value="manual">✍️ Ingresar Manualmente</option>
                     </select>
                 </div>
@@ -223,6 +251,141 @@ $categories = $pdo->query("
                 </div>
             </div>
 
+            <!-- Opción: Lugares Comerciales -->
+            <div id="lugaresOption" class="mt-4" style="display: none;">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> <strong>Base de Datos OpenStreetMap:</strong>
+                    Lugares comerciales de Costa Rica importados desde OpenStreetMap.
+                    Total de lugares: <strong><?= $table_lugares_exists ? number_format($pdo->query("SELECT COUNT(*) FROM lugares_comerciales")->fetchColumn()) : 0 ?></strong>
+                    <?php if ($table_lugares_exists): ?>
+                    | Con email: <strong><?= number_format($pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE email != '' AND email IS NOT NULL")->fetchColumn()) ?></strong>
+                    <?php endif; ?>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Seleccionar por Categoría</label>
+                    <div class="row">
+                        <div class="col-md-12 mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllLugaresCategories()">
+                                <i class="fas fa-check-double"></i> Seleccionar Todas
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllLugaresCategories()">
+                                <i class="fas fa-times"></i> Deseleccionar Todas
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3" style="max-height: 400px; overflow-y: auto;">
+                        <?php
+                        if ($table_lugares_exists && !empty($categorias_lugares)):
+                            foreach ($categorias_lugares as $cat):
+                                $cat_name = $cat['categoria'];
+
+                                // Obtener tipos únicos de esta categoría
+                                $tipos_stmt = $pdo->prepare("
+                                    SELECT DISTINCT tipo, COUNT(*) as count
+                                    FROM lugares_comerciales
+                                    WHERE categoria = ? AND tipo IS NOT NULL AND tipo != ''
+                                    GROUP BY tipo
+                                    ORDER BY count DESC
+                                    LIMIT 20
+                                ");
+                                $tipos_stmt->execute([$cat_name]);
+                                $tipos = $tipos_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                                if (!empty($tipos)):
+                        ?>
+                            <div class="col-md-6 mb-3">
+                                <div class="card" style="background-color: #f8f9fa;">
+                                    <div class="card-body">
+                                        <h6 class="text-primary">
+                                            <i class="fas fa-tag"></i> <?= ucfirst(h($cat_name)) ?>
+                                            <span class="badge bg-secondary"><?= number_format($cat['count']) ?></span>
+                                        </h6>
+                                        <?php foreach ($tipos as $tipo): ?>
+                                            <div class="form-check">
+                                                <input class="form-check-input lugares-checkbox"
+                                                       type="checkbox"
+                                                       name="lugares_tipos[]"
+                                                       value="<?= h($tipo['tipo']) ?>"
+                                                       id="lugar_<?= h(str_replace(' ', '_', $tipo['tipo'])) ?>">
+                                                <label class="form-check-label" for="lugar_<?= h(str_replace(' ', '_', $tipo['tipo'])) ?>">
+                                                    <?= ucfirst(h($tipo['tipo'])) ?>
+                                                    <span class="badge bg-info"><?= number_format($tipo['count']) ?></span>
+                                                </label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php
+                                endif;
+                            endforeach;
+                        endif;
+                        ?>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>Nota:</strong>
+                    Solo se enviarán emails a lugares que tengan un email registrado.
+                    <?php if ($table_lugares_exists): ?>
+                    Actualmente hay <strong><?= number_format($pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE email != '' AND email IS NOT NULL")->fetchColumn()) ?></strong> lugares con email en la base de datos.
+                    <?php endif; ?>
+                </div>
+
+                <!-- Botón para ver lugares específicos -->
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-primary" id="loadLugaresBtn" onclick="loadLugaresByTipos()" disabled>
+                        <i class="fas fa-eye"></i> Ver Lugares Específicos para Seleccionar
+                    </button>
+                    <div id="lugaresLoadingMsg" style="display: none;" class="mt-2">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                        Cargando lugares...
+                    </div>
+                </div>
+
+                <!-- Tabla de lugares específicos -->
+                <div id="lugaresTable" style="display: none;" class="mt-4">
+                    <div class="card">
+                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-map-marker-alt"></i> Seleccionar Lugares Específicos (<span id="lugaresCount">0</span> encontrados)</span>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-light" onclick="selectAllLugares()">
+                                    <i class="fas fa-check-square"></i> Todos
+                                </button>
+                                <button type="button" class="btn btn-sm btn-light" onclick="deselectAllLugares()">
+                                    <i class="fas fa-square"></i> Ninguno
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="sticky-top bg-light">
+                                        <tr>
+                                            <th width="40"><input type="checkbox" id="selectAllLugaresCheckbox" onchange="toggleAllLugares(this)"></th>
+                                            <th>Nombre</th>
+                                            <th>Email</th>
+                                            <th>Teléfono</th>
+                                            <th>Dirección</th>
+                                            <th>Ciudad</th>
+                                            <th>Tipo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lugaresTableBody">
+                                        <!-- Se llena dinámicamente con JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <strong>Seleccionados: <span id="selectedLugaresCount" class="text-primary">0</span></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Opción: Manual -->
             <div id="manualOption" class="mt-4" style="display: none;">
                 <div class="mb-3">
@@ -370,12 +533,16 @@ $categories = $pdo->query("
 document.getElementById('sourceType').addEventListener('change', function() {
     document.getElementById('excelOption').style.display = 'none';
     document.getElementById('databaseOption').style.display = 'none';
+    const lugaresOption = document.getElementById('lugaresOption');
+    if (lugaresOption) lugaresOption.style.display = 'none';
     document.getElementById('manualOption').style.display = 'none';
 
     if (this.value === 'excel') {
         document.getElementById('excelOption').style.display = 'block';
     } else if (this.value === 'database') {
         document.getElementById('databaseOption').style.display = 'block';
+    } else if (this.value === 'lugares_comerciales') {
+        if (lugaresOption) lugaresOption.style.display = 'block';
     } else if (this.value === 'manual') {
         document.getElementById('manualOption').style.display = 'block';
     }
@@ -577,6 +744,30 @@ document.getElementById('campaignForm').addEventListener('submit', function(e) {
                 this.appendChild(input);
             });
         }
+    } else if (sourceType === 'lugares_comerciales') {
+        const checked = document.querySelectorAll('.lugares-checkbox:checked').length;
+        if (checked === 0) {
+            e.preventDefault();
+            alert('Por favor seleccione al menos un tipo de lugar');
+            return false;
+        }
+
+        // Si hay lugares específicos seleccionados, agregarlos al formulario
+        const selectedLugares = document.querySelectorAll('.lugar-checkbox:checked');
+        if (selectedLugares.length > 0) {
+            // Limpiar campos previos
+            document.querySelectorAll('input[name="selected_lugares[]"]').forEach(el => el.remove());
+
+            // Agregar los lugares seleccionados como campos hidden
+            selectedLugares.forEach(checkbox => {
+                const lugarData = JSON.parse(checkbox.getAttribute('data-lugar'));
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'selected_lugares[]';
+                input.value = JSON.stringify(lugarData);
+                this.appendChild(input);
+            });
+        }
     }
 
     // Mensaje de confirmación según el tipo de envío
@@ -602,4 +793,162 @@ document.getElementById('campaignForm').addEventListener('submit', function(e) {
         return false;
     }
 });
+
+// ============================================
+// Funciones para Lugares Comerciales
+// ============================================
+
+// Seleccionar/Deseleccionar todas las categorías de lugares
+function selectAllLugaresCategories() {
+    document.querySelectorAll('.lugares-checkbox').forEach(cb => cb.checked = true);
+    updateLoadLugaresButton();
+}
+
+function deselectAllLugaresCategories() {
+    document.querySelectorAll('.lugares-checkbox').forEach(cb => cb.checked = false);
+    updateLoadLugaresButton();
+    const lugaresTable = document.getElementById('lugaresTable');
+    if (lugaresTable) lugaresTable.style.display = 'none';
+}
+
+// Actualizar botón de cargar lugares según checkboxes
+function updateLoadLugaresButton() {
+    const checked = document.querySelectorAll('.lugares-checkbox:checked').length;
+    const loadBtn = document.getElementById('loadLugaresBtn');
+    if (loadBtn) {
+        if (checked > 0) {
+            loadBtn.disabled = false;
+            loadBtn.classList.add('btn-pulse');
+        } else {
+            loadBtn.disabled = true;
+            loadBtn.classList.remove('btn-pulse');
+        }
+    }
+}
+
+// Escuchar cambios en checkboxes de lugares
+document.addEventListener('DOMContentLoaded', function() {
+    const lugaresCheckboxes = document.querySelectorAll('.lugares-checkbox');
+    lugaresCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateLoadLugaresButton);
+    });
+});
+
+// Cargar lugares por tipos seleccionados via AJAX
+function loadLugaresByTipos() {
+    const selectedTipos = Array.from(document.querySelectorAll('.lugares-checkbox:checked'))
+        .map(cb => cb.value);
+
+    if (selectedTipos.length === 0) {
+        alert('Seleccione al menos un tipo');
+        return;
+    }
+
+    // Mostrar loading
+    const loadBtn = document.getElementById('loadLugaresBtn');
+    const loadingMsg = document.getElementById('lugaresLoadingMsg');
+    const lugaresTable = document.getElementById('lugaresTable');
+
+    if (loadBtn) loadBtn.disabled = true;
+    if (loadingMsg) loadingMsg.style.display = 'block';
+    if (lugaresTable) lugaresTable.style.display = 'none';
+
+    // AJAX request
+    const formData = new FormData();
+    selectedTipos.forEach(tipo => formData.append('tipos[]', tipo));
+
+    fetch('/admin/get_lugares_by_tipos.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayLugares(data.lugares);
+            const lugaresCount = document.getElementById('lugaresCount');
+            if (lugaresCount) lugaresCount.textContent = data.count;
+            if (lugaresTable) lugaresTable.style.display = 'block';
+        } else {
+            const errorMsg = data.error || 'Error desconocido';
+            const errorDetails = data.file && data.line ? `\n\nArchivo: ${data.file}\nLínea: ${data.line}` : '';
+            alert('Error al cargar lugares:\n' + errorMsg + errorDetails);
+            console.error('Error completo:', data);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al cargar lugares:\n' + error.message);
+    })
+    .finally(() => {
+        if (loadBtn) loadBtn.disabled = false;
+        if (loadingMsg) loadingMsg.style.display = 'none';
+    });
+}
+
+// Mostrar lugares en la tabla
+function displayLugares(lugares) {
+    const tbody = document.getElementById('lugaresTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (lugares.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No se encontraron lugares con email en estos tipos</td></tr>';
+        return;
+    }
+
+    lugares.forEach(lugar => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="checkbox" class="lugar-checkbox" value="${lugar.id}" data-lugar='${JSON.stringify(lugar)}' onchange="updateSelectedLugaresCount()"></td>
+            <td><strong>${escapeHtml(lugar.nombre || '')}</strong></td>
+            <td><small>${escapeHtml(lugar.email || '')}</small></td>
+            <td>${escapeHtml(lugar.telefono || '')}</td>
+            <td><small>${escapeHtml(lugar.direccion || '')}</small></td>
+            <td>${escapeHtml(lugar.ciudad || '')}</td>
+            <td><span class="badge bg-secondary">${escapeHtml(lugar.tipo || '')}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    updateSelectedLugaresCount();
+}
+
+// Escape HTML para prevenir XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Seleccionar/Deseleccionar todos los lugares
+function toggleAllLugares(checkbox) {
+    document.querySelectorAll('.lugar-checkbox').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateSelectedLugaresCount();
+}
+
+function selectAllLugares() {
+    const selectAllCheckbox = document.getElementById('selectAllLugaresCheckbox');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = true;
+        toggleAllLugares(selectAllCheckbox);
+    }
+}
+
+function deselectAllLugares() {
+    const selectAllCheckbox = document.getElementById('selectAllLugaresCheckbox');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+        toggleAllLugares(selectAllCheckbox);
+    }
+}
+
+// Actualizar contador de seleccionados
+function updateSelectedLugaresCount() {
+    const count = document.querySelectorAll('.lugar-checkbox:checked').length;
+    const selectedCount = document.getElementById('selectedLugaresCount');
+    if (selectedCount) selectedCount.textContent = count;
+}
 </script>
