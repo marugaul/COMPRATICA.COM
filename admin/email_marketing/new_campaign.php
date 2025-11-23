@@ -63,23 +63,6 @@ if ($table_lugares_exists) {
                            placeholder="Ej: Oferta Especial para Hoteles en Costa Rica" required>
                 </div>
             </div>
-
-            <div class="row">
-                <div class="col-md-12 mb-3">
-                    <label class="form-label">
-                        Saludo Genérico
-                        <span class="text-muted">(opcional)</span>
-                    </label>
-                    <input type="text" name="generic_greeting" class="form-control"
-                           placeholder="Ej: Estimado propietario, Hola, Buenos días, etc."
-                           value="Estimado propietario">
-                    <small class="text-muted">
-                        <i class="fas fa-info-circle"></i>
-                        Este saludo se usará cuando no tengamos el nombre del destinatario.
-                        En la plantilla aparecerá en lugar de <code>{nombre}</code>
-                    </small>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -545,111 +528,6 @@ if ($table_lugares_exists) {
     </div>
 </form>
 
-<!-- Barra de Progreso de Envío -->
-<div id="sendProgressContainer" class="card" style="display: none;">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">
-            <i class="fas fa-paper-plane"></i> Enviando Campaña en Tiempo Real
-        </h5>
-    </div>
-    <div class="card-body">
-        <!-- Stats Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="text-center p-3" style="background: linear-gradient(135deg, #10b981, #059669); border-radius: 12px; color: white;">
-                    <div style="font-size: 32px; font-weight: bold;" id="progressSent">0</div>
-                    <div style="font-size: 14px; opacity: 0.9;">✅ Enviados</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="text-center p-3" style="background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 12px; color: white;">
-                    <div style="font-size: 32px; font-weight: bold;" id="progressFailed">0</div>
-                    <div style="font-size: 14px; opacity: 0.9;">❌ Fallidos</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="text-center p-3" style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 12px; color: white;">
-                    <div style="font-size: 32px; font-weight: bold;" id="progressPending">0</div>
-                    <div style="font-size: 14px; opacity: 0.9;">⏳ Pendientes</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="text-center p-3" style="background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 12px; color: white;">
-                    <div style="font-size: 32px; font-weight: bold;" id="progressTotal">0</div>
-                    <div style="font-size: 14px; opacity: 0.9;">📊 Total</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Barra de Progreso -->
-        <div class="mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="mb-0">Progreso de Envío</h6>
-                <span class="badge bg-primary" style="font-size: 16px; padding: 8px 15px;" id="progressPercentage">0%</span>
-            </div>
-            <div class="progress" style="height: 40px; border-radius: 20px; background: #e5e7eb; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
-                <div class="progress-bar progress-bar-striped progress-bar-animated"
-                     id="progressBar"
-                     role="progressbar"
-                     style="width: 0%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); font-size: 16px; font-weight: bold; line-height: 40px;"
-                     aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                    0%
-                </div>
-            </div>
-        </div>
-
-        <!-- Estado Actual -->
-        <div class="alert alert-info mb-3" id="progressStatus">
-            <i class="fas fa-info-circle"></i> <strong>Estado:</strong> <span id="progressStatusText">Iniciando envío...</span>
-        </div>
-
-        <!-- Detalles en Tiempo Real -->
-        <div class="card bg-light">
-            <div class="card-body">
-                <h6 class="mb-3"><i class="fas fa-list"></i> Últimos Envíos</h6>
-                <div id="progressLog" style="max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px;">
-                    <div class="text-muted">Esperando inicio de envío...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Botones de Acción -->
-        <div class="mt-4 text-end">
-            <button type="button" class="btn btn-outline-danger" onclick="stopCampaignSending()" id="stopSendingBtn" style="display: none;">
-                <i class="fas fa-stop"></i> Detener Envío
-            </button>
-            <button type="button" class="btn btn-success" onclick="viewCampaignDetails()" id="viewDetailsBtn" style="display: none;">
-                <i class="fas fa-chart-bar"></i> Ver Detalles Completos
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal de Vista Previa -->
-<div id="previewModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6);">
-    <div style="background-color: #fefefe; margin: 2% auto; padding: 0; border: 1px solid #888; width: 90%; max-width: 1000px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-        <!-- Header -->
-        <div style="padding: 20px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
-            <h4 style="margin: 0; color: #333;">
-                <i class="fas fa-eye"></i> Vista Previa del Email
-            </h4>
-            <button onclick="document.getElementById('previewModal').style.display='none'" style="background: none; border: none; font-size: 28px; font-weight: bold; color: #aaa; cursor: pointer; line-height: 1;">
-                &times;
-            </button>
-        </div>
-        <!-- Body -->
-        <div id="previewModalBody" style="padding: 30px; max-height: 70vh; overflow-y: auto;">
-            <!-- El contenido se cargará aquí dinámicamente -->
-        </div>
-        <!-- Footer -->
-        <div style="padding: 15px 20px; background-color: #f8f9fa; border-top: 1px solid #dee2e6; border-radius: 0 0 8px 8px; text-align: right;">
-            <button onclick="document.getElementById('previewModal').style.display='none'" class="btn btn-secondary">
-                <i class="fas fa-times"></i> Cerrar
-            </button>
-        </div>
-    </div>
-</div>
-
 <script>
 // Manejo de selección de origen de datos
 document.getElementById('sourceType').addEventListener('change', function() {
@@ -668,27 +546,6 @@ document.getElementById('sourceType').addEventListener('change', function() {
     } else if (this.value === 'manual') {
         document.getElementById('manualOption').style.display = 'block';
     }
-});
-
-// Habilitar/deshabilitar botón de cargar lugares según categorías seleccionadas
-document.addEventListener('DOMContentLoaded', function() {
-    const updateLoadPlacesButton = () => {
-        const checkedCount = document.querySelectorAll('.category-checkbox:checked').length;
-        const btn = document.getElementById('loadPlacesBtn');
-        if (btn) {
-            btn.disabled = (checkedCount === 0);
-        }
-    };
-
-    // Escuchar cambios en todos los checkboxes de categorías
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('category-checkbox')) {
-            updateLoadPlacesButton();
-        }
-    });
-
-    // Actualizar al cargar la página
-    updateLoadPlacesButton();
 });
 
 // Manejo de tipo de envío
@@ -770,7 +627,7 @@ function loadPlacesByCategories() {
     const formData = new FormData();
     selectedCategories.forEach(cat => formData.append('categories[]', cat));
 
-    fetch('/admin/get_places_by_categories.php', {
+    fetch('get_places_by_categories.php', {
         method: 'POST',
         body: formData
     })
@@ -781,16 +638,12 @@ function loadPlacesByCategories() {
             document.getElementById('placesCount').textContent = data.count;
             document.getElementById('placesTable').style.display = 'block';
         } else {
-            // Mostrar error detallado del servidor
-            const errorMsg = data.error || 'Error desconocido';
-            const errorDetails = data.file && data.line ? `\n\nArchivo: ${data.file}\nLínea: ${data.line}` : '';
-            alert('Error al cargar lugares:\n' + errorMsg + errorDetails);
-            console.error('Error completo:', data);
+            alert('Error al cargar lugares');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error de conexión al cargar lugares:\n' + error.message);
+        alert('Error de conexión al cargar lugares');
     })
     .finally(() => {
         document.getElementById('loadPlacesBtn').disabled = false;
@@ -859,74 +712,18 @@ function updateSelectedCount() {
 
 // Vista previa
 function previewCampaign() {
-    // Obtener template seleccionado
-    const selectedTemplate = document.querySelector('input[name="template_id"]:checked');
-    if (!selectedTemplate) {
-        alert('Por favor seleccione una plantilla primero');
-        return;
-    }
-
-    const templateId = selectedTemplate.value;
-    const genericGreeting = document.querySelector('input[name="generic_greeting"]')?.value || '';
-
-    // Mostrar loading
-    const modal = document.getElementById('previewModal');
-    const modalBody = document.getElementById('previewModalBody');
-    modalBody.innerHTML = '<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-3x"></i><p class="mt-3">Cargando vista previa...</p></div>';
-    modal.style.display = 'block';
-
-    // Hacer fetch a la API
-    fetch(`/admin/email_marketing/templates_api.php?action=get_template_preview&template_id=${templateId}&generic_greeting=${encodeURIComponent(genericGreeting)}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Mostrar el HTML en un iframe para aislarlo del CSS del admin
-                modalBody.innerHTML = `
-                    <div class="mb-3">
-                        <strong>Plantilla:</strong> ${data.template_name}
-                        ${genericGreeting ? `<br><strong>Saludo:</strong> ${genericGreeting}` : ''}
-                    </div>
-                    <iframe id="previewFrame" style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 8px;"></iframe>
-                `;
-
-                // Escribir el HTML en el iframe
-                const iframe = document.getElementById('previewFrame');
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                iframeDoc.open();
-                iframeDoc.write(data.html);
-                iframeDoc.close();
-            } else {
-                modalBody.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle"></i> Error: ${data.error || 'No se pudo cargar la vista previa'}
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            modalBody.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle"></i> Error al cargar la vista previa: ${error.message}
-                </div>
-            `;
-        });
+    alert('Vista previa en desarrollo. Esta función mostrará un preview del email antes de enviar.');
 }
-
-// Variables globales para el polling
-let campaignId = null;
-let progressInterval = null;
 
 // Validación antes de enviar
 document.getElementById('campaignForm').addEventListener('submit', function(e) {
-    e.preventDefault(); // Prevenir envío por defecto
-
     const sourceType = document.getElementById('sourceType').value;
     const sendType = document.getElementById('sendType').value;
 
     if (sourceType === 'database') {
         const checked = document.querySelectorAll('.category-checkbox:checked').length;
         if (checked === 0) {
+            e.preventDefault();
             alert('Por favor seleccione al menos una categoría');
             return false;
         }
@@ -950,6 +747,7 @@ document.getElementById('campaignForm').addEventListener('submit', function(e) {
     } else if (sourceType === 'lugares_comerciales') {
         const checked = document.querySelectorAll('.lugares-checkbox:checked').length;
         if (checked === 0) {
+            e.preventDefault();
             alert('Por favor seleccione al menos un tipo de lugar');
             return false;
         }
@@ -979,6 +777,7 @@ document.getElementById('campaignForm').addEventListener('submit', function(e) {
     } else if (sendType === 'scheduled') {
         const datetime = document.getElementById('scheduledDatetime').value;
         if (!datetime) {
+            e.preventDefault();
             alert('Por favor seleccione una fecha y hora para el envío programado');
             return false;
         }
@@ -990,218 +789,10 @@ document.getElementById('campaignForm').addEventListener('submit', function(e) {
     }
 
     if (!confirm(confirmMessage)) {
+        e.preventDefault();
         return false;
     }
-
-    // Si es envío inmediato, mostrar barra de progreso
-    if (sendType === 'now') {
-        submitCampaignWithProgress(this);
-    } else {
-        // Para draft y scheduled, enviar normalmente
-        this.submit();
-    }
 });
-
-// Enviar campaña y mostrar barra de progreso
-async function submitCampaignWithProgress(form) {
-    console.log('🚀 [PROGRESS] Iniciando envío con barra de progreso');
-
-    const submitBtn = document.getElementById('submitBtn');
-    const originalBtnHtml = submitBtn.innerHTML;
-
-    // Deshabilitar botón
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando campaña...';
-
-    try {
-        // Enviar formulario via AJAX
-        const formData = new FormData(form);
-
-        console.log('📤 [PROGRESS] Enviando solicitud AJAX con header X-Requested-With');
-
-        const response = await fetch('email_marketing_api.php', {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData
-        });
-
-        console.log('📥 [PROGRESS] Respuesta recibida, status:', response.status);
-
-        const result = await response.json();
-        console.log('📋 [PROGRESS] Datos parseados:', result);
-
-        if (result.success) {
-            campaignId = result.campaign_id;
-            console.log('✅ [PROGRESS] Campaña creada con ID:', campaignId);
-            console.log('📊 [PROGRESS] Total destinatarios:', result.total_recipients);
-
-            // Ocultar formulario y mostrar barra de progreso
-            document.getElementById('campaignForm').style.display = 'none';
-            document.querySelectorAll('.card').forEach(card => {
-                if (!card.id) card.style.display = 'none';
-            });
-            document.getElementById('sendProgressContainer').style.display = 'block';
-            console.log('👁️ [PROGRESS] Barra de progreso mostrada');
-
-            // Scroll a la barra de progreso
-            document.getElementById('sendProgressContainer').scrollIntoView({ behavior: 'smooth' });
-
-            // Iniciar polling de progreso
-            console.log('⏰ [PROGRESS] Iniciando polling cada 2 segundos');
-            startProgressPolling();
-        } else {
-            console.error('❌ [PROGRESS] Error en respuesta:', result.error);
-            alert('Error al crear campaña: ' + result.error);
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnHtml;
-        }
-    } catch (error) {
-        console.error('💥 [PROGRESS] Excepción capturada:', error);
-        alert('Error de conexión: ' + error.message);
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalBtnHtml;
-    }
-}
-
-// Iniciar polling de progreso
-function startProgressPolling() {
-    console.log('⏰ [POLLING] Función startProgressPolling ejecutada');
-
-    // Actualizar inmediatamente
-    updateProgress();
-
-    // Luego actualizar cada 2 segundos
-    progressInterval = setInterval(updateProgress, 2000);
-    console.log('✅ [POLLING] Intervalo configurado cada 2000ms');
-}
-
-// Actualizar progreso desde el servidor
-async function updateProgress() {
-    if (!campaignId) {
-        console.warn('⚠️ [UPDATE] No hay campaignId, saltando actualización');
-        return;
-    }
-
-    console.log('🔄 [UPDATE] Consultando progreso para campaña:', campaignId);
-
-    try {
-        const url = `email_marketing_api.php?action=get_campaign_progress&campaign_id=${campaignId}`;
-        console.log('🌐 [UPDATE] URL:', url);
-
-        const response = await fetch(url);
-        console.log('📡 [UPDATE] Response status:', response.status);
-
-        const data = await response.json();
-        console.log('📊 [UPDATE] Datos recibidos:', data);
-
-        if (data.success) {
-            const stats = data.stats;
-            console.log('📈 [UPDATE] Stats - Sent:', stats.sent, 'Failed:', stats.failed, 'Pending:', stats.pending, 'Total:', stats.total);
-
-            // Actualizar estadísticas
-            document.getElementById('progressSent').textContent = stats.sent;
-            document.getElementById('progressFailed').textContent = stats.failed;
-            document.getElementById('progressPending').textContent = stats.pending;
-            document.getElementById('progressTotal').textContent = stats.total;
-
-            // Calcular porcentaje
-            const percentage = stats.total > 0 ? Math.round(((stats.sent + stats.failed) / stats.total) * 100) : 0;
-            console.log('📊 [UPDATE] Porcentaje calculado:', percentage + '%');
-
-            // Actualizar barra de progreso
-            const progressBar = document.getElementById('progressBar');
-            progressBar.style.width = percentage + '%';
-            progressBar.setAttribute('aria-valuenow', percentage);
-            progressBar.textContent = percentage + '%';
-            document.getElementById('progressPercentage').textContent = percentage + '%';
-
-            // Actualizar estado
-            let statusText = '';
-            let statusClass = 'alert-info';
-
-            if (stats.pending === 0) {
-                statusText = '✅ Envío completado';
-                statusClass = 'alert-success';
-                console.log('🎉 [UPDATE] Envío completado, deteniendo polling');
-                clearInterval(progressInterval); // Detener polling
-                document.getElementById('viewDetailsBtn').style.display = 'inline-block';
-                document.getElementById('stopSendingBtn').style.display = 'none';
-            } else if (stats.sent > 0 || stats.failed > 0) {
-                statusText = `📤 Enviando... (${stats.sent + stats.failed} de ${stats.total} procesados)`;
-                statusClass = 'alert-info';
-                document.getElementById('stopSendingBtn').style.display = 'inline-block';
-            } else {
-                statusText = '⏳ Preparando envío...';
-                statusClass = 'alert-warning';
-            }
-
-            document.getElementById('progressStatusText').textContent = statusText;
-            document.getElementById('progressStatus').className = 'alert mb-3 ' + statusClass;
-
-            // Actualizar log si hay actividad reciente
-            if (data.recent_logs && data.recent_logs.length > 0) {
-                console.log('📝 [UPDATE] Actualizando log con', data.recent_logs.length, 'entradas');
-                updateProgressLog(data.recent_logs);
-            }
-        } else {
-            console.error('❌ [UPDATE] Error en respuesta:', data.error);
-        }
-    } catch (error) {
-        console.error('💥 [UPDATE] Error al obtener progreso:', error);
-    }
-}
-
-// Actualizar log de progreso
-function updateProgressLog(logs) {
-    const logDiv = document.getElementById('progressLog');
-    logDiv.innerHTML = '';
-
-    logs.forEach(log => {
-        const logEntry = document.createElement('div');
-        logEntry.style.padding = '5px';
-        logEntry.style.borderBottom = '1px solid #e5e7eb';
-
-        const icon = log.status === 'sent' ? '✅' : '❌';
-        const colorClass = log.status === 'sent' ? 'text-success' : 'text-danger';
-
-        logEntry.innerHTML = `
-            <span class="${colorClass}">${icon}</span>
-            <strong>${escapeHtml(log.email)}</strong>
-            ${log.status === 'sent' ? '<span class="text-success">- Enviado</span>' : '<span class="text-danger">- Error: ' + escapeHtml(log.error || 'Desconocido') + '</span>'}
-            <span class="text-muted float-end">${new Date(log.created_at).toLocaleTimeString()}</span>
-        `;
-
-        logDiv.appendChild(logEntry);
-    });
-
-    // Auto-scroll al final
-    logDiv.scrollTop = logDiv.scrollHeight;
-}
-
-// Ver detalles completos de la campaña
-function viewCampaignDetails() {
-    if (campaignId) {
-        window.location.href = `?page=campaign-details&id=${campaignId}`;
-    }
-}
-
-// Detener envío de campaña (función placeholder)
-function stopCampaignSending() {
-    if (!confirm('¿Está seguro de detener el envío de esta campaña?')) return;
-
-    // TODO: Implementar endpoint para pausar campaña
-    alert('Función de detener envío en desarrollo');
-}
-
-// Cerrar modal al hacer clic fuera de él
-window.onclick = function(event) {
-    const modal = document.getElementById('previewModal');
-    if (event.target === modal) {
-        modal.style.display = 'none';
-    }
-}
 
 // ============================================
 // Funciones para Lugares Comerciales
@@ -1321,6 +912,13 @@ function displayLugares(lugares) {
     });
 
     updateSelectedLugaresCount();
+}
+
+// Escape HTML para prevenir XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Seleccionar/Deseleccionar todos los lugares

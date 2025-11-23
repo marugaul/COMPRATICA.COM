@@ -6,7 +6,6 @@
 
 // Cargar configuración (que ya maneja sesiones)
 require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/logger.php';
 
 // Verificar que sea admin
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
@@ -26,12 +25,6 @@ $pdo = new PDO(
 $page = $_GET['page'] ?? 'dashboard';
 $message = $_SESSION['message'] ?? null;
 unset($_SESSION['message']);
-
-// Log de acceso a página
-logError('error_Blacklist.log', 'email_marketing.php - Acceso a página: ' . $page, [
-    'get_params' => $_GET,
-    'session_admin' => isset($_SESSION['is_admin']) ? 'yes' : 'no'
-]);
 
 // Helper function
 function h($str) {
@@ -229,8 +222,8 @@ function h($str) {
                     <li><a href="?page=blacklist" class="<?= $page === 'blacklist' ? 'active' : '' ?>">
                         <i class="fas fa-ban"></i> Blacklist
                     </a></li>
-                    <li><a href="?page=lugares-comerciales" class="<?= $page === 'lugares-comerciales' ? 'active' : '' ?>">
-                        <i class="fas fa-map-marked-alt"></i> Lugares Comerciales
+                    <li><a href="?page=importar-lugares" class="<?= $page === 'importar-lugares' ? 'active' : '' ?>">
+                        <i class="fas fa-cloud-download-alt"></i> Importar Lugares
                     </a></li>
                     <li><hr style="border-color: #334155; margin: 20px 15px;"></li>
                     <li><a href="../admin/dashboard.php">
@@ -260,9 +253,6 @@ function h($str) {
                     case 'campaigns':
                         include __DIR__ . '/email_marketing/campaigns.php';
                         break;
-                    case 'campaign-details':
-                        include __DIR__ . '/email_marketing/campaign_details.php';
-                        break;
                     case 'templates':
                         include __DIR__ . '/email_marketing/templates.php';
                         break;
@@ -273,15 +263,12 @@ function h($str) {
                         include __DIR__ . '/email_marketing/reports.php';
                         break;
                     case 'blacklist':
-                        logError('error_Blacklist.log', 'email_marketing.php - Incluyendo blacklist.php');
                         include __DIR__ . '/email_marketing/blacklist.php';
-                        logError('error_Blacklist.log', 'email_marketing.php - blacklist.php incluido exitosamente');
                         break;
-                    case 'lugares-comerciales':
-                        include __DIR__ . '/email_marketing/lugares_comerciales.php';
+                    case 'importar-lugares':
+                        include __DIR__ . '/email_marketing/importar_lugares.php';
                         break;
                     default:
-                        logError('error_Blacklist.log', 'email_marketing.php - Página no encontrada: ' . $page);
                         echo '<div class="alert alert-warning">Página no encontrada</div>';
                 }
                 ?>
