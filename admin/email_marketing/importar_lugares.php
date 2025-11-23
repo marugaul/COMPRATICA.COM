@@ -177,7 +177,22 @@ document.getElementById('btnCrearTabla')?.addEventListener('click', async functi
             body: 'action=crear_tabla'
         });
 
-        const result = await response.json();
+        // Verificar si la respuesta es OK
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+        }
+
+        // Obtener el texto de la respuesta primero
+        const responseText = await response.text();
+
+        // Intentar parsear como JSON
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (e) {
+            console.error('Respuesta del servidor no es JSON:', responseText);
+            throw new Error('Error del servidor: ' + responseText.substring(0, 200));
+        }
 
         if (result.success) {
             resultDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> ' + result.message + '<br><small>Recargando página...</small></div>';
@@ -220,7 +235,22 @@ document.getElementById('btnImportar').addEventListener('click', async function(
 
         updateProgress(50, 'Procesando datos recibidos...');
 
-        const result = await response.json();
+        // Verificar si la respuesta es OK
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+        }
+
+        // Obtener el texto de la respuesta primero
+        const responseText = await response.text();
+
+        // Intentar parsear como JSON
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (e) {
+            console.error('Respuesta del servidor no es JSON:', responseText);
+            throw new Error('Error del servidor: ' + responseText.substring(0, 200));
+        }
 
         if (result.success) {
             updateProgress(100, '¡Importación completada!');
