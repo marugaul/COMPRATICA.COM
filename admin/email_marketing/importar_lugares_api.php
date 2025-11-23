@@ -10,29 +10,48 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
+// Función para logging
+function log_api_error($message) {
+    $log_dir = __DIR__ . '/../../logs';
+    if (!is_dir($log_dir)) {
+        @mkdir($log_dir, 0755, true);
+    }
+    $log_file = $log_dir . '/importar_lugares_api.log';
+    $timestamp = date('Y-m-d H:i:s');
+    file_put_contents($log_file, "[$timestamp] $message\n", FILE_APPEND);
+}
+
 // Asegurar que siempre se devuelva JSON
 header('Content-Type: application/json');
 
 try {
     // Cargar configuración
     require_once __DIR__ . '/../../includes/config.php';
+    log_api_error('Config cargado OK');
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => 'Error cargando config: ' . $e->getMessage()]);
+    $error = 'Error cargando config: ' . $e->getMessage();
+    log_api_error($error);
+    echo json_encode(['success' => false, 'error' => $error]);
     exit;
 }
 
 // Verificar que sea admin
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
+    log_api_error('Acceso denegado - sesión no válida');
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Acceso denegado']);
     exit;
 }
+log_api_error('Admin verificado OK');
 
 // Configuración de BD
 try {
     $config = require __DIR__ . '/../../config/database.php';
+    log_api_error('Database config cargado OK');
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => 'Error cargando database config: ' . $e->getMessage()]);
+    $error = 'Error cargando database config: ' . $e->getMessage();
+    log_api_error($error);
+    echo json_encode(['success' => false, 'error' => $error]);
     exit;
 }
 
@@ -43,17 +62,22 @@ try {
         $config['password'],
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
+    log_api_error('PDO conectado OK');
 } catch (PDOException $e) {
-    echo json_encode(['success' => false, 'error' => 'Error de conexión PDO: ' . $e->getMessage()]);
+    $error = 'Error de conexión PDO: ' . $e->getMessage();
+    log_api_error($error);
+    echo json_encode(['success' => false, 'error' => $error]);
     exit;
 }
 
 $action = $_POST['action'] ?? '';
+log_api_error("Action recibida: '$action'");
 
 // ============================================
 // CREAR TABLA
 // ============================================
 if ($action === 'crear_tabla') {
+    log_api_error('Ejecutando crear_tabla');
     try {
         // Verificar si ya existe
         $check = $pdo->query("SHOW TABLES LIKE 'lugares_comerciales'")->fetch();
