@@ -1,25 +1,78 @@
 <?php
 // Gestión de Blacklist Global
 
+require_once __DIR__ . '/../../includes/logger.php';
+
+logError('error_Blacklist.log', 'blacklist.php - PÁGINA CARGADA', [
+    'pdo_exists' => isset($pdo) ? 'yes' : 'no'
+]);
+
 // Verificar si la tabla existe
 try {
+    logError('error_Blacklist.log', 'blacklist.php - Verificando si tabla existe');
     $tableExists = $pdo->query("SHOW TABLES LIKE 'email_blacklist'")->fetch();
 
     if (!$tableExists) {
+        logError('error_Blacklist.log', 'blacklist.php - Tabla NO existe, mostrando botón crear');
         ?>
         <div class="alert alert-warning">
             <h4><i class="fas fa-exclamation-triangle"></i> Tabla de Blacklist No Existe</h4>
             <p>La tabla <code>email_blacklist</code> aún no ha sido creada.</p>
             <p>
-                <a href="../create_blacklist_table.php" class="btn btn-primary">
+                <button onclick="createBlacklistTable()" class="btn btn-primary">
                     <i class="fas fa-plus"></i> Crear Tabla Ahora
-                </a>
+                </button>
             </p>
+            <div id="createTableResult"></div>
         </div>
+
+        <script>
+        async function createBlacklistTable() {
+            console.log('📋 [BLACKLIST] Creando tabla...');
+            const btn = event.target;
+            const resultDiv = document.getElementById('createTableResult');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando tabla...';
+
+            try {
+                const response = await fetch('blacklist_api.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'action=create_table'
+                });
+
+                console.log('📡 [BLACKLIST] Response status:', response.status);
+                const result = await response.json();
+                console.log('📋 [BLACKLIST] Result:', result);
+
+                if (result.success) {
+                    resultDiv.innerHTML = '<div class="alert alert-success mt-3"><i class="fas fa-check-circle"></i> ' + result.message + '</div>';
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    resultDiv.innerHTML = '<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-circle"></i> ' + result.error + '</div>';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-plus"></i> Crear Tabla Ahora';
+                }
+            } catch (error) {
+                console.error('❌ [BLACKLIST] Error:', error);
+                resultDiv.innerHTML = '<div class="alert alert-danger mt-3">Error: ' + error.message + '</div>';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plus"></i> Crear Tabla Ahora';
+            }
+        }
+        </script>
         <?php
         return;
     }
+
+    logError('error_Blacklist.log', 'blacklist.php - Tabla existe, continuando');
 } catch (Exception $e) {
+    logError('error_Blacklist.log', 'blacklist.php - ERROR en try/catch principal', [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ]);
     echo "<div class='alert alert-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
     return;
 }
@@ -130,9 +183,9 @@ $totalPages = ceil($total / $perPage);
                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addBlacklistModal">
                     <i class="fas fa-plus"></i> Agregar Email
                 </button>
-                <a href="../create_blacklist_table.php" class="btn btn-outline-secondary">
-                    <i class="fas fa-database"></i> Ver Tabla
-                </a>
+                <button type="button" class="btn btn-outline-info" onclick="showTableInfo()">
+                    <i class="fas fa-info-circle"></i> Info de Tabla
+                </button>
             </div>
         </div>
     </div>
@@ -298,5 +351,75 @@ function removeFromBlacklist(id, email) {
 
     document.body.appendChild(form);
     form.submit();
+}
+
+function showTableInfo() {
+    const infoHtml = `
+        <div class="modal fade" id="tableInfoModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title"><i class="fas fa-database"></i> Información de la Tabla Blacklist</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h6><i class="fas fa-table"></i> Estructura de la Tabla: <code>email_blacklist</code></h6>
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Campo</th>
+                                    <th>Tipo</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><code>id</code></td><td>INT</td><td>ID autoincremental</td></tr>
+                                <tr><td><code>email</code></td><td>VARCHAR(255)</td><td>Email en blacklist (ÚNICO)</td></tr>
+                                <tr><td><code>reason</code></td><td>VARCHAR(500)</td><td>Razón del bloqueo</td></tr>
+                                <tr><td><code>campaign_id</code></td><td>INT</td><td>Campaña desde donde se desuscribió</td></tr>
+                                <tr><td><code>source</code></td><td>VARCHAR(50)</td><td>Origen: unsubscribe, manual, bounce, spam_complaint</td></tr>
+                                <tr><td><code>ip_address</code></td><td>VARCHAR(45)</td><td>IP del usuario al desuscribirse</td></tr>
+                                <tr><td><code>user_agent</code></td><td>TEXT</td><td>Navegador del usuario</td></tr>
+                                <tr><td><code>created_at</code></td><td>TIMESTAMP</td><td>Fecha de bloqueo</td></tr>
+                                <tr><td><code>created_by</code></td><td>VARCHAR(100)</td><td>Admin que lo agregó (manual)</td></tr>
+                                <tr><td><code>notes</code></td><td>TEXT</td><td>Notas adicionales</td></tr>
+                            </tbody>
+                        </table>
+
+                        <div class="alert alert-info mt-3">
+                            <h6><i class="fas fa-shield-alt"></i> Funcionamiento del Sistema</h6>
+                            <ul class="mb-0">
+                                <li>Los emails en blacklist <strong>NO recibirán</strong> campañas futuras</li>
+                                <li>El sistema verifica automáticamente antes de cada envío</li>
+                                <li>Las desuscripciones se agregan automáticamente</li>
+                                <li>Los rebotes (bounces) se pueden agregar automáticamente</li>
+                                <li>También puedes agregar emails manualmente</li>
+                            </ul>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <strong><i class="fas fa-exclamation-triangle"></i> Importante:</strong><br>
+                            Eliminar un email de la blacklist permite que vuelva a recibir campañas.
+                            Asegúrate de tener el consentimiento del usuario antes de hacerlo.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Eliminar modal anterior si existe
+    const oldModal = document.getElementById('tableInfoModal');
+    if (oldModal) oldModal.remove();
+
+    // Agregar nuevo modal
+    document.body.insertAdjacentHTML('beforeend', infoHtml);
+
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('tableInfoModal'));
+    modal.show();
 }
 </script>

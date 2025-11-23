@@ -37,6 +37,10 @@ try {
             handleDeleteCampaign();
             break;
 
+        case 'get_campaign_progress':
+            getCampaignProgress();
+            break;
+
         case 'download_template':
             downloadExcelTemplate();
             break;
@@ -53,6 +57,13 @@ try {
             throw new Exception('Acción no válida');
     }
 } catch (Exception $e) {
+    // Si es una petición AJAX (get_campaign_progress), devolver JSON
+    if ($action === 'get_campaign_progress') {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
+
     $_SESSION['message'] = ['type' => 'danger', 'text' => 'Error: ' . $e->getMessage()];
     header('Location: email_marketing.php');
     exit;
@@ -117,6 +128,8 @@ function handleCreateCampaign() {
         $recipients = processExcelUpload($campaign_id);
     } elseif ($source_type === 'database') {
         $recipients = processDatabaseCampaign($campaign_id);
+    } elseif ($source_type === 'lugares_comerciales') {
+        $recipients = processLugaresComercialesCampaign($campaign_id);
     } elseif ($source_type === 'manual') {
         $recipients = processManualRecipients($campaign_id);
     }
@@ -163,6 +176,18 @@ function handleCreateCampaign() {
 
     // Mensaje de éxito según el tipo de envío
     $message_text = "Campaña creada exitosamente con {$total} destinatarios. ";
+
+    // Si es una petición AJAX (detectado por el header), devolver JSON
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'campaign_id' => $campaign_id,
+            'total_recipients' => $total,
+            'message' => "Campaña creada exitosamente con {$total} destinatarios"
+        ]);
+        exit;
+    }
 
     if ($send_type === 'now') {
         // Redirigir directamente a la pantalla de envío
@@ -380,6 +405,77 @@ function processDatabaseCampaign($campaign_id) {
 }
 
 /**
+ * Procesar destinatarios de lugares comerciales (OpenStreetMap)
+ */
+function processLugaresComercialesCampaign($campaign_id) {
+    global $pdo;
+
+    $tipos = $_POST['lugares_tipos'] ?? [];
+    $selected_lugares = $_POST['selected_lugares'] ?? [];
+
+    if (empty($tipos) && empty($selected_lugares)) {
+        throw new Exception('Debe seleccionar al menos un tipo de lugar');
+    }
+
+    // Guardar filtro de tipos
+    $pdo->prepare("UPDATE email_campaigns SET filter_categories = ? WHERE id = ?")
+        ->execute([json_encode($tipos), $campaign_id]);
+
+    $recipients = [];
+
+    // Si hay lugares específicos seleccionados, usar solo esos
+    if (!empty($selected_lugares)) {
+        foreach ($selected_lugares as $lugarJson) {
+            $lugar = json_decode($lugarJson, true);
+
+            if ($lugar && isset($lugar['email']) && filter_var($lugar['email'], FILTER_VALIDATE_EMAIL)) {
+                $recipients[] = [
+                    'email' => $lugar['email'],
+                    'name' => $lugar['nombre'] ?? 'Estimado propietario',
+                    'phone' => $lugar['telefono'] ?? null,
+                    'custom_data' => [
+                        'ciudad' => $lugar['ciudad'] ?? '',
+                        'direccion' => $lugar['direccion'] ?? '',
+                        'tipo' => $lugar['tipo'] ?? '',
+                        'categoria' => $lugar['categoria'] ?? ''
+                    ]
+                ];
+            }
+        }
+    } else {
+        // Si no hay lugares específicos, usar todos los tipos seleccionados
+        $placeholders = str_repeat('?,', count($tipos) - 1) . '?';
+
+        $stmt = $pdo->prepare("
+            SELECT nombre, email, telefono, direccion, ciudad, tipo, categoria
+            FROM lugares_comerciales
+            WHERE tipo IN ($placeholders)
+            AND email IS NOT NULL
+            AND email != ''
+        ");
+        $stmt->execute($tipos);
+
+        while ($lugar = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            if (filter_var($lugar['email'], FILTER_VALIDATE_EMAIL)) {
+                $recipients[] = [
+                    'email' => $lugar['email'],
+                    'name' => $lugar['nombre'] ?? 'Estimado propietario',
+                    'phone' => $lugar['telefono'] ?? null,
+                    'custom_data' => [
+                        'ciudad' => $lugar['ciudad'] ?? '',
+                        'direccion' => $lugar['direccion'] ?? '',
+                        'tipo' => $lugar['tipo'] ?? '',
+                        'categoria' => $lugar['categoria'] ?? ''
+                    ]
+                ];
+            }
+        }
+    }
+
+    return $recipients;
+}
+
+/**
  * Procesar destinatarios manuales
  */
 function processManualRecipients($campaign_id) {
@@ -547,6 +643,82 @@ function handleDeleteCampaign() {
     ];
 
     header('Location: email_marketing.php?page=campaigns');
+    exit;
+}
+
+/**
+ * Obtener progreso de envío de una campaña en tiempo real
+ */
+function getCampaignProgress() {
+    global $pdo;
+
+    header('Content-Type: application/json');
+
+    $campaign_id = $_GET['campaign_id'] ?? '';
+
+    if (empty($campaign_id)) {
+        echo json_encode(['success' => false, 'error' => 'ID de campaña no válido']);
+        exit;
+    }
+
+    // Verificar que la campaña existe
+    $campaign = $pdo->query("SELECT * FROM email_campaigns WHERE id = $campaign_id")->fetch(PDO::FETCH_ASSOC);
+
+    if (!$campaign) {
+        echo json_encode(['success' => false, 'error' => 'Campaña no encontrada']);
+        exit;
+    }
+
+    // Obtener estadísticas de envío desde email_recipients
+    $stats_query = "
+        SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent,
+            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending
+        FROM email_recipients
+        WHERE campaign_id = ?
+    ";
+
+    $stmt = $pdo->prepare($stats_query);
+    $stmt->execute([$campaign_id]);
+    $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Obtener los últimos 10 logs de envío (ordenados por más recientes primero)
+    $logs_query = "
+        SELECT r.email, r.status, l.error_message, l.created_at
+        FROM email_recipients r
+        LEFT JOIN email_send_logs l ON l.recipient_id = r.id
+        WHERE r.campaign_id = ? AND r.status IN ('sent', 'failed')
+        ORDER BY l.created_at DESC
+        LIMIT 10
+    ";
+
+    $stmt = $pdo->prepare($logs_query);
+    $stmt->execute([$campaign_id]);
+    $recent_logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Formatear los logs
+    $formatted_logs = array_map(function($log) {
+        return [
+            'email' => $log['email'],
+            'status' => $log['status'],
+            'error' => $log['error_message'],
+            'created_at' => $log['created_at']
+        ];
+    }, $recent_logs);
+
+    echo json_encode([
+        'success' => true,
+        'stats' => [
+            'total' => (int)$stats['total'],
+            'sent' => (int)$stats['sent'],
+            'failed' => (int)$stats['failed'],
+            'pending' => (int)$stats['pending']
+        ],
+        'recent_logs' => $formatted_logs,
+        'campaign_status' => $campaign['status']
+    ]);
     exit;
 }
 ?>

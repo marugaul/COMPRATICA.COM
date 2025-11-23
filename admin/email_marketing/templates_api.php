@@ -477,13 +477,7 @@ function handleDeleteTemplate($pdo) {
         return;
     }
 
-    // No permitir eliminar plantillas predeterminadas del sistema
-    if (in_array($template['company'], ['mixtico', 'crv-soft', 'compratica'])) {
-        echo json_encode(['success' => false, 'error' => 'No se pueden eliminar las plantillas predeterminadas del sistema']);
-        return;
-    }
-
-    // Verificar si está en uso
+    // Verificar si está en uso en campañas
     $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM email_campaigns WHERE template_id = ?");
     $stmt->execute([$templateId]);
     $usage = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -491,12 +485,29 @@ function handleDeleteTemplate($pdo) {
     if ($usage['count'] > 0) {
         echo json_encode([
             'success' => false,
-            'error' => 'No se puede eliminar esta plantilla porque está siendo usada en ' . $usage['count'] . ' campaña(s)'
+            'error' => 'No se puede eliminar esta plantilla porque está siendo usada en ' . $usage['count'] . ' campaña(s). Primero elimine o cambie las campañas que la usan.'
         ]);
         return;
     }
 
-    // Eliminar archivo físico si existe
+    // Verificar si es la plantilla por defecto
+    if ($template['is_default'] == 1) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'No se puede eliminar la plantilla predeterminada. Primero marque otra plantilla como predeterminada.'
+        ]);
+        return;
+    }
+
+    // Eliminar imagen asociada si existe
+    if (!empty($template['image_path'])) {
+        $imagePath = __DIR__ . '/../../uploads/template_images/' . $template['image_path'];
+        if (file_exists($imagePath)) {
+            @unlink($imagePath);
+        }
+    }
+
+    // Eliminar archivo HTML físico si existe
     $templateFile = __DIR__ . '/../email_templates/' . $template['company'] . '_template.html';
     if (file_exists($templateFile)) {
         @unlink($templateFile);
@@ -506,5 +517,11 @@ function handleDeleteTemplate($pdo) {
     $stmt = $pdo->prepare("DELETE FROM email_templates WHERE id = ?");
     $stmt->execute([$templateId]);
 
-    echo json_encode(['success' => true, 'message' => 'Plantilla eliminada exitosamente']);
+    // Mensaje especial para plantillas del sistema
+    $isSystemTemplate = in_array($template['company'], ['mixtico', 'crv-soft', 'compratica']);
+    $message = $isSystemTemplate
+        ? 'Plantilla del sistema "' . $template['name'] . '" eliminada exitosamente'
+        : 'Plantilla "' . $template['name'] . '" eliminada exitosamente';
+
+    echo json_encode(['success' => true, 'message' => $message]);
 }

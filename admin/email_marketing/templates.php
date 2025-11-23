@@ -199,11 +199,11 @@ $template_files = [
                             </button>
                         <?php endif; ?>
 
-                        <?php if (!in_array($template['company'], ['mixtico', 'crv-soft', 'compratica'])): ?>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTemplate(<?= $template['id'] ?>)" title="Eliminar">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        <?php endif; ?>
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="deleteTemplate(<?= $template['id'] ?>, '<?= h($template['company']) ?>', '<?= h($template['name']) ?>')"
+                                title="Eliminar plantilla">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -617,8 +617,31 @@ async function toggleActive(templateId, active) {
 }
 
 // Delete Template
-async function deleteTemplate(templateId) {
-    if (!confirm('¿Está seguro de eliminar esta plantilla? Esta acción no se puede deshacer.')) return;
+async function deleteTemplate(templateId, company, name) {
+    // Mensajes específicos según el tipo de plantilla
+    const systemTemplates = ['mixtico', 'crv-soft', 'compratica'];
+    let confirmMessage = '';
+
+    if (systemTemplates.includes(company)) {
+        confirmMessage = '⚠️ ADVERTENCIA: Está a punto de eliminar una plantilla del SISTEMA.\n\n' +
+                        'Plantilla: ' + name + '\n' +
+                        'Tipo: ' + company.toUpperCase() + '\n\n' +
+                        '❌ Esta acción NO SE PUEDE DESHACER.\n' +
+                        '❌ Perderá todos los cambios realizados.\n\n' +
+                        '¿Está COMPLETAMENTE SEGURO de eliminar esta plantilla?';
+    } else {
+        confirmMessage = '¿Está seguro de eliminar la plantilla "' + name + '"?\n\n' +
+                        'Esta acción no se puede deshacer.';
+    }
+
+    if (!confirm(confirmMessage)) return;
+
+    // Confirmación adicional para plantillas del sistema
+    if (systemTemplates.includes(company)) {
+        if (!confirm('🔴 ÚLTIMA CONFIRMACIÓN 🔴\n\nEscriba OK mentalmente y confirme para eliminar permanentemente.')) {
+            return;
+        }
+    }
 
     try {
         const formData = new FormData();
@@ -633,12 +656,13 @@ async function deleteTemplate(templateId) {
         const result = await response.json();
 
         if (result.success) {
+            alert('✓ Plantilla eliminada exitosamente');
             location.reload();
         } else {
-            alert('Error: ' + result.error);
+            alert('❌ Error: ' + result.error);
         }
     } catch (error) {
-        alert('Error: ' + error);
+        alert('❌ Error: ' + error);
     }
 }
 
