@@ -7,6 +7,7 @@
 // Configuración
 $config = [
     'host' => 'localhost',
+    'port' => '3306',
     'database' => 'comprati_marketplace',
     'username' => 'comprati_places_user',
     'password' => 'Marden7i/',
@@ -33,7 +34,7 @@ try {
 
     // Conectar a base de datos
     $pdo = new PDO(
-        "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
+        "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset=utf8mb4",
         $config['username'],
         $config['password'],
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
