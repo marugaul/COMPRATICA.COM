@@ -250,6 +250,9 @@ function h($str) {
                     case 'campaigns':
                         include __DIR__ . '/email_marketing/campaigns.php';
                         break;
+                    case 'campaign-details':
+                        include __DIR__ . '/email_marketing/campaign_details.php';
+                        break;
                     case 'templates':
                         include __DIR__ . '/email_marketing/templates.php';
                         break;
