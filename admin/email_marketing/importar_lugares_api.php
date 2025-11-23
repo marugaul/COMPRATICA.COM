@@ -2,6 +2,7 @@
 /**
  * API para importar lugares comerciales
  * Maneja las peticiones AJAX de importación
+ * Updated: 2025-11-23
  */
 
 // Cargar configuración
