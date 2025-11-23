@@ -5,8 +5,21 @@
  * Updated: 2025-11-23
  */
 
-// Cargar configuración
-require_once __DIR__ . '/../../includes/config.php';
+// Error logging detallado
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Asegurar que siempre se devuelva JSON
+header('Content-Type: application/json');
+
+try {
+    // Cargar configuración
+    require_once __DIR__ . '/../../includes/config.php';
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'error' => 'Error cargando config: ' . $e->getMessage()]);
+    exit;
+}
 
 // Verificar que sea admin
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
@@ -15,10 +28,13 @@ if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
     exit;
 }
 
-header('Content-Type: application/json');
-
 // Configuración de BD
-$config = require __DIR__ . '/../../config/database.php';
+try {
+    $config = require __DIR__ . '/../../config/database.php';
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'error' => 'Error cargando database config: ' . $e->getMessage()]);
+    exit;
+}
 
 try {
     $pdo = new PDO(
@@ -28,7 +44,7 @@ try {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 } catch (PDOException $e) {
-    echo json_encode(['success' => false, 'error' => 'Error de conexión: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Error de conexión PDO: ' . $e->getMessage()]);
     exit;
 }
 
