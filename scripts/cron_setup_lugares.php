@@ -6,7 +6,7 @@
 
 // Configuración
 $config = [
-    'host' => '127.0.0.1',
+    'host' => 'localhost',
     'database' => 'comprati_marketplace',
     'username' => 'comprati_places_user',
     'password' => 'Marden7i/',
