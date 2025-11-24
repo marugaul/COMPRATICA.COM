@@ -171,7 +171,7 @@ document.getElementById('btnCrearTabla')?.addEventListener('click', async functi
     resultDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Creando tabla...</div>';
 
     try {
-        const response = await fetch('importar_lugares_api.php', {
+        const response = await fetch('/admin/email_marketing/importar_lugares_api.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=crear_tabla'
@@ -209,16 +209,35 @@ document.getElementById('btnImportar').addEventListener('click', async function(
     resultArea.style.display = 'none';
     statsArea.style.display = 'none';
 
-    updateProgress(10, 'Descargando datos desde OpenStreetMap...');
+    updateProgress(5, 'Iniciando importación...');
+
+    // Iniciar polling de progreso
+    let progressInterval = setInterval(async () => {
+        try {
+            const progressResponse = await fetch('/admin/email_marketing/importar_progreso_api.php');
+            const progressData = await progressResponse.json();
+
+            if (progressData.percent > 0) {
+                let message = progressData.message;
+                if (progressData.total > 0) {
+                    message += ` (${progressData.imported.toLocaleString()} / ${progressData.total.toLocaleString()})`;
+                }
+                updateProgress(progressData.percent, message);
+            }
+        } catch (e) {
+            // Ignorar errores de polling
+        }
+    }, 2000); // Cada 2 segundos
 
     try {
-        const response = await fetch('importar_lugares_api.php', {
+        const response = await fetch('/admin/email_marketing/importar_lugares_api.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=importar'
         });
 
-        updateProgress(50, 'Procesando datos recibidos...');
+        // Detener polling
+        clearInterval(progressInterval);
 
         const result = await response.json();
 
@@ -291,6 +310,7 @@ document.getElementById('btnImportar').addEventListener('click', async function(
         }
 
     } catch (error) {
+        clearInterval(progressInterval);
         progressArea.style.display = 'none';
         resultArea.style.display = 'block';
         resultArea.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> <strong>Error:</strong> ' + error.message + '</div>';

@@ -1,7 +1,6 @@
 <?php
 /**
- * API para importar lugares comerciales
- * Maneja las peticiones AJAX de importación
+ * API para importar lugares comerciales con seguimiento de progreso
  */
 
 // Cargar configuración
@@ -12,6 +11,25 @@ if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Acceso denegado']);
     exit;
+}
+
+// Función para actualizar progreso en tiempo real
+function updateProgress($percent, $message, $imported = 0, $total = 0) {
+    $progress_file = __DIR__ . '/../../logs/import_progress.json';
+    $progress_dir = dirname($progress_file);
+    if (!is_dir($progress_dir)) {
+        @mkdir($progress_dir, 0755, true);
+    }
+
+    $data = [
+        'percent' => $percent,
+        'message' => $message,
+        'imported' => $imported,
+        'total' => $total,
+        'timestamp' => time()
+    ];
+
+    file_put_contents($progress_file, json_encode($data));
 }
 
 header('Content-Type: application/json');
@@ -105,6 +123,7 @@ if ($action === 'crear_tabla') {
 // IMPORTAR LUGARES
 // ============================================
 if ($action === 'importar') {
+    updateProgress(5, 'Iniciando importación...', 0, 0);
     set_time_limit(300); // 5 minutos
 
     try {
@@ -114,6 +133,8 @@ if ($action === 'importar') {
             echo json_encode(['success' => false, 'error' => 'La tabla no existe. Créala primero.']);
             exit;
         }
+
+        updateProgress(10, 'Descargando datos desde OpenStreetMap...', 0, 0);
 
         // Query de Overpass API para Costa Rica
         $overpass_query = '[out:json][timeout:180];
@@ -161,12 +182,17 @@ out center;';
             throw new Exception("Error en Overpass API: HTTP $http_code - $curl_error");
         }
 
+        updateProgress(20, 'Datos descargados, procesando...', 0, 0);
+
         $data = json_decode($response, true);
         if (!isset($data['elements'])) {
             throw new Exception("Respuesta inválida de Overpass API");
         }
 
         $elements = $data['elements'];
+        $total = count($elements);
+        updateProgress(25, "Importando $total lugares a la base de datos...", 0, $total);
+
         $imported = 0;
         $updated = 0;
         $errors = 0;
@@ -243,10 +269,24 @@ out center;';
             } catch (PDOException $e) {
                 $errors++;
             }
+
+            // Actualizar progreso cada 100
+            if (($imported + $updated) % 100 === 0) {
+                // Calcular porcentaje (25% a 90%)
+                $percent = 25 + (($imported + $updated) / $total * 65);
+                updateProgress(
+                    round($percent),
+                    "Importados: " . number_format($imported + $updated) . " / " . number_format($total),
+                    $imported + $updated,
+                    $total
+                );
+            }
         }
 
+        updateProgress(95, 'Generando estadísticas finales...', $imported + $updated, $total);
+
         // Estadísticas finales
-        $total = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales")->fetchColumn();
+        $total_db = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales")->fetchColumn();
         $with_email = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE email IS NOT NULL AND email != ''")->fetchColumn();
         $with_phone = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE telefono IS NOT NULL AND telefono != ''")->fetchColumn();
 
@@ -268,6 +308,8 @@ out center;';
             LIMIT 10
         ")->fetchAll(PDO::FETCH_ASSOC);
 
+        updateProgress(100, '¡Importación completada!', $imported + $updated, $total);
+
         echo json_encode([
             'success' => true,
             'total' => count($elements),
@@ -275,11 +317,11 @@ out center;';
             'updated' => $updated,
             'errors' => $errors,
             'stats' => [
-                'total' => $total,
+                'total' => $total_db,
                 'with_email' => $with_email,
                 'with_phone' => $with_phone,
-                'email_percent' => $total > 0 ? round($with_email/$total*100, 1) : 0,
-                'phone_percent' => $total > 0 ? round($with_phone/$total*100, 1) : 0,
+                'email_percent' => $total_db > 0 ? round($with_email/$total_db*100, 1) : 0,
+                'phone_percent' => $total_db > 0 ? round($with_phone/$total_db*100, 1) : 0,
                 'top_categorias' => $top_categorias,
                 'top_tipos' => $top_tipos
             ]
