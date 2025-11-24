@@ -171,7 +171,7 @@ document.getElementById('btnCrearTabla')?.addEventListener('click', async functi
     resultDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Creando tabla...</div>';
 
     try {
-        const response = await fetch('importar_lugares_api.php', {
+        const response = await fetch('/admin/email_marketing/importar_lugares_api.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=crear_tabla'
@@ -227,7 +227,7 @@ document.getElementById('btnImportar').addEventListener('click', async function(
     updateProgress(10, 'Descargando datos desde OpenStreetMap...');
 
     try {
-        const response = await fetch('importar_lugares_api.php', {
+        const response = await fetch('/admin/email_marketing/importar_lugares_api.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=importar'
