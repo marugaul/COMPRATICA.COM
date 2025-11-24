@@ -268,6 +268,12 @@ function h($str) {
                     case 'importar-lugares':
                         include __DIR__ . '/email_marketing/importar_lugares.php';
                         break;
+                    case 'enriquecer-emails':
+                        include __DIR__ . '/email_marketing/enriquecer_emails.php';
+                        break;
+                    case 'lugares-comerciales':
+                        include __DIR__ . '/email_marketing/lugares_comerciales.php';
+                        break;
                     default:
                         echo '<div class="alert alert-warning">Página no encontrada</div>';
                 }

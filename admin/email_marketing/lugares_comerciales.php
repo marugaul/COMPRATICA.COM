@@ -98,6 +98,25 @@ $total_pages = $total_lugares > 0 ? ceil($total_lugares / $per_page) : 0;
     <div class="col-md-12">
         <h2><i class="fas fa-map-marked-alt"></i> Base de Datos de Lugares Comerciales</h2>
         <p class="text-muted">Gestiona lugares comerciales de Costa Rica importados desde OpenStreetMap</p>
+
+        <!-- Navegación de pestañas -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link" href="?page=importar-lugares">
+                    <i class="fas fa-cloud-download-alt"></i> Importar desde OSM
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="?page=enriquecer-emails">
+                    <i class="fas fa-envelope"></i> Enriquecer Emails
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="?page=lugares-comerciales">
+                    <i class="fas fa-list"></i> Ver Base de Datos
+                </a>
+            </li>
+        </ul>
     </div>
 </div>
 

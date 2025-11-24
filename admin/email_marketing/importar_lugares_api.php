@@ -1,229 +1,197 @@
 <?php
 /**
- * API Importar Lugares - VERSION CON LOGGING COMPLETO
+ * API para importar lugares comerciales con seguimiento de progreso
  */
 
-// LOGGING INMEDIATO - Primera cosa que hace el script
-$log_file = __DIR__ . '/../../logs/importar_lugares_api.log';
-$log_dir = dirname($log_file);
-if (!is_dir($log_dir)) {
-    @mkdir($log_dir, 0755, true);
-}
-file_put_contents($log_file, "\n\n========== NUEVO REQUEST " . date('Y-m-d H:i:s') . " ==========\n", FILE_APPEND);
+// Cargar configuración
+require_once __DIR__ . '/../../includes/config.php';
 
-function logit($msg) {
-    global $log_file;
-    $line = "[" . date('H:i:s') . "] $msg\n";
-    file_put_contents($log_file, $line, FILE_APPEND);
+// Verificar que sea admin
+if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Acceso denegado']);
+    exit;
 }
 
-logit("Script iniciado");
+// Función para actualizar progreso en tiempo real
+function updateProgress($percent, $message, $imported = 0, $total = 0) {
+    $progress_file = __DIR__ . '/../../logs/import_progress.json';
+    $progress_dir = dirname($progress_file);
+    if (!is_dir($progress_dir)) {
+        @mkdir($progress_dir, 0755, true);
+    }
 
-// Configuración de errores
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-logit("Error reporting configurado");
+    $data = [
+        'percent' => $percent,
+        'message' => $message,
+        'imported' => $imported,
+        'total' => $total,
+        'timestamp' => time()
+    ];
 
-// Header JSON
+    file_put_contents($progress_file, json_encode($data));
+}
+
 header('Content-Type: application/json');
-logit("Header JSON enviado");
 
-// Intentar cargar config
-logit("Intentando cargar config...");
+// Configuración de BD
+$config = require __DIR__ . '/../../config/database.php';
+
 try {
-    $config_path = __DIR__ . '/../../includes/config.php';
-    logit("Config path: $config_path");
-
-    if (!file_exists($config_path)) {
-        logit("ERROR: Config file no existe!");
-        echo json_encode(['success' => false, 'error' => 'Config file no existe']);
-        exit;
-    }
-
-    require_once $config_path;
-    logit("Config cargado OK");
-} catch (Exception $e) {
-    $error = "Error cargando config: " . $e->getMessage();
-    logit("ERROR: $error");
-    echo json_encode(['success' => false, 'error' => $error]);
-    exit;
-}
-
-// Verificar sesión
-logit("Verificando sesión...");
-if (!isset($_SESSION)) {
-    logit("ADVERTENCIA: Sesión no iniciada");
-}
-
-if (!isset($_SESSION['is_admin'])) {
-    logit("ERROR: Variable is_admin no existe en sesión");
-    echo json_encode(['success' => false, 'error' => 'Sesión no válida - is_admin no definido']);
-    exit;
-}
-
-if ($_SESSION['is_admin'] !== true) {
-    logit("ERROR: Usuario no es admin");
-    echo json_encode(['success' => false, 'error' => 'Acceso denegado - no admin']);
-    exit;
-}
-
-logit("Admin verificado OK");
-
-// Cargar database config
-logit("Cargando database config...");
-try {
-    $db_config_path = __DIR__ . '/../../config/database.php';
-    logit("DB config path: $db_config_path");
-
-    if (!file_exists($db_config_path)) {
-        logit("ERROR: Database config no existe!");
-        echo json_encode(['success' => false, 'error' => 'Database config no existe']);
-        exit;
-    }
-
-    $config = require $db_config_path;
-    logit("Database config cargado OK");
-} catch (Exception $e) {
-    $error = "Error cargando database config: " . $e->getMessage();
-    logit("ERROR: $error");
-    echo json_encode(['success' => false, 'error' => $error]);
-    exit;
-}
-
-// Conectar PDO
-logit("Conectando a MySQL...");
-try {
-    $dsn = "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4";
-    logit("DSN: $dsn");
-    logit("User: {$config['username']}");
-
     $pdo = new PDO(
-        $dsn,
+        "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
         $config['username'],
         $config['password'],
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
-    logit("PDO conectado OK");
 } catch (PDOException $e) {
-    $error = "Error PDO: " . $e->getMessage();
-    logit("ERROR: $error");
-    echo json_encode(['success' => false, 'error' => $error]);
+    echo json_encode(['success' => false, 'error' => 'Error de conexión: ' . $e->getMessage()]);
     exit;
 }
 
-// Obtener action
 $action = $_POST['action'] ?? '';
-logit("Action recibida: '$action'");
 
+// ============================================
 // CREAR TABLA
+// ============================================
 if ($action === 'crear_tabla') {
-    logit("Ejecutando crear_tabla");
-
     try {
+        // Verificar si ya existe
         $check = $pdo->query("SHOW TABLES LIKE 'lugares_comerciales'")->fetch();
         if ($check) {
-            logit("Tabla ya existe");
             echo json_encode(['success' => false, 'error' => 'La tabla ya existe']);
             exit;
         }
 
-        logit("Creando tabla...");
+        // Crear tabla
         $sql = "CREATE TABLE lugares_comerciales (
             id INT AUTO_INCREMENT PRIMARY KEY,
             nombre VARCHAR(255) NOT NULL,
             tipo VARCHAR(100),
             categoria VARCHAR(100),
-            email VARCHAR(255),
+            subtipo VARCHAR(100),
+            descripcion TEXT,
+            direccion VARCHAR(500),
+            ciudad VARCHAR(100),
+            provincia VARCHAR(100),
+            codigo_postal VARCHAR(20),
             telefono VARCHAR(50),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+            email VARCHAR(255),
+            website VARCHAR(500),
+            facebook VARCHAR(255),
+            instagram VARCHAR(255),
+            horario TEXT,
+            latitud DECIMAL(10, 8),
+            longitud DECIMAL(11, 8),
+            osm_id BIGINT,
+            osm_type VARCHAR(10),
+            capacidad INT,
+            estrellas TINYINT,
+            wifi BOOLEAN DEFAULT FALSE,
+            parking BOOLEAN DEFAULT FALSE,
+            discapacidad_acceso BOOLEAN DEFAULT FALSE,
+            tarjetas_credito BOOLEAN DEFAULT FALSE,
+            delivery BOOLEAN DEFAULT FALSE,
+            takeaway BOOLEAN DEFAULT FALSE,
+            tags_json TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_tipo (tipo),
+            INDEX idx_categoria (categoria),
+            INDEX idx_ciudad (ciudad),
+            INDEX idx_provincia (provincia),
+            INDEX idx_email (email),
+            INDEX idx_osm_id (osm_id),
+            FULLTEXT idx_nombre (nombre, descripcion)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
         $pdo->exec($sql);
-        logit("Tabla creada OK");
 
-        echo json_encode(['success' => true, 'message' => 'Tabla creada exitosamente']);
+        echo json_encode([
+            'success' => true,
+            'message' => '✓ Tabla creada exitosamente con 28 campos'
+        ]);
         exit;
 
     } catch (PDOException $e) {
-        $error = "Error creando tabla: " . $e->getMessage();
-        logit("ERROR: $error");
-        echo json_encode(['success' => false, 'error' => $error]);
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         exit;
     }
 }
 
-// IMPORTAR
+// ============================================
+// IMPORTAR LUGARES
+// ============================================
 if ($action === 'importar') {
-    logit("Ejecutando importar");
-
+    updateProgress(5, 'Iniciando importación...', 0, 0);
     set_time_limit(300); // 5 minutos
 
     try {
         // Verificar que la tabla existe
         $check = $pdo->query("SHOW TABLES LIKE 'lugares_comerciales'")->fetch();
         if (!$check) {
-            logit("ERROR: Tabla no existe");
             echo json_encode(['success' => false, 'error' => 'La tabla no existe. Créala primero.']);
             exit;
         }
 
-        logit("Tabla verificada OK");
-        logit("Preparando query Overpass...");
+        updateProgress(10, 'Descargando datos desde OpenStreetMap...', 0, 0);
 
-        // Query compacta de Overpass API
-        $overpass_query = '[out:json][timeout:180];area["name"="Costa Rica"]["type"="boundary"]->.a;(node["amenity"~"restaurant|bar|cafe|fast_food|pub"](area.a);way["amenity"~"restaurant|bar|cafe|fast_food|pub"](area.a);node["tourism"~"hotel|motel|guest_house|hostel"](area.a);way["tourism"~"hotel|motel|guest_house|hostel"](area.a);node["shop"](area.a);way["shop"](area.a););out center;';
+        // Query de Overpass API para Costa Rica
+        $overpass_query = '[out:json][timeout:180];
+area["name"="Costa Rica"]["type"="boundary"]->.a;
+(
+  node["amenity"~"restaurant|bar|cafe|fast_food|pub|food_court|ice_cream|biergarten"](area.a);
+  way["amenity"~"restaurant|bar|cafe|fast_food|pub|food_court|ice_cream|biergarten"](area.a);
+  node["tourism"~"hotel|motel|guest_house|hostel|apartment|chalet|alpine_hut"](area.a);
+  way["tourism"~"hotel|motel|guest_house|hostel|apartment|chalet|alpine_hut"](area.a);
+  node["shop"](area.a);
+  way["shop"](area.a);
+  node["amenity"~"bank|pharmacy|clinic|dentist|doctors|hospital|veterinary|fuel|car_wash|car_rental|parking"](area.a);
+  way["amenity"~"bank|pharmacy|clinic|dentist|doctors|hospital|veterinary|fuel|car_wash|car_rental|parking"](area.a);
+  node["amenity"~"cinema|theatre|nightclub|casino|arts_centre|community_centre"](area.a);
+  way["amenity"~"cinema|theatre|nightclub|casino|arts_centre|community_centre"](area.a);
+  node["leisure"~"sports_centre|fitness_centre|swimming_pool|marina|golf_course|stadium"](area.a);
+  way["leisure"~"sports_centre|fitness_centre|swimming_pool|marina|golf_course|stadium"](area.a);
+  node["tourism"~"attraction|museum|gallery|viewpoint|theme_park|zoo|aquarium"](area.a);
+  way["tourism"~"attraction|museum|gallery|viewpoint|theme_park|zoo|aquarium"](area.a);
+  node["office"](area.a);
+  way["office"](area.a);
+  node["amenity"~"school|kindergarten|college|university|language_school|driving_school"](area.a);
+  way["amenity"~"school|kindergarten|college|university|language_school|driving_school"](area.a);
+  node["shop"~"beauty|hairdresser|cosmetics|massage"](area.a);
+  way["shop"~"beauty|hairdresser|cosmetics|massage"](area.a);
+  node["amenity"~"spa"](area.a);
+  way["amenity"~"spa"](area.a);
+);
+out center;';
 
-        logit("Haciendo request a Overpass API...");
-
-        // Request a Overpass API
+        // Hacer request a Overpass API
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://overpass-api.de/api/interpreter");
+        curl_setopt($ch, CURLOPT_URL, "http://overpass-api.de/api/interpreter");
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, 'data=' . urlencode($overpass_query));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 180);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curl_error = curl_error($ch);
         curl_close($ch);
 
-        if ($response === false) {
-            $error = "Error curl: $curl_error";
-            logit("ERROR: $error");
-            echo json_encode(['success' => false, 'error' => $error]);
-            exit;
-        }
-
         if ($http_code !== 200) {
-            $error = "HTTP $http_code de Overpass";
-            logit("ERROR: $error");
-            echo json_encode(['success' => false, 'error' => $error]);
-            exit;
+            throw new Exception("Error en Overpass API: HTTP $http_code - $curl_error");
         }
 
-        logit("Response recibido OK");
+        updateProgress(20, 'Datos descargados, procesando...', 0, 0);
 
         $data = json_decode($response, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            $error = "Error JSON: " . json_last_error_msg();
-            logit("ERROR: $error");
-            echo json_encode(['success' => false, 'error' => $error]);
-            exit;
-        }
-
         if (!isset($data['elements'])) {
-            logit("ERROR: Respuesta inválida de Overpass");
-            echo json_encode(['success' => false, 'error' => 'Respuesta inválida de Overpass API']);
-            exit;
+            throw new Exception("Respuesta inválida de Overpass API");
         }
 
         $elements = $data['elements'];
         $total = count($elements);
-        logit("Elementos recibidos: $total");
+        updateProgress(25, "Importando $total lugares a la base de datos...", 0, $total);
 
         $imported = 0;
         $updated = 0;
@@ -231,31 +199,65 @@ if ($action === 'importar') {
 
         // Preparar statement
         $stmt = $pdo->prepare("
-            INSERT INTO lugares_comerciales (nombre, tipo, categoria, email, telefono, created_at)
-            VALUES (?, ?, ?, ?, ?, NOW())
-            ON DUPLICATE KEY UPDATE updated_at = NOW()
+            INSERT INTO lugares_comerciales (
+                nombre, tipo, categoria, subtipo, descripcion, direccion, ciudad, provincia,
+                codigo_postal, telefono, email, website, facebook, instagram, horario,
+                latitud, longitud, osm_id, osm_type, capacidad, estrellas, wifi, parking,
+                discapacidad_acceso, tarjetas_credito, delivery, takeaway, tags_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                nombre = VALUES(nombre),
+                telefono = VALUES(telefono),
+                email = VALUES(email),
+                updated_at = CURRENT_TIMESTAMP
         ");
-
-        logit("Iniciando importación...");
 
         foreach ($elements as $element) {
             $tags = $element['tags'] ?? [];
 
             $nombre = $tags['name'] ?? ($tags['brand'] ?? 'Sin nombre');
-            $tipo = $tags['amenity'] ?? $tags['tourism'] ?? $tags['shop'] ?? 'other';
+            $tipo = $tags['amenity'] ?? $tags['tourism'] ?? $tags['shop'] ?? $tags['office'] ?? $tags['leisure'] ?? 'other';
 
             $categoria = '';
             if (isset($tags['amenity'])) $categoria = 'amenity';
             elseif (isset($tags['tourism'])) $categoria = 'tourism';
             elseif (isset($tags['shop'])) $categoria = 'shop';
+            elseif (isset($tags['office'])) $categoria = 'office';
+            elseif (isset($tags['leisure'])) $categoria = 'leisure';
+
+            $lat = $element['lat'] ?? ($element['center']['lat'] ?? null);
+            $lon = $element['lon'] ?? ($element['center']['lon'] ?? null);
 
             try {
                 $stmt->execute([
                     $nombre,
                     $tipo,
                     $categoria,
+                    $tags['cuisine'] ?? '',
+                    $tags['description'] ?? '',
+                    trim(($tags['addr:street'] ?? '') . ' ' . ($tags['addr:housenumber'] ?? '')),
+                    $tags['addr:city'] ?? '',
+                    $tags['addr:province'] ?? '',
+                    $tags['addr:postcode'] ?? '',
+                    $tags['phone'] ?? $tags['contact:phone'] ?? '',
                     $tags['email'] ?? $tags['contact:email'] ?? '',
-                    $tags['phone'] ?? $tags['contact:phone'] ?? ''
+                    $tags['website'] ?? $tags['url'] ?? '',
+                    $tags['contact:facebook'] ?? $tags['facebook'] ?? '',
+                    $tags['contact:instagram'] ?? $tags['instagram'] ?? '',
+                    $tags['opening_hours'] ?? '',
+                    $lat,
+                    $lon,
+                    $element['id'] ?? null,
+                    $element['type'] ?? 'node',
+                    is_numeric($tags['capacity'] ?? '') ? intval($tags['capacity']) : null,
+                    is_numeric($tags['stars'] ?? '') ? intval($tags['stars']) : null,
+                    in_array($tags['internet_access'] ?? '', ['yes', 'wlan', 'wifi']) ? 1 : 0,
+                    in_array($tags['parking'] ?? '', ['yes', 'surface']) ? 1 : 0,
+                    ($tags['wheelchair'] ?? '') === 'yes' ? 1 : 0,
+                    in_array($tags['payment:credit_cards'] ?? '', ['yes']) ? 1 : 0,
+                    ($tags['delivery'] ?? '') === 'yes' ? 1 : 0,
+                    ($tags['takeaway'] ?? '') === 'yes' ? 1 : 0,
+                    json_encode($tags, JSON_UNESCAPED_UNICODE)
                 ]);
 
                 if ($stmt->rowCount() > 0) {
@@ -268,48 +270,69 @@ if ($action === 'importar') {
                 $errors++;
             }
 
-            // Log progreso cada 100
+            // Actualizar progreso cada 100
             if (($imported + $updated) % 100 === 0) {
-                logit("Progreso: $imported importados, $updated actualizados");
+                // Calcular porcentaje (25% a 90%)
+                $percent = 25 + (($imported + $updated) / $total * 65);
+                updateProgress(
+                    round($percent),
+                    "Importados: " . number_format($imported + $updated) . " / " . number_format($total),
+                    $imported + $updated,
+                    $total
+                );
             }
         }
 
-        logit("Importación completada: $imported importados, $updated actualizados, $errors errores");
+        updateProgress(95, 'Generando estadísticas finales...', $imported + $updated, $total);
 
-        // Estadísticas
+        // Estadísticas finales
         $total_db = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales")->fetchColumn();
-        $with_email = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE email != ''")->fetchColumn();
+        $with_email = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE email IS NOT NULL AND email != ''")->fetchColumn();
+        $with_phone = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE telefono IS NOT NULL AND telefono != ''")->fetchColumn();
 
-        logit("Total en BD: $total_db, Con email: $with_email");
+        $top_categorias = $pdo->query("
+            SELECT categoria, COUNT(*) as count
+            FROM lugares_comerciales
+            WHERE categoria IS NOT NULL AND categoria != ''
+            GROUP BY categoria
+            ORDER BY count DESC
+            LIMIT 10
+        ")->fetchAll(PDO::FETCH_ASSOC);
+
+        $top_tipos = $pdo->query("
+            SELECT tipo, COUNT(*) as count
+            FROM lugares_comerciales
+            WHERE tipo IS NOT NULL AND tipo != ''
+            GROUP BY tipo
+            ORDER BY count DESC
+            LIMIT 10
+        ")->fetchAll(PDO::FETCH_ASSOC);
+
+        updateProgress(100, '¡Importación completada!', $imported + $updated, $total);
 
         echo json_encode([
             'success' => true,
-            'total' => $total,
+            'total' => count($elements),
             'imported' => $imported,
             'updated' => $updated,
             'errors' => $errors,
             'stats' => [
                 'total' => $total_db,
                 'with_email' => $with_email,
-                'with_phone' => 0,
+                'with_phone' => $with_phone,
                 'email_percent' => $total_db > 0 ? round($with_email/$total_db*100, 1) : 0,
-                'phone_percent' => 0,
-                'top_categorias' => [],
-                'top_tipos' => []
+                'phone_percent' => $total_db > 0 ? round($with_phone/$total_db*100, 1) : 0,
+                'top_categorias' => $top_categorias,
+                'top_tipos' => $top_tipos
             ]
         ]);
 
-        logit("Respuesta enviada OK");
-        exit;
-
     } catch (Exception $e) {
-        $error = "Error general: " . $e->getMessage();
-        logit("ERROR: $error");
-        echo json_encode(['success' => false, 'error' => $error]);
-        exit;
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
+
+    exit;
 }
 
-// Acción desconocida
-logit("Acción desconocida: '$action'");
-echo json_encode(['success' => false, 'error' => "Acción no reconocida: '$action'"]);
+// Acción no reconocida
+echo json_encode(['success' => false, 'error' => 'Acción no reconocida']);

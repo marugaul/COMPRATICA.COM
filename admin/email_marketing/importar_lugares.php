@@ -29,6 +29,25 @@ try {
     <div class="col-12">
         <h2><i class="fas fa-cloud-download-alt"></i> Importar Lugares Comerciales</h2>
         <p class="text-muted">Descarga TODOS los negocios de Costa Rica desde OpenStreetMap (GRATIS)</p>
+
+        <!-- Navegación de pestañas -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link active" href="?page=importar-lugares">
+                    <i class="fas fa-cloud-download-alt"></i> Importar desde OSM
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="?page=enriquecer-emails">
+                    <i class="fas fa-envelope"></i> Enriquecer Emails
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="?page=lugares-comerciales">
+                    <i class="fas fa-list"></i> Ver Base de Datos
+                </a>
+            </li>
+        </ul>
     </div>
 </div>
 
@@ -224,7 +243,25 @@ document.getElementById('btnImportar').addEventListener('click', async function(
     resultArea.style.display = 'none';
     statsArea.style.display = 'none';
 
-    updateProgress(10, 'Descargando datos desde OpenStreetMap...');
+    updateProgress(5, 'Iniciando importación...');
+
+    // Iniciar polling de progreso
+    let progressInterval = setInterval(async () => {
+        try {
+            const progressResponse = await fetch('/admin/email_marketing/importar_progreso_api.php');
+            const progressData = await progressResponse.json();
+
+            if (progressData.percent > 0) {
+                let message = progressData.message;
+                if (progressData.total > 0) {
+                    message += ` (${progressData.imported.toLocaleString()} / ${progressData.total.toLocaleString()})`;
+                }
+                updateProgress(progressData.percent, message);
+            }
+        } catch (e) {
+            // Ignorar errores de polling
+        }
+    }, 2000); // Cada 2 segundos
 
     try {
         const response = await fetch('/admin/email_marketing/importar_lugares_api.php', {
@@ -233,7 +270,8 @@ document.getElementById('btnImportar').addEventListener('click', async function(
             body: 'action=importar'
         });
 
-        updateProgress(50, 'Procesando datos recibidos...');
+        // Detener polling
+        clearInterval(progressInterval);
 
         // Verificar si la respuesta es OK
         if (!response.ok) {
@@ -321,6 +359,7 @@ document.getElementById('btnImportar').addEventListener('click', async function(
         }
 
     } catch (error) {
+        clearInterval(progressInterval);
         progressArea.style.display = 'none';
         resultArea.style.display = 'block';
         resultArea.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> <strong>Error:</strong> ' + error.message + '</div>';
