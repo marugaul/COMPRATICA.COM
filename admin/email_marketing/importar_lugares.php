@@ -29,6 +29,25 @@ try {
     <div class="col-12">
         <h2><i class="fas fa-cloud-download-alt"></i> Importar Lugares Comerciales</h2>
         <p class="text-muted">Descarga TODOS los negocios de Costa Rica desde OpenStreetMap (GRATIS)</p>
+
+        <!-- Navegación de pestañas -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link active" href="?page=importar_lugares">
+                    <i class="fas fa-cloud-download-alt"></i> Importar desde OSM
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="?page=enriquecer_emails">
+                    <i class="fas fa-envelope"></i> Enriquecer Emails
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="?page=lugares_comerciales">
+                    <i class="fas fa-list"></i> Ver Base de Datos
+                </a>
+            </li>
+        </ul>
     </div>
 </div>
 
