@@ -6,13 +6,22 @@
 
 // Obtener estadísticas directamente de BD
 $stats = ['total_with_website' => 0, 'with_email' => 0, 'without_email' => 0];
+$stats_error = null;
 
 try {
-    $stats['total_with_website'] = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE website IS NOT NULL AND website != ''")->fetchColumn();
-    $stats['with_email'] = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE website IS NOT NULL AND website != '' AND email IS NOT NULL AND email != ''")->fetchColumn();
+    if (!isset($pdo)) {
+        throw new Exception("PDO no está disponible");
+    }
+
+    $stats['total_with_website'] = (int)$pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE website IS NOT NULL AND website != ''")->fetchColumn();
+    $stats['with_email'] = (int)$pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE website IS NOT NULL AND website != '' AND email IS NOT NULL AND email != ''")->fetchColumn();
     $stats['without_email'] = $stats['total_with_website'] - $stats['with_email'];
+
+    // Debug: mostrar totales
+    $total_lugares = (int)$pdo->query("SELECT COUNT(*) FROM lugares_comerciales")->fetchColumn();
+    $stats['total_lugares'] = $total_lugares;
 } catch (Exception $e) {
-    // Silenciar errores
+    $stats_error = $e->getMessage();
 }
 ?>
 
@@ -66,6 +75,22 @@ try {
         </div>
     </div>
 </div>
+
+<?php if ($stats_error): ?>
+<div class="alert alert-danger">
+    <strong>Error al obtener estadísticas:</strong> <?= htmlspecialchars($stats_error) ?>
+</div>
+<?php endif; ?>
+
+<?php if (isset($stats['total_lugares']) && $stats['total_lugares'] > 0 && $stats['total_with_website'] === 0): ?>
+<div class="alert alert-warning">
+    <strong>⚠️ Problema detectado:</strong> Tienes <?= number_format($stats['total_lugares']) ?> lugares en la base de datos,
+    pero <strong>NINGUNO tiene website</strong> en OpenStreetMap.<br>
+    <br>
+    <strong>Solución:</strong> OpenStreetMap no tiene muchos websites para Costa Rica.
+    Te recomiendo usar <strong>Foursquare API</strong> (gratis) o <strong>Google Places API</strong> para obtener websites primero.
+</div>
+<?php endif; ?>
 
 <!-- Panel de enriquecimiento -->
 <div class="row">
