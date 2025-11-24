@@ -4,22 +4,13 @@
  * Extrae emails de páginas de contacto automáticamente
  */
 
-// Obtener estadísticas
+// Obtener estadísticas directamente de BD
 $stats = ['total_with_website' => 0, 'with_email' => 0, 'without_email' => 0];
 
 try {
-    $response = file_get_contents('http://' . $_SERVER['HTTP_HOST'] . '/admin/email_marketing/enriquecer_emails_api.php?action=stats', false, stream_context_create([
-        'http' => [
-            'method' => 'POST',
-            'header' => 'Content-Type: application/x-www-form-urlencoded',
-            'content' => 'action=stats'
-        ]
-    ]));
-
-    $data = json_decode($response, true);
-    if ($data && $data['success']) {
-        $stats = $data;
-    }
+    $stats['total_with_website'] = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE website IS NOT NULL AND website != ''")->fetchColumn();
+    $stats['with_email'] = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE website IS NOT NULL AND website != '' AND email IS NOT NULL AND email != ''")->fetchColumn();
+    $stats['without_email'] = $stats['total_with_website'] - $stats['with_email'];
 } catch (Exception $e) {
     // Silenciar errores
 }
