@@ -102,17 +102,17 @@ $total_pages = $total_lugares > 0 ? ceil($total_lugares / $per_page) : 0;
         <!-- Navegación de pestañas -->
         <ul class="nav nav-tabs mb-4">
             <li class="nav-item">
-                <a class="nav-link" href="?page=importar_lugares">
+                <a class="nav-link" href="?page=importar-lugares">
                     <i class="fas fa-cloud-download-alt"></i> Importar desde OSM
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="?page=enriquecer_emails">
+                <a class="nav-link" href="?page=enriquecer-emails">
                     <i class="fas fa-envelope"></i> Enriquecer Emails
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link active" href="?page=lugares_comerciales">
+                <a class="nav-link active" href="?page=lugares-comerciales">
                     <i class="fas fa-list"></i> Ver Base de Datos
                 </a>
             </li>
