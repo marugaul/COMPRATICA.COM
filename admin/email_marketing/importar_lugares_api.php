@@ -155,8 +155,159 @@ if ($action === 'crear_tabla') {
 // IMPORTAR
 if ($action === 'importar') {
     logit("Ejecutando importar");
-    echo json_encode(['success' => false, 'error' => 'Función de importar aún no implementada en esta versión']);
-    exit;
+
+    set_time_limit(300); // 5 minutos
+
+    try {
+        // Verificar que la tabla existe
+        $check = $pdo->query("SHOW TABLES LIKE 'lugares_comerciales'")->fetch();
+        if (!$check) {
+            logit("ERROR: Tabla no existe");
+            echo json_encode(['success' => false, 'error' => 'La tabla no existe. Créala primero.']);
+            exit;
+        }
+
+        logit("Tabla verificada OK");
+        logit("Preparando query Overpass...");
+
+        // Query compacta de Overpass API
+        $overpass_query = '[out:json][timeout:180];area["name"="Costa Rica"]["type"="boundary"]->.a;(node["amenity"~"restaurant|bar|cafe|fast_food|pub"](area.a);way["amenity"~"restaurant|bar|cafe|fast_food|pub"](area.a);node["tourism"~"hotel|motel|guest_house|hostel"](area.a);way["tourism"~"hotel|motel|guest_house|hostel"](area.a);node["shop"](area.a);way["shop"](area.a););out center;';
+
+        logit("Haciendo request a Overpass API...");
+
+        // Request a Overpass API
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://overpass-api.de/api/interpreter");
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, 'data=' . urlencode($overpass_query));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 180);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($ch);
+        curl_close($ch);
+
+        if ($response === false) {
+            $error = "Error curl: $curl_error";
+            logit("ERROR: $error");
+            echo json_encode(['success' => false, 'error' => $error]);
+            exit;
+        }
+
+        if ($http_code !== 200) {
+            $error = "HTTP $http_code de Overpass";
+            logit("ERROR: $error");
+            echo json_encode(['success' => false, 'error' => $error]);
+            exit;
+        }
+
+        logit("Response recibido OK");
+
+        $data = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $error = "Error JSON: " . json_last_error_msg();
+            logit("ERROR: $error");
+            echo json_encode(['success' => false, 'error' => $error]);
+            exit;
+        }
+
+        if (!isset($data['elements'])) {
+            logit("ERROR: Respuesta inválida de Overpass");
+            echo json_encode(['success' => false, 'error' => 'Respuesta inválida de Overpass API']);
+            exit;
+        }
+
+        $elements = $data['elements'];
+        $total = count($elements);
+        logit("Elementos recibidos: $total");
+
+        $imported = 0;
+        $updated = 0;
+        $errors = 0;
+
+        // Preparar statement
+        $stmt = $pdo->prepare("
+            INSERT INTO lugares_comerciales (nombre, tipo, categoria, email, telefono, created_at)
+            VALUES (?, ?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE updated_at = NOW()
+        ");
+
+        logit("Iniciando importación...");
+
+        foreach ($elements as $element) {
+            $tags = $element['tags'] ?? [];
+
+            $nombre = $tags['name'] ?? ($tags['brand'] ?? 'Sin nombre');
+            $tipo = $tags['amenity'] ?? $tags['tourism'] ?? $tags['shop'] ?? 'other';
+
+            $categoria = '';
+            if (isset($tags['amenity'])) $categoria = 'amenity';
+            elseif (isset($tags['tourism'])) $categoria = 'tourism';
+            elseif (isset($tags['shop'])) $categoria = 'shop';
+
+            try {
+                $stmt->execute([
+                    $nombre,
+                    $tipo,
+                    $categoria,
+                    $tags['email'] ?? $tags['contact:email'] ?? '',
+                    $tags['phone'] ?? $tags['contact:phone'] ?? ''
+                ]);
+
+                if ($stmt->rowCount() > 0) {
+                    $imported++;
+                } else {
+                    $updated++;
+                }
+
+            } catch (PDOException $e) {
+                $errors++;
+            }
+
+            // Log progreso cada 100
+            if (($imported + $updated) % 100 === 0) {
+                logit("Progreso: $imported importados, $updated actualizados");
+            }
+        }
+
+        logit("Importación completada: $imported importados, $updated actualizados, $errors errores");
+
+        // Estadísticas
+        $total_db = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales")->fetchColumn();
+        $with_email = $pdo->query("SELECT COUNT(*) FROM lugares_comerciales WHERE email != ''")->fetchColumn();
+
+        logit("Total en BD: $total_db, Con email: $with_email");
+
+        echo json_encode([
+            'success' => true,
+            'total' => $total,
+            'imported' => $imported,
+            'updated' => $updated,
+            'errors' => $errors,
+            'stats' => [
+                'total' => $total_db,
+                'with_email' => $with_email,
+                'with_phone' => 0,
+                'email_percent' => $total_db > 0 ? round($with_email/$total_db*100, 1) : 0,
+                'phone_percent' => 0,
+                'top_categorias' => [],
+                'top_tipos' => []
+            ]
+        ]);
+
+        logit("Respuesta enviada OK");
+        exit;
+
+    } catch (Exception $e) {
+        $error = "Error general: " . $e->getMessage();
+        logit("ERROR: $error");
+        echo json_encode(['success' => false, 'error' => $error]);
+        exit;
+    }
 }
 
 // Acción desconocida
