@@ -1,0 +1,20 @@
+# robots.txt for compratica.com
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://compratica.com/sitemap.xml
+
+# Disallow admin and private directories
+Disallow: /admin/
+Disallow: /logs/
+Disallow: /sessions/
+Disallow: /includes/
+Disallow: /config/
+Disallow: /mysql-pendientes/
+Disallow: /*.log$
+
+# Allow search engines to crawl main content
+Allow: /servicios.php
+Allow: /venta-garaje.php
+Allow: /index.html
