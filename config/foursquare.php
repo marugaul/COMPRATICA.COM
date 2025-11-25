@@ -1,8 +1,10 @@
 <?php
 /**
- * Configuración de Foursquare Places API
- * 50,000 llamadas gratis al mes
+ * Configuración de Foursquare Places API v2
+ * Usa OAuth con client_id y client_secret
  */
 return [
-    'api_key' => 'RELC3VJB43LJFSHPISXMK4LPR5QBYUD4U4ZRX5GAASIF4Y45'
+    'client_id' => 'AYKLI4NYVKCTZG2DSYNEYLR3PG301PSLLUQRMDQQPI5UWWQM',
+    'client_secret' => 'BOSQDTBWWL10LVUW4NOXUFZFCB0SGRP5YXWLM34EJK2Z2NLM',
+    'api_version' => '20231101'
 ];
