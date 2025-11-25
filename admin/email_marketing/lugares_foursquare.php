@@ -90,26 +90,16 @@ $total_pages = ceil($total_lugares / $per_page);
         <h2><i class="fas fa-list"></i> Base de Datos Foursquare</h2>
         <p class="text-muted">Lugares importados desde Foursquare Places API</p>
 
-        <!-- Navegación de pestañas -->
+        <!-- Navegación de pestañas Foursquare -->
         <ul class="nav nav-tabs mb-4">
             <li class="nav-item">
-                <a class="nav-link" href="?page=importar-lugares">
-                    <i class="fas fa-cloud-download-alt"></i> Importar OSM
-                </a>
-            </li>
-            <li class="nav-item">
                 <a class="nav-link" href="?page=importar-foursquare">
-                    <i class="fas fa-map-marker-alt"></i> Importar Foursquare
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="?page=enriquecer-emails">
-                    <i class="fas fa-envelope"></i> Enriquecer Emails
+                    <i class="fas fa-cloud-download-alt"></i> Importar
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link active" href="?page=lugares-foursquare">
-                    <i class="fas fa-list"></i> Ver BD Foursquare
+                    <i class="fas fa-database"></i> Ver Base de Datos
                 </a>
             </li>
         </ul>
