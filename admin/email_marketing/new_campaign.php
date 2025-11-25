@@ -14,6 +14,31 @@ try {
     $table_lugares_exists = false;
 }
 
+// Verificar si existe la tabla lugares_foursquare
+$table_foursquare_exists = false;
+try {
+    $check = $pdo->query("SHOW TABLES LIKE 'lugares_foursquare'")->fetch();
+    $table_foursquare_exists = (bool)$check;
+} catch (Exception $e) {
+    $table_foursquare_exists = false;
+}
+
+// Obtener categorías de lugares_foursquare si existe la tabla
+$categorias_foursquare = [];
+if ($table_foursquare_exists) {
+    try {
+        $categorias_foursquare = $pdo->query("
+            SELECT DISTINCT categoria, COUNT(*) as count
+            FROM lugares_foursquare
+            WHERE categoria IS NOT NULL AND categoria != ''
+            GROUP BY categoria
+            ORDER BY count DESC
+        ")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $categorias_foursquare = [];
+    }
+}
+
 // Obtener categorías únicas de places_cr
 $categories = $pdo->query("
     SELECT DISTINCT category, COUNT(*) as count
@@ -81,6 +106,9 @@ if ($table_lugares_exists) {
                         <option value="database">🗄️ Base de Datos (places_cr)</option>
                         <?php if ($table_lugares_exists): ?>
                         <option value="lugares_comerciales">🏪 Lugares Comerciales (OpenStreetMap)</option>
+                        <?php endif; ?>
+                        <?php if ($table_foursquare_exists): ?>
+                        <option value="lugares_foursquare">📍 Lugares Foursquare</option>
                         <?php endif; ?>
                         <option value="manual">✍️ Ingresar Manualmente</option>
                     </select>
@@ -386,6 +414,110 @@ if ($table_lugares_exists) {
                 </div>
             </div>
 
+            <!-- Opción: Foursquare -->
+            <div id="foursquareOption" class="mt-4" style="display: none;">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> <strong>Base de Datos Foursquare:</strong>
+                    Lugares comerciales verificados desde Foursquare Places API.
+                    Total de lugares: <strong><?= $table_foursquare_exists ? number_format($pdo->query("SELECT COUNT(*) FROM lugares_foursquare")->fetchColumn()) : 0 ?></strong>
+                    <?php if ($table_foursquare_exists): ?>
+                    | Con email: <strong><?= number_format($pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE email != '' AND email IS NOT NULL")->fetchColumn()) ?></strong>
+                    <?php endif; ?>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Seleccionar por Categoría</label>
+                    <div class="row">
+                        <div class="col-md-12 mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllFoursquareCategories()">
+                                <i class="fas fa-check-double"></i> Seleccionar Todas
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllFoursquareCategories()">
+                                <i class="fas fa-times"></i> Deseleccionar Todas
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <?php if ($table_foursquare_exists && !empty($categorias_foursquare)): ?>
+                            <?php foreach ($categorias_foursquare as $cat): ?>
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input foursquare-checkbox"
+                                           type="checkbox"
+                                           name="foursquare_categorias[]"
+                                           value="<?= h($cat['categoria']) ?>"
+                                           id="fsq_<?= h(str_replace(' ', '_', $cat['categoria'])) ?>">
+                                    <label class="form-check-label" for="fsq_<?= h(str_replace(' ', '_', $cat['categoria'])) ?>">
+                                        <?= h($cat['categoria']) ?>
+                                        <span class="badge bg-info"><?= number_format($cat['count']) ?></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>Nota:</strong>
+                    Solo se enviarán emails a lugares que tengan un email registrado.
+                    <?php if ($table_foursquare_exists): ?>
+                    Actualmente hay <strong><?= number_format($pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE email != '' AND email IS NOT NULL")->fetchColumn()) ?></strong> lugares con email.
+                    <?php endif; ?>
+                </div>
+
+                <!-- Botón para ver lugares específicos -->
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-primary" id="loadFoursquareBtn" onclick="loadFoursquareByCategorias()" disabled>
+                        <i class="fas fa-eye"></i> Ver Lugares Específicos para Seleccionar
+                    </button>
+                    <div id="foursquareLoadingMsg" style="display: none;" class="mt-2">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                        Cargando lugares...
+                    </div>
+                </div>
+
+                <!-- Tabla de lugares específicos -->
+                <div id="foursquareTable" style="display: none;" class="mt-4">
+                    <div class="card">
+                        <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                            <span><i class="fas fa-map-marker-alt"></i> Seleccionar Lugares Foursquare (<span id="foursquareCount">0</span> encontrados)</span>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-light" onclick="selectAllFoursquare()">
+                                    <i class="fas fa-check-square"></i> Todos
+                                </button>
+                                <button type="button" class="btn btn-sm btn-light" onclick="deselectAllFoursquare()">
+                                    <i class="fas fa-square"></i> Ninguno
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="sticky-top bg-light">
+                                        <tr>
+                                            <th width="40"><input type="checkbox" id="selectAllFoursquareCheckbox" onchange="toggleAllFoursquare(this)"></th>
+                                            <th>Nombre</th>
+                                            <th>Email</th>
+                                            <th>Teléfono</th>
+                                            <th>Ciudad</th>
+                                            <th>Categoría</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="foursquareTableBody">
+                                        <!-- Se llena dinámicamente con JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <strong>Seleccionados: <span id="selectedFoursquareCount" class="text-primary">0</span></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Opción: Manual -->
             <div id="manualOption" class="mt-4" style="display: none;">
                 <div class="mb-3">
@@ -535,6 +667,8 @@ document.getElementById('sourceType').addEventListener('change', function() {
     document.getElementById('databaseOption').style.display = 'none';
     const lugaresOption = document.getElementById('lugaresOption');
     if (lugaresOption) lugaresOption.style.display = 'none';
+    const foursquareOption = document.getElementById('foursquareOption');
+    if (foursquareOption) foursquareOption.style.display = 'none';
     document.getElementById('manualOption').style.display = 'none';
 
     if (this.value === 'excel') {
@@ -543,6 +677,8 @@ document.getElementById('sourceType').addEventListener('change', function() {
         document.getElementById('databaseOption').style.display = 'block';
     } else if (this.value === 'lugares_comerciales') {
         if (lugaresOption) lugaresOption.style.display = 'block';
+    } else if (this.value === 'lugares_foursquare') {
+        if (foursquareOption) foursquareOption.style.display = 'block';
     } else if (this.value === 'manual') {
         document.getElementById('manualOption').style.display = 'block';
     }
@@ -949,6 +1085,144 @@ function deselectAllLugares() {
 function updateSelectedLugaresCount() {
     const count = document.querySelectorAll('.lugar-checkbox:checked').length;
     const selectedCount = document.getElementById('selectedLugaresCount');
+    if (selectedCount) selectedCount.textContent = count;
+}
+
+// ============================================
+// Funciones para Foursquare
+// ============================================
+
+// Seleccionar/Deseleccionar todas las categorías de Foursquare
+function selectAllFoursquareCategories() {
+    document.querySelectorAll('.foursquare-checkbox').forEach(cb => cb.checked = true);
+    updateLoadFoursquareButton();
+}
+
+function deselectAllFoursquareCategories() {
+    document.querySelectorAll('.foursquare-checkbox').forEach(cb => cb.checked = false);
+    updateLoadFoursquareButton();
+    const foursquareTable = document.getElementById('foursquareTable');
+    if (foursquareTable) foursquareTable.style.display = 'none';
+}
+
+// Actualizar botón de cargar lugares Foursquare
+function updateLoadFoursquareButton() {
+    const checked = document.querySelectorAll('.foursquare-checkbox:checked').length;
+    const loadBtn = document.getElementById('loadFoursquareBtn');
+    if (loadBtn) {
+        loadBtn.disabled = checked === 0;
+    }
+}
+
+// Escuchar cambios en checkboxes de Foursquare
+document.addEventListener('DOMContentLoaded', function() {
+    const foursquareCheckboxes = document.querySelectorAll('.foursquare-checkbox');
+    foursquareCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateLoadFoursquareButton);
+    });
+});
+
+// Cargar lugares Foursquare por categorías
+function loadFoursquareByCategorias() {
+    const selectedCategorias = Array.from(document.querySelectorAll('.foursquare-checkbox:checked'))
+        .map(cb => cb.value);
+
+    if (selectedCategorias.length === 0) {
+        alert('Seleccione al menos una categoría');
+        return;
+    }
+
+    const loadBtn = document.getElementById('loadFoursquareBtn');
+    const loadingMsg = document.getElementById('foursquareLoadingMsg');
+    const foursquareTable = document.getElementById('foursquareTable');
+
+    if (loadBtn) loadBtn.disabled = true;
+    if (loadingMsg) loadingMsg.style.display = 'block';
+    if (foursquareTable) foursquareTable.style.display = 'none';
+
+    const formData = new FormData();
+    selectedCategorias.forEach(cat => formData.append('categorias[]', cat));
+
+    fetch('/admin/get_foursquare_by_categorias.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayFoursquareLugares(data.lugares);
+            const foursquareCount = document.getElementById('foursquareCount');
+            if (foursquareCount) foursquareCount.textContent = data.count;
+            if (foursquareTable) foursquareTable.style.display = 'block';
+        } else {
+            alert('Error al cargar lugares: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al cargar lugares');
+    })
+    .finally(() => {
+        if (loadBtn) loadBtn.disabled = false;
+        if (loadingMsg) loadingMsg.style.display = 'none';
+    });
+}
+
+// Mostrar lugares Foursquare en la tabla
+function displayFoursquareLugares(lugares) {
+    const tbody = document.getElementById('foursquareTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (lugares.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No se encontraron lugares con email en estas categorías</td></tr>';
+        return;
+    }
+
+    lugares.forEach(lugar => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="checkbox" class="foursquare-lugar-checkbox" value="${lugar.id}" data-foursquare='${JSON.stringify(lugar)}' onchange="updateSelectedFoursquareCount()"></td>
+            <td><strong>${escapeHtml(lugar.nombre || '')}</strong></td>
+            <td><small>${escapeHtml(lugar.email || '')}</small></td>
+            <td>${escapeHtml(lugar.telefono || '')}</td>
+            <td>${escapeHtml(lugar.ciudad || '')}</td>
+            <td><span class="badge bg-purple" style="background: #8b5cf6;">${escapeHtml(lugar.categoria || '')}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    updateSelectedFoursquareCount();
+}
+
+// Toggle all Foursquare lugares
+function toggleAllFoursquare(checkbox) {
+    document.querySelectorAll('.foursquare-lugar-checkbox').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateSelectedFoursquareCount();
+}
+
+function selectAllFoursquare() {
+    const selectAllCheckbox = document.getElementById('selectAllFoursquareCheckbox');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = true;
+        toggleAllFoursquare(selectAllCheckbox);
+    }
+}
+
+function deselectAllFoursquare() {
+    const selectAllCheckbox = document.getElementById('selectAllFoursquareCheckbox');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+        toggleAllFoursquare(selectAllCheckbox);
+    }
+}
+
+function updateSelectedFoursquareCount() {
+    const count = document.querySelectorAll('.foursquare-lugar-checkbox:checked').length;
+    const selectedCount = document.getElementById('selectedFoursquareCount');
     if (selectedCount) selectedCount.textContent = count;
 }
 </script>

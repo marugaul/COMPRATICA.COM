@@ -12,7 +12,6 @@ $with_email = 0;
 $with_phone = 0;
 $with_website = 0;
 $last_update = null;
-$api_key_configured = false;
 
 try {
     $check = $pdo->query("SHOW TABLES LIKE 'lugares_foursquare'")->fetch();
@@ -25,13 +24,6 @@ try {
         $with_website = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE website IS NOT NULL AND website != ''")->fetchColumn();
         $last_update_row = $pdo->query("SELECT MAX(updated_at) as last_update FROM lugares_foursquare")->fetch();
         $last_update = $last_update_row['last_update'];
-    }
-
-    // Verificar si hay API key configurada
-    $foursquare_config_file = __DIR__ . '/../../config/foursquare.php';
-    if (file_exists($foursquare_config_file)) {
-        $foursquare_config = require $foursquare_config_file;
-        $api_key_configured = !empty($foursquare_config['api_key']);
     }
 } catch (Exception $e) {
     $table_exists = false;
@@ -94,13 +86,6 @@ $ciudades_cr = [
 <!-- Estadísticas actuales -->
 <div class="row mb-4">
     <div class="col-md-3">
-        <div class="stat-card <?= $api_key_configured ? 'success' : 'warning' ?>">
-            <i class="fas fa-key fa-2x"></i>
-            <h3><?= $api_key_configured ? '✓' : '✗' ?></h3>
-            <p><?= $api_key_configured ? 'API Key Configurada' : 'API Key NO Configurada' ?></p>
-        </div>
-    </div>
-    <div class="col-md-3">
         <div class="stat-card <?= $table_exists ? 'success' : 'warning' ?>">
             <i class="fas fa-database fa-2x"></i>
             <h3><?= $table_exists ? '✓' : '✗' ?></h3>
@@ -121,26 +106,7 @@ $ciudades_cr = [
             <p>Con Email</p>
         </div>
     </div>
-</div>
-
-<!-- Estadísticas adicionales si hay datos -->
-<?php if ($total_lugares > 0): ?>
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
-            <i class="fas fa-phone fa-2x"></i>
-            <h3><?= number_format($with_phone) ?></h3>
-            <p>Con Teléfono (<?= $total_lugares > 0 ? round($with_phone/$total_lugares*100, 1) : 0 ?>%)</p>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="stat-card" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);">
-            <i class="fas fa-globe fa-2x"></i>
-            <h3><?= number_format($with_website) ?></h3>
-            <p>Con Website (<?= $total_lugares > 0 ? round($with_website/$total_lugares*100, 1) : 0 ?>%)</p>
-        </div>
-    </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="stat-card warning">
             <i class="fas fa-clock fa-2x"></i>
             <h3><?= $last_update ? date('d/m', strtotime($last_update)) : '-' ?></h3>
@@ -148,51 +114,26 @@ $ciudades_cr = [
         </div>
     </div>
 </div>
-<?php endif; ?>
 
-<!-- Configuración de API Key -->
+<!-- Estadísticas adicionales si hay datos -->
+<?php if ($total_lugares > 0): ?>
 <div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-key"></i> Paso 1: Configurar API Key de Foursquare</h5>
-            </div>
-            <div class="card-body">
-                <?php if (!$api_key_configured): ?>
-                    <div class="alert alert-info">
-                        <h5><i class="fas fa-info-circle"></i> ¿Cómo obtener tu API Key?</h5>
-                        <ol class="mb-0">
-                            <li>Ve a <a href="https://foursquare.com/developers" target="_blank">foursquare.com/developers</a></li>
-                            <li>Crea una cuenta o inicia sesión</li>
-                            <li>Crea un nuevo proyecto</li>
-                            <li>Copia tu API Key desde el dashboard</li>
-                        </ol>
-                    </div>
-                <?php else: ?>
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle"></i> <strong>API Key configurada correctamente.</strong>
-                        Puedes actualizar la API Key si lo necesitas.
-                    </div>
-                <?php endif; ?>
-
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-key"></i></span>
-                            <input type="text" id="apiKey" class="form-control"
-                                   placeholder="Pega tu API Key de Foursquare aquí..."
-                                   value="">
-                            <button id="btnGuardarApiKey" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Guardar API Key
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div id="resultApiKey" class="mt-3"></div>
-            </div>
+    <div class="col-md-6">
+        <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+            <i class="fas fa-phone fa-2x"></i>
+            <h3><?= number_format($with_phone) ?></h3>
+            <p>Con Teléfono (<?= $total_lugares > 0 ? round($with_phone/$total_lugares*100, 1) : 0 ?>%)</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="stat-card" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);">
+            <i class="fas fa-globe fa-2x"></i>
+            <h3><?= number_format($with_website) ?></h3>
+            <p>Con Website (<?= $total_lugares > 0 ? round($with_website/$total_lugares*100, 1) : 0 ?>%)</p>
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <!-- Crear Tabla -->
 <?php if (!$table_exists): ?>
@@ -200,7 +141,7 @@ $ciudades_cr = [
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-database"></i> Paso 2: Crear Tabla en Base de Datos</h5>
+                <h5 class="mb-0"><i class="fas fa-database"></i> Crear Tabla en Base de Datos</h5>
             </div>
             <div class="card-body">
                 <div class="alert alert-warning">
@@ -223,7 +164,7 @@ $ciudades_cr = [
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-download"></i> <?= $table_exists ? 'Paso 2' : 'Paso 3' ?>: Importar Lugares desde Foursquare</h5>
+                <h5 class="mb-0"><i class="fas fa-download"></i> Importar Lugares desde Foursquare</h5>
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
@@ -293,21 +234,17 @@ $ciudades_cr = [
                 <div class="text-center my-4">
                     <button id="btnImportar" class="btn btn-success btn-lg"
                             style="padding: 20px 50px; font-size: 20px;"
-                            <?= (!$table_exists || !$api_key_configured) ? 'disabled' : '' ?>>
+                            <?= !$table_exists ? 'disabled' : '' ?>>
                         <i class="fas fa-cloud-download-alt fa-2x"></i><br>
                         <span style="font-size: 24px; font-weight: bold;">IMPORTAR DESDE FOURSQUARE</span><br>
                         <small style="font-size: 14px; opacity: 0.9;">(Puede tomar varios minutos)</small>
                     </button>
                 </div>
 
-                <?php if (!$table_exists || !$api_key_configured): ?>
+                <?php if (!$table_exists): ?>
                 <div class="alert alert-warning text-center">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <?php if (!$api_key_configured): ?>
-                        Primero configura tu API Key de Foursquare.
-                    <?php elseif (!$table_exists): ?>
-                        Primero crea la tabla en la base de datos.
-                    <?php endif; ?>
+                    Primero crea la tabla en la base de datos.
                 </div>
                 <?php endif; ?>
 
@@ -414,42 +351,6 @@ document.querySelectorAll('.ciudad-individual').forEach(cb => {
         const marcadas = document.querySelectorAll('.ciudad-individual:checked');
         document.getElementById('ciudadTodas').checked = todas.length === marcadas.length;
     });
-});
-
-// Guardar API Key
-document.getElementById('btnGuardarApiKey').addEventListener('click', async function() {
-    const btn = this;
-    const apiKey = document.getElementById('apiKey').value.trim();
-    const resultDiv = document.getElementById('resultApiKey');
-
-    if (!apiKey) {
-        resultDiv.innerHTML = '<div class="alert alert-danger">Por favor ingresa una API Key</div>';
-        return;
-    }
-
-    btn.disabled = true;
-    resultDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Guardando...</div>';
-
-    try {
-        const response = await fetch('/admin/email_marketing/importar_foursquare_api.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'action=guardar_api_key&api_key=' + encodeURIComponent(apiKey)
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            resultDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> ' + result.message + '<br><small>Recargando página...</small></div>';
-            setTimeout(() => window.location.reload(), 1500);
-        } else {
-            resultDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ' + result.error + '</div>';
-            btn.disabled = false;
-        }
-    } catch (error) {
-        resultDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Error: ' + error.message + '</div>';
-        btn.disabled = false;
-    }
 });
 
 // Crear tabla
