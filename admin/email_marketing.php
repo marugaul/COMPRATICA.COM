@@ -228,6 +228,15 @@ function h($str) {
                     <li><a href="?page=importar-foursquare" class="<?= $page === 'importar-foursquare' ? 'active' : '' ?>">
                         <i class="fas fa-map-marker-alt"></i> Importar Foursquare
                     </a></li>
+                    <li><a href="?page=importar-yelp" class="<?= $page === 'importar-yelp' ? 'active' : '' ?>">
+                        <i class="fab fa-yelp" style="color: #d32323;"></i> Importar Yelp
+                    </a></li>
+                    <li><a href="?page=importar-paginas-amarillas" class="<?= $page === 'importar-paginas-amarillas' ? 'active' : '' ?>">
+                        <i class="fas fa-book" style="color: #f5c518;"></i> Páginas Amarillas
+                    </a></li>
+                    <li><a href="?page=buscar-lugares" class="<?= $page === 'buscar-lugares' ? 'active' : '' ?>">
+                        <i class="fas fa-search"></i> Buscar y Exportar
+                    </a></li>
                     <li><hr style="border-color: #334155; margin: 20px 15px;"></li>
                     <li><a href="../admin/dashboard.php">
                         <i class="fas fa-arrow-left"></i> Volver al Admin
@@ -282,6 +291,21 @@ function h($str) {
                         break;
                     case 'lugares-foursquare':
                         include __DIR__ . '/email_marketing/lugares_foursquare.php';
+                        break;
+                    case 'importar-yelp':
+                        include __DIR__ . '/email_marketing/importar_yelp.php';
+                        break;
+                    case 'lugares-yelp':
+                        include __DIR__ . '/email_marketing/lugares_yelp.php';
+                        break;
+                    case 'importar-paginas-amarillas':
+                        include __DIR__ . '/email_marketing/importar_paginas_amarillas.php';
+                        break;
+                    case 'lugares-paginas-amarillas':
+                        include __DIR__ . '/email_marketing/lugares_paginas_amarillas.php';
+                        break;
+                    case 'buscar-lugares':
+                        include __DIR__ . '/email_marketing/buscar_lugares.php';
                         break;
                     default:
                         echo '<div class="alert alert-warning">Página no encontrada</div>';
