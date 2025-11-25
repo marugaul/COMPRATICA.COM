@@ -1,7 +1,7 @@
 <?php
 /**
- * API para importar lugares desde Páginas Amarillas Costa Rica
- * Web scraping de https://www.paginasamarillas.cr
+ * API para importar lugares desde Directorios Costa Rica
+ * Web scraping de https://www.directorios-costarica.com
  */
 
 // Cargar configuración
@@ -104,7 +104,7 @@ if ($action === 'importar') {
         $categorias_json = $_POST['categorias'] ?? '[]';
         $categorias_seleccionadas = json_decode($categorias_json, true) ?: [];
 
-        // Categorías de Páginas Amarillas CR (URLs slug)
+        // Categorías de directorios Costa Rica (URLs de directorios-costarica.com)
         $todas_categorias = [
             'restaurantes' => 'Restaurantes',
             'hoteles' => 'Hoteles',
@@ -117,15 +117,26 @@ if ($action === 'importar') {
             'hospitales' => 'Hospitales',
             'abogados' => 'Abogados',
             'contadores' => 'Contadores',
-            'talleres-mecanicos' => 'Talleres Mecánicos',
+            'talleres' => 'Talleres Mecánicos',
             'gimnasios' => 'Gimnasios',
-            'salones-belleza' => 'Salones de Belleza',
+            'salones-de-belleza' => 'Salones de Belleza',
             'veterinarias' => 'Veterinarias',
             'escuelas' => 'Escuelas',
             'universidades' => 'Universidades',
             'inmobiliarias' => 'Inmobiliarias',
             'constructoras' => 'Constructoras',
-            'electrica' => 'Servicios Eléctricos'
+            'electricistas' => 'Servicios Eléctricos'
+        ];
+
+        // Provincias de Costa Rica para búsqueda
+        $provincias = [
+            'san-jose' => 'San José',
+            'alajuela' => 'Alajuela',
+            'cartago' => 'Cartago',
+            'heredia' => 'Heredia',
+            'guanacaste' => 'Guanacaste',
+            'puntarenas' => 'Puntarenas',
+            'limon' => 'Limón'
         ];
 
         if (empty($categorias_seleccionadas)) {
@@ -182,9 +193,9 @@ if ($action === 'importar') {
                 $total_categorias * 50
             );
 
-            // Intentar scraping de páginas amarillas
-            // Nota: Este es un ejemplo, la estructura real puede variar
-            $base_url = "https://www.paginasamarillas.cr/buscar/$cat_slug";
+            // Scraping de directorios-costarica.com (directorio real de CR)
+            // URL formato: https://www.directorios-costarica.com/san-jose/{categoria}/
+            $base_url = "https://www.directorios-costarica.com/san-jose/$cat_slug";
 
             for ($page = 1; $page <= 5; $page++) { // Máximo 5 páginas por categoría
                 $url = $page === 1 ? $base_url : "$base_url?page=$page";
