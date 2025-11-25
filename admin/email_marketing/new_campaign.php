@@ -784,6 +784,30 @@ if ($table_lugares_exists) {
         </div>
     </div>
 
+    <!-- Saludo Genérico -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-hand-wave"></i> Saludo Genérico
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Saludo cuando no hay nombre de contacto</label>
+                <input type="text" name="generic_greeting" id="genericGreeting" class="form-control"
+                       value="Estimado/a" placeholder="Ej: Estimado/a, Hola, Buen día">
+                <small class="text-muted">
+                    Este texto se usará en lugar del nombre cuando el destinatario no tenga nombre de contacto registrado.
+                </small>
+            </div>
+            <div class="alert alert-info mb-0">
+                <i class="fas fa-info-circle"></i> <strong>Ejemplos:</strong>
+                <ul class="mb-0 mt-2">
+                    <li><strong>Con nombre:</strong> "Hola Juan Pérez, ..."</li>
+                    <li><strong>Sin nombre:</strong> "Hola Estimado/a, ..."</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <!-- Configuración SMTP -->
     <div class="card">
         <div class="card-header">
@@ -1076,6 +1100,7 @@ function updateSelectedCount() {
 // Vista previa
 function previewCampaign() {
     const templateId = document.querySelector('input[name="template_id"]:checked')?.value;
+    const genericGreeting = document.getElementById('genericGreeting')?.value || 'Estimado/a';
 
     if (!templateId) {
         alert('Por favor selecciona una plantilla primero');
@@ -1104,7 +1129,7 @@ function previewCampaign() {
     document.body.appendChild(modal);
 
     // Cargar preview
-    fetch('/admin/email_marketing/templates_api.php?action=get_template_preview&template_id=' + templateId)
+    fetch('/admin/email_marketing/templates_api.php?action=get_template_preview&template_id=' + templateId + '&generic_greeting=' + encodeURIComponent(genericGreeting))
         .then(response => response.json())
         .then(data => {
             if (data.success) {
