@@ -14,6 +14,81 @@ try {
     $table_lugares_exists = false;
 }
 
+// Verificar si existe la tabla lugares_foursquare
+$table_foursquare_exists = false;
+try {
+    $check = $pdo->query("SHOW TABLES LIKE 'lugares_foursquare'")->fetch();
+    $table_foursquare_exists = (bool)$check;
+} catch (Exception $e) {
+    $table_foursquare_exists = false;
+}
+
+// Verificar si existe la tabla lugares_yelp
+$table_yelp_exists = false;
+try {
+    $check = $pdo->query("SHOW TABLES LIKE 'lugares_yelp'")->fetch();
+    $table_yelp_exists = (bool)$check;
+} catch (Exception $e) {
+    $table_yelp_exists = false;
+}
+
+// Verificar si existe la tabla lugares_paginas_amarillas
+$table_pa_exists = false;
+try {
+    $check = $pdo->query("SHOW TABLES LIKE 'lugares_paginas_amarillas'")->fetch();
+    $table_pa_exists = (bool)$check;
+} catch (Exception $e) {
+    $table_pa_exists = false;
+}
+
+// Obtener categorías de lugares_foursquare si existe la tabla
+$categorias_foursquare = [];
+if ($table_foursquare_exists) {
+    try {
+        $categorias_foursquare = $pdo->query("
+            SELECT DISTINCT categoria, COUNT(*) as count
+            FROM lugares_foursquare
+            WHERE categoria IS NOT NULL AND categoria != ''
+            GROUP BY categoria
+            ORDER BY count DESC
+        ")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $categorias_foursquare = [];
+    }
+}
+
+// Obtener categorías de lugares_yelp si existe la tabla
+$categorias_yelp = [];
+if ($table_yelp_exists) {
+    try {
+        $categorias_yelp = $pdo->query("
+            SELECT DISTINCT categoria, COUNT(*) as count
+            FROM lugares_yelp
+            WHERE categoria IS NOT NULL AND categoria != ''
+            GROUP BY categoria
+            ORDER BY count DESC
+        ")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $categorias_yelp = [];
+    }
+}
+
+// Obtener categorías de lugares_paginas_amarillas si existe la tabla
+$categorias_pa = [];
+if ($table_pa_exists) {
+    try {
+        $categorias_pa = $pdo->query("
+            SELECT DISTINCT categoria, COUNT(*) as count
+            FROM lugares_paginas_amarillas
+            WHERE categoria IS NOT NULL AND categoria != ''
+            GROUP BY categoria
+            ORDER BY count DESC
+        ")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $categorias_pa = [];
+    }
+}
+
 // Obtener categorías únicas de places_cr
 $categories = $pdo->query("
     SELECT DISTINCT category, COUNT(*) as count
@@ -81,6 +156,15 @@ if ($table_lugares_exists) {
                         <option value="database">🗄️ Base de Datos (places_cr)</option>
                         <?php if ($table_lugares_exists): ?>
                         <option value="lugares_comerciales">🏪 Lugares Comerciales (OpenStreetMap)</option>
+                        <?php endif; ?>
+                        <?php if ($table_foursquare_exists): ?>
+                        <option value="lugares_foursquare">📍 Lugares Foursquare</option>
+                        <?php endif; ?>
+                        <?php if ($table_yelp_exists): ?>
+                        <option value="lugares_yelp">⭐ Lugares Yelp (con teléfonos)</option>
+                        <?php endif; ?>
+                        <?php if ($table_pa_exists): ?>
+                        <option value="lugares_paginas_amarillas">📒 Páginas Amarillas CR</option>
                         <?php endif; ?>
                         <option value="manual">✍️ Ingresar Manualmente</option>
                     </select>
@@ -386,6 +470,273 @@ if ($table_lugares_exists) {
                 </div>
             </div>
 
+            <!-- Opción: Foursquare -->
+            <div id="foursquareOption" class="mt-4" style="display: none;">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> <strong>Base de Datos Foursquare:</strong>
+                    Lugares comerciales verificados desde Foursquare Places API.
+                    Total de lugares: <strong><?= $table_foursquare_exists ? number_format($pdo->query("SELECT COUNT(*) FROM lugares_foursquare")->fetchColumn()) : 0 ?></strong>
+                    <?php if ($table_foursquare_exists): ?>
+                    | Con email: <strong><?= number_format($pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE email != '' AND email IS NOT NULL")->fetchColumn()) ?></strong>
+                    <?php endif; ?>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Seleccionar por Categoría</label>
+                    <div class="row">
+                        <div class="col-md-12 mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllFoursquareCategories()">
+                                <i class="fas fa-check-double"></i> Seleccionar Todas
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllFoursquareCategories()">
+                                <i class="fas fa-times"></i> Deseleccionar Todas
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <?php if ($table_foursquare_exists && !empty($categorias_foursquare)): ?>
+                            <?php foreach ($categorias_foursquare as $cat): ?>
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input foursquare-checkbox"
+                                           type="checkbox"
+                                           name="foursquare_categorias[]"
+                                           value="<?= h($cat['categoria']) ?>"
+                                           id="fsq_<?= h(str_replace(' ', '_', $cat['categoria'])) ?>">
+                                    <label class="form-check-label" for="fsq_<?= h(str_replace(' ', '_', $cat['categoria'])) ?>">
+                                        <?= h($cat['categoria']) ?>
+                                        <span class="badge bg-info"><?= number_format($cat['count']) ?></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>Nota:</strong>
+                    Solo se enviarán emails a lugares que tengan un email registrado.
+                    <?php if ($table_foursquare_exists): ?>
+                    Actualmente hay <strong><?= number_format($pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE email != '' AND email IS NOT NULL")->fetchColumn()) ?></strong> lugares con email.
+                    <?php endif; ?>
+                </div>
+
+                <!-- Botón para ver lugares específicos -->
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-primary" id="loadFoursquareBtn" onclick="loadFoursquareByCategorias()" disabled>
+                        <i class="fas fa-eye"></i> Ver Lugares Específicos para Seleccionar
+                    </button>
+                    <div id="foursquareLoadingMsg" style="display: none;" class="mt-2">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                        Cargando lugares...
+                    </div>
+                </div>
+
+                <!-- Tabla de lugares específicos -->
+                <div id="foursquareTable" style="display: none;" class="mt-4">
+                    <div class="card">
+                        <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                            <span><i class="fas fa-map-marker-alt"></i> Seleccionar Lugares Foursquare (<span id="foursquareCount">0</span> encontrados)</span>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-light" onclick="selectAllFoursquare()">
+                                    <i class="fas fa-check-square"></i> Todos
+                                </button>
+                                <button type="button" class="btn btn-sm btn-light" onclick="deselectAllFoursquare()">
+                                    <i class="fas fa-square"></i> Ninguno
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="sticky-top bg-light">
+                                        <tr>
+                                            <th width="40"><input type="checkbox" id="selectAllFoursquareCheckbox" onchange="toggleAllFoursquare(this)"></th>
+                                            <th>Nombre</th>
+                                            <th>Email</th>
+                                            <th>Teléfono</th>
+                                            <th>Ciudad</th>
+                                            <th>Categoría</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="foursquareTableBody">
+                                        <!-- Se llena dinámicamente con JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <strong>Seleccionados: <span id="selectedFoursquareCount" class="text-primary">0</span></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Opción: Yelp -->
+            <div id="yelpOption" class="mt-4" style="display: none;">
+                <div class="alert alert-success">
+                    <i class="fab fa-yelp"></i> <strong>Base de Datos Yelp:</strong>
+                    Lugares con teléfonos verificados desde Yelp Fusion API.
+                    Total de lugares: <strong><?= $table_yelp_exists ? number_format($pdo->query("SELECT COUNT(*) FROM lugares_yelp")->fetchColumn()) : 0 ?></strong>
+                    <?php if ($table_yelp_exists): ?>
+                    | Con teléfono: <strong><?= number_format($pdo->query("SELECT COUNT(*) FROM lugares_yelp WHERE telefono != '' AND telefono IS NOT NULL")->fetchColumn()) ?></strong>
+                    <?php endif; ?>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Seleccionar por Categoría</label>
+                    <div class="row">
+                        <div class="col-md-12 mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="selectAllYelpCategories()">
+                                <i class="fas fa-check-double"></i> Seleccionar Todas
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllYelpCategories()">
+                                <i class="fas fa-times"></i> Deseleccionar Todas
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <?php if ($table_yelp_exists && !empty($categorias_yelp)): ?>
+                            <?php foreach ($categorias_yelp as $cat): ?>
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input yelp-checkbox"
+                                           type="checkbox"
+                                           name="yelp_categorias[]"
+                                           value="<?= h($cat['categoria']) ?>"
+                                           id="yelp_<?= h(str_replace(' ', '_', $cat['categoria'])) ?>">
+                                    <label class="form-check-label" for="yelp_<?= h(str_replace(' ', '_', $cat['categoria'])) ?>">
+                                        <?= h($cat['categoria']) ?>
+                                        <span class="badge bg-danger"><?= number_format($cat['count']) ?></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-phone"></i> <strong>Ventaja:</strong>
+                    Yelp incluye teléfonos verificados de los negocios.
+                </div>
+
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-danger" id="loadYelpBtn" onclick="loadYelpByCategorias()" disabled>
+                        <i class="fas fa-eye"></i> Ver Lugares Específicos para Seleccionar
+                    </button>
+                </div>
+
+                <div id="yelpTable" style="display: none;" class="mt-4">
+                    <div class="card">
+                        <div class="card-header text-white d-flex justify-content-between align-items-center" style="background: #d32323;">
+                            <span><i class="fab fa-yelp"></i> Seleccionar Lugares Yelp (<span id="yelpCount">0</span> encontrados)</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="sticky-top bg-light">
+                                        <tr>
+                                            <th width="40"><input type="checkbox" id="selectAllYelpCheckbox" onchange="toggleAllYelp(this)"></th>
+                                            <th>Nombre</th>
+                                            <th>Teléfono</th>
+                                            <th>Ciudad</th>
+                                            <th>Rating</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="yelpTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <strong>Seleccionados: <span id="selectedYelpCount" class="text-danger">0</span></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Opción: Páginas Amarillas -->
+            <div id="paginasAmarillasOption" class="mt-4" style="display: none;">
+                <div class="alert" style="background: #fff3cd; border-color: #f5c518;">
+                    <i class="fas fa-book" style="color: #f5c518;"></i> <strong>Base de Datos Páginas Amarillas:</strong>
+                    Directorio comercial de Costa Rica.
+                    Total de lugares: <strong><?= $table_pa_exists ? number_format($pdo->query("SELECT COUNT(*) FROM lugares_paginas_amarillas")->fetchColumn()) : 0 ?></strong>
+                    <?php if ($table_pa_exists): ?>
+                    | Con teléfono: <strong><?= number_format($pdo->query("SELECT COUNT(*) FROM lugares_paginas_amarillas WHERE telefono != '' AND telefono IS NOT NULL")->fetchColumn()) ?></strong>
+                    <?php endif; ?>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Seleccionar por Categoría</label>
+                    <div class="row">
+                        <div class="col-md-12 mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="selectAllPACategories()">
+                                <i class="fas fa-check-double"></i> Seleccionar Todas
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllPACategories()">
+                                <i class="fas fa-times"></i> Deseleccionar Todas
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <?php if ($table_pa_exists && !empty($categorias_pa)): ?>
+                            <?php foreach ($categorias_pa as $cat): ?>
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input pa-checkbox"
+                                           type="checkbox"
+                                           name="pa_categorias[]"
+                                           value="<?= h($cat['categoria']) ?>"
+                                           id="pa_<?= h(str_replace(' ', '_', $cat['categoria'])) ?>">
+                                    <label class="form-check-label" for="pa_<?= h(str_replace(' ', '_', $cat['categoria'])) ?>">
+                                        <?= h($cat['categoria']) ?>
+                                        <span class="badge bg-warning text-dark"><?= number_format($cat['count']) ?></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-warning text-dark" id="loadPABtn" onclick="loadPAByCategorias()" disabled>
+                        <i class="fas fa-eye"></i> Ver Lugares Específicos para Seleccionar
+                    </button>
+                </div>
+
+                <div id="paTable" style="display: none;" class="mt-4">
+                    <div class="card">
+                        <div class="card-header text-dark d-flex justify-content-between align-items-center" style="background: #f5c518;">
+                            <span><i class="fas fa-book"></i> Seleccionar Lugares Páginas Amarillas (<span id="paCount">0</span> encontrados)</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="sticky-top bg-light">
+                                        <tr>
+                                            <th width="40"><input type="checkbox" id="selectAllPACheckbox" onchange="toggleAllPA(this)"></th>
+                                            <th>Nombre</th>
+                                            <th>Teléfono</th>
+                                            <th>Email</th>
+                                            <th>Ciudad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="paTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <strong>Seleccionados: <span id="selectedPACount" class="text-warning">0</span></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Opción: Manual -->
             <div id="manualOption" class="mt-4" style="display: none;">
                 <div class="mb-3">
@@ -535,6 +886,12 @@ document.getElementById('sourceType').addEventListener('change', function() {
     document.getElementById('databaseOption').style.display = 'none';
     const lugaresOption = document.getElementById('lugaresOption');
     if (lugaresOption) lugaresOption.style.display = 'none';
+    const foursquareOption = document.getElementById('foursquareOption');
+    if (foursquareOption) foursquareOption.style.display = 'none';
+    const yelpOption = document.getElementById('yelpOption');
+    if (yelpOption) yelpOption.style.display = 'none';
+    const paginasAmarillasOption = document.getElementById('paginasAmarillasOption');
+    if (paginasAmarillasOption) paginasAmarillasOption.style.display = 'none';
     document.getElementById('manualOption').style.display = 'none';
 
     if (this.value === 'excel') {
@@ -543,6 +900,12 @@ document.getElementById('sourceType').addEventListener('change', function() {
         document.getElementById('databaseOption').style.display = 'block';
     } else if (this.value === 'lugares_comerciales') {
         if (lugaresOption) lugaresOption.style.display = 'block';
+    } else if (this.value === 'lugares_foursquare') {
+        if (foursquareOption) foursquareOption.style.display = 'block';
+    } else if (this.value === 'lugares_yelp') {
+        if (yelpOption) yelpOption.style.display = 'block';
+    } else if (this.value === 'lugares_paginas_amarillas') {
+        if (paginasAmarillasOption) paginasAmarillasOption.style.display = 'block';
     } else if (this.value === 'manual') {
         document.getElementById('manualOption').style.display = 'block';
     }
@@ -949,6 +1312,358 @@ function deselectAllLugares() {
 function updateSelectedLugaresCount() {
     const count = document.querySelectorAll('.lugar-checkbox:checked').length;
     const selectedCount = document.getElementById('selectedLugaresCount');
+    if (selectedCount) selectedCount.textContent = count;
+}
+
+// ============================================
+// Funciones para Foursquare
+// ============================================
+
+// Seleccionar/Deseleccionar todas las categorías de Foursquare
+function selectAllFoursquareCategories() {
+    document.querySelectorAll('.foursquare-checkbox').forEach(cb => cb.checked = true);
+    updateLoadFoursquareButton();
+}
+
+function deselectAllFoursquareCategories() {
+    document.querySelectorAll('.foursquare-checkbox').forEach(cb => cb.checked = false);
+    updateLoadFoursquareButton();
+    const foursquareTable = document.getElementById('foursquareTable');
+    if (foursquareTable) foursquareTable.style.display = 'none';
+}
+
+// Actualizar botón de cargar lugares Foursquare
+function updateLoadFoursquareButton() {
+    const checked = document.querySelectorAll('.foursquare-checkbox:checked').length;
+    const loadBtn = document.getElementById('loadFoursquareBtn');
+    if (loadBtn) {
+        loadBtn.disabled = checked === 0;
+    }
+}
+
+// Escuchar cambios en checkboxes de Foursquare
+document.addEventListener('DOMContentLoaded', function() {
+    const foursquareCheckboxes = document.querySelectorAll('.foursquare-checkbox');
+    foursquareCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateLoadFoursquareButton);
+    });
+});
+
+// Cargar lugares Foursquare por categorías
+function loadFoursquareByCategorias() {
+    const selectedCategorias = Array.from(document.querySelectorAll('.foursquare-checkbox:checked'))
+        .map(cb => cb.value);
+
+    if (selectedCategorias.length === 0) {
+        alert('Seleccione al menos una categoría');
+        return;
+    }
+
+    const loadBtn = document.getElementById('loadFoursquareBtn');
+    const loadingMsg = document.getElementById('foursquareLoadingMsg');
+    const foursquareTable = document.getElementById('foursquareTable');
+
+    if (loadBtn) loadBtn.disabled = true;
+    if (loadingMsg) loadingMsg.style.display = 'block';
+    if (foursquareTable) foursquareTable.style.display = 'none';
+
+    const formData = new FormData();
+    selectedCategorias.forEach(cat => formData.append('categorias[]', cat));
+
+    fetch('/admin/get_foursquare_by_categorias.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayFoursquareLugares(data.lugares);
+            const foursquareCount = document.getElementById('foursquareCount');
+            if (foursquareCount) foursquareCount.textContent = data.count;
+            if (foursquareTable) foursquareTable.style.display = 'block';
+        } else {
+            alert('Error al cargar lugares: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al cargar lugares');
+    })
+    .finally(() => {
+        if (loadBtn) loadBtn.disabled = false;
+        if (loadingMsg) loadingMsg.style.display = 'none';
+    });
+}
+
+// Mostrar lugares Foursquare en la tabla
+function displayFoursquareLugares(lugares) {
+    const tbody = document.getElementById('foursquareTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (lugares.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No se encontraron lugares con email en estas categorías</td></tr>';
+        return;
+    }
+
+    lugares.forEach(lugar => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="checkbox" class="foursquare-lugar-checkbox" value="${lugar.id}" data-foursquare='${JSON.stringify(lugar)}' onchange="updateSelectedFoursquareCount()"></td>
+            <td><strong>${escapeHtml(lugar.nombre || '')}</strong></td>
+            <td><small>${escapeHtml(lugar.email || '')}</small></td>
+            <td>${escapeHtml(lugar.telefono || '')}</td>
+            <td>${escapeHtml(lugar.ciudad || '')}</td>
+            <td><span class="badge bg-purple" style="background: #8b5cf6;">${escapeHtml(lugar.categoria || '')}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    updateSelectedFoursquareCount();
+}
+
+// Toggle all Foursquare lugares
+function toggleAllFoursquare(checkbox) {
+    document.querySelectorAll('.foursquare-lugar-checkbox').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateSelectedFoursquareCount();
+}
+
+function selectAllFoursquare() {
+    const selectAllCheckbox = document.getElementById('selectAllFoursquareCheckbox');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = true;
+        toggleAllFoursquare(selectAllCheckbox);
+    }
+}
+
+function deselectAllFoursquare() {
+    const selectAllCheckbox = document.getElementById('selectAllFoursquareCheckbox');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+        toggleAllFoursquare(selectAllCheckbox);
+    }
+}
+
+function updateSelectedFoursquareCount() {
+    const count = document.querySelectorAll('.foursquare-lugar-checkbox:checked').length;
+    const selectedCount = document.getElementById('selectedFoursquareCount');
+    if (selectedCount) selectedCount.textContent = count;
+}
+
+// ============================================
+// Funciones para Yelp
+// ============================================
+
+function selectAllYelpCategories() {
+    document.querySelectorAll('.yelp-checkbox').forEach(cb => cb.checked = true);
+    updateLoadYelpButton();
+}
+
+function deselectAllYelpCategories() {
+    document.querySelectorAll('.yelp-checkbox').forEach(cb => cb.checked = false);
+    updateLoadYelpButton();
+    const yelpTable = document.getElementById('yelpTable');
+    if (yelpTable) yelpTable.style.display = 'none';
+}
+
+function updateLoadYelpButton() {
+    const checked = document.querySelectorAll('.yelp-checkbox:checked').length;
+    const loadBtn = document.getElementById('loadYelpBtn');
+    if (loadBtn) loadBtn.disabled = checked === 0;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.yelp-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateLoadYelpButton);
+    });
+});
+
+function loadYelpByCategorias() {
+    const selectedCategorias = Array.from(document.querySelectorAll('.yelp-checkbox:checked'))
+        .map(cb => cb.value);
+
+    if (selectedCategorias.length === 0) {
+        alert('Seleccione al menos una categoría');
+        return;
+    }
+
+    const loadBtn = document.getElementById('loadYelpBtn');
+    const yelpTable = document.getElementById('yelpTable');
+
+    if (loadBtn) loadBtn.disabled = true;
+    if (yelpTable) yelpTable.style.display = 'none';
+
+    const formData = new FormData();
+    selectedCategorias.forEach(cat => formData.append('categorias[]', cat));
+
+    fetch('/admin/get_yelp_by_categorias.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayYelpLugares(data.lugares);
+            const yelpCount = document.getElementById('yelpCount');
+            if (yelpCount) yelpCount.textContent = data.count;
+            if (yelpTable) yelpTable.style.display = 'block';
+        } else {
+            alert('Error al cargar lugares: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al cargar lugares');
+    })
+    .finally(() => {
+        if (loadBtn) loadBtn.disabled = false;
+    });
+}
+
+function displayYelpLugares(lugares) {
+    const tbody = document.getElementById('yelpTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (lugares.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4">No se encontraron lugares</td></tr>';
+        return;
+    }
+
+    lugares.forEach(lugar => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="checkbox" class="yelp-lugar-checkbox" value="${lugar.id}" data-yelp='${JSON.stringify(lugar)}' onchange="updateSelectedYelpCount()"></td>
+            <td><strong>${escapeHtml(lugar.nombre || '')}</strong></td>
+            <td><i class="fas fa-phone text-success"></i> ${escapeHtml(lugar.telefono || '-')}</td>
+            <td>${escapeHtml(lugar.ciudad || '')}</td>
+            <td><span class="text-warning">${lugar.rating ? '★'.repeat(Math.floor(lugar.rating)) : '-'}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    updateSelectedYelpCount();
+}
+
+function toggleAllYelp(checkbox) {
+    document.querySelectorAll('.yelp-lugar-checkbox').forEach(cb => cb.checked = checkbox.checked);
+    updateSelectedYelpCount();
+}
+
+function updateSelectedYelpCount() {
+    const count = document.querySelectorAll('.yelp-lugar-checkbox:checked').length;
+    const selectedCount = document.getElementById('selectedYelpCount');
+    if (selectedCount) selectedCount.textContent = count;
+}
+
+// ============================================
+// Funciones para Páginas Amarillas
+// ============================================
+
+function selectAllPACategories() {
+    document.querySelectorAll('.pa-checkbox').forEach(cb => cb.checked = true);
+    updateLoadPAButton();
+}
+
+function deselectAllPACategories() {
+    document.querySelectorAll('.pa-checkbox').forEach(cb => cb.checked = false);
+    updateLoadPAButton();
+    const paTable = document.getElementById('paTable');
+    if (paTable) paTable.style.display = 'none';
+}
+
+function updateLoadPAButton() {
+    const checked = document.querySelectorAll('.pa-checkbox:checked').length;
+    const loadBtn = document.getElementById('loadPABtn');
+    if (loadBtn) loadBtn.disabled = checked === 0;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.pa-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateLoadPAButton);
+    });
+});
+
+function loadPAByCategorias() {
+    const selectedCategorias = Array.from(document.querySelectorAll('.pa-checkbox:checked'))
+        .map(cb => cb.value);
+
+    if (selectedCategorias.length === 0) {
+        alert('Seleccione al menos una categoría');
+        return;
+    }
+
+    const loadBtn = document.getElementById('loadPABtn');
+    const paTable = document.getElementById('paTable');
+
+    if (loadBtn) loadBtn.disabled = true;
+    if (paTable) paTable.style.display = 'none';
+
+    const formData = new FormData();
+    selectedCategorias.forEach(cat => formData.append('categorias[]', cat));
+
+    fetch('/admin/get_paginas_amarillas_by_categorias.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayPALugares(data.lugares);
+            const paCount = document.getElementById('paCount');
+            if (paCount) paCount.textContent = data.count;
+            if (paTable) paTable.style.display = 'block';
+        } else {
+            alert('Error al cargar lugares: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión al cargar lugares');
+    })
+    .finally(() => {
+        if (loadBtn) loadBtn.disabled = false;
+    });
+}
+
+function displayPALugares(lugares) {
+    const tbody = document.getElementById('paTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (lugares.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4">No se encontraron lugares</td></tr>';
+        return;
+    }
+
+    lugares.forEach(lugar => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="checkbox" class="pa-lugar-checkbox" value="${lugar.id}" data-pa='${JSON.stringify(lugar)}' onchange="updateSelectedPACount()"></td>
+            <td><strong>${escapeHtml(lugar.nombre || '')}</strong></td>
+            <td>${lugar.telefono ? '<i class="fas fa-phone text-success"></i> ' + escapeHtml(lugar.telefono) : '-'}</td>
+            <td>${lugar.email ? '<i class="fas fa-envelope text-info"></i> ' + escapeHtml(lugar.email) : '-'}</td>
+            <td>${escapeHtml(lugar.ciudad || '')}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    updateSelectedPACount();
+}
+
+function toggleAllPA(checkbox) {
+    document.querySelectorAll('.pa-lugar-checkbox').forEach(cb => cb.checked = checkbox.checked);
+    updateSelectedPACount();
+}
+
+function updateSelectedPACount() {
+    const count = document.querySelectorAll('.pa-lugar-checkbox:checked').length;
+    const selectedCount = document.getElementById('selectedPACount');
     if (selectedCount) selectedCount.textContent = count;
 }
 </script>
