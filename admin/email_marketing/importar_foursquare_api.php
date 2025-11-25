@@ -2,6 +2,7 @@
 /**
  * API para importar lugares desde Foursquare Places API
  * 50,000 llamadas gratis al mes
+ * Soporta seleccion de categorias y ciudades
  */
 
 // Cargar configuración
@@ -107,7 +108,7 @@ if ($action === 'guardar_api_key') {
     $content = "<?php\nreturn [\n    'api_key' => " . var_export($api_key, true) . "\n];\n";
     file_put_contents($config_file, $content);
 
-    echo json_encode(['success' => true, 'message' => 'API Key guardada']);
+    echo json_encode(['success' => true, 'message' => 'API Key guardada correctamente']);
     exit;
 }
 
@@ -116,7 +117,7 @@ if ($action === 'guardar_api_key') {
 // ============================================
 if ($action === 'importar') {
     updateFoursquareProgress(5, 'Iniciando importación desde Foursquare...', 0, 0);
-    set_time_limit(600); // 10 minutos
+    set_time_limit(1800); // 30 minutos
 
     try {
         // Verificar que la tabla existe
@@ -143,21 +144,67 @@ if ($action === 'importar') {
 
         updateFoursquareProgress(10, 'Conectando con Foursquare API...', 0, 0);
 
-        // Categorías principales para buscar
-        $categorias = [
-            'Restaurantes' => '13065',
-            'Cafés' => '13034,13035',
-            'Bares' => '13003,13004',
-            'Hoteles' => '19014',
-            'Tiendas' => '17000',
-            'Servicios' => '12000',
-            'Entretenimiento' => '10000'
+        // Obtener categorías y ciudades del request
+        $categorias_json = $_POST['categorias'] ?? '[]';
+        $ciudades_json = $_POST['ciudades'] ?? '[]';
+
+        $categorias_seleccionadas = json_decode($categorias_json, true) ?: [];
+        $ciudades_seleccionadas = json_decode($ciudades_json, true) ?: [];
+
+        // Categorías por defecto si no se especifican
+        $todas_categorias = [
+            '13065' => 'Restaurantes',
+            '13034,13035' => 'Cafés',
+            '13003,13004' => 'Bares',
+            '19014' => 'Hoteles',
+            '17000' => 'Tiendas',
+            '12000' => 'Servicios',
+            '10000' => 'Entretenimiento',
+            '15000' => 'Salud',
+            '18000' => 'Deportes'
         ];
+
+        // Ciudades por defecto si no se especifican
+        $todas_ciudades = [
+            'San José, Costa Rica',
+            'Alajuela, Costa Rica',
+            'Cartago, Costa Rica',
+            'Heredia, Costa Rica',
+            'Liberia, Costa Rica',
+            'Puntarenas, Costa Rica',
+            'Limón, Costa Rica',
+            'Escazú, Costa Rica',
+            'Santa Ana, Costa Rica',
+            'Guanacaste, Costa Rica',
+            'Jacó, Costa Rica',
+            'Manuel Antonio, Costa Rica',
+            'La Fortuna, Costa Rica',
+            'Tamarindo, Costa Rica',
+            'Puerto Viejo, Costa Rica'
+        ];
+
+        // Usar seleccionados o todos por defecto
+        if (empty($categorias_seleccionadas)) {
+            $categorias_seleccionadas = array_keys($todas_categorias);
+        }
+
+        if (empty($ciudades_seleccionadas)) {
+            $ciudades_seleccionadas = $todas_ciudades;
+        }
+
+        // Construir mapa de categorías
+        $categorias = [];
+        foreach ($categorias_seleccionadas as $cat_id) {
+            if (isset($todas_categorias[$cat_id])) {
+                $categorias[$cat_id] = $todas_categorias[$cat_id];
+            }
+        }
 
         $total_imported = 0;
         $total_updated = 0;
         $total_errors = 0;
-        $total_estimado = count($categorias) * 50; // Estimado
+        $total_busquedas = count($categorias) * count($ciudades_seleccionadas);
+        $busqueda_actual = 0;
 
         // Preparar statement
         $stmt = $pdo->prepare("
@@ -171,88 +218,111 @@ if ($action === 'importar') {
                 telefono = VALUES(telefono),
                 email = VALUES(email),
                 website = VALUES(website),
+                direccion = VALUES(direccion),
+                ciudad = VALUES(ciudad),
+                provincia = VALUES(provincia),
+                rating = VALUES(rating),
+                data_json = VALUES(data_json),
                 updated_at = CURRENT_TIMESTAMP
         ");
 
-        $current_progress = 0;
-        foreach ($categorias as $cat_nombre => $cat_id) {
-            updateFoursquareProgress(
-                15 + ($current_progress / count($categorias) * 70),
-                "Importando $cat_nombre...",
-                $total_imported + $total_updated,
-                $total_estimado
-            );
+        foreach ($ciudades_seleccionadas as $ciudad) {
+            foreach ($categorias as $cat_id => $cat_nombre) {
+                $busqueda_actual++;
+                $progreso = 15 + (($busqueda_actual / $total_busquedas) * 75);
 
-            // Buscar en Costa Rica
-            $url = "https://api.foursquare.com/v3/places/search?" . http_build_query([
-                'near' => 'Costa Rica',
-                'categories' => $cat_id,
-                'limit' => 50
-            ]);
+                updateFoursquareProgress(
+                    $progreso,
+                    "Buscando $cat_nombre en $ciudad...",
+                    $total_imported + $total_updated,
+                    $total_busquedas * 50 // Estimado
+                );
 
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                "Authorization: $api_key",
-                "Accept: application/json"
-            ]);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                // Hacer la búsqueda en Foursquare
+                $url = "https://api.foursquare.com/v3/places/search?" . http_build_query([
+                    'near' => $ciudad,
+                    'categories' => $cat_id,
+                    'limit' => 50,
+                    'fields' => 'fsq_id,name,location,categories,tel,email,website,rating,verified,geocodes'
+                ]);
 
-            $response = curl_exec($ch);
-            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    "Authorization: $api_key",
+                    "Accept: application/json"
+                ]);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
-            if ($http_code !== 200) {
-                $total_errors++;
-                continue;
-            }
+                $response = curl_exec($ch);
+                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curl_error = curl_error($ch);
+                curl_close($ch);
 
-            $data = json_decode($response, true);
-            $results = $data['results'] ?? [];
-
-            foreach ($results as $place) {
-                try {
-                    $stmt->execute([
-                        $place['fsq_id'] ?? null,
-                        $place['name'] ?? 'Sin nombre',
-                        $cat_nombre,
-                        $place['tel'] ?? '',
-                        $place['email'] ?? '',
-                        $place['website'] ?? '',
-                        $place['location']['formatted_address'] ?? '',
-                        $place['location']['locality'] ?? '',
-                        $place['location']['region'] ?? '',
-                        $place['geocodes']['main']['latitude'] ?? null,
-                        $place['geocodes']['main']['longitude'] ?? null,
-                        $place['rating'] ?? null,
-                        isset($place['verified']) ? 1 : 0,
-                        json_encode($place, JSON_UNESCAPED_UNICODE)
-                    ]);
-
-                    if ($stmt->rowCount() > 0) {
-                        $total_imported++;
-                    } else {
-                        $total_updated++;
-                    }
-                } catch (PDOException $e) {
+                if ($http_code !== 200) {
+                    error_log("Foursquare API Error: HTTP $http_code - $curl_error - URL: $url");
                     $total_errors++;
+                    continue;
                 }
-            }
 
-            $current_progress++;
-            usleep(500000); // 0.5 segundos entre categorías (rate limiting)
+                $data = json_decode($response, true);
+                $results = $data['results'] ?? [];
+
+                foreach ($results as $place) {
+                    try {
+                        // Extraer ciudad y provincia de la ubicación
+                        $place_ciudad = $place['location']['locality'] ?? '';
+                        $place_provincia = $place['location']['region'] ?? '';
+
+                        // Si no hay ciudad en los datos, usar la ciudad de búsqueda
+                        if (empty($place_ciudad)) {
+                            $parts = explode(',', $ciudad);
+                            $place_ciudad = trim($parts[0] ?? '');
+                        }
+
+                        $stmt->execute([
+                            $place['fsq_id'] ?? null,
+                            $place['name'] ?? 'Sin nombre',
+                            $cat_nombre,
+                            $place['tel'] ?? '',
+                            $place['email'] ?? '',
+                            $place['website'] ?? '',
+                            $place['location']['formatted_address'] ?? '',
+                            $place_ciudad,
+                            $place_provincia,
+                            $place['geocodes']['main']['latitude'] ?? null,
+                            $place['geocodes']['main']['longitude'] ?? null,
+                            $place['rating'] ?? null,
+                            isset($place['verified']) && $place['verified'] ? 1 : 0,
+                            json_encode($place, JSON_UNESCAPED_UNICODE)
+                        ]);
+
+                        if ($stmt->rowCount() > 0) {
+                            // Si es un INSERT nuevo o un UPDATE
+                            $total_imported++;
+                        }
+                    } catch (PDOException $e) {
+                        error_log("Foursquare DB Error: " . $e->getMessage());
+                        $total_errors++;
+                    }
+                }
+
+                // Rate limiting - esperar 300ms entre requests
+                usleep(300000);
+            }
         }
 
-        updateFoursquareProgress(95, 'Generando estadísticas finales...', $total_imported + $total_updated, $total_estimado);
+        updateFoursquareProgress(95, 'Generando estadísticas finales...', $total_imported, $total_busquedas * 50);
 
         // Estadísticas finales
         $total_db = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare")->fetchColumn();
-        $with_email = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE email != ''")->fetchColumn();
-        $with_phone = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE telefono != ''")->fetchColumn();
-        $with_website = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE website != ''")->fetchColumn();
+        $with_email = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE email IS NOT NULL AND email != ''")->fetchColumn();
+        $with_phone = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE telefono IS NOT NULL AND telefono != ''")->fetchColumn();
+        $with_website = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE website IS NOT NULL AND website != ''")->fetchColumn();
 
-        updateFoursquareProgress(100, '¡Importación completada!', $total_imported + $total_updated, $total_estimado);
+        updateFoursquareProgress(100, '¡Importación completada!', $total_imported, $total_db);
 
         echo json_encode([
             'success' => true,
@@ -274,6 +344,59 @@ if ($action === 'importar') {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
 
+    exit;
+}
+
+// ============================================
+// OBTENER ESTADÍSTICAS
+// ============================================
+if ($action === 'estadisticas') {
+    try {
+        $check = $pdo->query("SHOW TABLES LIKE 'lugares_foursquare'")->fetch();
+        if (!$check) {
+            echo json_encode(['success' => false, 'error' => 'Tabla no existe']);
+            exit;
+        }
+
+        $total = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare")->fetchColumn();
+        $with_email = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE email IS NOT NULL AND email != ''")->fetchColumn();
+        $with_phone = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE telefono IS NOT NULL AND telefono != ''")->fetchColumn();
+        $with_website = $pdo->query("SELECT COUNT(*) FROM lugares_foursquare WHERE website IS NOT NULL AND website != ''")->fetchColumn();
+
+        $top_categorias = $pdo->query("
+            SELECT categoria, COUNT(*) as total
+            FROM lugares_foursquare
+            GROUP BY categoria
+            ORDER BY total DESC
+            LIMIT 10
+        ")->fetchAll(PDO::FETCH_ASSOC);
+
+        $top_ciudades = $pdo->query("
+            SELECT ciudad, COUNT(*) as total
+            FROM lugares_foursquare
+            WHERE ciudad IS NOT NULL AND ciudad != ''
+            GROUP BY ciudad
+            ORDER BY total DESC
+            LIMIT 10
+        ")->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'success' => true,
+            'stats' => [
+                'total' => $total,
+                'with_email' => $with_email,
+                'with_phone' => $with_phone,
+                'with_website' => $with_website,
+                'email_percent' => $total > 0 ? round($with_email/$total*100, 1) : 0,
+                'phone_percent' => $total > 0 ? round($with_phone/$total*100, 1) : 0,
+                'website_percent' => $total > 0 ? round($with_website/$total*100, 1) : 0,
+                'top_categorias' => $top_categorias,
+                'top_ciudades' => $top_ciudades
+            ]
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
     exit;
 }
 

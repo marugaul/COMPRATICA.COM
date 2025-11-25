@@ -223,7 +223,10 @@ function h($str) {
                         <i class="fas fa-ban"></i> Blacklist
                     </a></li>
                     <li><a href="?page=importar-lugares" class="<?= $page === 'importar-lugares' ? 'active' : '' ?>">
-                        <i class="fas fa-cloud-download-alt"></i> Importar Lugares
+                        <i class="fas fa-cloud-download-alt"></i> Importar OSM
+                    </a></li>
+                    <li><a href="?page=importar-foursquare" class="<?= $page === 'importar-foursquare' ? 'active' : '' ?>">
+                        <i class="fas fa-map-marker-alt"></i> Importar Foursquare
                     </a></li>
                     <li><hr style="border-color: #334155; margin: 20px 15px;"></li>
                     <li><a href="../admin/dashboard.php">
@@ -273,6 +276,12 @@ function h($str) {
                         break;
                     case 'lugares-comerciales':
                         include __DIR__ . '/email_marketing/lugares_comerciales.php';
+                        break;
+                    case 'importar-foursquare':
+                        include __DIR__ . '/email_marketing/importar_foursquare.php';
+                        break;
+                    case 'lugares-foursquare':
+                        include __DIR__ . '/email_marketing/lugares_foursquare.php';
                         break;
                     default:
                         echo '<div class="alert alert-warning">Página no encontrada</div>';
