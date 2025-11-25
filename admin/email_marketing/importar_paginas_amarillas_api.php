@@ -85,7 +85,102 @@ if ($action === 'crear_tabla') {
 }
 
 // ============================================
-// IMPORTAR DESDE PAGINAS AMARILLAS
+// IMPORTAR DESDE CSV
+// ============================================
+if ($action === 'importar_csv') {
+    try {
+        $check = $pdo->query("SHOW TABLES LIKE 'lugares_paginas_amarillas'")->fetch();
+        if (!$check) {
+            echo json_encode(['success' => false, 'error' => 'La tabla no existe. Créala primero.']);
+            exit;
+        }
+
+        $data_json = $_POST['data'] ?? '[]';
+        $data = json_decode($data_json, true);
+
+        if (empty($data)) {
+            echo json_encode(['success' => false, 'error' => 'No hay datos para importar']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("
+            INSERT INTO lugares_paginas_amarillas (
+                pa_id, nombre, categoria, subcategoria, telefono, telefono2, email,
+                website, direccion, ciudad, provincia, codigo_postal,
+                latitud, longitud, horario, descripcion, data_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                nombre = VALUES(nombre),
+                telefono = VALUES(telefono),
+                telefono2 = VALUES(telefono2),
+                email = VALUES(email),
+                website = VALUES(website),
+                direccion = VALUES(direccion),
+                ciudad = VALUES(ciudad),
+                provincia = VALUES(provincia),
+                horario = VALUES(horario),
+                descripcion = VALUES(descripcion),
+                data_json = VALUES(data_json),
+                updated_at = CURRENT_TIMESTAMP
+        ");
+
+        $imported = 0;
+        $errors = 0;
+
+        foreach ($data as $row) {
+            try {
+                $nombre = $row['nombre'] ?? '';
+                if (empty($nombre)) continue;
+
+                $telefono = $row['telefono'] ?? $row['phone'] ?? $row['tel'] ?? '';
+                $email = $row['email'] ?? $row['correo'] ?? '';
+                $direccion = $row['direccion'] ?? $row['address'] ?? '';
+
+                $pa_id = md5($nombre . $telefono . $direccion . $email);
+
+                $stmt->execute([
+                    $pa_id,
+                    $nombre,
+                    $row['categoria'] ?? $row['category'] ?? 'CSV Import',
+                    $row['subcategoria'] ?? '',
+                    $telefono,
+                    $row['telefono2'] ?? $row['phone2'] ?? '',
+                    $email,
+                    $row['website'] ?? $row['web'] ?? $row['sitio_web'] ?? '',
+                    $direccion,
+                    $row['ciudad'] ?? $row['city'] ?? '',
+                    $row['provincia'] ?? $row['state'] ?? '',
+                    $row['codigo_postal'] ?? $row['zip'] ?? '',
+                    $row['latitud'] ?? $row['lat'] ?? null,
+                    $row['longitud'] ?? $row['lng'] ?? $row['lon'] ?? null,
+                    $row['horario'] ?? $row['hours'] ?? '',
+                    $row['descripcion'] ?? $row['description'] ?? '',
+                    json_encode($row, JSON_UNESCAPED_UNICODE)
+                ]);
+
+                if ($stmt->rowCount() > 0) {
+                    $imported++;
+                }
+            } catch (PDOException $e) {
+                error_log("CSV Import Error: " . $e->getMessage());
+                $errors++;
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'imported' => $imported,
+            'errors' => $errors
+        ]);
+
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// ============================================
+// IMPORTAR DESDE PAGINAS AMARILLAS (Web Scraping)
 // ============================================
 if ($action === 'importar') {
     updatePAProgress(5, 'Iniciando importación desde Páginas Amarillas...', 0, 0);

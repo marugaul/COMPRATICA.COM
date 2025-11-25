@@ -180,9 +180,86 @@ $categorias_pa = [
 
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle"></i> <strong>Nota:</strong>
-                    Esta función utiliza web scraping. Úsala de manera responsable y respetando los términos de uso del sitio.
-                    El proceso puede tomar varios minutos.
+                    El web scraping puede no funcionar si los sitios tienen protección anti-bots.
+                    <strong>Recomendamos usar la opción de importar desde CSV/Excel.</strong>
                 </div>
+
+                <!-- Tabs de método de importación -->
+                <ul class="nav nav-pills mb-4" id="importMethodTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="pill" href="#csvImport">
+                            <i class="fas fa-file-csv"></i> Importar desde CSV (Recomendado)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="pill" href="#webImport">
+                            <i class="fas fa-globe"></i> Web Scraping
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                <!-- TAB: Importar desde CSV -->
+                <div class="tab-pane fade show active" id="csvImport">
+                    <div class="card border-success mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-file-csv"></i> Importar desde archivo CSV/Excel</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> Formato del archivo:</h6>
+                                <p class="mb-2">El CSV debe tener las siguientes columnas (en cualquier orden):</p>
+                                <code>nombre, telefono, email, website, direccion, ciudad, categoria</code>
+                                <p class="mt-2 mb-0"><small>Columnas opcionales: telefono2, provincia, codigo_postal, horario, descripcion</small></p>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Seleccionar archivo CSV:</strong></label>
+                                <input type="file" id="csvFile" class="form-control form-control-lg" accept=".csv,.txt">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Separador:</strong></label>
+                                <select id="csvSeparator" class="form-select" style="width: 200px;">
+                                    <option value=",">Coma (,)</option>
+                                    <option value=";">Punto y coma (;)</option>
+                                    <option value="\t">Tabulador</option>
+                                </select>
+                            </div>
+
+                            <button id="btnImportarCSV" class="btn btn-success btn-lg" <?= !$table_exists ? 'disabled' : '' ?>>
+                                <i class="fas fa-upload"></i> Importar CSV
+                            </button>
+
+                            <div id="csvPreview" class="mt-4" style="display: none;">
+                                <h6>Vista previa (primeras 5 filas):</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered" id="previewTable"></table>
+                                </div>
+                            </div>
+
+                            <div id="csvResult" class="mt-3"></div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-secondary">
+                        <h6><i class="fas fa-download"></i> ¿Dónde obtener datos?</h6>
+                        <ul class="mb-0">
+                            <li><a href="https://directorioempresascostarica.com/" target="_blank">directorioempresascostarica.com</a> - Directorio con emails verificados (Excel)</li>
+                            <li><a href="https://www.kolbi1155.com/" target="_blank">kolbi1155.com</a> - Páginas amarillas de Kölbi</li>
+                            <li><a href="https://www.directorio.cr/" target="_blank">directorio.cr</a> - Directorio de Costa Rica</li>
+                            <li>Exporta contactos de Google Maps a CSV</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- TAB: Web Scraping -->
+                <div class="tab-pane fade" id="webImport">
+                    <div class="alert alert-danger mb-4">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Advertencia:</strong>
+                        El web scraping puede no funcionar debido a protecciones anti-bots en los sitios web.
+                        Si no obtiene resultados, use la opción de CSV.
+                    </div>
 
                 <!-- Opciones de importación -->
                 <div class="row mb-4">
@@ -239,6 +316,8 @@ $categorias_pa = [
                 </div>
 
                 <div id="resultArea" style="display: none;"></div>
+                </div><!-- End webImport tab -->
+                </div><!-- End tab-content -->
             </div>
         </div>
     </div>
@@ -472,4 +551,132 @@ function updateProgress(percent, message) {
     progressBar.textContent = Math.round(percent) + '%';
     progressMessage.textContent = message;
 }
+
+// ============================================
+// IMPORTAR DESDE CSV
+// ============================================
+let csvData = [];
+let csvHeaders = [];
+
+document.getElementById('csvFile')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const separator = document.getElementById('csvSeparator').value;
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+        const text = event.target.result;
+        const lines = text.split('\n').filter(line => line.trim());
+
+        if (lines.length < 2) {
+            alert('El archivo debe tener al menos una fila de encabezados y una de datos');
+            return;
+        }
+
+        // Parsear encabezados
+        csvHeaders = lines[0].split(separator).map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+        csvData = [];
+
+        // Parsear datos
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(separator).map(v => v.trim().replace(/^["']|["']$/g, ''));
+            if (values.length >= csvHeaders.length) {
+                const row = {};
+                csvHeaders.forEach((header, idx) => {
+                    row[header] = values[idx] || '';
+                });
+                csvData.push(row);
+            }
+        }
+
+        // Mostrar preview
+        if (csvData.length > 0) {
+            showCSVPreview();
+        }
+    };
+
+    reader.readAsText(file, 'UTF-8');
+});
+
+function showCSVPreview() {
+    const preview = document.getElementById('csvPreview');
+    const table = document.getElementById('previewTable');
+
+    let html = '<thead><tr>';
+    csvHeaders.forEach(h => html += `<th>${h}</th>`);
+    html += '</tr></thead><tbody>';
+
+    csvData.slice(0, 5).forEach(row => {
+        html += '<tr>';
+        csvHeaders.forEach(h => html += `<td>${row[h] || ''}</td>`);
+        html += '</tr>';
+    });
+    html += '</tbody>';
+
+    table.innerHTML = html;
+    preview.style.display = 'block';
+
+    document.getElementById('csvResult').innerHTML = `
+        <div class="alert alert-info">
+            <strong>${csvData.length}</strong> registros listos para importar.
+            Columnas detectadas: <code>${csvHeaders.join(', ')}</code>
+        </div>
+    `;
+}
+
+document.getElementById('btnImportarCSV')?.addEventListener('click', async function() {
+    if (csvData.length === 0) {
+        alert('Primero selecciona un archivo CSV');
+        return;
+    }
+
+    const requiredCols = ['nombre'];
+    const missing = requiredCols.filter(col => !csvHeaders.includes(col));
+    if (missing.length > 0) {
+        alert('Faltan columnas requeridas: ' + missing.join(', '));
+        return;
+    }
+
+    if (!confirm(`¿Importar ${csvData.length} registros desde el CSV?`)) {
+        return;
+    }
+
+    const btn = this;
+    const resultDiv = document.getElementById('csvResult');
+    btn.disabled = true;
+    resultDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Importando datos...</div>';
+
+    try {
+        const response = await fetch('/admin/email_marketing/importar_paginas_amarillas_api.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'action=importar_csv&data=' + encodeURIComponent(JSON.stringify(csvData))
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h5><i class="fas fa-check-circle"></i> ¡Importación exitosa!</h5>
+                    <p>
+                        <strong>${result.imported}</strong> registros importados<br>
+                        <strong>${result.errors}</strong> errores
+                    </p>
+                    <a href="?page=lugares-paginas-amarillas" class="btn btn-primary btn-sm">
+                        <i class="fas fa-list"></i> Ver Base de Datos
+                    </a>
+                </div>
+            `;
+            setTimeout(() => window.location.reload(), 3000);
+        } else {
+            resultDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ' + result.error + '</div>';
+        }
+    } catch (error) {
+        resultDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ' + error.message + '</div>';
+    }
+
+    btn.disabled = false;
+});
 </script>
