@@ -135,6 +135,10 @@ logDebug("RENDERING_PAGE");
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-site-verification" content="AdeaSmtzSb9lvmOfwaFt9QyFq5VzvkR8RdLaG_KGM5s" />
+  <meta name="description" content="Compratica es el marketplace de Costa Rica. Compra y vende productos online con pago seguro por SINPE QR y WhatsApp.">
+  <meta name="keywords" content="compratica, marketplace costa rica, compra venta costa rica, sinpe qr, tienda online costa rica">
+  <link rel="canonical" href="https://compratica.com/">
   <title><?php echo APP_NAME; ?> — Marketplace de Emprendedores</title>
 
   <!-- CSS crítico primero -->
