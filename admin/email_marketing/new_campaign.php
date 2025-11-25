@@ -1075,7 +1075,75 @@ function updateSelectedCount() {
 
 // Vista previa
 function previewCampaign() {
-    alert('Vista previa en desarrollo. Esta función mostrará un preview del email antes de enviar.');
+    const templateId = document.querySelector('input[name="template_id"]:checked')?.value;
+
+    if (!templateId) {
+        alert('Por favor selecciona una plantilla primero');
+        return;
+    }
+
+    // Mostrar loading
+    const modal = document.createElement('div');
+    modal.id = 'previewModal';
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+            <div style="background: white; width: 90%; max-width: 800px; max-height: 90vh; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 50px rgba(0,0,0,0.3);">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <h5 style="margin: 0;"><i class="fas fa-eye"></i> Vista Previa del Email</h5>
+                    <button onclick="closePreviewModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
+                </div>
+                <div id="previewContent" style="padding: 0; overflow-y: auto; max-height: calc(90vh - 60px);">
+                    <div style="text-align: center; padding: 50px;">
+                        <i class="fas fa-spinner fa-spin fa-3x" style="color: #667eea;"></i>
+                        <p style="margin-top: 15px; color: #666;">Cargando vista previa...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Cargar preview
+    fetch('/admin/email_marketing/templates_api.php?action=get_template_preview&template_id=' + templateId)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('previewContent').innerHTML = `
+                    <div style="padding: 15px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+                        <strong>Asunto:</strong> ${data.subject || 'Sin asunto'}
+                    </div>
+                    <div style="padding: 0;">
+                        <iframe id="previewFrame" style="width: 100%; height: 500px; border: none;"></iframe>
+                    </div>
+                `;
+                // Escribir contenido en el iframe
+                const iframe = document.getElementById('previewFrame');
+                const iframeDoc = iframe.contentWindow.document;
+                iframeDoc.open();
+                iframeDoc.write(data.html);
+                iframeDoc.close();
+            } else {
+                document.getElementById('previewContent').innerHTML = `
+                    <div style="padding: 30px; text-align: center; color: #dc3545;">
+                        <i class="fas fa-exclamation-circle fa-3x"></i>
+                        <p style="margin-top: 15px;">${data.error || 'Error al cargar la vista previa'}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            document.getElementById('previewContent').innerHTML = `
+                <div style="padding: 30px; text-align: center; color: #dc3545;">
+                    <i class="fas fa-exclamation-circle fa-3x"></i>
+                    <p style="margin-top: 15px;">Error de conexión: ${error.message}</p>
+                </div>
+            `;
+        });
+}
+
+function closePreviewModal() {
+    const modal = document.getElementById('previewModal');
+    if (modal) modal.remove();
 }
 
 // Validación antes de enviar
