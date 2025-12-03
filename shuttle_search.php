@@ -23,7 +23,34 @@ $userName = $_SESSION['name'] ?? 'Usuario';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shuttle Pura Vida 🇨🇷 - CompraTica</title>
+    <title>Shuttle Aeropuerto Costa Rica | Transporte Turístico - CompraTica</title>
+    <meta name="description" content="Reserva shuttle en Costa Rica. Transporte desde aeropuerto Juan Santamaría y Daniel Oduber a hoteles, playas y destinos turísticos. Precios económicos.">
+    <meta name="keywords" content="shuttle costa rica, transporte aeropuerto costa rica, shuttle san jose, shuttle liberia, transfer aeropuerto, shuttle tamarindo, shuttle manuel antonio, shuttle la fortuna">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://compratica.com/shuttle_search.php">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://compratica.com/shuttle_search.php">
+    <meta property="og:title" content="Shuttle Aeropuerto Costa Rica - Transporte Turístico">
+    <meta property="og:description" content="Reserva shuttle desde aeropuerto a cualquier destino en Costa Rica. Precios económicos y servicio confiable.">
+    <meta property="og:image" content="https://compratica.com/logo.png">
+
+    <!-- Schema.org para Shuttle Service -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "TravelAgency",
+      "name": "Shuttle Pura Vida - CompraTica",
+      "description": "Servicio de shuttle y transporte turístico en Costa Rica",
+      "url": "https://compratica.com/shuttle_search.php",
+      "areaServed": {
+        "@type": "Country",
+        "name": "Costa Rica"
+      },
+      "serviceType": ["Airport Shuttle", "Hotel Transfer", "Tourist Transportation"]
+    }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">

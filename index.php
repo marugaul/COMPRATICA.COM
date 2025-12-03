@@ -165,6 +165,42 @@ logDebug("RENDERING_PAGE");
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="shortcut icon" href="/favicon.ico">
 
+  <!-- Schema.org JSON-LD para SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Compratica",
+    "alternateName": "CompraTica Costa Rica",
+    "url": "https://compratica.com",
+    "description": "Marketplace de Costa Rica. Compra y vende productos online con SINPE QR.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://compratica.com/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Compratica",
+    "url": "https://compratica.com",
+    "logo": "https://compratica.com/logo.png",
+    "sameAs": [],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "availableLanguage": ["Spanish"]
+    },
+    "areaServed": {
+      "@type": "Country",
+      "name": "Costa Rica"
+    }
+  }
+  </script>
+
 </head>
 <body>
 

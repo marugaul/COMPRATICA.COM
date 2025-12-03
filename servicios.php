@@ -169,11 +169,38 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Servicios Profesionales Ticos — <?php echo APP_NAME; ?></title>
+  <title>Servicios Profesionales en Costa Rica | Abogados, Shuttle, Mantenimiento - CompraTica</title>
 
   <!-- SEO -->
-  <meta name="description" content="Encuentra servicios profesionales en Costa Rica: abogados, mantenimiento, tutorías y fletes. Reserva online con los mejores profesionales ticos.">
-  <meta name="keywords" content="servicios costa rica, abogados, mantenimiento, tutorías, fletes, profesionales ticos">
+  <meta name="description" content="Directorio de servicios profesionales en Costa Rica: abogados, shuttle aeropuerto, mantenimiento, tutorías y fletes. Contacta a los mejores profesionales ticos.">
+  <meta name="keywords" content="servicios costa rica, abogados costa rica, shuttle aeropuerto, mantenimiento hogar, tutores costa rica, fletes san jose, profesionales ticos, directorio servicios">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://compratica.com/servicios.php">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://compratica.com/servicios.php">
+  <meta property="og:title" content="Servicios Profesionales en Costa Rica">
+  <meta property="og:description" content="Encuentra abogados, shuttle, mantenimiento y más servicios en Costa Rica.">
+  <meta property="og:image" content="https://compratica.com/logo.png">
+
+  <!-- Schema.org para Servicios -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Servicios Profesionales en Costa Rica",
+    "description": "Directorio de servicios profesionales costarricenses",
+    "url": "https://compratica.com/servicios.php",
+    "itemListElement": [
+      {"@type": "ListItem", "position": 1, "name": "Abogados", "url": "https://compratica.com/services_list.php?category=abogados"},
+      {"@type": "ListItem", "position": 2, "name": "Shuttle Aeropuerto", "url": "https://compratica.com/shuttle_search.php"},
+      {"@type": "ListItem", "position": 3, "name": "Mantenimiento", "url": "https://compratica.com/services_list.php?category=mantenimiento"},
+      {"@type": "ListItem", "position": 4, "name": "Tutorías", "url": "https://compratica.com/services_list.php?category=tutorias"},
+      {"@type": "ListItem", "position": 5, "name": "Fletes", "url": "https://compratica.com/services_list.php?category=fletes"}
+    ]
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">

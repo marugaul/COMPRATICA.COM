@@ -1,27 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Página Principal -->
   <url>
     <loc>https://compratica.com/</loc>
-    <lastmod>2025-11-25</lastmod>
+    <lastmod>2025-12-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+
+  <!-- Servicios -->
   <url>
-    <loc>https://compratica.com/index.html</loc>
-    <lastmod>2025-11-25</lastmod>
+    <loc>https://compratica.com/servicios.php</loc>
+    <lastmod>2025-12-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
+
+  <!-- Shuttle Aeropuerto -->
   <url>
-    <loc>https://compratica.com/servicios.php</loc>
-    <lastmod>2025-11-25</lastmod>
+    <loc>https://compratica.com/shuttle_search.php</loc>
+    <lastmod>2025-12-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Categorías de Servicios -->
+  <url>
+    <loc>https://compratica.com/services_list.php?category=abogados</loc>
+    <lastmod>2025-12-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://compratica.com/venta-garaje.php</loc>
-    <lastmod>2025-11-25</lastmod>
+    <loc>https://compratica.com/services_list.php?category=mantenimiento</loc>
+    <lastmod>2025-12-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://compratica.com/services_list.php?category=tutorias</loc>
+    <lastmod>2025-12-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://compratica.com/services_list.php?category=fletes</loc>
+    <lastmod>2025-12-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Venta Garaje -->
+  <url>
+    <loc>https://compratica.com/venta-garaje.php</loc>
+    <lastmod>2025-12-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Carrito y Checkout -->
+  <url>
+    <loc>https://compratica.com/cart.php</loc>
+    <lastmod>2025-12-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Páginas Estáticas -->
+  <url>
+    <loc>https://compratica.com/index.html</loc>
+    <lastmod>2025-12-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
