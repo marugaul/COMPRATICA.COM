@@ -1,7 +1,7 @@
 <?php
 /**
  * Script para verificar y configurar la tabla users para OAuth
- * Ejecutar una sola vez
+ * Compatible con SQLite
  */
 
 require_once __DIR__ . '/includes/db.php';
@@ -24,72 +24,98 @@ try {
     echo "<div class='box'>";
     echo "<h2>1. Verificando estructura de tabla users</h2>";
 
-    // Verificar columnas existentes
-    $stmt = $pdo->query("SHOW COLUMNS FROM users");
-    $existingColumns = [];
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $existingColumns[] = $row['Field'];
-    }
+    // Verificar si la tabla users existe (compatible con SQLite)
+    $tables = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")->fetchAll(PDO::FETCH_COLUMN);
 
-    echo "<p>Columnas existentes: " . count($existingColumns) . "</p>";
-    echo "<details><summary>Ver todas las columnas</summary><ul>";
-    foreach ($existingColumns as $col) {
-        echo "<li><code>$col</code></li>";
+    if (empty($tables)) {
+        echo "<p class='warning'>⚠️ La tabla <code>users</code> no existe. Se creará automáticamente.</p>";
+
+        // Crear tabla users con columnas OAuth
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE,
+                name TEXT,
+                phone TEXT,
+                password_hash TEXT,
+                status TEXT DEFAULT 'active',
+                created_at TEXT DEFAULT (datetime('now')),
+                oauth_provider TEXT DEFAULT NULL,
+                oauth_id TEXT DEFAULT NULL
+            )
+        ");
+
+        echo "<p class='success'>✅ Tabla <code>users</code> creada con columnas OAuth</p>";
+    } else {
+        echo "<p class='success'>✅ Tabla <code>users</code> existe</p>";
+
+        // Obtener columnas existentes (compatible con SQLite)
+        $stmt = $pdo->query("PRAGMA table_info(users)");
+        $existingColumns = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $existingColumns[] = $row['name'];
+        }
+
+        echo "<p>Columnas existentes: " . count($existingColumns) . "</p>";
+        echo "<details><summary>Ver todas las columnas</summary><ul>";
+        foreach ($existingColumns as $col) {
+            echo "<li><code>$col</code></li>";
+        }
+        echo "</ul></details>";
     }
-    echo "</ul></details>";
     echo "</div>";
 
-    // Columnas necesarias para OAuth
-    $requiredColumns = [
-        'oauth_provider' => "VARCHAR(50) DEFAULT NULL COMMENT 'google, facebook, apple'",
-        'oauth_id' => "VARCHAR(255) DEFAULT NULL COMMENT 'ID único del proveedor OAuth'"
-    ];
-
+    // Verificar y agregar columnas OAuth
     echo "<div class='box'>";
     echo "<h2>2. Verificando columnas OAuth</h2>";
 
+    // Volver a obtener las columnas actuales
+    $stmt = $pdo->query("PRAGMA table_info(users)");
+    $currentColumns = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $currentColumns[] = $row['name'];
+    }
+
     $columnsToAdd = [];
-    foreach ($requiredColumns as $columnName => $definition) {
-        if (!in_array($columnName, $existingColumns)) {
-            $columnsToAdd[$columnName] = $definition;
-            echo "<p class='warning'>⚠️ Falta columna: <code>$columnName</code></p>";
-        } else {
-            echo "<p class='success'>✅ Columna existe: <code>$columnName</code></p>";
+    if (!in_array('oauth_provider', $currentColumns)) {
+        $columnsToAdd[] = ['name' => 'oauth_provider', 'definition' => 'TEXT DEFAULT NULL'];
+    }
+    if (!in_array('oauth_id', $currentColumns)) {
+        $columnsToAdd[] = ['name' => 'oauth_id', 'definition' => 'TEXT DEFAULT NULL'];
+    }
+
+    if (!empty($columnsToAdd)) {
+        echo "<h3>Agregando columnas faltantes</h3>";
+
+        foreach ($columnsToAdd as $column) {
+            try {
+                $sql = "ALTER TABLE users ADD COLUMN {$column['name']} {$column['definition']}";
+                $pdo->exec($sql);
+                echo "<p class='success'>✅ Columna <code>{$column['name']}</code> agregada exitosamente</p>";
+                echo "<pre>$sql</pre>";
+            } catch (Exception $e) {
+                echo "<p class='error'>❌ Error al agregar <code>{$column['name']}</code>: " . htmlspecialchars($e->getMessage()) . "</p>";
+            }
+        }
+    } else {
+        echo "<p class='success'>✅ Todas las columnas OAuth ya existen</p>";
+        if (in_array('oauth_provider', $currentColumns)) {
+            echo "<p class='success'>✅ Columna <code>oauth_provider</code> existe</p>";
+        }
+        if (in_array('oauth_id', $currentColumns)) {
+            echo "<p class='success'>✅ Columna <code>oauth_id</code> existe</p>";
         }
     }
     echo "</div>";
 
-    // Agregar columnas faltantes
-    if (!empty($columnsToAdd)) {
-        echo "<div class='box warning'>";
-        echo "<h2>3. Agregando columnas faltantes</h2>";
-
-        foreach ($columnsToAdd as $columnName => $definition) {
-            try {
-                $sql = "ALTER TABLE users ADD COLUMN $columnName $definition";
-                $pdo->exec($sql);
-                echo "<p class='success'>✅ Columna <code>$columnName</code> agregada exitosamente</p>";
-                echo "<pre>$sql</pre>";
-            } catch (Exception $e) {
-                echo "<p class='error'>❌ Error al agregar <code>$columnName</code>: " . htmlspecialchars($e->getMessage()) . "</p>";
-            }
-        }
-        echo "</div>";
-    } else {
-        echo "<div class='box success'>";
-        echo "<h2>3. Resultado</h2>";
-        echo "<p>✅ Todas las columnas OAuth ya existen. No se necesitan cambios.</p>";
-        echo "</div>";
-    }
-
-    // Verificar índices
+    // Verificar índices (SQLite maneja índices de manera diferente)
     echo "<div class='box'>";
-    echo "<h2>4. Verificando índices</h2>";
+    echo "<h2>3. Verificando índices</h2>";
 
-    $stmt = $pdo->query("SHOW INDEX FROM users");
+    $stmt = $pdo->query("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='users'");
     $indexes = [];
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $indexes[] = $row['Key_name'];
+        $indexes[] = $row['name'];
     }
 
     // Crear índice para oauth_provider + oauth_id si no existe
@@ -107,9 +133,16 @@ try {
 
     // Mostrar usuarios OAuth existentes
     echo "<div class='box'>";
-    echo "<h2>5. Usuarios OAuth existentes</h2>";
+    echo "<h2>4. Usuarios OAuth existentes</h2>";
 
-    if (in_array('oauth_provider', $existingColumns)) {
+    // Verificar nuevamente que las columnas existan antes de consultar
+    $stmt = $pdo->query("PRAGMA table_info(users)");
+    $finalColumns = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $finalColumns[] = $row['name'];
+    }
+
+    if (in_array('oauth_provider', $finalColumns)) {
         $stmt = $pdo->query("SELECT COUNT(*) as total FROM users WHERE oauth_provider IS NOT NULL");
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         $oauthUsers = $result['total'];
