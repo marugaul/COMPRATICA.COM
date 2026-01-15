@@ -120,9 +120,12 @@ try {
     require_once __DIR__ . '/includes/db.php';
     $pdo = db();
 
-    // Verificar si existe la columna oauth_provider
-    $stmt = $pdo->query("DESCRIBE users");
-    $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    // Verificar si existe la columna oauth_provider (compatible con SQLite)
+    $stmt = $pdo->query("PRAGMA table_info(users)");
+    $columns = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $columns[] = $row['name'];
+    }
 
     $hasOauthProvider = in_array('oauth_provider', $columns);
     $hasOauthId = in_array('oauth_id', $columns);
@@ -138,9 +141,9 @@ try {
     // Mostrar estructura de la tabla
     echo "<details><summary>Ver estructura de tabla users</summary>";
     echo "<pre>";
-    $stmt = $pdo->query("DESCRIBE users");
+    $stmt = $pdo->query("PRAGMA table_info(users)");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        echo $row['Field'] . " - " . $row['Type'] . "\n";
+        echo $row['name'] . " - " . $row['type'] . "\n";
     }
     echo "</pre></details>";
 
