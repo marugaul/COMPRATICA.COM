@@ -321,15 +321,15 @@ logDebug("RENDERING_PAGE");
       <span>Venta de Garaje</span>
     </a>
 
-    <a href="emprendedores.php" class="menu-item">
+    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
       <i class="fas fa-rocket"></i>
-      <span>Emprendedores</span>
-    </a>
-    
-    <a href="emprendedoras.php" class="menu-item">
+      <span>Emprendedores - Muy Pronto</span>
+    </div>
+
+    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
       <i class="fas fa-crown"></i>
-      <span>Emprendedoras</span>
-    </a>
+      <span>Emprendedoras - Muy Pronto</span>
+    </div>
     
     <div class="menu-divider"></div>
     
@@ -414,26 +414,26 @@ logDebug("RENDERING_PAGE");
     </a>
 
     <!-- EMPRENDEDORES -->
-    <a href="emprendedores.php" class="category-card category-emprendedores">
+    <div class="category-card category-emprendedores" style="opacity: 0.6; cursor: not-allowed; position: relative;">
       <div class="category-content">
         <div class="category-icon">
           <i class="fas fa-rocket"></i>
         </div>
         <h3 class="category-title">Emprendedores</h3>
-        <p class="category-description">Productos innovadores hechos por talentosos emprendedores ticos que están revolucionando el mercado nacional</p>
+        <p class="category-description" style="font-weight: bold; color: #ff6b35;">Muy Pronto</p>
       </div>
-    </a>
+    </div>
 
     <!-- EMPRENDEDORAS -->
-    <a href="emprendedoras.php" class="category-card category-emprendedoras">
+    <div class="category-card category-emprendedoras" style="opacity: 0.6; cursor: not-allowed; position: relative;">
       <div class="category-content">
         <div class="category-icon">
           <i class="fas fa-crown"></i>
         </div>
         <h3 class="category-title">Emprendedoras</h3>
-        <p class="category-description">Apoyá a mujeres ticas emprendedoras con productos únicos, artesanales y de la más alta calidad nacional</p>
+        <p class="category-description" style="font-weight: bold; color: #ff6b35;">Muy Pronto</p>
       </div>
-    </a>
+    </div>
   </div>
 </section>
 
@@ -530,8 +530,8 @@ logDebug("RENDERING_PAGE");
       <h3>Enlaces Rápidos</h3>
       <a href="servicios.php">Servicios</a>
       <a href="venta-garaje.php">Venta de Garaje</a>
-      <a href="emprendedores.php">Emprendedores</a>
-      <a href="emprendedoras.php">Emprendedoras</a>
+      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
+      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedoras (Muy Pronto)</span>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>
