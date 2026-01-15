@@ -1278,8 +1278,15 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
         $categoryUrl = ($cat['slug'] === 'shuttle-aeropuerto')
             ? 'shuttle_search.php'
             : 'services_list.php?category=' . urlencode($cat['slug']);
+
+        // Deshabilitar Shuttle (Muy Pronto)
+        $isDisabled = ($cat['slug'] === 'shuttle-aeropuerto');
         ?>
+        <?php if ($isDisabled): ?>
+        <div class="category-card" style="opacity: 0.6; cursor: not-allowed; pointer-events: none;">
+        <?php else: ?>
         <a href="<?php echo $categoryUrl; ?>" class="category-card <?php echo $cat['requires_online_payment'] ? 'payment-required' : ''; ?>">
+        <?php endif; ?>
           <div class="category-icon">
             <i class="<?php echo htmlspecialchars($cat['icon']); ?>"></i>
           </div>
@@ -1287,7 +1294,11 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
           <h3 class="category-title"><?php echo htmlspecialchars($cat['name']); ?></h3>
 
           <p class="category-description">
-            <?php echo htmlspecialchars($cat['description']); ?>
+            <?php if ($isDisabled): ?>
+              <strong style="color: #f59e0b;">Muy Pronto</strong>
+            <?php else: ?>
+              <?php echo htmlspecialchars($cat['description']); ?>
+            <?php endif; ?>
           </p>
 
           <div class="category-footer">
@@ -1309,7 +1320,11 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
               <i class="fas fa-arrow-right"></i>
             </span>
           </div>
+        <?php if ($isDisabled): ?>
+        </div>
+        <?php else: ?>
         </a>
+        <?php endif; ?>
       <?php endforeach; ?>
     <?php endif; ?>
   </div>
