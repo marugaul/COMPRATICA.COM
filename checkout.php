@@ -229,6 +229,30 @@ $pm = $st->fetch(PDO::FETCH_ASSOC) ?: [];
 $has_paypal = (!empty($pm['active_paypal']) && !empty($pm['paypal_email']));
 $has_sinpe  = (!empty($pm['active_sinpe'])  && !empty($pm['sinpe_phone']));
 
+// Opciones de envío del afiliado
+$st = $pdo->prepare("
+    SELECT enable_pickup, enable_free_shipping, enable_uber,
+           pickup_instructions, free_shipping_min_amount
+    FROM affiliate_shipping_options
+    WHERE affiliate_id = ?
+    LIMIT 1
+");
+$st->execute([$affiliate_id]);
+$shipping_opts = $st->fetch(PDO::FETCH_ASSOC);
+if (!$shipping_opts) {
+    // Si no tiene configuración, usar valores por defecto (solo pickup)
+    $shipping_opts = [
+        'enable_pickup' => 1,
+        'enable_free_shipping' => 0,
+        'enable_uber' => 0,
+        'pickup_instructions' => '',
+        'free_shipping_min_amount' => 0
+    ];
+}
+$show_pickup = (bool)$shipping_opts['enable_pickup'];
+$show_free_shipping = (bool)$shipping_opts['enable_free_shipping'];
+$show_uber = (bool)$shipping_opts['enable_uber'] && $has_pickup_location;
+
 $flash_error = $_SESSION['error'] ?? '';
 if ($flash_error) unset($_SESSION['error']);
 
@@ -883,47 +907,65 @@ foreach ($_SESSION['cart'] as $it) {
           </h2>
           
           <div class="shipping-options">
+            <?php if ($show_pickup): ?>
             <!-- Opción 1: Recoger en tienda -->
             <label class="shipping-option" data-cost="0">
               <input type="radio" name="shipping_method" value="pickup" required>
               <span class="shipping-icon">🏪</span>
               <div class="shipping-info">
                 <h4>Recoger en tienda</h4>
-                <p>Coordina con el vendedor para recoger tu pedido</p>
+                <p><?= !empty($shipping_opts['pickup_instructions']) ? htmlspecialchars($shipping_opts['pickup_instructions']) : 'Coordina con el vendedor para recoger tu pedido' ?></p>
               </div>
               <span class="shipping-cost">GRATIS</span>
             </label>
+            <?php endif; ?>
 
-            <!-- Opción 2: Envío gratis (si el vendedor lo ofrece) -->
-            <!-- Por ahora comentado, se puede activar si el afiliado configura envío gratis
+            <?php if ($show_free_shipping): ?>
+            <!-- Opción 2: Envío gratis -->
             <label class="shipping-option" data-cost="0">
-              <input type="radio" name="shipping_method" value="free_shipping">
+              <input type="radio" name="shipping_method" value="free_shipping" required>
               <span class="shipping-icon">🎁</span>
               <div class="shipping-info">
                 <h4>Envío gratis</h4>
                 <p>El vendedor cubre los costos de envío</p>
+                <?php if ((float)$shipping_opts['free_shipping_min_amount'] > 0): ?>
+                  <p style="color: var(--success); font-size: 0.85rem;">
+                    <?php if ($subtotal >= (float)$shipping_opts['free_shipping_min_amount']): ?>
+                      ✅ ¡Cumples con el monto mínimo!
+                    <?php else: ?>
+                      ⚠️ Mínimo: <?= fmt_price_local($shipping_opts['free_shipping_min_amount'], $currency) ?>
+                    <?php endif; ?>
+                  </p>
+                <?php endif; ?>
               </div>
               <span class="shipping-cost">GRATIS</span>
             </label>
-            -->
+            <?php endif; ?>
 
+            <?php if ($show_uber): ?>
             <!-- Opción 3: Envío por Uber -->
-            <label class="shipping-option <?= $has_pickup_location ? '' : 'disabled' ?>" data-cost="0" id="uber-option">
-              <input type="radio" name="shipping_method" value="uber" <?= $has_pickup_location ? '' : 'disabled' ?>>
+            <label class="shipping-option" data-cost="0" id="uber-option">
+              <input type="radio" name="shipping_method" value="uber" required>
               <span class="shipping-icon">🚗</span>
               <div class="shipping-info">
                 <h4>Envío por Uber</h4>
                 <p>Entrega rápida con conductor de Uber</p>
-                <?php if (!$has_pickup_location): ?>
-                  <p style="color: var(--danger); font-weight: 600;">⚠️ No disponible - vendedor debe configurar ubicación</p>
-                <?php else: ?>
-                  <p style="color: var(--gray-400); font-size: 0.85rem;">
-                    Se calculará el costo al ingresar tu dirección
-                  </p>
-                <?php endif; ?>
+                <p style="color: var(--gray-400); font-size: 0.85rem;">
+                  Se calculará el costo al ingresar tu dirección
+                </p>
               </div>
               <span class="shipping-cost calculating" id="uber-cost">-</span>
             </label>
+            <?php endif; ?>
+
+            <?php if (!$show_pickup && !$show_free_shipping && !$show_uber): ?>
+            <!-- Mensaje si no hay opciones de envío configuradas -->
+            <div class="alert" style="background: #fff3cd; color: #856404; padding: 1rem; border-radius: 8px; text-align: center;">
+              <i class="fas fa-exclamation-triangle"></i>
+              <strong>El vendedor aún no ha configurado las opciones de envío.</strong>
+              <p style="margin: 0.5rem 0 0 0;">Por favor, contacta al vendedor para coordinar la entrega.</p>
+            </div>
+            <?php endif; ?>
           </div>
 
           <!-- ⭐ SECCIÓN PARA DIRECCIÓN DE ENTREGA (Solo visible si selecciona Uber) -->

@@ -263,7 +263,8 @@ if (function_exists('mb_internal_encoding')) {
     <a class="btn" href="sales.php">Mis espacios</a>
     <a class="btn" href="products.php">Mis productos</a>
     <a class="btn" href="orders.php">Mis pedidos</a>
-    <a class="btn" href="sales_pay_options.php">&#128179; Configurar mis métodos de pago</a>
+    <a class="btn" href="sales_pay_options.php">&#128179; Métodos de pago</a>
+    <a class="btn" href="shipping_options.php">🚚 Opciones de envío</a>
   </nav>
 </header>
 
@@ -272,6 +273,30 @@ if (function_exists('mb_internal_encoding')) {
     <i class="fas fa-tachometer-alt"></i> Panel de Control
   </h2>
   
+  <?php
+  // Verificar si el afiliado ha configurado opciones de envío
+  $shipping_config = $pdo->query("SELECT * FROM affiliate_shipping_options WHERE affiliate_id=$aff_id LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+  $has_shipping_config = !empty($shipping_config);
+  $no_shipping_enabled = $has_shipping_config && !$shipping_config['enable_pickup'] && !$shipping_config['enable_free_shipping'] && !$shipping_config['enable_uber'];
+  ?>
+
+  <?php if (!$has_shipping_config || $no_shipping_enabled): ?>
+    <!-- ⚠️ Alerta si no tiene opciones de envío configuradas -->
+    <div class="alert-box warning">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-content">
+        <h4>¡Configura tus opciones de envío!</h4>
+        <p>
+          Aún no has configurado las opciones de envío que quieres ofrecer a tus clientes.
+          Configura al menos una opción para que puedan completar sus compras.
+          <a href="shipping_options.php" style="color: #d35400; font-weight: 600; margin-left: 0.5rem;">
+            Configurar ahora →
+          </a>
+        </p>
+      </div>
+    </div>
+  <?php endif; ?>
+
   <?php if ($uber_stats['locations_missing'] > 0 && $stats['sales'] > 0): ?>
     <!-- ⭐ Alerta si hay espacios sin ubicación -->
     <div class="alert-box warning">
@@ -279,7 +304,7 @@ if (function_exists('mb_internal_encoding')) {
       <div class="alert-content">
         <h4>¡Configura las ubicaciones de recogida!</h4>
         <p>
-          Tienes <strong><?= $uber_stats['locations_missing'] ?> espacio(s)</strong> 
+          Tienes <strong><?= $uber_stats['locations_missing'] ?> espacio(s)</strong>
           sin ubicación configurada. Configúralas para habilitar envíos por Uber.
           <a href="sales.php" style="color: #d35400; font-weight: 600; margin-left: 0.5rem;">
             Configurar ahora →
@@ -294,7 +319,7 @@ if (function_exists('mb_internal_encoding')) {
       <div class="alert-content">
         <h4 style="color: #155724;">¡Excelente!</h4>
         <p style="color: #155724;">
-          Todos tus espacios tienen ubicación de recogida configurada. 
+          Todos tus espacios tienen ubicación de recogida configurada.
           Tus clientes pueden elegir envío por Uber.
         </p>
       </div>
