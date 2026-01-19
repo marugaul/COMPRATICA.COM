@@ -7,6 +7,16 @@ require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/affiliate_auth.php';
 
+// Configurar directorio de sesiones con fallback a /tmp
+$__sessPath = __DIR__ . '/../sessions';
+if (!is_dir($__sessPath)) @mkdir($__sessPath, 0755, true);
+if (is_dir($__sessPath) && is_writable($__sessPath)) {
+    ini_set('session.save_path', $__sessPath);
+} else {
+    // Fallback a /tmp si no se puede escribir en sessions
+    ini_set('session.save_path', '/tmp');
+}
+
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
