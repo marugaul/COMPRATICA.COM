@@ -8,9 +8,12 @@ error_reporting(E_ALL);
 
 /* ==== SESIÓN (alineada) ==== */
 $__sessPath = __DIR__ . '/sessions';
-if (!is_dir($__sessPath)) @mkdir($__sessPath, 0700, true);
+if (!is_dir($__sessPath)) @mkdir($__sessPath, 0755, true);
 if (is_dir($__sessPath) && is_writable($__sessPath)) {
     ini_set('session.save_path', $__sessPath);
+} else {
+    // Fallback a /tmp si no se puede escribir en sessions
+    ini_set('session.save_path', '/tmp');
 }
 $__isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 
