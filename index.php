@@ -21,9 +21,12 @@ logDebug("INDEX_START", ['uri' => $_SERVER['REQUEST_URI']]);
 
 // ============= CONFIGURACIÓN DE SESIONES =============
 $__sessPath = __DIR__ . '/sessions';
-if (!is_dir($__sessPath)) @mkdir($__sessPath, 0700, true);
+if (!is_dir($__sessPath)) @mkdir($__sessPath, 0755, true);
 if (is_dir($__sessPath) && is_writable($__sessPath)) {
     ini_set('session.save_path', $__sessPath);
+} else {
+    // Fallback a /tmp si no se puede escribir en sessions
+    ini_set('session.save_path', '/tmp');
 }
 
 logDebug("SESSION_PATH_SET", ['path' => $__sessPath]);
