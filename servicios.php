@@ -1173,15 +1173,15 @@ logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_ser
       <span>Venta de Garaje</span>
     </a>
 
-    <a href="emprendedores.php" class="menu-item">
+    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
       <i class="fas fa-rocket"></i>
-      <span>Emprendedores</span>
-    </a>
+      <span>Emprendedores - Muy Pronto</span>
+    </div>
 
-    <a href="emprendedoras.php" class="menu-item">
+    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
       <i class="fas fa-crown"></i>
-      <span>Emprendedoras</span>
-    </a>
+      <span>Emprendedoras - Muy Pronto</span>
+    </div>
 
     <div class="menu-divider"></div>
 

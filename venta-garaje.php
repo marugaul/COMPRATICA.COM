@@ -1110,15 +1110,15 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <span>Servicios</span>
     </a>
     
-    <a href="emprendedores.php" class="menu-item">
+    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
       <i class="fas fa-rocket"></i>
-      <span>Emprendedores</span>
-    </a>
-    
-    <a href="emprendedoras.php" class="menu-item">
+      <span>Emprendedores - Muy Pronto</span>
+    </div>
+
+    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
       <i class="fas fa-crown"></i>
-      <span>Emprendedoras</span>
-    </a>
+      <span>Emprendedoras - Muy Pronto</span>
+    </div>
     
     <div class="menu-divider"></div>
     
@@ -1268,8 +1268,8 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <h3>Enlaces Rápidos</h3>
       <a href="index.php">Inicio</a>
       <a href="servicios.php">Servicios</a>
-      <a href="emprendedores.php">Emprendedores</a>
-      <a href="emprendedoras.php">Emprendedoras</a>
+      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
+      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedoras (Muy Pronto)</span>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>
