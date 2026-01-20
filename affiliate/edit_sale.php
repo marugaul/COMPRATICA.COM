@@ -146,61 +146,227 @@ if ($sale['end_at']) {
   <link rel="stylesheet" href="../assets/style.css?v=23">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    /* Variables de color corporativas */
+    :root {
+      --primary: #2c3e50;
+      --primary-light: #34495e;
+      --accent: #3498db;
+      --accent-hover: #2980b9;
+      --success: #27ae60;
+      --warning: #f39c12;
+      --danger: #e74c3c;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-600: #6b7280;
+      --gray-800: #1f2937;
+    }
+
+    body {
+      background: var(--gray-50);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Header empresarial */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      padding: 1.5rem 2rem;
+    }
+
+    .header .logo {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Cards mejorados */
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid var(--gray-200);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .card h3 {
+      color: var(--primary);
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0 0 1.5rem 0;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Formulario mejorado */
+    .form label {
+      font-weight: 500;
+      color: var(--gray-800);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .form .input {
+      border: 2px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+
+    .form .input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+      outline: none;
+    }
+
+    /* Botones mejorados */
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+    }
+
+    .btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+    }
+
+    /* Privacy section */
+    .privacy-section {
+      background: var(--gray-50);
+      border: 2px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .privacy-section h4 {
+      margin-top: 0;
+      color: var(--primary);
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Alert mejorado */
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-left: 4px solid;
+    }
+
+    .alert.success {
+      background: rgba(39, 174, 96, 0.1);
+      border-color: var(--success);
+      color: #155724;
+    }
+
+    .alert.error {
+      background: rgba(231, 76, 60, 0.1);
+      border-color: var(--danger);
+      color: #c0392b;
+    }
+
+    /* Preview de imagen */
     .preview-container {
       margin-top: 1rem;
-    }
-    .preview-image {
-      max-width: 300px;
-      max-height: 200px;
+      padding: 1rem;
+      background: var(--gray-50);
       border-radius: 8px;
-      margin-top: 0.5rem;
-      border: 2px solid #e2e8f0;
+      border: 2px dashed var(--gray-300);
     }
-    .remove-image-btn {
-      display: inline-block;
-      margin-top: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: #e53e3e;
-      color: white;
-      border-radius: 6px;
-      text-decoration: none;
-      font-size: 0.875rem;
-      cursor: pointer;
-      border: none;
+
+    .preview-image {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .remove-image-btn:hover {
-      background: #c53030;
+
+    /* Grid para formulario */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
     }
-    .alert.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-      padding: 1rem;
-      border-radius: 6px;
-      margin-bottom: 1rem;
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
     }
-    .alert.error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-      padding: 1rem;
-      border-radius: 6px;
-      margin-bottom: 1rem;
-    }
+
     #access_code {
       transition: all 0.3s ease;
     }
+
     #generateCodeBtn {
       transition: all 0.3s ease;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    #generateCodeBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(245,87,108,0.4);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
     }
   </style>
 </head>
 <body>
 <header class="header">
-  <div class="logo">✏️ Editar Espacio</div>
+  <div class="logo">
+    <i class="fas fa-edit"></i>
+    Editar Espacio
+  </div>
   <nav>
-    <a class="btn" href="sales.php">← Volver a Mis Espacios</a>
-    <a class="btn" href="dashboard.php">Panel</a>
+    <a class="btn" href="sales.php"><i class="fas fa-arrow-left"></i> Volver a Mis Espacios</a>
+    <a class="btn" href="dashboard.php"><i class="fas fa-th-large"></i> Panel</a>
   </nav>
 </header>
 
@@ -212,16 +378,16 @@ if ($sale['end_at']) {
   <?php endif; ?>
 
   <div class="card">
-    <h3>Editar: <?= htmlspecialchars($sale['title']) ?></h3>
+    <h3><i class="fas fa-store"></i> Editar: <?= htmlspecialchars($sale['title']) ?></h3>
 
     <form class="form" method="post" enctype="multipart/form-data" id="editForm">
       <label>
-        Título *
-        <input class="input" name="title" value="<?= htmlspecialchars($sale['title']) ?>" required>
+        <i class="fas fa-tag"></i> Título del Espacio *
+        <input class="input" name="title" value="<?= htmlspecialchars($sale['title']) ?>" placeholder="Ej: Venta de Garage 2026" required>
       </label>
 
       <label>
-        Portada actual
+        <i class="fas fa-image"></i> Portada Actual
         <?php if ($sale['cover_image']): ?>
           <div class="preview-container">
             <img src="../uploads/affiliates/<?= htmlspecialchars($sale['cover_image']) ?>"
@@ -230,40 +396,43 @@ if ($sale['end_at']) {
                  id="currentImage">
           </div>
         <?php else: ?>
-          <div style="color: #999; font-style: italic; margin-top: 0.5rem;">
-            Sin imagen
+          <div style="color: var(--gray-600); font-style: italic; margin-top: 0.5rem; padding: 2rem; text-align: center; background: var(--gray-50); border-radius: 8px;">
+            <i class="fas fa-image" style="font-size: 2rem; color: var(--gray-300); display: block; margin-bottom: 0.5rem;"></i>
+            Sin imagen de portada
           </div>
         <?php endif; ?>
       </label>
 
       <label>
-        Cambiar portada (opcional)
+        <i class="fas fa-upload"></i> Cambiar Portada (Opcional)
         <input class="input" type="file" name="cover" accept="image/*" id="newImage">
-        <small style="color: #666; display: block; margin-top: 0.5rem;">
+        <small style="color: var(--gray-600); display: block; margin-top: 0.5rem;">
           Si subes una nueva imagen, reemplazará la actual
         </small>
       </label>
 
-      <label>
-        Fecha y Hora de Inicio *
-        <small style="color:#666; display:block; margin-top:4px;">
-          📅 Incluye la hora exacta (ej: 8:00 AM)
-        </small>
-        <input class="input" type="datetime-local" name="start_at" id="start_at"
-               value="<?= htmlspecialchars($startFormatted) ?>" required>
-      </label>
+      <div class="form-grid">
+        <label>
+          <i class="fas fa-calendar-alt"></i> Fecha y Hora de Inicio *
+          <small style="color: var(--gray-600); display:block; margin-top:4px;">
+            Incluye la hora exacta (ej: 8:00 AM)
+          </small>
+          <input class="input" type="datetime-local" name="start_at" id="start_at"
+                 value="<?= htmlspecialchars($startFormatted) ?>" required>
+        </label>
 
-      <label>
-        Fecha y Hora de Fin *
-        <small style="color:#666; display:block; margin-top:4px;">
-          📅 Incluye la hora exacta (ej: 6:00 PM)
-        </small>
-        <input class="input" type="datetime-local" name="end_at" id="end_at"
-               value="<?= htmlspecialchars($endFormatted) ?>" required>
-      </label>
+        <label>
+          <i class="fas fa-calendar-check"></i> Fecha y Hora de Fin *
+          <small style="color: var(--gray-600); display:block; margin-top:4px;">
+            Incluye la hora exacta (ej: 6:00 PM)
+          </small>
+          <input class="input" type="datetime-local" name="end_at" id="end_at"
+                 value="<?= htmlspecialchars($endFormatted) ?>" required>
+        </label>
+      </div>
 
-      <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 1rem; margin: 1rem 0;">
-        <h4 style="margin-top: 0; color: #495057;">🔒 Configuración de privacidad</h4>
+      <div class="privacy-section">
+        <h4><i class="fas fa-lock"></i> Configuración de Privacidad</h4>
 
         <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 1rem;">
           <input type="checkbox" name="is_private" id="is_private" value="1"
@@ -274,37 +443,31 @@ if ($sale['end_at']) {
 
         <div id="access_code_container" style="<?= !empty($sale['is_private']) ? '' : 'display: none;' ?>">
           <label>
-            Código de acceso (6 dígitos)
-            <small style="color:#666; display:block; margin-top:4px;">
-              🔑 Los clientes necesitarán este código para acceder a los productos
+            <i class="fas fa-key"></i> Código de Acceso (6 dígitos)
+            <small style="color: var(--gray-600); display:block; margin-top:4px;">
+              Los clientes necesitarán este código para acceder a los productos
             </small>
             <div style="display: flex; gap: 0.75rem; align-items: stretch;">
               <input class="input" type="text" name="access_code" id="access_code"
                      pattern="[0-9]{6}" maxlength="6" placeholder="Ej: 123456"
                      value="<?= htmlspecialchars($sale['access_code'] ?? '') ?>"
-                     style="flex: 1; font-size: 1.2rem; letter-spacing: 0.3rem; font-family: monospace;">
-              <button type="button" id="generateCodeBtn"
-                      style="padding: 0 1.5rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-                             color: white; border: none; border-radius: 6px; cursor: pointer;
-                             font-weight: 600; font-size: 0.9rem; white-space: nowrap;
-                             transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-                      onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(245,87,108,0.4)';"
-                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                     style="flex: 1; font-size: 1.2rem; letter-spacing: 0.3rem; font-family: 'Courier New', monospace; text-align: center;">
+              <button type="button" id="generateCodeBtn">
                 <i class="fas fa-sync-alt"></i> Generar Nuevo
               </button>
             </div>
-            <small style="color:#999; display:block; margin-top:4px;">
+            <small style="color: var(--gray-600); display:block; margin-top:4px;">
               Solo números, exactamente 6 dígitos
             </small>
           </label>
         </div>
       </div>
 
-      <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+      <div class="button-group">
         <button class="btn primary" type="submit" name="update" value="1">
           <i class="fas fa-save"></i> Guardar Cambios
         </button>
-        <a class="btn" href="sales.php">Cancelar</a>
+        <a class="btn" href="sales.php"><i class="fas fa-times"></i> Cancelar</a>
       </div>
     </form>
   </div>

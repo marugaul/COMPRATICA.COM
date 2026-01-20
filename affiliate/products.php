@@ -123,58 +123,360 @@ $products = $q->fetchAll(PDO::FETCH_ASSOC);
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Afiliados — Mis productos</title>
   <link rel="stylesheet" href="../assets/style.css?v=24">
-  <style>.thumb{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb}</style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Variables de color corporativas */
+    :root {
+      --primary: #2c3e50;
+      --primary-light: #34495e;
+      --accent: #3498db;
+      --accent-hover: #2980b9;
+      --success: #27ae60;
+      --warning: #f39c12;
+      --danger: #e74c3c;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-600: #6b7280;
+      --gray-800: #1f2937;
+    }
+
+    body {
+      background: var(--gray-50);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Header empresarial */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      padding: 1.5rem 2rem;
+    }
+
+    .header .logo {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Cards mejorados */
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid var(--gray-200);
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .card h3 {
+      color: var(--primary);
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0 0 1.5rem 0;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Formulario mejorado */
+    .form label {
+      font-weight: 500;
+      color: var(--gray-800);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .form .input, .form textarea, .form select {
+      border: 2px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+
+    .form .input:focus, .form textarea:focus, .form select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+      outline: none;
+    }
+
+    /* Tabla profesional */
+    .table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .table th {
+      background: var(--gray-100);
+      color: var(--gray-800);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 2px solid var(--gray-300);
+    }
+
+    .table th:first-child {
+      border-radius: 8px 0 0 0;
+    }
+
+    .table th:last-child {
+      border-radius: 0 8px 0 0;
+    }
+
+    .table td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--gray-200);
+      color: var(--gray-800);
+      vertical-align: middle;
+    }
+
+    .table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .table tr:hover {
+      background: var(--gray-50);
+    }
+
+    /* Botones mejorados */
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+    }
+
+    .btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+    }
+
+    /* Alert mejorado */
+    .alert {
+      background: rgba(231, 76, 60, 0.1);
+      border: 1px solid rgba(231, 76, 60, 0.3);
+      border-left: 4px solid var(--danger);
+      color: #c0392b;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Thumbnails */
+    .thumb {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 2px solid var(--gray-200);
+      transition: transform 0.2s;
+    }
+
+    .thumb:hover {
+      transform: scale(2.5);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+
+    /* Grid para formulario */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    details {
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 500;
+      padding: 0.5rem;
+    }
+
+    details[open] {
+      background: var(--gray-50);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--gray-600);
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      color: var(--gray-300);
+      margin-bottom: 1rem;
+    }
+  </style>
 </head>
 <body>
 <header class="header">
-  <div class="logo">🛒 Mis productos</div>
-  <nav><a class="btn" href="dashboard.php">Panel</a> <a class="btn" href="sales.php">Mis espacios</a></nav>
+  <div class="logo">
+    <i class="fas fa-box"></i>
+    Mis Productos
+  </div>
+  <nav>
+    <a class="btn" href="dashboard.php"><i class="fas fa-th-large"></i> Panel</a>
+    <a class="btn" href="sales.php"><i class="fas fa-store"></i> Mis Espacios</a>
+  </nav>
 </header>
 <div class="container">
 
   <?php if ($msg): ?>
-    <div class="alert"><strong>Aviso:</strong> <?= htmlspecialchars($msg) ?></div>
+    <div class="alert">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span><strong>Aviso:</strong> <?= htmlspecialchars($msg) ?></span>
+    </div>
   <?php endif; ?>
 
   <?php if (empty($my_sales)): ?>
     <div class="alert">
-      No tenés espacios activos. Creá y pagá uno en <a href="sales.php">Mis espacios</a> para poder subir productos.
+      <i class="fas fa-info-circle"></i>
+      <span>
+        No tenés espacios activos. Creá y pagá uno en <a href="sales.php" style="font-weight: 600; color: #e74c3c;">Mis Espacios</a> para poder subir productos.
+      </span>
     </div>
   <?php endif; ?>
 
   <div class="card">
-    <h3>Crear producto</h3>
+    <h3><i class="fas fa-plus-circle"></i> Crear Nuevo Producto</h3>
     <form class="form" method="post" enctype="multipart/form-data">
-      <label>Nombre <input class="input" name="name" required></label>
-      <label>Descripción <textarea class="input" name="description" rows="3"></textarea></label>
-      <label>Precio <input class="input" type="number" step="0.01" name="price" required></label>
-      <label>Stock <input class="input" type="number" name="stock" min="0" required></label>
-      <label>Moneda
-        <select class="input" name="currency">
-          <option value="CRC">CRC</option>
-          <option value="USD">USD</option>
-        </select>
+      <div class="form-grid">
+        <label>
+          <i class="fas fa-tag"></i> Nombre del Producto
+          <input class="input" name="name" placeholder="Ej: Camisa Polo Azul" required>
+        </label>
+
+        <label>
+          <i class="fas fa-store"></i> Espacio de Venta
+          <select class="input" name="sale_id" required>
+            <option value="" disabled selected>Selecciona un espacio activo</option>
+            <?php foreach($my_sales as $s): ?>
+              <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars($s['title']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </label>
+      </div>
+
+      <label>
+        <i class="fas fa-align-left"></i> Descripción
+        <textarea class="input" name="description" rows="3" placeholder="Describe tu producto..."></textarea>
       </label>
-      <label>Espacio (venta)
-        <select class="input" name="sale_id" required>
-          <option value="" disabled selected>Seleccioná un espacio activo</option>
-          <?php foreach($my_sales as $s): ?>
-            <option value="<?= (int)$s['id'] ?>"><?= htmlspecialchars($s['title']) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </label>
-      <label>Imagen <input class="input" type="file" name="image" accept="image/*"></label>
-      <!-- NUEVO: Imagen 2 -->
-      <label>Imagen 2 (opcional) <input class="input" type="file" name="image2" accept="image/*"></label>
-      <label><input type="checkbox" name="active" checked> Activo</label>
-      <button class="btn primary" name="create" value="1" <?= empty($my_sales)?'disabled':''; ?>>Crear</button>
+
+      <div class="form-grid">
+        <label>
+          <i class="fas fa-dollar-sign"></i> Precio
+          <input class="input" type="number" step="0.01" name="price" placeholder="0.00" required>
+        </label>
+
+        <label>
+          <i class="fas fa-boxes"></i> Stock Disponible
+          <input class="input" type="number" name="stock" min="0" placeholder="0" required>
+        </label>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          <i class="fas fa-money-bill-wave"></i> Moneda
+          <select class="input" name="currency">
+            <option value="CRC">₡ Colones (CRC)</option>
+            <option value="USD">$ Dólares (USD)</option>
+          </select>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 0.5rem; padding-top: 2rem;">
+          <input type="checkbox" name="active" checked style="width: auto; margin: 0;">
+          <span><i class="fas fa-eye"></i> Producto Activo</span>
+        </label>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          <i class="fas fa-image"></i> Imagen Principal
+          <input class="input" type="file" name="image" accept="image/*">
+        </label>
+
+        <label>
+          <i class="fas fa-images"></i> Imagen Secundaria (Opcional)
+          <input class="input" type="file" name="image2" accept="image/*">
+        </label>
+      </div>
+
+      <button class="btn primary" name="create" value="1" <?= empty($my_sales)?'disabled':''; ?>>
+        <i class="fas fa-plus-circle"></i>
+        Crear Producto
+      </button>
     </form>
   </div>
 
   <div class="card">
-    <h3>Mis productos</h3>
+    <h3><i class="fas fa-list"></i> Mis Productos</h3>
+    <?php if (empty($products)): ?>
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <i class="fas fa-box-open"></i>
+        </div>
+        <h4>No tienes productos creados aún</h4>
+        <p>Crea tu primer producto usando el formulario de arriba para comenzar a vender.</p>
+      </div>
+    <?php else: ?>
     <table class="table">
-      <tr><th>ID</th><th>Foto</th><th>Nombre</th><th>Espacio</th><th>Precio</th><th>Stock</th><th>Activo</th><th>Acciones</th></tr>
+      <tr>
+        <th><i class="fas fa-hashtag"></i> ID</th>
+        <th><i class="fas fa-image"></i> Fotos</th>
+        <th><i class="fas fa-tag"></i> Nombre</th>
+        <th><i class="fas fa-store"></i> Espacio</th>
+        <th><i class="fas fa-dollar-sign"></i> Precio</th>
+        <th><i class="fas fa-boxes"></i> Stock</th>
+        <th><i class="fas fa-toggle-on"></i> Activo</th>
+        <th><i class="fas fa-cog"></i> Acciones</th>
+      </tr>
       <?php foreach($products as $p): ?>
         <tr>
           <td><?= (int)$p['id'] ?></td>
@@ -248,6 +550,7 @@ $products = $q->fetchAll(PDO::FETCH_ASSOC);
         </tr>
       <?php endforeach; ?>
     </table>
+    <?php endif; ?>
   </div>
 </div>
 </body>
