@@ -106,116 +106,419 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
   <link rel="stylesheet" href="../assets/style.css?v=23">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* Estilos para botones de ubicación Uber */
+    /* Variables de color corporativas */
+    :root {
+      --primary: #2c3e50;
+      --primary-light: #34495e;
+      --accent: #3498db;
+      --accent-hover: #2980b9;
+      --success: #27ae60;
+      --warning: #f39c12;
+      --danger: #e74c3c;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-600: #6b7280;
+      --gray-800: #1f2937;
+    }
+
+    body {
+      background: var(--gray-50);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Header empresarial */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      padding: 1.5rem 2rem;
+    }
+
+    .header .logo {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Cards mejorados */
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid var(--gray-200);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
+    .card h3 {
+      color: var(--primary);
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0 0 1.5rem 0;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Formulario mejorado */
+    .form label {
+      font-weight: 500;
+      color: var(--gray-800);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .form .input {
+      border: 2px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+
+    .form .input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+      outline: none;
+    }
+
+    /* Grid para formulario */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Tabla profesional */
+    .table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .table th {
+      background: var(--gray-100);
+      color: var(--gray-800);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 2px solid var(--gray-300);
+    }
+
+    .table th:first-child {
+      border-radius: 8px 0 0 0;
+    }
+
+    .table th:last-child {
+      border-radius: 0 8px 0 0;
+    }
+
+    .table td {
+      padding: 1.25rem 1rem;
+      border-bottom: 1px solid var(--gray-200);
+      color: var(--gray-800);
+      vertical-align: middle;
+    }
+
+    .table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .table tr:hover {
+      background: var(--gray-50);
+    }
+
+    /* Botones mejorados */
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+    }
+
+    .btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+    }
+
     .btn-pickup {
       background: linear-gradient(135deg, #e67e22, #d35400);
       color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
+      padding: 0.625rem 1.25rem;
+      border-radius: 6px;
       text-decoration: none;
-      display: inline-block;
-      margin: 0.25rem;
-      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
       transition: all 0.3s ease;
+      border: none;
     }
+
     .btn-pickup:hover {
       background: linear-gradient(135deg, #d35400, #c0392b);
       transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 12px rgba(230, 126, 34, 0.4);
     }
+
+    /* Badges profesionales */
     .location-badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.875rem;
+      border-radius: 16px;
       font-size: 0.75rem;
       font-weight: 600;
-      margin-left: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
+
     .badge-success {
-      background: #27ae60;
-      color: white;
+      background: rgba(39, 174, 96, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(39, 174, 96, 0.3);
     }
+
     .badge-warning {
-      background: #f39c12;
-      color: white;
+      background: rgba(243, 156, 18, 0.1);
+      color: var(--warning);
+      border: 1px solid rgba(243, 156, 18, 0.3);
     }
+
+    /* Info boxes mejorados */
+    .info-box {
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      border-left: 4px solid;
+    }
+
+    .info-box.blue {
+      background: rgba(52, 152, 219, 0.05);
+      border-color: var(--accent);
+      color: var(--primary);
+    }
+
+    .info-box.orange {
+      background: rgba(243, 156, 18, 0.05);
+      border-color: var(--warning);
+      color: #856404;
+    }
+
+    .info-box-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    /* Privacy section */
+    .privacy-section {
+      background: var(--gray-50);
+      border: 2px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .privacy-section h4 {
+      margin-top: 0;
+      color: var(--primary);
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Actions container */
     .actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
+      gap: 0.625rem;
       align-items: center;
     }
-    /* Tooltip para ubicación no configurada */
+
+    /* Tooltip mejorado */
     .tooltip-wrapper {
       position: relative;
       display: inline-block;
     }
+
     .tooltip-text {
       visibility: hidden;
-      width: 200px;
-      background-color: #555;
-      color: #fff;
+      width: 220px;
+      background: var(--gray-800);
+      color: white;
       text-align: center;
       border-radius: 6px;
-      padding: 8px;
+      padding: 0.75rem;
       position: absolute;
       z-index: 1;
       bottom: 125%;
       left: 50%;
-      margin-left: -100px;
+      margin-left: -110px;
       opacity: 0;
       transition: opacity 0.3s;
       font-size: 0.8rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
+
+    .tooltip-text::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: var(--gray-800) transparent transparent transparent;
+    }
+
     .tooltip-wrapper:hover .tooltip-text {
       visibility: visible;
       opacity: 1;
+    }
+
+    /* Alert mejorado */
+    .alert {
+      background: rgba(231, 76, 60, 0.1);
+      border: 1px solid rgba(231, 76, 60, 0.3);
+      border-left: 4px solid var(--danger);
+      color: #c0392b;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--gray-600);
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      color: var(--gray-300);
+      margin-bottom: 1rem;
+    }
+
+    .empty-state h4 {
+      color: var(--gray-800);
+      margin-bottom: 0.5rem;
+    }
+
+    /* Location preview */
+    .location-preview {
+      font-size: 0.8rem;
+      color: var(--gray-600);
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
     }
   </style>
 </head>
 <body>
 <header class="header">
-  <div class="logo">🛒 Mis espacios</div>
-  <nav><a class="btn" href="dashboard.php">Panel</a></nav>
+  <div class="logo">
+    <i class="fas fa-store"></i>
+    Mis Espacios de Venta
+  </div>
+  <nav><a class="btn" href="dashboard.php"><i class="fas fa-th-large"></i> Panel</a></nav>
 </header>
 <div class="container">
   <?php if ($msg): ?>
-    <div class="alert"><strong>Aviso:</strong> <?= htmlspecialchars($msg) ?></div>
+    <div class="alert">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span><strong>Aviso:</strong> <?= htmlspecialchars($msg) ?></span>
+    </div>
   <?php endif; ?>
   
   <!-- Mensaje informativo sobre ubicaciones -->
-  <div class="card" style="background: #e7f3ff; border-left: 4px solid #3498db; margin-bottom: 1rem;">
-    <p style="margin: 0; color: #2c3e50;">
-      <i class="fas fa-info-circle"></i> 
-      <strong>¿Sabías que?</strong> Puedes configurar la ubicación de recogida para cada espacio. 
-      Esto permite que tus clientes elijan <strong>envío por Uber</strong> en el checkout.
-    </p>
+  <div class="info-box blue">
+    <div class="info-box-icon">
+      <i class="fas fa-lightbulb"></i>
+    </div>
+    <div>
+      <strong style="display: block; margin-bottom: 0.25rem;">¿Sabías que?</strong>
+      Puedes configurar la ubicación de recogida para cada espacio.
+      Esto permite que tus clientes elijan <strong>envío por Uber</strong> en el checkout y mejora tus opciones de entrega.
+    </div>
   </div>
   
   <div class="card">
-    <h3>Crear nuevo espacio</h3>
+    <h3><i class="fas fa-plus-circle"></i> Crear Nuevo Espacio</h3>
     <form class="form" method="post" enctype="multipart/form-data" id="saleForm">
-      <label>Título <input class="input" name="title" required></label>
-      <label>Portada <input class="input" type="file" name="cover" accept="image/*"></label>
-
       <label>
-        Fecha y Hora de Inicio
-        <small style="color:#666; display:block; margin-top:4px;">
-          📅 Incluye la hora exacta (ej: 8:00 AM)
-        </small>
-        <input class="input" type="datetime-local" name="start_at" id="start_at" required>
+        <i class="fas fa-tag"></i> Título del Espacio
+        <input class="input" name="title" placeholder="Ej: Venta de Garage 2026" required>
       </label>
 
       <label>
-        Fecha y Hora de Fin
-        <small style="color:#666; display:block; margin-top:4px;">
-          📅 Incluye la hora exacta (ej: 6:00 PM)
-        </small>
-        <input class="input" type="datetime-local" name="end_at" id="end_at" required>
+        <i class="fas fa-image"></i> Imagen de Portada
+        <input class="input" type="file" name="cover" accept="image/*">
       </label>
 
-      <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 1rem; margin: 1rem 0;">
-        <h4 style="margin-top: 0; color: #495057;">🔒 Configuración de privacidad</h4>
+      <div class="form-grid">
+        <label>
+          <i class="fas fa-calendar-alt"></i> Fecha y Hora de Inicio
+          <small style="color: var(--gray-600); display:block; margin-top:4px;">
+            Incluye la hora exacta (ej: 8:00 AM)
+          </small>
+          <input class="input" type="datetime-local" name="start_at" id="start_at" required>
+        </label>
+
+        <label>
+          <i class="fas fa-calendar-check"></i> Fecha y Hora de Fin
+          <small style="color: var(--gray-600); display:block; margin-top:4px;">
+            Incluye la hora exacta (ej: 6:00 PM)
+          </small>
+          <input class="input" type="datetime-local" name="end_at" id="end_at" required>
+        </label>
+      </div>
+
+      <div class="privacy-section">
+        <h4><i class="fas fa-lock"></i> Configuración de Privacidad</h4>
 
         <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 1rem;">
           <input type="checkbox" name="is_private" id="is_private" value="1" style="width: auto; margin-right: 0.5rem;">
@@ -224,21 +527,24 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
 
         <div id="access_code_container" style="display: none;">
           <label>
-            Código de acceso (6 dígitos)
-            <small style="color:#666; display:block; margin-top:4px;">
-              🔑 Los clientes necesitarán este código para acceder a los productos
+            <i class="fas fa-key"></i> Código de Acceso (6 dígitos)
+            <small style="color: var(--gray-600); display:block; margin-top:4px;">
+              Los clientes necesitarán este código para acceder a los productos
             </small>
             <input class="input" type="text" name="access_code" id="access_code"
                    pattern="[0-9]{6}" maxlength="6" placeholder="Ej: 123456"
-                   style="font-size: 1.2rem; letter-spacing: 0.3rem; font-family: monospace;">
-            <small style="color:#999; display:block; margin-top:4px;">
+                   style="font-size: 1.2rem; letter-spacing: 0.3rem; font-family: 'Courier New', monospace; text-align: center;">
+            <small style="color: var(--gray-600); display:block; margin-top:4px;">
               Solo números, exactamente 6 dígitos
             </small>
           </label>
         </div>
       </div>
 
-      <button class="btn primary" name="create" value="1">Crear (pagar activación)</button>
+      <button class="btn primary" name="create" value="1">
+        <i class="fas fa-plus-circle"></i>
+        Crear Espacio (Pagar Activación)
+      </button>
     </form>
 
     <script>
@@ -307,7 +613,7 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
   </div>
   
   <div class="card">
-    <h3>Mis espacios</h3>
+    <h3><i class="fas fa-list-ul"></i> Mis Espacios de Venta</h3>
     <table class="table">
       <tr>
         <th>Título</th>
@@ -379,11 +685,10 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
 
             <?php if ($has_location): ?>
               <!-- Mini-preview de la ubicación -->
-              <small style="display: block; color: #666; margin-top: 0.25rem; font-size: 0.8rem;">
+              <div class="location-preview">
                 <i class="fas fa-map-pin"></i>
-                <?= htmlspecialchars($pickup_location['city'] ?? '') ?> -
-                <?= htmlspecialchars($pickup_location['contact_name'] ?? '') ?>
-              </small>
+                <span><?= htmlspecialchars($pickup_location['city'] ?? '') ?> - <?= htmlspecialchars($pickup_location['contact_name'] ?? '') ?></span>
+              </div>
             <?php endif; ?>
           </td>
         </tr>
@@ -391,9 +696,14 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
       
       <?php if (empty($sales)): ?>
         <tr>
-          <td colspan="6" style="text-align: center; padding: 2rem; color: #999;">
-            <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
-            No tienes espacios creados aún. ¡Crea tu primer espacio arriba!
+          <td colspan="6">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <i class="fas fa-store-slash"></i>
+              </div>
+              <h4>No tienes espacios creados aún</h4>
+              <p>Crea tu primer espacio de venta usando el formulario de arriba para comenzar a vender tus productos.</p>
+            </div>
           </td>
         </tr>
       <?php endif; ?>
@@ -402,20 +712,25 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
   
   <!-- Información adicional sobre ubicaciones -->
   <?php if (!empty($sales)): ?>
-    <div class="card" style="background: #fff4e6; border-left: 4px solid #f39c12;">
-      <h4 style="margin-top: 0; color: #d35400;">
-        <i class="fas fa-truck"></i> ¿Por qué configurar la ubicación de recogida?
-      </h4>
-      <ul style="margin: 0; padding-left: 1.5rem; line-height: 1.8;">
-        <li><strong>Envíos por Uber:</strong> Tus clientes podrán elegir envío con conductor de Uber</li>
-        <li><strong>Cotización automática:</strong> El sistema calcula el costo según la distancia</li>
-        <li><strong>Más ventas:</strong> Ofrece más opciones de entrega a tus clientes</li>
-        <li><strong>Tracking en tiempo real:</strong> Cliente y vendedor pueden rastrear el pedido</li>
-      </ul>
-      <p style="margin: 1rem 0 0 0; color: #856404; font-size: 0.9rem;">
-        <i class="fas fa-lightbulb"></i> 
-        <strong>Consejo:</strong> Configura la ubicación ahora para que esté lista cuando tu espacio se active.
-      </p>
+    <div class="info-box orange">
+      <div class="info-box-icon">
+        <i class="fas fa-truck"></i>
+      </div>
+      <div>
+        <h4 style="margin-top: 0; margin-bottom: 1rem; color: #d35400; font-size: 1.1rem;">
+          ¿Por qué configurar la ubicación de recogida?
+        </h4>
+        <ul style="margin: 0 0 1rem 0; padding-left: 1.5rem; line-height: 1.8;">
+          <li><strong>Envíos por Uber:</strong> Tus clientes podrán elegir envío con conductor de Uber</li>
+          <li><strong>Cotización automática:</strong> El sistema calcula el costo según la distancia</li>
+          <li><strong>Más ventas:</strong> Ofrece más opciones de entrega a tus clientes</li>
+          <li><strong>Tracking en tiempo real:</strong> Cliente y vendedor pueden rastrear el pedido</li>
+        </ul>
+        <p style="margin: 0; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="fas fa-lightbulb"></i>
+          <strong>Consejo:</strong> Configura la ubicación ahora para que esté lista cuando tu espacio se active.
+        </p>
+      </div>
     </div>
   <?php endif; ?>
 </div>
