@@ -755,22 +755,6 @@ foreach ($_SESSION['cart'] as $it) {
     right: 1rem;
     }
 
-    .lightbox-zoom-hint {
-    position: absolute;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.9);
-    padding: 0.75rem 1.5rem;
-    border-radius: 999px;
-    font-size: 0.9rem;
-    color: var(--gray-900);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    pointer-events: none;
-    }
-
     @media (max-width: 768px) {
     .product-image-gallery {
     flex-direction: column-reverse;
@@ -1230,11 +1214,6 @@ foreach ($_SESSION['cart'] as $it) {
       <button class="lightbox-nav next" onclick="navigateLightbox(1)" style="display:none;">
         <i class="fas fa-chevron-right"></i>
       </button>
-
-      <div class="lightbox-zoom-hint">
-        <i class="fas fa-search-plus"></i>
-        <span>Haz clic para hacer zoom</span>
-      </div>
     </div>
   </div>
 </div>
