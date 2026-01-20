@@ -256,15 +256,36 @@ if (function_exists('mb_internal_encoding')) {
   </style>
 </head>
 <body>
-<header class="header">
-  <div class="logo">&#128722; Afiliado: <?= htmlspecialchars($_SESSION['aff_name'] ?? '') ?></div>
-  <nav>
-    <a class="btn" href="../index.php">Ver tienda</a>
-    <a class="btn" href="sales.php">Mis espacios</a>
-    <a class="btn" href="products.php">Mis productos</a>
-    <a class="btn" href="orders.php">Mis pedidos</a>
-    <a class="btn" href="sales_pay_options.php">&#128179; Métodos de pago</a>
-    <a class="btn" href="shipping_options.php">🚚 Opciones de envío</a>
+<header class="header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); box-shadow: 0 2px 12px rgba(0,0,0,0.1); padding: 1rem 2rem;">
+  <div class="logo" style="font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 0.75rem; color: white;">
+    <i class="fas fa-user-tie"></i>
+    <?= htmlspecialchars($_SESSION['aff_name'] ?? 'Afiliado') ?>
+  </div>
+  <nav style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+    <a class="nav-btn" href="../index.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-store"></i>
+      <span>Ver Tienda</span>
+    </a>
+    <a class="nav-btn" href="sales.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-store-alt"></i>
+      <span>Espacios</span>
+    </a>
+    <a class="nav-btn" href="products.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-box"></i>
+      <span>Productos</span>
+    </a>
+    <a class="nav-btn" href="orders.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-shopping-cart"></i>
+      <span>Pedidos</span>
+    </a>
+    <a class="nav-btn" href="sales_pay_options.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-credit-card"></i>
+      <span>Pagos</span>
+    </a>
+    <a class="nav-btn" href="shipping_options.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-shipping-fast"></i>
+      <span>Envíos</span>
+    </a>
   </nav>
 </header>
 
