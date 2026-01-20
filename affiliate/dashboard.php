@@ -479,6 +479,11 @@ if (function_exists('mb_internal_encoding')) {
         <i class="fas fa-credit-card"></i>
         <span>Métodos de Pago</span>
       </a>
+
+      <a href="shipping_options.php" class="action-btn primary" style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);">
+        <i class="fas fa-shipping-fast"></i>
+        <span>Opciones de Envío</span>
+      </a>
     </div>
   </div>
   
