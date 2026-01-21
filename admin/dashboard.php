@@ -247,224 +247,612 @@ try {
 } catch (Exception $e) {
     $affiliates = [];
 }
+
+// Estadísticas para dashboard
+$stats = [
+    'total_products' => count($products),
+    'active_products' => count(array_filter($products, fn($p) => $p['active'])),
+    'total_orders' => count($orders),
+    'pending_orders' => count(array_filter($orders, fn($o) => $o['status'] === 'Pendiente')),
+    'total_affiliates' => count($affiliates),
+    'active_affiliates' => count(array_filter($affiliates, fn($a) => $a['is_active'])),
+];
 ?>
 <!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Backoffice - <?php echo h(APP_NAME); ?></title>
-<link rel="stylesheet" href="../assets/style.css">
-<!-- Estilos rápidos para mejorar las miniaturas y la tabla -->
+<title>Panel de Administración - <?php echo h(APP_NAME); ?></title>
+<link rel="stylesheet" href="../assets/style.css?v=24">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-/* Miniaturas controladas */
-.thumb {
-  max-width: 84px;
-  max-height: 84px;
-  width: auto;
-  height: auto;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid #e6e6e6;
-  display: inline-block;
-}
+  /* Variables corporativas */
+  :root {
+    --primary: #2c3e50;
+    --primary-light: #34495e;
+    --accent: #3498db;
+    --success: #27ae60;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-600: #6b7280;
+    --gray-800: #1f2937;
+  }
 
-/* Tabla y layout */
-.container { max-width:1200px; margin:18px auto; padding:0 12px; }
-.table { width:100%; border-collapse:collapse; margin-bottom:18px; font-family: Arial, Helvetica, sans-serif; }
-.table th, .table td { padding:8px 10px; border-bottom:1px solid #f1f1f1; vertical-align:middle; text-align:left; }
-.table th { background:#fafafa; font-weight:600; font-size:0.95rem; color:#333; }
-.small { font-size:0.85rem; color:#666; }
+  body {
+    background: var(--gray-50);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
 
-/* Mensajes */
-.success { background:#f0fff4; border:1px solid #cfead2; padding:10px; margin-bottom:12px; border-radius:6px; }
+  /* Dashboard grid */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
 
-/* Formularios */
-.form .input { width:100%; box-sizing:border-box; padding:8px; margin-top:6px; margin-bottom:10px; }
+  .stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
 
-/* Acciones */
-.actions { margin-top:8px; }
+  .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
 
-/* Hacer tablas scrollables en pantallas pequeñas */
-.table-wrap { overflow-x:auto; }
+  .stat-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
 
-/* Ajustes responsive */
-@media (max-width:800px) {
-  .thumb { max-width:64px; max-height:64px; }
-  .container { padding:0 8px; }
-}
+  .stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+
+  .stat-icon.blue { background: #e3f2fd; color: #1976d2; }
+  .stat-icon.green { background: #e8f5e9; color: #388e3c; }
+  .stat-icon.orange { background: #fff3e0; color: #f57c00; }
+  .stat-icon.purple { background: #f3e5f5; color: #7b1fa2; }
+  .stat-icon.red { background: #ffebee; color: #c62828; }
+
+  .stat-title {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0.5rem 0;
+  }
+
+  .stat-subtitle {
+    font-size: 0.85rem;
+    color: #999;
+  }
+
+  /* Container y secciones */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: 1px solid var(--gray-200);
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    color: var(--primary);
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--gray-100);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /* Tablas */
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .table thead {
+    background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-50) 100%);
+  }
+
+  .table th {
+    padding: 1rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--gray-800);
+    border-bottom: 2px solid var(--gray-300);
+    white-space: nowrap;
+  }
+
+  .table td {
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid var(--gray-200);
+    vertical-align: middle;
+  }
+
+  .table tbody tr {
+    transition: background 0.2s ease;
+  }
+
+  .table tbody tr:hover {
+    background: var(--gray-50);
+  }
+
+  .thumb {
+    max-width: 60px;
+    max-height: 60px;
+    width: auto;
+    height: auto;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid var(--gray-200);
+    transition: transform 0.2s ease;
+  }
+
+  .thumb:hover {
+    transform: scale(1.05);
+    border-color: var(--accent);
+  }
+
+  /* Mensajes */
+  .success {
+    background: rgba(39, 174, 96, 0.1);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+    border-left: 4px solid var(--success);
+    color: #155724;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /* Formularios */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-group label {
+    font-weight: 500;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .input, select, textarea {
+    padding: 0.75rem;
+    border: 2px solid var(--gray-200);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+  }
+
+  .input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    outline: none;
+  }
+
+  /* Botones */
+  .btn {
+    padding: 0.625rem 1.25rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    background: var(--gray-200);
+    color: var(--gray-800);
+  }
+
+  .btn:hover {
+    background: var(--gray-300);
+    transform: translateY(-1px);
+  }
+
+  .btn.primary {
+    background: linear-gradient(135deg, var(--accent) 0%, #2980b9 100%);
+    color: white;
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+  }
+
+  .btn.primary:hover {
+    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4);
+    transform: translateY(-2px);
+  }
+
+  .btn.success {
+    background: linear-gradient(135deg, var(--success) 0%, #229954 100%);
+    color: white;
+  }
+
+  .btn.danger {
+    background: linear-gradient(135deg, var(--danger) 0%, #c0392b 100%);
+    color: white;
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .small {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+  }
+
+  @media (max-width: 768px) {
+    .container {
+      padding: 1rem;
+    }
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 </head>
 <body>
-<header class="header">
-  <div class="logo">⚙️ Backoffice</div>
-  <nav>
-    <a class="btn" href="../index.php">Ver tienda</a>
-    <a class="btn" href="dashboard.php">Dashboard</a>
-    <a class="btn" href="dashboard_ext.php">Productos (Extendido)</a>
-    <a class="btn" href="sales_admin.php">Espacios</a>
-    <a class="btn" href="affiliates.php">Afiliados</a>
-    <a class="btn" href="settings_fee.php">Costo por espacio</a>
-    <a class="btn" href="email_marketing.php">📧 Email Marketing</a>
-    <a class="btn" href="../tools/sql_exec.php" target="_blank">🧩 SQL Tools</a>
-    <a class="btn" href="logout.php">Salir</a>
+<header class="header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); box-shadow: 0 2px 12px rgba(0,0,0,0.1); padding: 1rem 2rem;">
+  <div class="logo" style="font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 0.75rem; color: white;">
+    <i class="fas fa-shield-alt"></i>
+    Panel de Administración
+  </div>
+  <nav style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+    <a class="nav-btn" href="../index.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-store"></i>
+      <span>Ver Tienda</span>
+    </a>
+    <a class="nav-btn" href="dashboard.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-tachometer-alt"></i>
+      <span>Dashboard</span>
+    </a>
+    <a class="nav-btn" href="dashboard_ext.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-box-open"></i>
+      <span>Productos (Ext)</span>
+    </a>
+    <a class="nav-btn" href="sales_admin.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-store-alt"></i>
+      <span>Espacios</span>
+    </a>
+    <a class="nav-btn" href="affiliates.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-users"></i>
+      <span>Afiliados</span>
+    </a>
+    <a class="nav-btn" href="settings_fee.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-dollar-sign"></i>
+      <span>Costo Espacio</span>
+    </a>
+    <a class="nav-btn" href="email_marketing.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-envelope"></i>
+      <span>Email Marketing</span>
+    </a>
+    <a class="nav-btn" href="../tools/sql_exec.php" target="_blank" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-database"></i>
+      <span>SQL Tools</span>
+    </a>
+    <a class="nav-btn" href="logout.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-sign-out-alt"></i>
+      <span>Salir</span>
+    </a>
   </nav>
 </header>
 
 <div class="container">
-<?php if(!empty($msg)): ?><div class="success"><?php echo h($msg); ?></div><?php endif; ?>
+  <?php if(!empty($msg)): ?>
+    <div class="success">
+      <i class="fas fa-check-circle"></i>
+      <?php echo h($msg); ?>
+    </div>
+  <?php endif; ?>
 
-<!-- =================== Configuración =================== -->
-<h2>Configuración</h2>
-<form class="form" method="post">
-  <input type="hidden" name="action" value="save_settings">
-  <label>Tipo de cambio (CRC por 1 USD)
-    <input class="input" type="number" name="exchange_rate" step="0.01" min="100" value="<?php echo h(number_format($ex,2,'.','')); ?>">
-  </label>
-  <div class="actions"><button class="btn primary">Guardar</button></div>
-</form>
+  <h2 style="margin-bottom: 2rem; color: var(--primary);">
+    <i class="fas fa-chart-line"></i> Panel de Control
+  </h2>
 
-<!-- =================== Crear / Editar producto =================== -->
-<h2>Crear / Editar producto</h2>
-<form class="form" method="post" enctype="multipart/form-data">
-  <input type="hidden" name="id" id="id">
-  <label>Nombre <input class="input" type="text" name="name" id="name" required></label>
-  <label>Precio <input class="input" type="number" name="price" id="price" step="0.01" min="0" required></label>
-  <label>Moneda
-    <select class="input" name="currency" id="currency">
-      <option value="CRC">CRC (₡)</option>
-      <option value="USD">USD ($)</option>
-    </select>
-  </label>
-  <label>Inventario <input class="input" type="number" name="stock" id="stock" min="0" required></label>
-  <label>Descripción <textarea class="input" name="description" id="description" rows="3"></textarea></label>
-  <label>Imagen <input class="input" type="file" name="image" accept="image/*"></label>
-  <label>Imagen 2 (opcional) <input class="input" type="file" name="image2" accept="image/*"></label>
-  <label><input type="checkbox" name="active" id="active" checked> Activo</label>
-  <div class="actions">
-    <button class="btn primary" name="action" value="create" type="submit">Crear</button>
-    <button class="btn" name="action" value="update" type="submit">Actualizar</button>
+  <!-- Estadísticas principales -->
+  <div class="dashboard-grid">
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-icon blue">
+          <i class="fas fa-box"></i>
+        </div>
+        <div>
+          <div class="stat-title">Productos Totales</div>
+        </div>
+      </div>
+      <div class="stat-value"><?= $stats['total_products'] ?></div>
+      <div class="stat-subtitle"><?= $stats['active_products'] ?> activos</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-icon orange">
+          <i class="fas fa-shopping-cart"></i>
+        </div>
+        <div>
+          <div class="stat-title">Pedidos Totales</div>
+        </div>
+      </div>
+      <div class="stat-value"><?= $stats['total_orders'] ?></div>
+      <div class="stat-subtitle"><?= $stats['pending_orders'] ?> pendientes</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-icon green">
+          <i class="fas fa-users"></i>
+        </div>
+        <div>
+          <div class="stat-title">Afiliados Totales</div>
+        </div>
+      </div>
+      <div class="stat-value"><?= $stats['total_affiliates'] ?></div>
+      <div class="stat-subtitle"><?= $stats['active_affiliates'] ?> activos</div>
+    </div>
   </div>
-</form>
 
-<!-- =================== Productos =================== -->
-<h2>Productos</h2>
-<div class="table-wrap">
-<table class="table">
-  <thead>
-    <tr>
-      <th>ID</th><th>Imagen</th><th>Nombre</th><th>Precio</th><th>Moneda</th><th>Stock</th><th>Activo</th>
-      <th>Espacio</th><th>Afiliado</th><th>Fee</th><th>Activo (Esp.)</th><th>Acciones</th>
-    </tr>
-  </thead>
-  <tbody>
-    <?php foreach($products as $p):
-      $cur = strtoupper(trim($p['currency'] ?? 'CRC'));
-      $sym = ($cur === 'USD') ? '$' : '₡';
-    ?>
-    <tr>
-      <td><?= (int)$p['id'] ?></td>
-      <td>
-        <?php if(!empty($p['image'])): ?>
-          <img src="../uploads/<?php echo h($p['image']); ?>" class="thumb" alt="img-<?php echo (int)$p['id']; ?>">
-        <?php endif; ?>
-        <?php if(!empty($p['image2'])): ?>
-          <img src="../uploads/<?php echo h($p['image2']); ?>" class="thumb" style="margin-left:6px" alt="img2-<?php echo (int)$p['id']; ?>">
-        <?php endif; ?>
-      </td>
-      <td><?= h($p['name']) ?></td>
-      <td><?= h($sym . number_format((float)$p['price'], $sym==='$'?2:0, ',', '.')) ?></td>
-      <td><?= h($cur) ?></td>
-      <td><?= (int)$p['stock'] ?></td>
-      <td><?= $p['active'] ? 'Sí' : 'No' ?></td>
-      <td><?= h($p['sale_title'] ?? '—') ?></td>
-      <td><?= h($p['aff_email'] ?? '—') ?></td>
-      <td><?= h($p['fee_status'] ?? '—') ?></td>
-      <td><?= $p['sale_active'] ? 'Sí' : 'No' ?></td>
-      <td>
-        <button class="btn" onclick='fillForm(<?= json_encode($p, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT) ?>)'>Editar</button>
-        <form method="post" style="display:inline" onsubmit="return confirm('¿Eliminar producto?');">
-          <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
-          <button class="btn" name="action" value="delete">Eliminar</button>
-        </form>
-      </td>
-    </tr>
-    <?php endforeach; ?>
-  </tbody>
-</table>
-</div>
+  <!-- Configuración -->
+  <div class="section">
+    <h3 class="section-title">
+      <i class="fas fa-cog"></i> Configuración
+    </h3>
+    <form method="post">
+      <input type="hidden" name="action" value="save_settings">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Tipo de cambio (CRC por 1 USD)</label>
+          <input class="input" type="number" name="exchange_rate" step="0.01" min="100" value="<?php echo h(number_format($ex,2,'.','')); ?>">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn primary"><i class="fas fa-save"></i> Guardar</button>
+      </div>
+    </form>
+  </div>
 
-<!-- =================== Pedidos =================== -->
-<h2>Pedidos recientes</h2>
-<div class="table-wrap">
-<table class="table">
-  <thead>
-    <tr><th>ID</th><th>Fecha</th><th>Producto</th><th>Cant</th><th>Cliente</th><th>Residencia</th><th>Estado</th><th>Comprobante</th><th>Acción</th></tr>
-  </thead>
-  <tbody>
-    <?php foreach($orders as $o): ?>
-    <tr>
-      <td><?= (int)$o['id'] ?></td>
-      <td><?= h($o['created_at']) ?></td>
-      <td><?= h($o['product_name']) ?></td>
-      <td><?= (int)$o['qty'] ?></td>
-      <td><?= h($o['buyer_email'] . " / " . $o['buyer_phone']) ?></td>
-      <td><?= h($o['residency']) ?></td>
-      <td><?= h($o['status']) ?></td>
-      <td>
-        <?php if(!empty($o['proof_image'])): ?>
-          <a href="../uploads/payments/<?php echo h($o['proof_image']); ?>" target="_blank">
-            <img class="thumb" src="../uploads/payments/<?php echo h($o['proof_image']); ?>" alt="proof-<?php echo (int)$o['id']; ?>">
-          </a>
-        <?php else: ?>
-          <span class="small">Sin comprobante</span>
-        <?php endif; ?>
-      </td>
-      <td>
-        <form method="post" style="display:flex;gap:6px;align-items:center">
-          <input type="hidden" name="action" value="update_order_status">
-          <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
-          <select name="status" class="input" style="padding:6px">
-            <?php foreach(['Pendiente','Pagado','Empacado','En camino','Entregado','Cancelado'] as $st): ?>
-              <option value="<?= h($st) ?>" <?= $o['status']===$st?'selected':'' ?>><?= h($st) ?></option>
-            <?php endforeach; ?>
+  <!-- Crear / Editar producto -->
+  <div class="section">
+    <h3 class="section-title">
+      <i class="fas fa-plus-circle"></i> Crear / Editar Producto
+    </h3>
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="id" id="id">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nombre</label>
+          <input class="input" type="text" name="name" id="name" required>
+        </div>
+        <div class="form-group">
+          <label>Precio</label>
+          <input class="input" type="number" name="price" id="price" step="0.01" min="0" required>
+        </div>
+        <div class="form-group">
+          <label>Moneda</label>
+          <select class="input" name="currency" id="currency">
+            <option value="CRC">CRC (₡)</option>
+            <option value="USD">USD ($)</option>
           </select>
-          <button class="btn">Guardar</button>
-        </form>
-      </td>
-    </tr>
-    <?php endforeach; ?>
-  </tbody>
-</table>
-</div>
+        </div>
+        <div class="form-group">
+          <label>Inventario</label>
+          <input class="input" type="number" name="stock" id="stock" min="0" required>
+        </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label>Descripción</label>
+          <textarea class="input" name="description" id="description" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Imagen Principal</label>
+          <input class="input" type="file" name="image" accept="image/*">
+        </div>
+        <div class="form-group">
+          <label>Imagen 2 (opcional)</label>
+          <input class="input" type="file" name="image2" accept="image/*">
+        </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+          <input type="checkbox" name="active" id="active" checked style="width: auto;">
+          <label for="active" style="margin: 0;">Activo</label>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" name="action" value="create" type="submit">
+          <i class="fas fa-plus"></i> Crear
+        </button>
+        <button class="btn success" name="action" value="update" type="submit">
+          <i class="fas fa-save"></i> Actualizar
+        </button>
+      </div>
+    </form>
+  </div>
 
-<!-- =================== Afiliados =================== -->
-<h2>Afiliados</h2>
-<div class="table-wrap">
-<table class="table">
-  <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Activo</th><th>Creado</th><th>Acción</th></tr></thead>
-  <tbody>
-    <?php foreach ($affiliates as $a): ?>
-    <tr>
-      <td><?= (int)$a['id'] ?></td>
-      <td><?= h($a['name']) ?></td>
-      <td><?= h($a['email']) ?></td>
-      <td><?= h($a['phone']) ?></td>
-      <td><?= $a['is_active'] ? '✅ Sí' : '⛔ No' ?></td>
-      <td class="small"><?= h($a['created_at']) ?></td>
-      <td>
-        <form method="post" style="display:inline">
-          <input type="hidden" name="toggle_affiliate" value="1">
-          <input type="hidden" name="aff_id" value="<?= (int)$a['id'] ?>">
-          <input type="hidden" name="new_state" value="<?= $a['is_active'] ? 0 : 1 ?>">
-          <button class="btn"><?= $a['is_active'] ? 'Desactivar' : 'Activar' ?></button>
-        </form>
-      </td>
-    </tr>
-    <?php endforeach; ?>
-  </tbody>
-</table>
-</div>
+  <!-- Productos -->
+  <div class="section">
+    <h3 class="section-title">
+      <i class="fas fa-box-open"></i> Productos (<?= count($products) ?>)
+    </h3>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th><th>Imagen</th><th>Nombre</th><th>Precio</th><th>Moneda</th><th>Stock</th><th>Activo</th>
+            <th>Espacio</th><th>Afiliado</th><th>Fee</th><th>Activo (Esp.)</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach($products as $p):
+            $cur = strtoupper(trim($p['currency'] ?? 'CRC'));
+            $sym = ($cur === 'USD') ? '$' : '₡';
+          ?>
+          <tr>
+            <td><?= (int)$p['id'] ?></td>
+            <td>
+              <?php if(!empty($p['image'])): ?>
+                <img src="../uploads/<?php echo h($p['image']); ?>" class="thumb" alt="img-<?php echo (int)$p['id']; ?>">
+              <?php endif; ?>
+              <?php if(!empty($p['image2'])): ?>
+                <img src="../uploads/<?php echo h($p['image2']); ?>" class="thumb" style="margin-left:6px" alt="img2-<?php echo (int)$p['id']; ?>">
+              <?php endif; ?>
+            </td>
+            <td><?= h($p['name']) ?></td>
+            <td><?= h($sym . number_format((float)$p['price'], $sym==='$'?2:0, ',', '.')) ?></td>
+            <td><?= h($cur) ?></td>
+            <td><?= (int)$p['stock'] ?></td>
+            <td><?= $p['active'] ? '✅ Sí' : '❌ No' ?></td>
+            <td class="small"><?= h($p['sale_title'] ?? '—') ?></td>
+            <td class="small"><?= h($p['aff_email'] ?? '—') ?></td>
+            <td class="small"><?= h($p['fee_status'] ?? '—') ?></td>
+            <td><?= $p['sale_active'] ? '✅ Sí' : '❌ No' ?></td>
+            <td>
+              <button class="btn" onclick='fillForm(<?= json_encode($p, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT) ?>)'>
+                <i class="fas fa-edit"></i> Editar
+              </button>
+              <form method="post" style="display:inline" onsubmit="return confirm('¿Eliminar producto?');">
+                <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
+                <button class="btn danger" name="action" value="delete">
+                  <i class="fas fa-trash"></i> Eliminar
+                </button>
+              </form>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pedidos -->
+  <div class="section">
+    <h3 class="section-title">
+      <i class="fas fa-shopping-cart"></i> Pedidos Recientes (últimos 100)
+    </h3>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>ID</th><th>Fecha</th><th>Producto</th><th>Cant</th><th>Cliente</th><th>Residencia</th><th>Estado</th><th>Comprobante</th><th>Acción</th></tr>
+        </thead>
+        <tbody>
+          <?php foreach($orders as $o): ?>
+          <tr>
+            <td><strong>#<?= (int)$o['id'] ?></strong></td>
+            <td class="small"><?= h($o['created_at']) ?></td>
+            <td><?= h($o['product_name']) ?></td>
+            <td><strong><?= (int)$o['qty'] ?></strong></td>
+            <td class="small"><?= h($o['buyer_email'] . " / " . $o['buyer_phone']) ?></td>
+            <td class="small"><?= h($o['residency']) ?></td>
+            <td><strong><?= h($o['status']) ?></strong></td>
+            <td>
+              <?php if(!empty($o['proof_image'])): ?>
+                <a href="../uploads/payments/<?php echo h($o['proof_image']); ?>" target="_blank">
+                  <img class="thumb" src="../uploads/payments/<?php echo h($o['proof_image']); ?>" alt="proof-<?php echo (int)$o['id']; ?>">
+                </a>
+              <?php else: ?>
+                <span class="small">Sin comprobante</span>
+              <?php endif; ?>
+            </td>
+            <td>
+              <form method="post" style="display:flex;gap:6px;align-items:center">
+                <input type="hidden" name="action" value="update_order_status">
+                <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
+                <select name="status" class="input" style="padding:6px;min-width:120px;">
+                  <?php foreach(['Pendiente','Pagado','Empacado','En camino','Entregado','Cancelado'] as $st): ?>
+                    <option value="<?= h($st) ?>" <?= $o['status']===$st?'selected':'' ?>><?= h($st) ?></option>
+                  <?php endforeach; ?>
+                </select>
+                <button class="btn primary"><i class="fas fa-save"></i> Guardar</button>
+              </form>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Afiliados -->
+  <div class="section">
+    <h3 class="section-title">
+      <i class="fas fa-users"></i> Afiliados (<?= count($affiliates) ?>)
+    </h3>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Teléfono</th><th>Activo</th><th>Creado</th><th>Acción</th></tr></thead>
+        <tbody>
+          <?php foreach ($affiliates as $a): ?>
+          <tr>
+            <td><?= (int)$a['id'] ?></td>
+            <td><?= h($a['name']) ?></td>
+            <td><?= h($a['email']) ?></td>
+            <td><?= h($a['phone']) ?></td>
+            <td><?= $a['is_active'] ? '✅ Sí' : '⛔ No' ?></td>
+            <td class="small"><?= h($a['created_at']) ?></td>
+            <td>
+              <form method="post" style="display:inline">
+                <input type="hidden" name="toggle_affiliate" value="1">
+                <input type="hidden" name="aff_id" value="<?= (int)$a['id'] ?>">
+                <input type="hidden" name="new_state" value="<?= $a['is_active'] ? 0 : 1 ?>">
+                <button class="btn <?= $a['is_active'] ? 'danger' : 'success' ?>">
+                  <i class="fas fa-<?= $a['is_active'] ? 'ban' : 'check' ?>"></i>
+                  <?= $a['is_active'] ? 'Desactivar' : 'Activar' ?>
+                </button>
+              </form>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -480,3 +868,4 @@ function fillForm(p){
 }
 </script>
 </body>
+</html>
