@@ -1,22 +1,28 @@
 <?php
 /**
  * ============================================
- * LIMPIADOR DE LOGS MYSQL - Versión Web
+ * LIMPIADOR DE LOGS MYSQL - Versión Web v2
  * ============================================
  * Este script elimina todos los logs antiguos
- * generados por mysql-auto-executor.sh
- *
- * USO:
- * 1. Sube este archivo al servidor
- * 2. Visita: https://compratica.com/limpiar-logs.php
- * 3. Los logs se eliminarán automáticamente
+ * generados por mysql-auto-executor.sh en TODAS
+ * las ubicaciones.
  * ============================================
  */
 
 // Establecer timeout generoso
 set_time_limit(300);
+ini_set('memory_limit', '256M');
 
-$logsDir = __DIR__ . '/mysql-logs';
+// TODAS las rutas donde pueden estar los logs
+$directorios = [
+    __DIR__ . '/mysql-logs',
+    '/home/comprati/public_html/mysql-logs',
+    '/home/comprati/comprati_repo/mysql-logs',
+    dirname(__DIR__) . '/mysql-logs'
+];
+
+// Eliminar duplicados
+$directorios = array_unique($directorios);
 
 ?>
 <!DOCTYPE html>
@@ -24,7 +30,7 @@ $logsDir = __DIR__ . '/mysql-logs';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Limpiador de Logs MySQL</title>
+    <title>Limpiador de Logs MySQL v2</title>
     <style>
         * {
             margin: 0;
@@ -36,9 +42,6 @@ $logsDir = __DIR__ . '/mysql-logs';
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 2rem;
         }
 
@@ -47,8 +50,8 @@ $logsDir = __DIR__ . '/mysql-logs';
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 3rem;
-            max-width: 600px;
-            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
         }
 
         h1 {
@@ -73,34 +76,60 @@ $logsDir = __DIR__ . '/mysql-logs';
             color: #2d3748;
         }
 
-        .result {
+        .directory-section {
             background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .directory-header {
+            font-weight: 700;
+            color: #2d3748;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .directory-path {
+            font-family: 'Courier New', monospace;
+            background: #2d3748;
+            color: #48bb78;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-box {
+            background: white;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            padding: 1.5rem;
-            margin-top: 1.5rem;
+            padding: 1rem;
+            text-align: center;
         }
 
-        .result-item {
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .result-item:last-child {
-            border-bottom: none;
-        }
-
-        .label {
+        .stat-label {
+            font-size: 0.8rem;
+            color: #718096;
             font-weight: 600;
-            color: #4a5568;
+            margin-bottom: 0.5rem;
         }
 
-        .value {
-            color: #2d3748;
+        .stat-value {
+            font-size: 1.5rem;
             font-weight: 700;
+            color: #2d3748;
         }
 
         .success {
@@ -133,31 +162,49 @@ $logsDir = __DIR__ . '/mysql-logs';
             font-weight: 600;
         }
 
-        .file-list {
-            max-height: 300px;
-            overflow-y: auto;
-            background: #f7fafc;
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            transition: width 0.3s ease;
+        }
+
+        .log-item {
+            padding: 0.5rem;
+            background: white;
             border: 1px solid #e2e8f0;
             border-radius: 4px;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
-
-        .file-item {
-            padding: 0.5rem;
-            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 0.5rem;
             font-family: 'Courier New', monospace;
-            font-size: 0.875rem;
+            font-size: 0.75rem;
             color: #4a5568;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .file-item:last-child {
-            border-bottom: none;
+        .log-item.deleted {
+            background: #c6f6d5;
+            border-color: #48bb78;
         }
 
-        .file-item.deleted {
-            text-decoration: line-through;
-            color: #a0aec0;
+        .log-item.error {
+            background: #fed7d7;
+            border-color: #f56565;
+        }
+
+        .logs-container {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 1rem;
         }
 
         .btn {
@@ -176,11 +223,44 @@ $logsDir = __DIR__ . '/mysql-logs';
             transform: translateY(-2px);
         }
 
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-top: 2rem;
+        }
+
+        .summary h2 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .summary-stat {
+            text-align: center;
+        }
+
+        .summary-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .summary-stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
         @media (max-width: 640px) {
             .container {
                 padding: 2rem 1.5rem;
             }
-
             h1 {
                 font-size: 1.5rem;
             }
@@ -191,127 +271,180 @@ $logsDir = __DIR__ . '/mysql-logs';
     <div class="container">
         <h1>
             <span class="icon">🧹</span>
-            Limpiador de Logs MySQL
+            Limpiador de Logs MySQL v2
         </h1>
 
         <div class="info">
             <strong>📋 Información:</strong><br>
-            Este script elimina todos los logs antiguos generados por el auto-executor MySQL, excepto el archivo "ultimo-ejecutado.log".
+            Este script busca y elimina todos los logs antiguos en TODAS las ubicaciones posibles, excepto "ultimo-ejecutado.log".
         </div>
 
         <?php
-        $ejecutado = false;
-        $totalLogs = 0;
-        $logsEliminados = 0;
-        $errores = [];
-        $archivosEliminados = [];
+        $totalLogsEncontrados = 0;
+        $totalLogsEliminados = 0;
+        $totalErrores = 0;
+        $directoriosProcesados = 0;
 
-        // Verificar que el directorio existe
-        if (!is_dir($logsDir)) {
-            echo '<div class="error">❌ Error: El directorio mysql-logs no existe.</div>';
-        } else {
-            // Buscar todos los archivos .log excepto ultimo-ejecutado.log
+        foreach ($directorios as $logsDir):
+            // Normalizar path
+            $logsDir = rtrim($logsDir, '/');
+
+            // Verificar si el directorio existe
+            if (!is_dir($logsDir)) {
+                continue;
+            }
+
+            $directoriosProcesados++;
+
+            echo '<div class="directory-section">';
+            echo '<div class="directory-header">📁 Directorio ' . $directoriosProcesados . '</div>';
+            echo '<div class="directory-path">' . htmlspecialchars($logsDir) . '</div>';
+
+            // Verificar permisos
+            if (!is_readable($logsDir)) {
+                echo '<div class="error">❌ No se puede leer el directorio (sin permisos)</div>';
+                echo '</div>';
+                continue;
+            }
+
+            if (!is_writable($logsDir)) {
+                echo '<div class="warning">⚠️ No se puede escribir en el directorio (sin permisos para eliminar)</div>';
+                echo '</div>';
+                continue;
+            }
+
+            // Buscar TODOS los archivos .log
             $archivos = glob($logsDir . '/*.log');
 
             if ($archivos === false) {
-                echo '<div class="error">❌ Error: No se pudo leer el directorio.</div>';
-            } else {
-                $totalLogs = count($archivos);
+                echo '<div class="error">❌ Error al leer archivos</div>';
+                echo '</div>';
+                continue;
+            }
 
-                // Filtrar para excluir ultimo-ejecutado.log
-                $archivosParaEliminar = array_filter($archivos, function($archivo) {
-                    return basename($archivo) !== 'ultimo-ejecutado.log';
-                });
+            // Filtrar para excluir ultimo-ejecutado.log
+            $archivosParaEliminar = array_filter($archivos, function($archivo) {
+                return basename($archivo) !== 'ultimo-ejecutado.log';
+            });
 
-                if (empty($archivosParaEliminar)) {
-                    echo '<div class="warning">⚠️ No se encontraron logs antiguos para eliminar.</div>';
+            $cantidadEnEsteDir = count($archivosParaEliminar);
+            $totalLogsEncontrados += $cantidadEnEsteDir;
+
+            if ($cantidadEnEsteDir === 0) {
+                echo '<div class="success">✅ No hay logs antiguos en este directorio</div>';
+                echo '</div>';
+                continue;
+            }
+
+            echo '<div class="stats">';
+            echo '<div class="stat-box">';
+            echo '<div class="stat-label">Logs Encontrados</div>';
+            echo '<div class="stat-value">' . $cantidadEnEsteDir . '</div>';
+            echo '</div>';
+            echo '</div>';
+
+            // Eliminar archivos UNO POR UNO
+            $eliminadosAqui = 0;
+            $erroresAqui = 0;
+
+            echo '<div class="logs-container">';
+
+            foreach ($archivosParaEliminar as $archivo) {
+                $nombreArchivo = basename($archivo);
+
+                // Intentar eliminar
+                $eliminado = @unlink($archivo);
+
+                if ($eliminado) {
+                    // Verificar que realmente se eliminó
+                    if (!file_exists($archivo)) {
+                        $eliminadosAqui++;
+                        $totalLogsEliminados++;
+                        echo '<div class="log-item deleted">✓ ' . htmlspecialchars($nombreArchivo) . '</div>';
+                    } else {
+                        $erroresAqui++;
+                        $totalErrores++;
+                        echo '<div class="log-item error">✗ No se pudo verificar eliminación: ' . htmlspecialchars($nombreArchivo) . '</div>';
+                    }
                 } else {
-                    echo '<div class="result">';
-                    echo '<div class="result-item">';
-                    echo '<span class="label">📊 Logs encontrados:</span>';
-                    echo '<span class="value">' . count($archivosParaEliminar) . '</span>';
-                    echo '</div>';
-                    echo '</div>';
-
-                    // Eliminar archivos
-                    foreach ($archivosParaEliminar as $archivo) {
-                        $nombreArchivo = basename($archivo);
-
-                        if (unlink($archivo)) {
-                            $logsEliminados++;
-                            $archivosEliminados[] = $nombreArchivo;
-                        } else {
-                            $errores[] = "No se pudo eliminar: $nombreArchivo";
-                        }
-                    }
-
-                    $ejecutado = true;
-
-                    // Mostrar lista de archivos eliminados
-                    if (!empty($archivosEliminados)) {
-                        echo '<div class="file-list">';
-                        echo '<strong style="display: block; margin-bottom: 0.5rem;">✅ Archivos eliminados:</strong>';
-                        foreach ($archivosEliminados as $archivo) {
-                            echo '<div class="file-item deleted">' . htmlspecialchars($archivo) . '</div>';
-                        }
-                        echo '</div>';
-                    }
-
-                    // Mostrar errores si los hay
-                    if (!empty($errores)) {
-                        echo '<div class="error">';
-                        foreach ($errores as $error) {
-                            echo htmlspecialchars($error) . '<br>';
-                        }
-                        echo '</div>';
-                    }
-
-                    // Resultado final
-                    echo '<div class="result" style="margin-top: 1.5rem;">';
-                    echo '<div class="result-item">';
-                    echo '<span class="label">🗑️ Logs eliminados:</span>';
-                    echo '<span class="value">' . $logsEliminados . '</span>';
-                    echo '</div>';
-
-                    // Calcular espacio del directorio
-                    $espacioBytes = 0;
-                    $archivosRestantes = glob($logsDir . '/*');
-                    foreach ($archivosRestantes as $archivo) {
-                        if (is_file($archivo)) {
-                            $espacioBytes += filesize($archivo);
-                        }
-                    }
-
-                    $espacioKB = round($espacioBytes / 1024, 2);
-                    $espacioMB = round($espacioBytes / (1024 * 1024), 2);
-
-                    $espacioFormateado = $espacioMB > 1 ? $espacioMB . ' MB' : $espacioKB . ' KB';
-
-                    echo '<div class="result-item">';
-                    echo '<span class="label">📁 Espacio actual:</span>';
-                    echo '<span class="value">' . $espacioFormateado . '</span>';
-                    echo '</div>';
-                    echo '</div>';
-
-                    echo '<div class="success">✅ Limpieza completada exitosamente</div>';
+                    $erroresAqui++;
+                    $totalErrores++;
+                    $permisos = substr(sprintf('%o', fileperms($archivo)), -4);
+                    echo '<div class="log-item error">✗ Error (permisos: ' . $permisos . '): ' . htmlspecialchars($nombreArchivo) . '</div>';
                 }
+            }
+
+            echo '</div>';
+
+            echo '<div class="stats" style="margin-top: 1rem;">';
+            echo '<div class="stat-box">';
+            echo '<div class="stat-label">Eliminados</div>';
+            echo '<div class="stat-value" style="color: #48bb78;">' . $eliminadosAqui . '</div>';
+            echo '</div>';
+
+            if ($erroresAqui > 0) {
+                echo '<div class="stat-box">';
+                echo '<div class="stat-label">Errores</div>';
+                echo '<div class="stat-value" style="color: #f56565;">' . $erroresAqui . '</div>';
+                echo '</div>';
+            }
+            echo '</div>';
+
+            echo '</div>';
+
+        endforeach;
+
+        // Resumen final
+        if ($directoriosProcesados === 0) {
+            echo '<div class="error">❌ No se encontraron directorios mysql-logs/</div>';
+        } else {
+            echo '<div class="summary">';
+            echo '<h2>📊 Resumen Final</h2>';
+            echo '<div class="summary-stats">';
+
+            echo '<div class="summary-stat">';
+            echo '<div class="summary-stat-value">' . $directoriosProcesados . '</div>';
+            echo '<div class="summary-stat-label">Directorios Procesados</div>';
+            echo '</div>';
+
+            echo '<div class="summary-stat">';
+            echo '<div class="summary-stat-value">' . $totalLogsEncontrados . '</div>';
+            echo '<div class="summary-stat-label">Logs Encontrados</div>';
+            echo '</div>';
+
+            echo '<div class="summary-stat">';
+            echo '<div class="summary-stat-value">' . $totalLogsEliminados . '</div>';
+            echo '<div class="summary-stat-label">Logs Eliminados</div>';
+            echo '</div>';
+
+            if ($totalErrores > 0) {
+                echo '<div class="summary-stat">';
+                echo '<div class="summary-stat-value">' . $totalErrores . '</div>';
+                echo '<div class="summary-stat-label">Errores</div>';
+                echo '</div>';
+            }
+
+            echo '</div>';
+            echo '</div>';
+
+            if ($totalLogsEliminados > 0) {
+                echo '<div class="success">✅ Limpieza completada exitosamente</div>';
+            } elseif ($totalLogsEncontrados === 0) {
+                echo '<div class="success">✅ No hay logs antiguos para eliminar</div>';
+            } else {
+                echo '<div class="error">❌ No se pudieron eliminar archivos (verifica permisos)</div>';
             }
         }
         ?>
 
-        <?php if ($ejecutado): ?>
-            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e2e8f0; text-align: center;">
-                <p style="color: #4a5568; margin-bottom: 1rem;">
-                    <strong>✅ El problema está resuelto.</strong><br>
-                    A partir de ahora, el auto-executor solo mantendrá un único log.
-                </p>
-                <a href="/" class="btn">Volver al Inicio</a>
-            </div>
-        <?php endif; ?>
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e2e8f0; text-align: center;">
+            <a href="javascript:location.reload()" class="btn">🔄 Ejecutar de Nuevo</a>
+            <a href="/" class="btn" style="background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);">🏠 Volver al Inicio</a>
+        </div>
 
         <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e2e8f0;">
             <p style="color: #718096; font-size: 0.875rem; text-align: center;">
-                <strong>💡 Nota:</strong> Este script se puede ejecutar las veces que sea necesario. Es seguro ejecutarlo múltiples veces.
+                <strong>💡 Nota:</strong> Si ves que los archivos no se eliminan, puede ser un problema de permisos. Contacta a soporte técnico del hosting.
             </p>
         </div>
     </div>
