@@ -35,37 +35,48 @@ ejecutar_sql() {
     local archivo=$1
     local nombre=$(basename "$archivo")
     local timestamp=$(date '+%Y%m%d_%H%M%S')
-    local log_file="$LOGS_DIR/${timestamp}_${nombre}.log"
+    # LOGS DESHABILITADOS - solo mantener último log
+    local log_file="$LOGS_DIR/ultimo-ejecutado.log"
 
-    echo "========================================" | tee "$log_file"
-    echo "MySQL Auto-Executor" | tee -a "$log_file"
-    echo "========================================" | tee -a "$log_file"
-    echo "Archivo: $nombre" | tee -a "$log_file"
-    echo "Fecha: $(date '+%Y-%m-%d %H:%M:%S')" | tee -a "$log_file"
-    echo "========================================" | tee -a "$log_file"
-    echo "" | tee -a "$log_file"
+    echo "========================================"
+    echo "MySQL Auto-Executor"
+    echo "========================================"
+    echo "Archivo: $nombre"
+    echo "Fecha: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "========================================"
+    echo ""
 
-    # Ejecutar SQL
-    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$archivo" 2>&1 | tee -a "$log_file"
+    # Ejecutar SQL y guardar solo en último log (sobrescribe)
+    {
+        echo "========================================"
+        echo "MySQL Auto-Executor - Última Ejecución"
+        echo "========================================"
+        echo "Archivo: $nombre"
+        echo "Fecha: $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "========================================"
+        echo ""
+        mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$archivo" 2>&1
+        echo ""
+        echo "========================================"
+    } > "$log_file" 2>&1
 
     local exit_code=${PIPESTATUS[0]}
 
-    echo "" | tee -a "$log_file"
-    echo "========================================" | tee -a "$log_file"
+    echo ""
+    echo "========================================"
 
     if [ $exit_code -eq 0 ]; then
-        echo "✅ EJECUTADO EXITOSAMENTE" | tee -a "$log_file"
+        echo "✅ EJECUTADO EXITOSAMENTE"
 
         # Mover a ejecutados
         mv "$archivo" "$EJECUTADOS_DIR/${timestamp}_${nombre}"
-        echo "📁 Archivo movido a: mysql-ejecutados/${timestamp}_${nombre}" | tee -a "$log_file"
+        echo "📁 Archivo movido a: mysql-ejecutados/${timestamp}_${nombre}"
     else
-        echo "❌ ERROR EN LA EJECUCIÓN (código: $exit_code)" | tee -a "$log_file"
-        echo "⚠️  Archivo permanece en mysql-pendientes/" | tee -a "$log_file"
+        echo "❌ ERROR EN LA EJECUCIÓN (código: $exit_code)"
+        echo "⚠️  Archivo permanece en mysql-pendientes/"
     fi
 
-    echo "========================================" | tee -a "$log_file"
-    echo "Log guardado en: mysql-logs/${timestamp}_${nombre}.log" | tee -a "$log_file"
+    echo "========================================"
 
     return $exit_code
 }
