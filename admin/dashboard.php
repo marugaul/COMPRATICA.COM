@@ -49,6 +49,7 @@ if ($action === 'create' || $action === 'update') {
     $price = (float)($_POST['price'] ?? 0);
     $stock = (int)($_POST['stock'] ?? 0);
     $desc = trim($_POST['description'] ?? '');
+    $category = trim($_POST['category'] ?? '');
     $currency = strtoupper(trim($_POST['currency'] ?? 'CRC'));
     if (!in_array($currency, ['CRC','USD'])) $currency = 'CRC';
     $active = isset($_POST['active']) ? 1 : 0;
@@ -74,8 +75,8 @@ if ($action === 'create' || $action === 'update') {
     }
 
     if ($action === 'create') {
-        $stmt = $pdo->prepare("INSERT INTO products (name, description, price, stock, image, currency, active, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)");
-        $stmt->execute([$name,$desc,$price,$stock,$imageName,$currency,$active,date('Y-m-d H:i:s'),date('Y-m-d H:i:s')]);
+        $stmt = $pdo->prepare("INSERT INTO products (name, description, price, stock, image, currency, active, category, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)");
+        $stmt->execute([$name,$desc,$price,$stock,$imageName,$currency,$active,$category,date('Y-m-d H:i:s'),date('Y-m-d H:i:s')]);
 
         // ⬅️ NUEVO: si hay segunda imagen, guardarla
         if ($imageName2 !== null) {
@@ -86,11 +87,11 @@ if ($action === 'create' || $action === 'update') {
         $msg = "Producto creado.";
     } else {
         if ($imageName) {
-            $stmt = $pdo->prepare("UPDATE products SET name=?, description=?, price=?, stock=?, image=?, currency=?, active=?, updated_at=? WHERE id=?");
-            $stmt->execute([$name,$desc,$price,$stock,$imageName,$currency,$active,date('Y-m-d H:i:s'),$id]);
+            $stmt = $pdo->prepare("UPDATE products SET name=?, description=?, price=?, stock=?, image=?, currency=?, active=?, category=?, updated_at=? WHERE id=?");
+            $stmt->execute([$name,$desc,$price,$stock,$imageName,$currency,$active,$category,date('Y-m-d H:i:s'),$id]);
         } else {
-            $stmt = $pdo->prepare("UPDATE products SET name=?, description=?, price=?, stock=?, currency=?, active=?, updated_at=? WHERE id=?");
-            $stmt->execute([$name,$desc,$price,$stock,$currency,$active,date('Y-m-d H:i:s'),$id]);
+            $stmt = $pdo->prepare("UPDATE products SET name=?, description=?, price=?, stock=?, currency=?, active=?, category=?, updated_at=? WHERE id=?");
+            $stmt->execute([$name,$desc,$price,$stock,$currency,$active,$category,date('Y-m-d H:i:s'),$id]);
         }
 
         // ⬅️ NUEVO: si hay segunda imagen al editar, guardarla
@@ -693,6 +694,10 @@ $stats = [
           <textarea class="input" name="description" id="description" rows="3"></textarea>
         </div>
         <div class="form-group">
+          <label>Categoría</label>
+          <input class="input" type="text" name="category" id="category" placeholder="Ej: Ropa, Electrónica, Hogar, Deportes...">
+        </div>
+        <div class="form-group">
           <label>Imagen Principal</label>
           <input class="input" type="file" name="image" accept="image/*">
         </div>
@@ -725,7 +730,7 @@ $stats = [
       <table class="table">
         <thead>
           <tr>
-            <th>ID</th><th>Imagen</th><th>Nombre</th><th>Precio</th><th>Moneda</th><th>Stock</th><th>Activo</th>
+            <th>ID</th><th>Imagen</th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Moneda</th><th>Stock</th><th>Activo</th>
             <th>Espacio</th><th>Afiliado</th><th>Fee</th><th>Activo (Esp.)</th><th>Acciones</th>
           </tr>
         </thead>
@@ -745,6 +750,15 @@ $stats = [
               <?php endif; ?>
             </td>
             <td><?= h($p['name']) ?></td>
+            <td>
+              <?php if (!empty($p['category'])): ?>
+                <span style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05)); border: 1px solid rgba(52, 152, 219, 0.3); color: #2980b9; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8125rem; font-weight: 500;">
+                  <?= h($p['category']) ?>
+                </span>
+              <?php else: ?>
+                <span style="color: #999; font-style: italic;">—</span>
+              <?php endif; ?>
+            </td>
             <td><?= h($sym . number_format((float)$p['price'], $sym==='$'?2:0, ',', '.')) ?></td>
             <td><?= h($cur) ?></td>
             <td><?= (int)$p['stock'] ?></td>
@@ -863,6 +877,7 @@ function fillForm(p){
   document.getElementById('currency').value = (p.currency || 'CRC').toUpperCase();
   document.getElementById('stock').value = p.stock || 0;
   document.getElementById('description').value = p.description || '';
+  document.getElementById('category').value = p.category || '';
   document.getElementById('active').checked = p.active == 1 || p.active === '1';
   window.scrollTo({top:0, behavior:'smooth'});
 }

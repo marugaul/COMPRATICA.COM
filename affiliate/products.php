@@ -26,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $currency    = ($_POST['currency'] ?? 'CRC') === 'USD' ? 'USD' : 'CRC';
       $sale_id     = (int)($_POST['sale_id'] ?? 0);
       $active      = isset($_POST['active']) ? 1 : 0;
+      $category    = trim($_POST['category'] ?? '');
 
       if ($name === '' || $price <= 0 || $stock < 0 || !$sale_id) {
         throw new RuntimeException('Datos incompletos: nombre, precio>0, stock>=0 y espacio requerido.');
@@ -64,10 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       if (isset($_POST['create'])) {
         $sql = "INSERT INTO products
-          (affiliate_id, sale_id, name, description, price, stock, image, currency, active, created_at, updated_at)
+          (affiliate_id, sale_id, name, description, price, stock, image, currency, active, category, created_at, updated_at)
           VALUES
-          (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))";
-        $pdo->prepare($sql)->execute([$aff_id, $sale_id, $name, $description, $price, $stock, $image, $currency, $active]);
+          (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))";
+        $pdo->prepare($sql)->execute([$aff_id, $sale_id, $name, $description, $price, $stock, $image, $currency, $active, $category]);
 
         // Guardar image2 si se subió
         if ($image2 !== null) {
@@ -91,9 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$image2) $image2 = $curr['image2'];
 
         $sql = "UPDATE products
-                SET sale_id=?, name=?, description=?, price=?, stock=?, image=?, image2=?, currency=?, active=?, updated_at=datetime('now')
+                SET sale_id=?, name=?, description=?, price=?, stock=?, image=?, image2=?, currency=?, active=?, category=?, updated_at=datetime('now')
                 WHERE id=? AND affiliate_id=?";
-        $pdo->prepare($sql)->execute([$sale_id, $name, $description, $price, $stock, $image, $image2, $currency, $active, $id, $aff_id]);
+        $pdo->prepare($sql)->execute([$sale_id, $name, $description, $price, $stock, $image, $image2, $currency, $active, $category, $id, $aff_id]);
 
         $msg = 'Producto actualizado.';
       }
@@ -109,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Listado de productos del afiliado (cualquiera sea su sale_id)
-$q = $pdo->prepare("SELECT id, name, sale_id, price, stock, currency, active, image, image2, created_at
+$q = $pdo->prepare("SELECT id, name, sale_id, price, stock, currency, active, image, image2, category, created_at
                     FROM products
                     WHERE affiliate_id=?
                     ORDER BY id DESC
@@ -419,6 +420,11 @@ $products = $q->fetchAll(PDO::FETCH_ASSOC);
         <textarea class="input" name="description" rows="3" placeholder="Describe tu producto..."></textarea>
       </label>
 
+      <label>
+        <i class="fas fa-folder-open"></i> Categoría
+        <input class="input" name="category" placeholder="Ej: Ropa, Electrónica, Hogar, Deportes...">
+      </label>
+
       <div class="form-grid">
         <label>
           <i class="fas fa-dollar-sign"></i> Precio
@@ -481,6 +487,7 @@ $products = $q->fetchAll(PDO::FETCH_ASSOC);
         <th><i class="fas fa-hashtag"></i> ID</th>
         <th><i class="fas fa-image"></i> Fotos</th>
         <th><i class="fas fa-tag"></i> Nombre</th>
+        <th><i class="fas fa-folder-open"></i> Categoría</th>
         <th><i class="fas fa-store"></i> Espacio</th>
         <th><i class="fas fa-dollar-sign"></i> Precio</th>
         <th><i class="fas fa-boxes"></i> Stock</th>
@@ -499,6 +506,15 @@ $products = $q->fetchAll(PDO::FETCH_ASSOC);
             <?php endif; ?>
           </td>
           <td><?= htmlspecialchars($p['name']) ?></td>
+          <td>
+            <?php if (!empty($p['category'])): ?>
+              <span style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05)); border: 1px solid rgba(52, 152, 219, 0.3); color: #2980b9; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8125rem; font-weight: 500;">
+                <?= htmlspecialchars($p['category']) ?>
+              </span>
+            <?php else: ?>
+              <span style="color: var(--gray-600); font-style: italic;">Sin categoría</span>
+            <?php endif; ?>
+          </td>
           <td>
             <?php
               if (!empty($p['sale_id'])) {
@@ -525,6 +541,7 @@ $products = $q->fetchAll(PDO::FETCH_ASSOC);
                 <div style="padding:8px 0; display:grid; gap:6px">
                   <label>Nombre <input class="input" name="name" value="<?= htmlspecialchars($p['name']) ?>" required></label>
                   <label>Descripción <textarea class="input" name="description" rows="3"></textarea></label>
+                  <label>Categoría <input class="input" name="category" value="<?= htmlspecialchars($p['category'] ?? '') ?>" placeholder="Ej: Ropa, Electrónica..."></label>
                   <label>Precio <input class="input" type="number" step="0.01" name="price" value="<?= htmlspecialchars((string)$p['price']) ?>" required></label>
                   <label>Stock <input class="input" type="number" name="stock" min="0" value="<?= (int)$p['stock'] ?>" required></label>
                   <label>Moneda
