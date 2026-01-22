@@ -1,7 +1,10 @@
 -- =============================================
--- ETAPA 1: ROLLBACK
+-- ETAPA 1: ROLLBACK (ACTUALIZADO)
 -- =============================================
 -- Este script revierte los cambios de etapa1-mejoras-venta-garaje.sql
+--
+-- NOTA: La columna 'location' ya existía antes, por lo que NO se toca
+--       Solo se revierten: cover_image2, description, tags
 --
 -- IMPORTANTE: SQLite no soporta DROP COLUMN directamente
 -- en versiones antiguas. Si falla, usar este método:
@@ -22,10 +25,10 @@
 -- OPCIÓN B: Eliminar columnas (si SQLite lo soporta)
 -- Descomentar si tu versión de SQLite soporta DROP COLUMN:
 
--- ALTER TABLE sales DROP COLUMN location;
 -- ALTER TABLE sales DROP COLUMN cover_image2;
 -- ALTER TABLE sales DROP COLUMN description;
 -- ALTER TABLE sales DROP COLUMN tags;
+-- NOTA: NO tocar location, ya existía antes
 
 -- OPCIÓN C: Recrear tabla sin las columnas nuevas
 -- Solo usar si OPCIÓN B falla y necesitas eliminar las columnas:
@@ -33,7 +36,7 @@
 /*
 BEGIN TRANSACTION;
 
--- Crear tabla temporal con estructura original
+-- Crear tabla temporal con estructura original + location (que ya existía)
 CREATE TABLE sales_backup (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     affiliate_id INTEGER NOT NULL,
@@ -44,12 +47,15 @@ CREATE TABLE sales_backup (
     is_active INTEGER DEFAULT 0,
     created_at TEXT,
     updated_at TEXT,
+    is_private INTEGER DEFAULT 0,
+    access_code TEXT,
+    location TEXT,
     FOREIGN KEY (affiliate_id) REFERENCES affiliates(id)
 );
 
--- Copiar datos (solo columnas originales)
-INSERT INTO sales_backup (id, affiliate_id, title, cover_image, start_at, end_at, is_active, created_at, updated_at)
-SELECT id, affiliate_id, title, cover_image, start_at, end_at, is_active, created_at, updated_at
+-- Copiar datos (todas las columnas originales)
+INSERT INTO sales_backup (id, affiliate_id, title, cover_image, start_at, end_at, is_active, created_at, updated_at, is_private, access_code, location)
+SELECT id, affiliate_id, title, cover_image, start_at, end_at, is_active, created_at, updated_at, is_private, access_code, location
 FROM sales;
 
 -- Eliminar tabla original
