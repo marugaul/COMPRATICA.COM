@@ -22,6 +22,15 @@ if (!defined('APP_URL')) {
 require_login();
 $pdo = db();
 
+// Obtener categorías disponibles
+$categories = [];
+try {
+  $cats = $pdo->query("SELECT id, name, icon FROM categories WHERE active=1 ORDER BY display_order ASC");
+  $categories = $cats->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+  error_log('[admin/dashboard.php] No se pudieron cargar categorías: ' . $e->getMessage());
+}
+
 /**
  * Helper seguro para escapar HTML sin warnings por valores null.
  * Siempre devolverá string, usando ENT_QUOTES y UTF-8.
@@ -695,7 +704,14 @@ $stats = [
         </div>
         <div class="form-group">
           <label>Categoría</label>
-          <input class="input" type="text" name="category" id="category" placeholder="Ej: Ropa, Electrónica, Hogar, Deportes...">
+          <select class="input" name="category" id="category">
+            <option value="">Selecciona una categoría (opcional)</option>
+            <?php foreach($categories as $cat): ?>
+              <option value="<?= h($cat['name']) ?>">
+                <?= h($cat['name']) ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
         </div>
         <div class="form-group">
           <label>Imagen Principal</label>
