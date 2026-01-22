@@ -135,12 +135,34 @@ $ordenamiento = $_GET['orden'] ?? 'inicio_asc'; // 'inicio_asc', 'inicio_desc', 
 // Construir WHERE dinámico
 $where = ["s.is_active = 1"];
 $params = [];
+$salesIdsFromProducts = [];
 
-// Búsqueda por título o afiliado
+// Búsqueda MEJORADA: Incluye búsqueda en productos
 if ($busqueda !== '') {
-  $where[] = "(s.title LIKE ? OR a.name LIKE ?)";
-  $params[] = "%$busqueda%";
-  $params[] = "%$busqueda%";
+  // Buscar ventas que tienen productos con el término de búsqueda
+  $stmtProducts = $pdo->prepare("
+    SELECT DISTINCT p.sale_id
+    FROM products p
+    WHERE p.sale_id IS NOT NULL
+      AND (p.name LIKE ? OR p.description LIKE ?)
+  ");
+  $stmtProducts->execute(["%$busqueda%", "%$busqueda%"]);
+  $salesIdsFromProducts = $stmtProducts->fetchAll(PDO::FETCH_COLUMN);
+
+  // Buscar por título de venta, nombre de afiliado, O ventas con productos que coinciden
+  if (!empty($salesIdsFromProducts)) {
+    $placeholders = implode(',', array_fill(0, count($salesIdsFromProducts), '?'));
+    $where[] = "(s.title LIKE ? OR a.name LIKE ? OR s.id IN ($placeholders))";
+    $params[] = "%$busqueda%";
+    $params[] = "%$busqueda%";
+    foreach ($salesIdsFromProducts as $sid) {
+      $params[] = $sid;
+    }
+  } else {
+    $where[] = "(s.title LIKE ? OR a.name LIKE ?)";
+    $params[] = "%$busqueda%";
+    $params[] = "%$busqueda%";
+  }
 }
 
 // Filtro por estado (requiere calcular en PHP después)
@@ -168,6 +190,25 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute($params);
 $allSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Si hay búsqueda, obtener productos que coinciden para cada venta
+$matchingProducts = [];
+if ($busqueda !== '') {
+  foreach ($allSales as $sale) {
+    $stmtMatchProducts = $pdo->prepare("
+      SELECT id, name, price, currency, image
+      FROM products
+      WHERE sale_id = ?
+        AND (name LIKE ? OR description LIKE ?)
+      LIMIT 3
+    ");
+    $stmtMatchProducts->execute([$sale['id'], "%$busqueda%", "%$busqueda%"]);
+    $products = $stmtMatchProducts->fetchAll(PDO::FETCH_ASSOC);
+    if (!empty($products)) {
+      $matchingProducts[$sale['id']] = $products;
+    }
+  }
+}
 
 // Filtrar por estado si es necesario
 $nowTs = time();
@@ -1202,6 +1243,98 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       color: var(--gray-700);
     }
 
+    /* PRODUCTOS ENCONTRADOS */
+    .found-products {
+      margin: 0 1rem 1rem 1rem;
+      padding: 1rem;
+      background: linear-gradient(135deg, rgba(39, 174, 96, 0.08), rgba(39, 174, 96, 0.02));
+      border-left: 3px solid var(--success);
+      border-radius: var(--radius-sm);
+    }
+
+    .found-products-title {
+      font-weight: 700;
+      color: var(--success);
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .found-product-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem;
+      background: white;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      transition: var(--transition);
+      border: 1px solid var(--gray-200);
+    }
+
+    .found-product-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .found-product-item:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transform: translateX(4px);
+    }
+
+    .found-product-img {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid var(--gray-300);
+      flex-shrink: 0;
+    }
+
+    .found-product-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .found-product-name {
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--dark);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .found-product-price {
+      font-size: 0.8125rem;
+      color: var(--success);
+      font-weight: 700;
+      margin-top: 0.125rem;
+    }
+
+    .found-product-btn {
+      padding: 0.5rem 0.875rem;
+      background: linear-gradient(135deg, var(--success), #229954);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.8125rem;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .found-product-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+    }
+
     /* RESPONSIVE */
     @media (max-width: 768px) {
       .header {
@@ -1574,6 +1707,34 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
             <i class="fas fa-tag" style="font-size: 0.7rem;"></i>
             <?php echo htmlspecialchars($tag); ?>
           </span>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- PRODUCTOS ENCONTRADOS en la búsqueda -->
+        <?php if (!empty($matchingProducts[$s['id']])): ?>
+        <div class="found-products">
+          <div class="found-products-title">
+            <i class="fas fa-search"></i>
+            <span>Productos que coinciden con "<?php echo htmlspecialchars($busqueda); ?>":</span>
+          </div>
+          <?php foreach ($matchingProducts[$s['id']] as $product):
+            $productImg = !empty($product['image']) ? 'uploads/' . ltrim($product['image'], '/') : 'assets/placeholder.jpg';
+            $productPrice = $product['currency'] === 'USD'
+              ? '$' . number_format($product['price'], 2)
+              : '₡' . number_format($product['price'], 0);
+          ?>
+          <div class="found-product-item">
+            <img src="<?php echo htmlspecialchars($productImg); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" class="found-product-img">
+            <div class="found-product-info">
+              <div class="found-product-name"><?php echo htmlspecialchars($product['name']); ?></div>
+              <div class="found-product-price"><?php echo $productPrice; ?></div>
+            </div>
+            <a href="store.php?sale_id=<?php echo (int)$s['id']; ?>&product_id=<?php echo (int)$product['id']; ?>#product-<?php echo (int)$product['id']; ?>" class="found-product-btn">
+              <i class="fas fa-shopping-cart"></i>
+              <span>Ver producto</span>
+            </a>
+          </div>
           <?php endforeach; ?>
         </div>
         <?php endif; ?>
