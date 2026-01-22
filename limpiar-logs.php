@@ -17,7 +17,7 @@ ini_set('memory_limit', '256M');
 $directorios = [
     __DIR__ . '/mysql-logs',
     '/home/comprati/public_html/mysql-logs',
-    '/home/comprati/comprati_repo/mysql-logs',
+    '/home/comprati/compratica_repo/mysql-logs',  // CORREGIDO: compratica_repo (con "a")
     dirname(__DIR__) . '/mysql-logs'
 ];
 
