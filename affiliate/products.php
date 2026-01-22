@@ -14,6 +14,15 @@ $ms = $pdo->prepare("SELECT id, title FROM sales WHERE affiliate_id=? AND is_act
 $ms->execute([$aff_id]);
 $my_sales = $ms->fetchAll(PDO::FETCH_ASSOC);
 
+// Obtener categorías disponibles
+$categories = [];
+try {
+  $cats = $pdo->query("SELECT id, name, icon FROM categories WHERE active=1 ORDER BY display_order ASC");
+  $categories = $cats->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+  error_log('[affiliate/products.php] No se pudieron cargar categorías: ' . $e->getMessage());
+}
+
 // Crear/Actualizar/Eliminar
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
@@ -422,7 +431,14 @@ $products = $q->fetchAll(PDO::FETCH_ASSOC);
 
       <label>
         <i class="fas fa-folder-open"></i> Categoría
-        <input class="input" name="category" placeholder="Ej: Ropa, Electrónica, Hogar, Deportes...">
+        <select class="input" name="category">
+          <option value="">Selecciona una categoría (opcional)</option>
+          <?php foreach($categories as $cat): ?>
+            <option value="<?= htmlspecialchars($cat['name']) ?>">
+              <?= htmlspecialchars($cat['name']) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
       </label>
 
       <div class="form-grid">
@@ -541,7 +557,16 @@ $products = $q->fetchAll(PDO::FETCH_ASSOC);
                 <div style="padding:8px 0; display:grid; gap:6px">
                   <label>Nombre <input class="input" name="name" value="<?= htmlspecialchars($p['name']) ?>" required></label>
                   <label>Descripción <textarea class="input" name="description" rows="3"></textarea></label>
-                  <label>Categoría <input class="input" name="category" value="<?= htmlspecialchars($p['category'] ?? '') ?>" placeholder="Ej: Ropa, Electrónica..."></label>
+                  <label>Categoría
+                    <select class="input" name="category">
+                      <option value="">Sin categoría</option>
+                      <?php foreach($categories as $cat): ?>
+                        <option value="<?= htmlspecialchars($cat['name']) ?>" <?= ($p['category'] ?? '') === $cat['name'] ? 'selected' : '' ?>>
+                          <?= htmlspecialchars($cat['name']) ?>
+                        </option>
+                      <?php endforeach; ?>
+                    </select>
+                  </label>
                   <label>Precio <input class="input" type="number" step="0.01" name="price" value="<?= htmlspecialchars((string)$p['price']) ?>" required></label>
                   <label>Stock <input class="input" type="number" name="stock" min="0" value="<?= (int)$p['stock'] ?>" required></label>
                   <label>Moneda
