@@ -127,10 +127,20 @@ if (PHP_VERSION_ID < 70300) {
 
 $pdo = db();
 
+// Obtener categorías disponibles
+$categories = [];
+try {
+  $cats = $pdo->query("SELECT id, name, icon FROM categories WHERE active=1 ORDER BY display_order ASC");
+  $categories = $cats->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+  error_log('[venta-garaje.php] No se pudieron cargar categorías: ' . $e->getMessage());
+}
+
 // ============= ETAPA 1: FILTROS Y BÚSQUEDA =============
 $busqueda = trim($_GET['buscar'] ?? '');
 $filtroEstado = $_GET['estado'] ?? 'todas'; // 'todas', 'vivo', 'proximas'
 $ordenamiento = $_GET['orden'] ?? 'inicio_asc'; // 'inicio_asc', 'inicio_desc', 'finalizando', 'recientes'
+$filtroCategoria = trim($_GET['categoria'] ?? ''); // Categoría seleccionada
 
 // Construir WHERE dinámico
 $where = ["s.is_active = 1"];
@@ -162,6 +172,30 @@ if ($busqueda !== '') {
     $where[] = "(s.title LIKE ? OR a.name LIKE ?)";
     $params[] = "%$busqueda%";
     $params[] = "%$busqueda%";
+  }
+}
+
+// Filtro por CATEGORÍA: Buscar ventas que tienen productos de esa categoría
+if ($filtroCategoria !== '') {
+  $stmtCategoryProducts = $pdo->prepare("
+    SELECT DISTINCT p.sale_id
+    FROM products p
+    WHERE p.sale_id IS NOT NULL
+      AND p.category = ?
+      AND p.active = 1
+  ");
+  $stmtCategoryProducts->execute([$filtroCategoria]);
+  $salesIdsFromCategory = $stmtCategoryProducts->fetchAll(PDO::FETCH_COLUMN);
+
+  if (!empty($salesIdsFromCategory)) {
+    $placeholders = implode(',', array_fill(0, count($salesIdsFromCategory), '?'));
+    $where[] = "s.id IN ($placeholders)";
+    foreach ($salesIdsFromCategory as $sid) {
+      $params[] = $sid;
+    }
+  } else {
+    // Si no hay productos de esa categoría, forzar resultado vacío
+    $where[] = "1=0";
   }
 }
 
@@ -1576,15 +1610,15 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
           <i class="fas fa-filter"></i> Estado:
         </span>
         <div class="filter-pills">
-          <a href="?buscar=<?= urlencode($busqueda) ?>&estado=todas&orden=<?= urlencode($ordenamiento) ?>"
+          <a href="?buscar=<?= urlencode($busqueda) ?>&estado=todas&orden=<?= urlencode($ordenamiento) ?>&categoria=<?= urlencode($filtroCategoria) ?>"
              class="filter-pill <?= $filtroEstado === 'todas' ? 'active' : '' ?>">
             Todas
           </a>
-          <a href="?buscar=<?= urlencode($busqueda) ?>&estado=vivo&orden=<?= urlencode($ordenamiento) ?>"
+          <a href="?buscar=<?= urlencode($busqueda) ?>&estado=vivo&orden=<?= urlencode($ordenamiento) ?>&categoria=<?= urlencode($filtroCategoria) ?>"
              class="filter-pill <?= $filtroEstado === 'vivo' ? 'active' : '' ?>">
             🔴 En Vivo
           </a>
-          <a href="?buscar=<?= urlencode($busqueda) ?>&estado=proximas&orden=<?= urlencode($ordenamiento) ?>"
+          <a href="?buscar=<?= urlencode($busqueda) ?>&estado=proximas&orden=<?= urlencode($ordenamiento) ?>&categoria=<?= urlencode($filtroCategoria) ?>"
              class="filter-pill <?= $filtroEstado === 'proximas' ? 'active' : '' ?>">
             🔜 Próximas
           </a>
@@ -1612,6 +1646,21 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
         </select>
       </div>
 
+      <!-- Filtro por Categoría -->
+      <div class="filters-row" style="margin-top: 1rem;">
+        <span class="filter-label">
+          <i class="fas fa-folder-open"></i> Categoría:
+        </span>
+        <select name="categoria" class="filter-select" onchange="this.form.submit()">
+          <option value="">Todas las categorías</option>
+          <?php foreach($categories as $cat): ?>
+            <option value="<?= htmlspecialchars($cat['name']) ?>" <?= $filtroCategoria === $cat['name'] ? 'selected' : '' ?>>
+              <?= htmlspecialchars($cat['name']) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+
       <input type="hidden" name="estado" value="<?= htmlspecialchars($filtroEstado) ?>">
     </form>
 
@@ -1621,6 +1670,9 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       Mostrando <strong><?= count($sales) ?></strong> venta<?= count($sales) !== 1 ? 's' : '' ?>
       <?php if ($busqueda): ?>
         que coinciden con "<strong><?= htmlspecialchars($busqueda) ?></strong>"
+      <?php endif; ?>
+      <?php if ($filtroCategoria): ?>
+        en la categoría <strong><?= htmlspecialchars($filtroCategoria) ?></strong>
       <?php endif; ?>
     </div>
   </div>
