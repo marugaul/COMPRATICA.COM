@@ -1354,6 +1354,49 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       flex-wrap: wrap;
     }
 
+    /* Botones de compartir */
+    .share-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .share-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-size: 0.875rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .share-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .share-btn.whatsapp {
+      background: linear-gradient(135deg, #25D366, #128C7E);
+      color: white;
+    }
+
+    .share-btn.whatsapp:hover {
+      background: linear-gradient(135deg, #128C7E, #075E54);
+    }
+
+    .share-btn.facebook {
+      background: linear-gradient(135deg, #1877F2, #1864CC);
+      color: white;
+    }
+
+    .share-btn.facebook:hover {
+      background: linear-gradient(135deg, #1864CC, #1555B0);
+    }
+
     .tag {
       padding: 0.375rem 0.75rem;
       background: var(--gray-100);
@@ -1808,10 +1851,30 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
           <?php endif; ?>
         </div>
 
-        <h3><?php echo htmlspecialchars($s['title']); ?></h3>
-        <p>
-          <strong><?php echo htmlspecialchars($s['affiliate_name']); ?></strong>
-        </p>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin: 0 1rem;">
+          <div style="flex: 1;">
+            <h3 style="margin: 0;"><?php echo htmlspecialchars($s['title']); ?></h3>
+            <p style="margin: 0.5rem 0 0 0;">
+              <strong><?php echo htmlspecialchars($s['affiliate_name']); ?></strong>
+            </p>
+          </div>
+
+          <!-- Botones de compartir -->
+          <?php
+            $saleUrl = (defined('APP_URL') ? APP_URL : 'https://compratica.com') . '/store.php?sale_id=' . (int)$s['id'];
+            $whatsappText = urlencode('¡Mirá esta venta de garaje! ' . $s['title'] . ' - ' . $saleUrl);
+            $facebookUrl = 'https://www.facebook.com/sharer/sharer.php?u=' . urlencode($saleUrl);
+            $whatsappUrl = 'https://wa.me/?text=' . $whatsappText;
+          ?>
+          <div class="share-buttons">
+            <a href="<?php echo $whatsappUrl; ?>" target="_blank" class="share-btn whatsapp" title="Compartir por WhatsApp">
+              <i class="fab fa-whatsapp"></i>
+            </a>
+            <a href="<?php echo $facebookUrl; ?>" target="_blank" class="share-btn facebook" title="Compartir en Facebook">
+              <i class="fab fa-facebook-f"></i>
+            </a>
+          </div>
+        </div>
 
         <!-- ETAPA 1: Ubicación -->
         <?php if (!empty($s['location'])): ?>
