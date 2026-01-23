@@ -886,6 +886,13 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       color: #1e40af;
     }
 
+    .chip-private {
+      background: linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(243, 156, 18, 0.08));
+      border: 1px solid rgba(243, 156, 18, 0.4);
+      color: #d68910;
+      font-weight: 600;
+    }
+
     .card h3 {
       font-size: 1.25rem;
       font-weight: 700;
@@ -1397,6 +1404,28 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       background: linear-gradient(135deg, #1864CC, #1555B0);
     }
 
+    .share-btn.instagram {
+      background: linear-gradient(135deg, #E4405F, #C13584);
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .share-btn.instagram:hover {
+      background: linear-gradient(135deg, #C13584, #833AB4);
+    }
+
+    .share-btn.tiktok {
+      background: linear-gradient(135deg, #000000, #1a1a1a);
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .share-btn.tiktok:hover {
+      background: linear-gradient(135deg, #1a1a1a, #333333);
+    }
+
     .tag {
       padding: 0.375rem 0.75rem;
       background: var(--gray-100);
@@ -1849,6 +1878,11 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
           <?php if ($secondary): ?>
             <span class="<?php echo $secClass; ?>"><?php echo $secondary; ?></span>
           <?php endif; ?>
+          <?php if (!empty($s['is_private'])): ?>
+            <span class="chip chip-private">
+              <i class="fas fa-lock"></i> Privada
+            </span>
+          <?php endif; ?>
         </div>
 
         <div style="display: flex; align-items: center; justify-content: space-between; margin: 0 1rem;">
@@ -1873,6 +1907,12 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
             <a href="<?php echo $facebookUrl; ?>" target="_blank" class="share-btn facebook" title="Compartir en Facebook">
               <i class="fab fa-facebook-f"></i>
             </a>
+            <button onclick="copyToClipboard('<?php echo addslashes($saleUrl); ?>', 'Instagram')" class="share-btn instagram" title="Copiar link para Instagram">
+              <i class="fab fa-instagram"></i>
+            </button>
+            <button onclick="copyToClipboard('<?php echo addslashes($saleUrl); ?>', 'TikTok')" class="share-btn tiktok" title="Copiar link para TikTok">
+              <i class="fab fa-tiktok"></i>
+            </button>
           </div>
         </div>
 
@@ -2081,6 +2121,36 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
 </footer>
 
 <script>
+// ============= FUNCIÓN COPIAR LINK =============
+function copyToClipboard(text, platform) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      alert('¡Link copiado! Ahora podés pegarlo en ' + platform);
+    }).catch(function(err) {
+      // Fallback para navegadores antiguos
+      fallbackCopy(text, platform);
+    });
+  } else {
+    fallbackCopy(text, platform);
+  }
+}
+
+function fallbackCopy(text, platform) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.position = 'fixed';
+  textArea.style.left = '-999999px';
+  document.body.appendChild(textArea);
+  textArea.select();
+  try {
+    document.execCommand('copy');
+    alert('¡Link copiado! Ahora podés pegarlo en ' + platform);
+  } catch (err) {
+    alert('No se pudo copiar el link. Por favor, copialo manualmente: ' + text);
+  }
+  document.body.removeChild(textArea);
+}
+
 // ============= MENÚ HAMBURGUESA =============
 const menuButton = document.getElementById('menuButton');
 const menuOverlay = document.getElementById('menu-overlay');
