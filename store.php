@@ -807,6 +807,49 @@ foreach ($_SESSION['cart'] as $it) {
     margin-top: auto;
     }
 
+    /* Botones de compartir producto */
+    .share-buttons-product {
+      display: flex;
+      gap: 0.375rem;
+      flex-shrink: 0;
+    }
+
+    .share-btn-product {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-size: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .share-btn-product:hover {
+      transform: translateY(-2px) scale(1.1);
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .share-btn-product.whatsapp {
+      background: linear-gradient(135deg, #25D366, #128C7E);
+      color: white;
+    }
+
+    .share-btn-product.whatsapp:hover {
+      background: linear-gradient(135deg, #128C7E, #075E54);
+    }
+
+    .share-btn-product.facebook {
+      background: linear-gradient(135deg, #1877F2, #1864CC);
+      color: white;
+    }
+
+    .share-btn-product.facebook:hover {
+      background: linear-gradient(135deg, #1864CC, #1555B0);
+    }
+
     .product-price {
     font-size: 1.5rem;
     font-weight: 700;
@@ -1141,8 +1184,26 @@ foreach ($_SESSION['cart'] as $it) {
       </div>
     </div>
     <div class="product-body">
-    <h3 class="product-name"><?= h($product['name']) ?></h3>
-    
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem;">
+      <h3 class="product-name" style="margin-bottom: 0;"><?= h($product['name']) ?></h3>
+
+      <!-- Botones de compartir producto -->
+      <?php
+        $productUrl = (defined('APP_URL') ? APP_URL : 'https://compratica.com') . '/store.php?sale_id=' . (int)$sale_id . '&product_id=' . (int)$product['id'] . '#product-' . (int)$product['id'];
+        $productWhatsappText = urlencode('¡Mirá este producto! ' . $product['name'] . ' - ' . formatPrice((float)$product['price'], $product['currency']) . ' - ' . $productUrl);
+        $productFacebookUrl = 'https://www.facebook.com/sharer/sharer.php?u=' . urlencode($productUrl);
+        $productWhatsappUrl = 'https://wa.me/?text=' . $productWhatsappText;
+      ?>
+      <div class="share-buttons-product">
+        <a href="<?= $productWhatsappUrl ?>" target="_blank" class="share-btn-product whatsapp" title="Compartir por WhatsApp">
+          <i class="fab fa-whatsapp"></i>
+        </a>
+        <a href="<?= $productFacebookUrl ?>" target="_blank" class="share-btn-product facebook" title="Compartir en Facebook">
+          <i class="fab fa-facebook-f"></i>
+        </a>
+      </div>
+    </div>
+
     <?php if ($isOutOfStock): ?>
     <span class="product-stock stock-out">
     <i class="fas fa-times-circle"></i> Sin stock
