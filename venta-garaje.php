@@ -1880,7 +1880,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
           <?php endif; ?>
           <?php if (!empty($s['is_private'])): ?>
             <span class="chip chip-private">
-              <i class="fas fa-lock"></i> Privada
+              <i class="fas fa-lock"></i>
             </span>
           <?php endif; ?>
         </div>

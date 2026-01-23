@@ -302,7 +302,7 @@ if (!function_exists('h')) {
             <td>
               <?php if (!empty($r['is_private'])): ?>
                 <span style="background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(243, 156, 18, 0.05)); border: 1px solid rgba(243, 156, 18, 0.3); color: #d68910; padding: 0.25rem 0.625rem; border-radius: 12px; font-size: 0.8125rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
-                  <i class="fas fa-lock"></i> Privada
+                  <i class="fas fa-lock"></i>
                 </span>
               <?php else: ?>
                 <span style="color: var(--gray-600);">Pública</span>
