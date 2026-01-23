@@ -850,6 +850,28 @@ foreach ($_SESSION['cart'] as $it) {
       background: linear-gradient(135deg, #1864CC, #1555B0);
     }
 
+    .share-btn-product.instagram {
+      background: linear-gradient(135deg, #E4405F, #C13584);
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .share-btn-product.instagram:hover {
+      background: linear-gradient(135deg, #C13584, #833AB4);
+    }
+
+    .share-btn-product.tiktok {
+      background: linear-gradient(135deg, #000000, #1a1a1a);
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .share-btn-product.tiktok:hover {
+      background: linear-gradient(135deg, #1a1a1a, #333333);
+    }
+
     .product-price {
     font-size: 1.5rem;
     font-weight: 700;
@@ -1201,6 +1223,12 @@ foreach ($_SESSION['cart'] as $it) {
         <a href="<?= $productFacebookUrl ?>" target="_blank" class="share-btn-product facebook" title="Compartir en Facebook">
           <i class="fab fa-facebook-f"></i>
         </a>
+        <button onclick="copyToClipboardProduct('<?= addslashes($productUrl) ?>', 'Instagram')" class="share-btn-product instagram" title="Copiar link para Instagram">
+          <i class="fab fa-instagram"></i>
+        </button>
+        <button onclick="copyToClipboardProduct('<?= addslashes($productUrl) ?>', 'TikTok')" class="share-btn-product tiktok" title="Copiar link para TikTok">
+          <i class="fab fa-tiktok"></i>
+        </button>
       </div>
     </div>
 
@@ -1280,6 +1308,35 @@ foreach ($_SESSION['cart'] as $it) {
 </div>
 
 <script>
+// ========== FUNCIÓN COPIAR LINK ==========
+function copyToClipboardProduct(text, platform) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      alert('¡Link copiado! Ahora podés pegarlo en ' + platform);
+    }).catch(function(err) {
+      fallbackCopyProduct(text, platform);
+    });
+  } else {
+    fallbackCopyProduct(text, platform);
+  }
+}
+
+function fallbackCopyProduct(text, platform) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.position = 'fixed';
+  textArea.style.left = '-999999px';
+  document.body.appendChild(textArea);
+  textArea.select();
+  try {
+    document.execCommand('copy');
+    alert('¡Link copiado! Ahora podés pegarlo en ' + platform);
+  } catch (err) {
+    alert('No se pudo copiar el link. Por favor, copialo manualmente: ' + text);
+  }
+  document.body.removeChild(textArea);
+}
+
 // ========== GALERÍA DE IMÁGENES ==========
 
 // Cambiar imagen principal al hacer clic en miniatura
