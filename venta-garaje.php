@@ -212,11 +212,11 @@ $orderBy = match($ordenamiento) {
   default => 's.start_at ASC'
 };
 
-// Consulta con contador de productos
+// Consulta con contador de productos ACTIVOS
 $stmt = $pdo->prepare("
   SELECT s.*,
          a.name AS affiliate_name,
-         (SELECT COUNT(*) FROM products p WHERE p.sale_id = s.id) AS product_count
+         (SELECT COUNT(*) FROM products p WHERE p.sale_id = s.id AND p.active = 1) AS product_count
   FROM sales s
   JOIN affiliates a ON a.id = s.affiliate_id
   WHERE $whereClause
@@ -986,6 +986,44 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       letter-spacing: 0.5px;
     }
 
+    /* ETAPA 2: Progress Bar */
+    .progress-bar-container {
+      margin-top: 0.75rem;
+      width: 100%;
+      height: 8px;
+      background: linear-gradient(90deg, #e9ecef 0%, #dee2e6 100%);
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success) 0%, #229954 100%);
+      border-radius: 10px;
+      transition: width 0.5s ease-in-out;
+      position: relative;
+      box-shadow: 0 0 10px rgba(39, 174, 96, 0.5);
+      animation: progress-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes progress-glow {
+      0%, 100% {
+        box-shadow: 0 0 10px rgba(39, 174, 96, 0.5);
+      }
+      50% {
+        box-shadow: 0 0 15px rgba(39, 174, 96, 0.8);
+      }
+    }
+
+    .progress-label {
+      margin-top: 0.5rem;
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--gray-600);
+      font-weight: 600;
+    }
+
     .actions {
       padding: 1rem;
       display: flex;
@@ -1274,6 +1312,39 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       font-size: 0.875rem;
       font-weight: 600;
       color: var(--cr-azul);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .card-product-count.low-stock {
+      background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(243, 156, 18, 0.05));
+      border-left-color: var(--warning);
+      color: #d68910;
+    }
+
+    .stock-badge {
+      margin-left: auto;
+      padding: 0.25rem 0.625rem;
+      background: linear-gradient(135deg, var(--warning), #e67e22);
+      color: white;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      animation: pulse-badge 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-badge {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
     }
 
     .card-tags {
@@ -1750,11 +1821,19 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
         </div>
         <?php endif; ?>
 
-        <!-- ETAPA 1: Contador de productos -->
-        <?php if (!empty($s['product_count'])): ?>
-        <div class="card-product-count">
+        <!-- ETAPA 2: Contador de productos con badge de stock -->
+        <?php if (!empty($s['product_count'])):
+          $productCount = (int)$s['product_count'];
+          $lowStock = $productCount > 0 && $productCount <= 5;
+        ?>
+        <div class="card-product-count<?php echo $lowStock ? ' low-stock' : ''; ?>">
           <i class="fas fa-box-open"></i>
-          <?php echo (int)$s['product_count']; ?> producto<?php echo (int)$s['product_count'] !== 1 ? 's' : ''; ?> disponible<?php echo (int)$s['product_count'] !== 1 ? 's' : ''; ?>
+          <?php echo $productCount; ?> producto<?php echo $productCount !== 1 ? 's' : ''; ?> disponible<?php echo $productCount !== 1 ? 's' : ''; ?>
+          <?php if ($lowStock): ?>
+            <span class="stock-badge">
+              <i class="fas fa-exclamation-triangle"></i> Últimas unidades
+            </span>
+          <?php endif; ?>
         </div>
         <?php endif; ?>
 
@@ -1854,6 +1933,21 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
               <strong>Inicia en:</strong>
               <span class="countdown-timer" data-target="<?php echo $st; ?>">Calculando...</span>
             </div>
+          <?php endif; ?>
+
+          <!-- ETAPA 2: Progress Bar -->
+          <?php if ($state === 'En vivo'):
+            $totalDuration = $en - $st;
+            $elapsed = $nowTs - $st;
+            $percentage = ($elapsed / $totalDuration) * 100;
+            $percentage = max(0, min(100, $percentage)); // Clamp entre 0-100
+          ?>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: <?php echo number_format($percentage, 2); ?>%"></div>
+          </div>
+          <div class="progress-label">
+            <span><?php echo number_format($percentage, 0); ?>% transcurrido</span>
+          </div>
           <?php endif; ?>
         </div>
 
