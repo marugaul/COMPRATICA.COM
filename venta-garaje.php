@@ -225,18 +225,34 @@ $stmt = $pdo->prepare("
 $stmt->execute($params);
 $allSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Si hay búsqueda, obtener productos que coinciden para cada venta
+// Obtener productos coincidentes para mostrar (por búsqueda o categoría)
 $matchingProducts = [];
-if ($busqueda !== '') {
+if ($busqueda !== '' || $filtroCategoria !== '') {
   foreach ($allSales as $sale) {
-    $stmtMatchProducts = $pdo->prepare("
-      SELECT id, name, price, currency, image
-      FROM products
-      WHERE sale_id = ?
-        AND (name LIKE ? OR description LIKE ?)
-      LIMIT 3
-    ");
-    $stmtMatchProducts->execute([$sale['id'], "%$busqueda%", "%$busqueda%"]);
+    if ($busqueda !== '') {
+      // Búsqueda por texto
+      $stmtMatchProducts = $pdo->prepare("
+        SELECT id, name, price, currency, image
+        FROM products
+        WHERE sale_id = ?
+          AND (name LIKE ? OR description LIKE ?)
+          AND active = 1
+        LIMIT 10
+      ");
+      $stmtMatchProducts->execute([$sale['id'], "%$busqueda%", "%$busqueda%"]);
+    } else {
+      // Filtro por categoría
+      $stmtMatchProducts = $pdo->prepare("
+        SELECT id, name, price, currency, image
+        FROM products
+        WHERE sale_id = ?
+          AND category = ?
+          AND active = 1
+        LIMIT 10
+      ");
+      $stmtMatchProducts->execute([$sale['id'], $filtroCategoria]);
+    }
+
     $products = $stmtMatchProducts->fetchAll(PDO::FETCH_ASSOC);
     if (!empty($products)) {
       $matchingProducts[$sale['id']] = $products;
@@ -1763,14 +1779,23 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
         </div>
         <?php endif; ?>
 
-        <!-- PRODUCTOS ENCONTRADOS en la búsqueda -->
-        <?php if (!empty($matchingProducts[$s['id']])): ?>
+        <!-- PRODUCTOS ENCONTRADOS en la búsqueda o categoría -->
+        <?php if (!empty($matchingProducts[$s['id']])):
+          $allProducts = $matchingProducts[$s['id']];
+          $totalProducts = count($allProducts);
+          $displayProducts = array_slice($allProducts, 0, 3); // Mostrar solo los primeros 3
+        ?>
         <div class="found-products">
           <div class="found-products-title">
-            <i class="fas fa-search"></i>
-            <span>Productos que coinciden con "<?php echo htmlspecialchars($busqueda); ?>":</span>
+            <?php if ($busqueda !== ''): ?>
+              <i class="fas fa-search"></i>
+              <span>Productos que coinciden con "<?php echo htmlspecialchars($busqueda); ?>":</span>
+            <?php else: ?>
+              <i class="fas fa-folder-open"></i>
+              <span>Productos en categoría <?php echo htmlspecialchars($filtroCategoria); ?>:</span>
+            <?php endif; ?>
           </div>
-          <?php foreach ($matchingProducts[$s['id']] as $product):
+          <?php foreach ($displayProducts as $product):
             $productImg = !empty($product['image']) ? 'uploads/' . ltrim($product['image'], '/') : 'assets/placeholder.jpg';
             $productPrice = $product['currency'] === 'USD'
               ? '$' . number_format($product['price'], 2)
@@ -1788,6 +1813,17 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
             </a>
           </div>
           <?php endforeach; ?>
+
+          <?php if ($totalProducts > 3): ?>
+          <div style="margin-top: 0.75rem; text-align: center;">
+            <a href="store.php?sale_id=<?php echo (int)$s['id']; ?>"
+               class="found-product-btn"
+               style="display: inline-flex; background: linear-gradient(135deg, var(--cr-azul), var(--cr-azul-claro));">
+              <i class="fas fa-eye"></i>
+              <span>Ver los <?php echo $totalProducts; ?> productos</span>
+            </a>
+          </div>
+          <?php endif; ?>
         </div>
         <?php endif; ?>
 
