@@ -275,6 +275,9 @@ if (!function_exists('h')) {
             <th>ID</th>
             <th>Título</th>
             <th>Afiliado</th>
+            <th>Ubicación</th>
+            <th>Privada</th>
+            <th>Código</th>
             <th>Inicio</th>
             <th>Fin</th>
             <th>Fee</th>
@@ -288,6 +291,30 @@ if (!function_exists('h')) {
             <td><strong>#<?= (int)$r['id'] ?></strong></td>
             <td><?= h($r['title'] ?? '—') ?></td>
             <td class="small"><?= h($r['aff_email'] ?: '—') ?></td>
+            <td class="small">
+              <?php if (!empty($r['location'])): ?>
+                <i class="fas fa-map-marker-alt" style="color: var(--danger);"></i>
+                <?= h($r['location']) ?>
+              <?php else: ?>
+                <span style="color: var(--gray-600);">—</span>
+              <?php endif; ?>
+            </td>
+            <td>
+              <?php if (!empty($r['is_private'])): ?>
+                <span style="background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(243, 156, 18, 0.05)); border: 1px solid rgba(243, 156, 18, 0.3); color: #d68910; padding: 0.25rem 0.625rem; border-radius: 12px; font-size: 0.8125rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+                  <i class="fas fa-lock"></i> Privada
+                </span>
+              <?php else: ?>
+                <span style="color: var(--gray-600);">Pública</span>
+              <?php endif; ?>
+            </td>
+            <td class="small">
+              <?php if (!empty($r['is_private']) && !empty($r['access_code'])): ?>
+                <code style="background: var(--gray-100); padding: 0.25rem 0.5rem; border-radius: 4px; font-family: monospace; font-weight: 700; color: var(--primary);"><?= h($r['access_code']) ?></code>
+              <?php else: ?>
+                <span style="color: var(--gray-600);">—</span>
+              <?php endif; ?>
+            </td>
             <td class="small"><?= h($r['start_at'] ?: '—') ?></td>
             <td class="small"><?= h($r['end_at'] ?: '—') ?></td>
             <td><?= h($r['fee_status'] ?: '—') ?></td>
