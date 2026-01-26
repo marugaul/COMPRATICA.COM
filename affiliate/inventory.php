@@ -78,66 +78,253 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 /**
- * Genera PDF y lo envía al navegador
+ * Genera PDF y lo envía al navegador para descarga
  */
 function generatePDF($products, $affiliate_name) {
-  generatePDFOutput($products, $affiliate_name, 'download');
-}
-
-/**
- * Genera PDF y lo guarda en archivo temporal
- */
-function generatePDFFile($products, $affiliate_name) {
-  return generatePDFOutput($products, $affiliate_name, 'file');
-}
-
-/**
- * Genera PDF (descarga o archivo)
- */
-function generatePDFOutput($products, $affiliate_name, $mode = 'download') {
   $app_url = defined('APP_URL') ? APP_URL : 'https://compratica.com';
 
-  // HTML para PDF
-  $html = '<!DOCTYPE html>
+  // Verificar si TCPDF está disponible
+  $tcpdf_path = __DIR__ . '/../vendor/tecnickcom/tcpdf/tcpdf.php';
+  if (file_exists($tcpdf_path)) {
+    require_once $tcpdf_path;
+    generatePDFWithTCPDF($products, $affiliate_name, $app_url);
+    return;
+  }
+
+  // Si no hay TCPDF, generar HTML optimizado para imprimir a PDF
+  generatePrintableHTML($products, $affiliate_name, $app_url);
+}
+
+/**
+ * Genera PDF usando TCPDF
+ */
+function generatePDFWithTCPDF($products, $affiliate_name, $app_url) {
+  $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+
+  // Configuración del documento
+  $pdf->SetCreator('COMPRATICA.COM');
+  $pdf->SetAuthor($affiliate_name);
+  $pdf->SetTitle('Inventario de Productos');
+  $pdf->SetSubject('Inventario');
+
+  // Quitar header/footer por defecto
+  $pdf->setPrintHeader(false);
+  $pdf->setPrintFooter(false);
+
+  // Márgenes
+  $pdf->SetMargins(15, 15, 15);
+  $pdf->SetAutoPageBreak(true, 15);
+
+  // Agregar página
+  $pdf->AddPage();
+
+  // Header con logo
+  $pdf->SetFont('helvetica', 'B', 20);
+  $pdf->SetTextColor(0, 43, 127); // Azul CR
+  $pdf->Cell(0, 10, 'COMPRATICA.COM', 0, 1, 'C');
+
+  $pdf->SetFont('helvetica', '', 12);
+  $pdf->SetTextColor(100, 100, 100);
+  $pdf->Cell(0, 6, 'Inventario de Productos', 0, 1, 'C');
+
+  $pdf->Ln(5);
+
+  // Línea separadora
+  $pdf->SetDrawColor(0, 43, 127);
+  $pdf->SetLineWidth(0.5);
+  $pdf->Line(15, $pdf->GetY(), 195, $pdf->GetY());
+  $pdf->Ln(5);
+
+  // Información
+  $pdf->SetFont('helvetica', '', 10);
+  $pdf->SetTextColor(0, 0, 0);
+  $pdf->Cell(40, 5, 'Afiliado:', 0, 0);
+  $pdf->SetFont('helvetica', 'B', 10);
+  $pdf->Cell(0, 5, $affiliate_name, 0, 1);
+
+  $pdf->SetFont('helvetica', '', 10);
+  $pdf->Cell(40, 5, 'Fecha:', 0, 0);
+  $pdf->Cell(0, 5, date('d/m/Y H:i:s'), 0, 1);
+
+  $pdf->Cell(40, 5, 'Total Productos:', 0, 0);
+  $pdf->SetFont('helvetica', 'B', 10);
+  $pdf->Cell(0, 5, count($products), 0, 1);
+
+  $pdf->Ln(5);
+
+  // Tabla de productos
+  $pdf->SetFont('helvetica', 'B', 9);
+  $pdf->SetFillColor(0, 43, 127);
+  $pdf->SetTextColor(255, 255, 255);
+
+  // Headers
+  $pdf->Cell(45, 7, 'Espacio', 1, 0, 'L', true);
+  $pdf->Cell(60, 7, 'Producto', 1, 0, 'L', true);
+  $pdf->Cell(25, 7, 'Precio', 1, 0, 'C', true);
+  $pdf->Cell(20, 7, 'Stock', 1, 0, 'C', true);
+  $pdf->Cell(30, 7, 'Estado', 1, 1, 'C', true);
+
+  // Datos
+  $pdf->SetFont('helvetica', '', 8);
+  $pdf->SetTextColor(0, 0, 0);
+  $fill = false;
+
+  foreach ($products as $p) {
+    $price = ($p['currency'] === 'USD' ? '$' : '₡') . number_format((float)$p['price'], $p['currency'] === 'USD' ? 2 : 0);
+    $stock = (int)$p['stock'];
+    $status = $stock > 0 ? "Disponible ($stock)" : 'Sin stock';
+
+    $pdf->SetFillColor($fill ? 245 : 255, $fill ? 245 : 255, $fill ? 245 : 255);
+
+    $pdf->Cell(45, 6, substr($p['sale_title'], 0, 20), 1, 0, 'L', true);
+    $pdf->Cell(60, 6, substr($p['name'], 0, 35), 1, 0, 'L', true);
+    $pdf->Cell(25, 6, $price, 1, 0, 'C', true);
+    $pdf->Cell(20, 6, $stock, 1, 0, 'C', true);
+
+    if ($stock > 0) {
+      $pdf->SetTextColor(39, 174, 96); // Verde
+    } else {
+      $pdf->SetTextColor(231, 76, 60); // Rojo
+    }
+    $pdf->Cell(30, 6, $status, 1, 1, 'C', true);
+    $pdf->SetTextColor(0, 0, 0);
+
+    $fill = !$fill;
+  }
+
+  // Footer
+  $pdf->Ln(10);
+  $pdf->SetFont('helvetica', 'I', 8);
+  $pdf->SetTextColor(150, 150, 150);
+  $pdf->Cell(0, 5, 'Generado por COMPRATICA.COM - ' . date('d/m/Y H:i:s'), 0, 1, 'C');
+  $pdf->Cell(0, 5, $app_url, 0, 1, 'C');
+
+  // Output
+  $pdf->Output('inventario_' . date('Ymd_His') . '.pdf', 'D');
+}
+
+/**
+ * Genera HTML optimizado para imprimir a PDF (fallback)
+ */
+function generatePrintableHTML($products, $affiliate_name, $app_url) {
+  header('Content-Type: text/html; charset=utf-8');
+  header('Content-Disposition: inline; filename="inventario_' . date('Ymd_His') . '.html"');
+
+  echo '<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
+  <title>Inventario - ' . htmlspecialchars($affiliate_name) . '</title>
   <style>
-    body { font-family: Arial, sans-serif; color: #333; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #002b7f; padding-bottom: 20px; }
-    .header h1 { color: #002b7f; margin: 10px 0; }
-    .header img { max-width: 150px; margin-bottom: 10px; }
-    .info { margin-bottom: 20px; font-size: 12px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th { background: #002b7f; color: white; padding: 10px; text-align: left; font-size: 11px; }
-    td { padding: 8px; border-bottom: 1px solid #ddd; font-size: 10px; }
+    @media print {
+      body { margin: 0; padding: 20mm; }
+      .no-print { display: none; }
+    }
+    body {
+      font-family: Arial, sans-serif;
+      color: #333;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 3px solid #002b7f;
+      padding-bottom: 20px;
+    }
+    .header h1 {
+      color: #002b7f;
+      margin: 10px 0;
+      font-size: 28px;
+    }
+    .header p {
+      color: #666;
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    .info {
+      margin-bottom: 20px;
+      font-size: 12px;
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+    }
+    .info p { margin: 5px 0; }
+    .info strong { color: #002b7f; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 11px;
+    }
+    th {
+      background: #002b7f;
+      color: white;
+      padding: 10px 8px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+      font-size: 10px;
+    }
+    tr:nth-child(even) { background: #f9f9f9; }
     tr:hover { background: #f5f5f5; }
     .status-available { color: #27ae60; font-weight: bold; }
     .status-sold { color: #e74c3c; font-weight: bold; }
-    .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #666; }
+    .footer {
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 1px solid #ddd;
+      text-align: center;
+      font-size: 10px;
+      color: #666;
+    }
+    .print-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #002b7f;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .print-btn:hover {
+      background: #001a4d;
+    }
+    @page { margin: 20mm; }
   </style>
 </head>
 <body>
+  <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+
   <div class="header">
-    <h1>COMPRATICA.COM</h1>
+    <h1>🇨🇷 COMPRATICA.COM</h1>
     <p>Inventario de Productos</p>
   </div>
 
   <div class="info">
-    <strong>Afiliado:</strong> ' . htmlspecialchars($affiliate_name) . '<br>
-    <strong>Fecha:</strong> ' . date('d/m/Y H:i:s') . '<br>
-    <strong>Total Productos:</strong> ' . count($products) . '
+    <p><strong>Afiliado:</strong> ' . htmlspecialchars($affiliate_name) . '</p>
+    <p><strong>Fecha de generación:</strong> ' . date('d/m/Y H:i:s') . '</p>
+    <p><strong>Total de productos:</strong> ' . count($products) . '</p>
   </div>
 
   <table>
     <thead>
       <tr>
-        <th>Espacio</th>
-        <th>Producto</th>
-        <th>Precio</th>
-        <th>Stock</th>
-        <th>Estado</th>
-        <th>Link</th>
+        <th style="width: 25%">Espacio</th>
+        <th style="width: 30%">Producto</th>
+        <th style="width: 15%">Precio</th>
+        <th style="width: 10%">Stock</th>
+        <th style="width: 20%">Estado</th>
       </tr>
     </thead>
     <tbody>';
@@ -145,58 +332,87 @@ function generatePDFOutput($products, $affiliate_name, $mode = 'download') {
   foreach ($products as $p) {
     $price = ($p['currency'] === 'USD' ? '$' : '₡') . number_format((float)$p['price'], $p['currency'] === 'USD' ? 2 : 0);
     $stock = (int)$p['stock'];
-    $status = $stock > 0 ? '<span class="status-available">Disponible (' . $stock . ')</span>' : '<span class="status-sold">Sin stock</span>';
-    $product_url = $app_url . '/store.php?sale_id=' . (int)$p['sale_id'] . '&product_id=' . (int)$p['id'] . '#product-' . (int)$p['id'];
+    $status = $stock > 0 ? '<span class="status-available">✓ Disponible (' . $stock . ' unidades)</span>' : '<span class="status-sold">✗ Sin stock</span>';
+    $product_url = $app_url . '/store.php?sale_id=' . (int)$p['sale_id'] . '#product-' . (int)$p['id'];
 
-    $html .= '<tr>
-      <td>' . htmlspecialchars($p['sale_title']) . '</td>
-      <td><strong>' . htmlspecialchars($p['name']) . '</strong><br>' . htmlspecialchars(mb_substr($p['description'] ?? '', 0, 50)) . '</td>
-      <td>' . $price . '</td>
-      <td>' . $stock . '</td>
-      <td>' . $status . '</td>
-      <td><a href="' . $product_url . '">Ver</a></td>
+    echo '<tr>
+      <td><strong>' . htmlspecialchars($p['sale_title']) . '</strong></td>
+      <td>' . htmlspecialchars($p['name']) . '</td>
+      <td style="text-align: center"><strong>' . $price . '</strong></td>
+      <td style="text-align: center">' . $stock . '</td>
+      <td style="text-align: center">' . $status . '</td>
     </tr>';
   }
 
-  $html .= '</tbody>
+  echo '</tbody>
   </table>
 
   <div class="footer">
-    <p>Generado por COMPRATICA.COM - ' . date('d/m/Y H:i:s') . '</p>
-    <p>' . $app_url . '</p>
+    <p><strong>COMPRATICA.COM</strong> - El marketplace 100% costarricense</p>
+    <p>Generado el ' . date('d/m/Y \a \l\a\s H:i:s') . '</p>
+    <p>' . htmlspecialchars($app_url) . '</p>
   </div>
+
+  <script>
+    // Auto-abrir diálogo de impresión
+    window.addEventListener("load", function() {
+      setTimeout(function() {
+        window.print();
+      }, 500);
+    });
+  </script>
 </body>
 </html>';
-
-  if ($mode === 'download') {
-    // Enviar directamente al navegador
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="inventario_' . date('Ymd_His') . '.pdf"');
-
-    // Convertir HTML a PDF usando wkhtmltopdf si está disponible, sino usar dompdf
-    if (class_exists('Dompdf\Dompdf')) {
-      require_once __DIR__ . '/../vendor/autoload.php';
-      $dompdf = new \Dompdf\Dompdf();
-      $dompdf->loadHtml($html);
-      $dompdf->setPaper('A4', 'portrait');
-      $dompdf->render();
-      echo $dompdf->output();
-    } else {
-      // Fallback: generar HTML que se puede imprimir a PDF
-      header('Content-Type: text/html; charset=utf-8');
-      header('Content-Disposition: inline; filename="inventario_' . date('Ymd_His') . '.html"');
-      echo $html;
-    }
-  } else {
-    // Guardar en archivo temporal
-    $temp_file = sys_get_temp_dir() . '/inventory_' . uniqid() . '.html';
-    file_put_contents($temp_file, $html);
-    return $temp_file;
-  }
+  exit;
 }
 
 /**
- * Genera Excel (CSV)
+ * Genera PDF y lo guarda en archivo temporal
+ */
+function generatePDFFile($products, $affiliate_name) {
+  $app_url = defined('APP_URL') ? APP_URL : 'https://compratica.com';
+
+  // Generar HTML temporal
+  $html = generateHTMLContent($products, $affiliate_name, $app_url);
+  $temp_file = sys_get_temp_dir() . '/inventory_' . uniqid() . '.html';
+  file_put_contents($temp_file, $html);
+
+  return $temp_file;
+}
+
+/**
+ * Genera contenido HTML para email
+ */
+function generateHTMLContent($products, $affiliate_name, $app_url) {
+  $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Inventario</title></head><body>';
+  $html .= '<h2>Inventario de Productos - ' . htmlspecialchars($affiliate_name) . '</h2>';
+  $html .= '<p>Fecha: ' . date('d/m/Y H:i:s') . '</p>';
+  $html .= '<p>Total de productos: ' . count($products) . '</p>';
+  $html .= '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">';
+  $html .= '<tr><th>Espacio</th><th>Producto</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Link</th></tr>';
+
+  foreach ($products as $p) {
+    $price = ($p['currency'] === 'USD' ? '$' : '₡') . number_format((float)$p['price'], $p['currency'] === 'USD' ? 2 : 0);
+    $stock = (int)$p['stock'];
+    $status = $stock > 0 ? "Disponible ($stock)" : 'Sin stock';
+    $product_url = $app_url . '/store.php?sale_id=' . (int)$p['sale_id'] . '#product-' . (int)$p['id'];
+
+    $html .= '<tr>';
+    $html .= '<td>' . htmlspecialchars($p['sale_title']) . '</td>';
+    $html .= '<td>' . htmlspecialchars($p['name']) . '</td>';
+    $html .= '<td>' . $price . '</td>';
+    $html .= '<td>' . $stock . '</td>';
+    $html .= '<td>' . $status . '</td>';
+    $html .= '<td><a href="' . $product_url . '">Ver</a></td>';
+    $html .= '</tr>';
+  }
+
+  $html .= '</table></body></html>';
+  return $html;
+}
+
+/**
+ * Genera Excel (CSV mejorado)
  */
 function generateExcel($products, $affiliate_name) {
   $app_url = defined('APP_URL') ? APP_URL : 'https://compratica.com';
@@ -209,14 +425,21 @@ function generateExcel($products, $affiliate_name) {
 
   $output = fopen('php://output', 'w');
 
-  // Encabezados
-  fputcsv($output, ['Espacio', 'Producto', 'Descripción', 'Precio', 'Moneda', 'Stock', 'Estado', 'Link'], ',');
+  // Información del encabezado
+  fputcsv($output, ['INVENTARIO DE PRODUCTOS - COMPRATICA.COM']);
+  fputcsv($output, ['Afiliado:', $affiliate_name]);
+  fputcsv($output, ['Fecha:', date('d/m/Y H:i:s')]);
+  fputcsv($output, ['Total Productos:', count($products)]);
+  fputcsv($output, []); // Línea vacía
+
+  // Encabezados de tabla
+  fputcsv($output, ['Espacio', 'Producto', 'Descripción', 'Precio', 'Moneda', 'Stock', 'Estado', 'Link Directo']);
 
   foreach ($products as $p) {
     $price = number_format((float)$p['price'], $p['currency'] === 'USD' ? 2 : 0, '.', '');
     $stock = (int)$p['stock'];
-    $status = $stock > 0 ? "Disponible ({$stock})" : 'Sin stock';
-    $product_url = $app_url . '/store.php?sale_id=' . (int)$p['sale_id'] . '&product_id=' . (int)$p['id'] . '#product-' . (int)$p['id'];
+    $status = $stock > 0 ? "Disponible ({$stock} unidades)" : 'Sin stock';
+    $product_url = $app_url . '/store.php?sale_id=' . (int)$p['sale_id'] . '#product-' . (int)$p['id'];
 
     fputcsv($output, [
       $p['sale_title'],
@@ -227,7 +450,7 @@ function generateExcel($products, $affiliate_name) {
       $stock,
       $status,
       $product_url
-    ], ',');
+    ]);
   }
 
   fclose($output);
@@ -502,6 +725,24 @@ function sendEmailWithAttachment($to, $subject, $body, $attachment_path) {
       color: var(--gray-200);
       margin-bottom: 1rem;
     }
+
+    .info-box {
+      background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+      border-left: 4px solid var(--accent);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+    }
+
+    .info-box p {
+      margin: 0.5rem 0;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .info-box strong {
+      color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -558,6 +799,13 @@ function sendEmailWithAttachment($to, $subject, $body, $attachment_path) {
       </div>
     </div>
   <?php else: ?>
+    <div class="info-box">
+      <p><i class="fas fa-info-circle"></i> <strong>Cómo funciona:</strong></p>
+      <p>• <strong>PDF:</strong> Se abrirá una ventana lista para imprimir o guardar como PDF</p>
+      <p>• <strong>Excel:</strong> Se descargará un archivo CSV que podés abrir en Excel o Google Sheets</p>
+      <p>• <strong>Email:</strong> Se enviará el inventario por correo electrónico con el archivo adjunto</p>
+    </div>
+
     <form method="post" id="inventoryForm">
       <div class="card">
         <h3><i class="fas fa-store-alt"></i> Seleccioná los Espacios</h3>
@@ -580,22 +828,22 @@ function sendEmailWithAttachment($to, $subject, $body, $attachment_path) {
 
         <div class="form-group">
           <label for="email">
-            <i class="fas fa-envelope"></i> Correo electrónico (opcional - para enviar por email)
+            <i class="fas fa-envelope"></i> Correo electrónico (opcional - solo para enviar por email)
           </label>
           <input type="email" name="email" id="email" placeholder="ejemplo@correo.com">
           <small style="color: #666; display: block; margin-top: 0.5rem;">
-            Dejalo vacío si solo querés descargar el archivo
+            Solo completá este campo si querés enviar el inventario por correo. Si solo querés descargarlo, dejalo vacío.
           </small>
         </div>
 
         <div class="action-buttons">
           <button type="submit" name="action" value="pdf" class="btn btn-pdf">
             <i class="fas fa-file-pdf"></i>
-            Descargar PDF
+            Generar PDF
           </button>
           <button type="submit" name="action" value="excel" class="btn btn-excel">
             <i class="fas fa-file-excel"></i>
-            Descargar Excel
+            Descargar CSV (Excel)
           </button>
           <button type="submit" name="action" value="email" class="btn btn-email">
             <i class="fas fa-paper-plane"></i>

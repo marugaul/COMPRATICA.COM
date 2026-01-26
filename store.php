@@ -1173,7 +1173,7 @@ foreach ($_SESSION['cart'] as $it) {
       $images[] = 'assets/placeholder.jpg';
     }
     ?>
-    <div class="product-card <?= $isOutOfStock ? 'out-of-stock' : '' ?>" data-product-id="<?= (int)$product['id'] ?>">
+    <div id="product-<?= (int)$product['id'] ?>" class="product-card <?= $isOutOfStock ? 'out-of-stock' : '' ?>" data-product-id="<?= (int)$product['id'] ?>">
     <!-- Galería de imágenes estilo eBay -->
     <div class="product-image-gallery">
       <?php if (count($images) > 1): ?>
@@ -1712,6 +1712,25 @@ updateCartBadge();
   // Primera actualización y luego cada segundo
   updateAll();
   var intervalId = setInterval(updateAll, 1000);
+})();
+
+// ============= SCROLL A PRODUCTO ESPECÍFICO =============
+(function() {
+  // Si hay un hash en la URL (ej: #product-17), hacer scroll al producto
+  if (window.location.hash) {
+    setTimeout(function() {
+      const target = document.querySelector(window.location.hash);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Resaltar brevemente el producto
+        target.style.transition = 'box-shadow 0.3s ease';
+        target.style.boxShadow = '0 0 0 4px rgba(52, 152, 219, 0.5)';
+        setTimeout(function() {
+          target.style.boxShadow = '';
+        }, 2000);
+      }
+    }, 300); // Pequeño delay para asegurar que el DOM esté listo
+  }
 })();
 </script>
 
