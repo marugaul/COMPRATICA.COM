@@ -27,12 +27,12 @@ AddDefaultCharset utf-8
   # OCULTAR EXTENSIONES .PHP POR SEGURIDAD
   # ============================================
 
-  # Si alguien accede a un archivo.php directamente, redirigir sin .php
-  RewriteCond %{REQUEST_FILENAME} -f
-  RewriteCond %{REQUEST_URI} ^(.+)\.php$
+  # Si alguien accede a un archivo.php directamente en la URL, redirigir sin .php
+  # Usar THE_REQUEST para evitar loops (no cambia con reescrituras internas)
+  RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s([^.]+)\.php[\s?] [NC]
   RewriteRule ^(.+)\.php$ /$1 [R=301,L]
 
-  # Si se accede sin .php y existe el archivo .php, servirlo
+  # Si se accede sin .php y existe el archivo .php, servirlo internamente
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME}\.php -f
