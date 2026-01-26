@@ -23,6 +23,21 @@ AddDefaultCharset utf-8
   # Bloquear ejecución de PHP en /uploads
   RewriteRule ^uploads/.*\.(php|phtml|php[0-9])$ - [F,L]
 
+  # ============================================
+  # OCULTAR EXTENSIONES .PHP POR SEGURIDAD
+  # ============================================
+
+  # Si alguien accede a un archivo.php directamente, redirigir sin .php
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteCond %{REQUEST_URI} ^(.+)\.php$
+  RewriteRule ^(.+)\.php$ /$1 [R=301,L]
+
+  # Si se accede sin .php y existe el archivo .php, servirlo
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME}\.php -f
+  RewriteRule ^(.+)$ $1.php [L,QSA]
+
   # Enviar todo lo demás a index.php (rutas amigables)
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
