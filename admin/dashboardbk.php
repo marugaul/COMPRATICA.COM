@@ -112,7 +112,7 @@ $ex = (float)($settings['exchange_rate'] ?? 540.00);
   <div class="logo">⚙️ Backoffice</div>
   <nav>
       
-      <a class="btn" href="../index.php">Ver tienda</a>
+      <a class="btn" href="../index">Ver tienda</a>
       
       <!-- CAMBIO DE NUEVOS ENLACES PARA ADMIN -->
      

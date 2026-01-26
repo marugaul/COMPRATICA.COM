@@ -33,7 +33,7 @@ mb_internal_encoding('UTF-8');
 <header class="header">
   <div class="logo">🛒 Afiliado: <?= htmlspecialchars($_SESSION['aff_name'] ?? '') ?></div>
   <nav>
-    <a class="btn" href="../index.php">Ver tienda</a>
+    <a class="btn" href="../index">Ver tienda</a>
     <a class="btn" href="sales.php">Mis espacios</a>
     <a class="btn" href="products.php">Mis productos</a>
     <a class="btn" href="orders.php">Mis pedidos</a>

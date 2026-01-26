@@ -283,7 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
 
         <div class="links">
-            <a href="../index.php">← Volver al sitio</a>
+            <a href="../index">← Volver al sitio</a>
         </div>
     </div>
 </body>

@@ -69,7 +69,7 @@ $ex = (float)($settings['exchange_rate'] ?? 540.00);
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Backoffice - <?php echo APP_NAME; ?></title><link rel="stylesheet" href="../assets/style.css"></head>
 <body>
-<header class="header"><div class="logo">⚙️ Backoffice</div><nav><a class="btn" href="../index.php">Ver tienda</a><a class="btn" href="logout.php">Salir</a></nav></header>
+<header class="header"><div class="logo">⚙️ Backoffice</div><nav><a class="btn" href="../index">Ver tienda</a><a class="btn" href="logout.php">Salir</a></nav></header>
 <div class="container">
 <?php if(!empty($msg)): ?><div class="success"><?php echo htmlspecialchars($msg); ?></div><?php endif; ?>
 

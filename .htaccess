@@ -17,6 +17,10 @@ AddDefaultCharset utf-8
   RewriteRule ^api/ - [L]
   RewriteRule ^auth/ - [L]
 
+  # No reescribir Admin ni Affiliate (áreas privadas mantienen .php)
+  RewriteRule ^admin/ - [L]
+  RewriteRule ^affiliate/ - [L]
+
   # Bloquear /includes directo
   RewriteRule ^includes/ - [F,L]
 

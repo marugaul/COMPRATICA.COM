@@ -188,7 +188,7 @@ $affiliates = $pdo->query("
 <header class="header">
   <div class="logo">⚙️ Backoffice</div>
   <nav>
-    <a class="btn" href="../index.php">Ver tienda</a>
+    <a class="btn" href="../index">Ver tienda</a>
     <a class="btn" href="dashboard.php">Dashboard</a>
     <a class="btn" href="dashboard_ext.php">Productos (Extendido)</a>
     <a class="btn" href="sales_admin.php">Espacios</a>

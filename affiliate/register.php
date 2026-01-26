@@ -675,12 +675,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
 <header class="header">
-  <a href="../index.php" class="logo">
+  <a href="../index" class="logo">
     <i class="fas fa-store"></i>
     <?php echo APP_NAME; ?>
   </a>
   <nav class="header-nav">
-    <a class="btn" href="../index.php">
+    <a class="btn" href="../index">
       <i class="fas fa-home"></i> Inicio
     </a>
     <a class="btn" href="login.php">
@@ -805,7 +805,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <a class="btn btn-primary" href="login.php">
         <i class="fas fa-sign-in-alt"></i> Iniciar sesión
       </a>
-      <a class="btn" href="../index.php">
+      <a class="btn" href="../index">
         <i class="fas fa-home"></i> Volver al inicio
       </a>
     </div>

@@ -206,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <header class="header">
   <div class="logo">🛒 Afiliados — Registrar cuenta</div>
   <nav>
-    <a class="btn" href="../index.php">Inicio</a>
+    <a class="btn" href="../index">Inicio</a>
     <a class="btn" href="login.php">Ya tengo cuenta</a>
   </nav>
 </header>
@@ -262,7 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h3>¡Cuenta creada y activa!</h3>
     <p class="small">Ya podés iniciar sesión para crear tu espacio y publicar productos.</p>
     <div class="actions">
-      <a class="btn" href="../index.php">Volver al inicio</a>
+      <a class="btn" href="../index">Volver al inicio</a>
       <a class="btn" href="login.php">Ir al login</a>
     </div>
   </div>
