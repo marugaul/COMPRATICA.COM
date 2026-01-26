@@ -485,12 +485,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
 <header class="header">
-  <a href="../index.php" class="logo">
+  <a href="../index" class="logo">
     <i class="fas fa-store"></i>
     <?php echo APP_NAME; ?>
   </a>
   <nav class="header-nav">
-    <a class="btn" href="../index.php">
+    <a class="btn" href="../index">
       <i class="fas fa-home"></i> Inicio
     </a>
   </nav>

@@ -26,7 +26,7 @@ try {
 <body>
 <header class="header">
   <div class="logo">⚙️ Backoffice (SAFE)</div>
-  <nav><a class="btn" href="../index.php">Ver tienda</a><a class="btn" href="logout.php">Salir</a></nav>
+  <nav><a class="btn" href="../index">Ver tienda</a><a class="btn" href="logout.php">Salir</a></nav>
 </header>
 <div class="container">
   <div class="success">session_id: <?php echo session_id(); ?> | logged: <?php echo !empty($_SESSION['admin'])?'true':'false'; ?></div>
