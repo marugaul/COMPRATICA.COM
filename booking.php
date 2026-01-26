@@ -491,7 +491,7 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
 <body>
 
 <div class="container">
-    <a href="service_detail.php?id=<?php echo $service_id; ?>" class="back-link">
+    <a href="service_detail?id=<?php echo $service_id; ?>" class="back-link">
         <i class="fas fa-arrow-left"></i>
         Volver al servicio
     </a>
@@ -914,7 +914,7 @@ $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
     </form>
     <?php else: ?>
         <div class="form-card" style="text-align: center;">
-            <a href="servicios.php" class="btn btn-primary">
+            <a href="servicios" class="btn btn-primary">
                 <i class="fas fa-search"></i> Ver Más Servicios
             </a>
         </div>

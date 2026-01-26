@@ -691,7 +691,7 @@ if (!headers_sent()) header('Content-Type: text/html; charset=UTF-8'); ini_set('
 </head>
 <body>
     <header class="header">
-        <a href="index.php" class="btn btn-outline">
+        <a href="index" class="btn btn-outline">
             <i class="fas fa-arrow-left"></i> Volver
         </a>
         <div class="logo">
@@ -711,7 +711,7 @@ if (!headers_sent()) header('Content-Type: text/html; charset=UTF-8'); ini_set('
                 </div>
                 <h2 class="empty-title">Tu carrito está vacío</h2>
                 <p class="empty-text">Explora nuestros espacios y añade productos para comenzar tu compra</p>
-                <a href="index.php" class="btn btn-primary">
+                <a href="index" class="btn btn-primary">
                     <i class="fas fa-store"></i> Explorar Espacios
                 </a>
             </div>
@@ -789,7 +789,7 @@ if (!headers_sent()) header('Content-Type: text/html; charset=UTF-8'); ini_set('
                                                 <i class="fas fa-envelope"></i> Email
                                             </a>
                                         <?php endif; ?>
-                                        <a class="vendor-action" href="store.php?sale_id=<?= (int)$g['sale_id']; ?>">
+                                        <a class="vendor-action" href="store?sale_id=<?= (int)$g['sale_id']; ?>">
                                             <i class="fas fa-shopping-bag"></i> Seguir comprando
                                         </a>
                                     </div>
@@ -802,7 +802,7 @@ if (!headers_sent()) header('Content-Type: text/html; charset=UTF-8'); ini_set('
                                 <span class="total-label">Total del espacio</span>
                                 <span class="total-amount"><?= fmt_price($g['total'], $g['currency']); ?></span>
                             </div>
-                            <form action="checkout.php" method="post">
+                            <form action="checkout" method="post">
                                 <input type="hidden" name="sale_id" value="<?= (int)$g['sale_id']; ?>">
                                 <input type="hidden" name="csrf" value="<?= h($csrf_meta); ?>">
                                 <button type="submit" class="checkout-btn">

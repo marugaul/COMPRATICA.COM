@@ -1589,7 +1589,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
 <body>
 
 <header class="header">
-  <a href="index.php" class="logo">
+  <a href="index" class="logo">
     <span class="flag emoji">🇨🇷</span>
     <div class="text">
       <span class="main">CompraTica</span>
@@ -1627,10 +1627,10 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
         <span id="cart-total">₡0</span>
       </div>
       <div class="cart-popover-actions">
-        <a href="cart.php" class="cart-popover-btn secondary">
+        <a href="cart" class="cart-popover-btn secondary">
           Ver carrito
         </a>
-        <a href="checkout.php" id="checkoutBtn" class="cart-popover-btn primary">
+        <a href="checkout" id="checkoutBtn" class="cart-popover-btn primary">
           Pagar
         </a>
       </div>
@@ -1673,29 +1673,29 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
   
   <div class="menu-body">
     <?php if ($isLoggedIn): ?>
-      <a href="my_orders.php" class="menu-item">
+      <a href="my_orders" class="menu-item">
         <i class="fas fa-box"></i>
         <span>Mis Órdenes</span>
       </a>
-      <a href="cart.php" class="menu-item">
+      <a href="cart" class="menu-item">
         <i class="fas fa-shopping-cart"></i>
         <span>Mi Carrito</span>
       </a>
       <div class="menu-divider"></div>
     <?php else: ?>
-      <a href="login.php" class="menu-item primary">
+      <a href="login" class="menu-item primary">
         <i class="fas fa-sign-in-alt"></i>
         <span>Iniciar Sesión</span>
       </a>
       <div class="menu-divider"></div>
     <?php endif; ?>
     
-    <a href="index.php" class="menu-item">
+    <a href="index" class="menu-item">
       <i class="fas fa-home"></i>
       <span>Inicio</span>
     </a>
     
-    <a href="servicios.php" class="menu-item">
+    <a href="servicios" class="menu-item">
       <i class="fas fa-briefcase"></i>
       <span>Servicios</span>
     </a>
@@ -1729,7 +1729,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
     
     <?php if ($isLoggedIn): ?>
       <div class="menu-divider"></div>
-      <a href="logout.php" class="menu-item danger">
+      <a href="logout" class="menu-item danger">
         <i class="fas fa-sign-out-alt"></i>
         <span>Cerrar Sesión</span>
       </a>
@@ -1989,7 +1989,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
               <div class="found-product-name"><?php echo htmlspecialchars($product['name']); ?></div>
               <div class="found-product-price"><?php echo $productPrice; ?></div>
             </div>
-            <a href="store.php?sale_id=<?php echo (int)$s['id']; ?>&product_id=<?php echo (int)$product['id']; ?>#product-<?php echo (int)$product['id']; ?>" class="found-product-btn">
+            <a href="store?sale_id=<?php echo (int)$s['id']; ?>&product_id=<?php echo (int)$product['id']; ?>#product-<?php echo (int)$product['id']; ?>" class="found-product-btn">
               <i class="fas fa-shopping-cart"></i>
               <span>Ver producto</span>
             </a>
@@ -1998,7 +1998,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
 
           <?php if ($totalProducts > 3): ?>
           <div style="margin-top: 0.75rem; text-align: center;">
-            <a href="store.php?sale_id=<?php echo (int)$s['id']; ?>"
+            <a href="store?sale_id=<?php echo (int)$s['id']; ?>"
                class="found-product-btn"
                style="display: inline-flex; background: linear-gradient(135deg, var(--cr-azul), var(--cr-azul-claro));">
               <i class="fas fa-eye"></i>
@@ -2056,7 +2056,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
 
         <div class="actions">
           <?php if ($state === 'En vivo'): ?>
-            <a class="btn-primary" href="store.php?sale_id=<?php echo (int)$s['id']; ?>">
+            <a class="btn-primary" href="store?sale_id=<?php echo (int)$s['id']; ?>">
               <i class="fas fa-shopping-bag"></i> Entrar a la Venta
             </a>
           <?php elseif ($state === 'Próxima'): ?>
@@ -2088,8 +2088,8 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
     </div>
     <div class="footer-section">
       <h3>Enlaces Rápidos</h3>
-      <a href="index.php">Inicio</a>
-      <a href="servicios.php">Servicios</a>
+      <a href="index">Inicio</a>
+      <a href="servicios">Servicios</a>
       <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
       <span style="opacity: 0.5; cursor: not-allowed;">Emprendedoras (Muy Pronto)</span>
     </div>
