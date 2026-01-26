@@ -544,13 +544,13 @@ foreach ($_SESSION['cart'] as $it) {
 
 <!-- HEADER -->
 <header class="header">
-  <a href="index.php" class="logo">
+  <a href="index" class="logo">
     <i class="fas fa-store"></i>
     <?= htmlspecialchars($APP_NAME) ?>
   </a>
 
   <div class="header-nav">
-    <a href="cart.php" class="btn-icon" title="Carrito">
+    <a href="cart" class="btn-icon" title="Carrito">
       <i class="fas fa-shopping-cart"></i>
       <?php if ($cantidadProductos > 0): ?>
         <span class="cart-badge"><?= $cantidadProductos ?></span>
@@ -583,13 +583,13 @@ foreach ($_SESSION['cart'] as $it) {
 
     <div class="menu-section">
       <div class="menu-section-title">Navegación</div>
-      <a href="index.php" class="menu-link">
+      <a href="index" class="menu-link">
         <i class="fas fa-home"></i> Inicio
       </a>
-      <a href="cart.php" class="menu-link">
+      <a href="cart" class="menu-link">
         <i class="fas fa-shopping-cart"></i> Carrito
       </a>
-      <a href="my_orders.php" class="menu-link active">
+      <a href="my_orders" class="menu-link active">
         <i class="fas fa-box"></i> Mis Órdenes
       </a>
     </div>
@@ -597,11 +597,11 @@ foreach ($_SESSION['cart'] as $it) {
     <div class="menu-section">
       <div class="menu-section-title">Cuenta</div>
       <?php if ($isLoggedIn): ?>
-        <a href="logout.php" class="menu-link">
+        <a href="logout" class="menu-link">
           <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
         </a>
       <?php else: ?>
-        <a href="login.php" class="menu-link">
+        <a href="login" class="menu-link">
           <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
         </a>
       <?php endif; ?>
@@ -640,7 +640,7 @@ foreach ($_SESSION['cart'] as $it) {
       <i class="fas fa-box-open"></i>
       <h3>No tienes órdenes aún</h3>
       <p>Comienza a comprar en nuestros espacios activos</p>
-      <a href="index.php" class="btn-primary">
+      <a href="index" class="btn-primary">
         <i class="fas fa-shopping-bag"></i> Ir a comprar
       </a>
     </div>

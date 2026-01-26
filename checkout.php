@@ -788,12 +788,12 @@ foreach ($_SESSION['cart'] as $it) {
 <body>
 <!-- HEADER -->
 <header class="header">
-  <a href="index.php" class="logo">
+  <a href="index" class="logo">
     <i class="fas fa-store"></i>
     <?= htmlspecialchars($APP_NAME) ?>
   </a>
   <div class="header-nav">
-    <a href="cart.php" class="btn-icon" title="Carrito">
+    <a href="cart" class="btn-icon" title="Carrito">
       <i class="fas fa-shopping-cart"></i>
       <?php if ($cantidadProductos > 0): ?>
         <span class="cart-badge"><?= $cantidadProductos ?></span>
@@ -825,24 +825,24 @@ foreach ($_SESSION['cart'] as $it) {
     <?php endif; ?>
     <div class="menu-section">
       <div class="menu-section-title">Navegación</div>
-      <a href="index.php" class="menu-link">
+      <a href="index" class="menu-link">
         <i class="fas fa-home"></i> Inicio
       </a>
-      <a href="cart.php" class="menu-link">
+      <a href="cart" class="menu-link">
         <i class="fas fa-shopping-cart"></i> Carrito
       </a>
-      <a href="my_orders.php" class="menu-link">
+      <a href="my_orders" class="menu-link">
         <i class="fas fa-box"></i> Mis Órdenes
       </a>
     </div>
     <div class="menu-section">
       <div class="menu-section-title">Cuenta</div>
       <?php if ($isLoggedIn): ?>
-        <a href="logout.php" class="menu-link">
+        <a href="logout" class="menu-link">
           <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
         </a>
       <?php else: ?>
-        <a href="login.php" class="menu-link">
+        <a href="login" class="menu-link">
           <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
         </a>
       <?php endif; ?>
@@ -875,7 +875,7 @@ foreach ($_SESSION['cart'] as $it) {
     </div>
   <?php endif; ?>
 
-  <form id="checkout-form" action="process_checkout.php" method="POST">
+  <form id="checkout-form" action="process_checkout" method="POST">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
     <input type="hidden" name="sale_id" value="<?= (int)$sale_id ?>">
     <input type="hidden" name="cart_id" value="<?= (int)$cart_id ?>">
@@ -1107,7 +1107,7 @@ foreach ($_SESSION['cart'] as $it) {
           </button>
 
           <div style="text-align: center; margin-top: 1rem;">
-            <a href="cart.php" class="btn-secondary">
+            <a href="cart" class="btn-secondary">
               <i class="fas fa-arrow-left"></i> Volver al carrito
             </a>
           </div>

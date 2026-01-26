@@ -1042,13 +1042,13 @@ foreach ($_SESSION['cart'] as $it) {
 
 <!-- HEADER -->
 <header class="header">
-  <a href="venta-garaje.php" class="logo">
+  <a href="venta-garaje" class="logo">
     <i class="fas fa-store"></i>
     <?= h($APP_NAME) ?>
   </a>
 
   <div class="header-nav">
-    <a href="cart.php" class="btn-icon" title="Carrito">
+    <a href="cart" class="btn-icon" title="Carrito">
     <i class="fas fa-shopping-cart"></i>
     <span id="cartBadge" class="cart-badge" style="display:none;">0</span>
     </a>
@@ -1079,13 +1079,13 @@ foreach ($_SESSION['cart'] as $it) {
 
     <div class="menu-section">
     <div class="menu-section-title">Navegación</div>
-    <a href="venta-garaje.php" class="menu-link">
+    <a href="venta-garaje" class="menu-link">
     <i class="fas fa-home"></i> Inicio
     </a>
-    <a href="cart.php" class="menu-link">
+    <a href="cart" class="menu-link">
     <i class="fas fa-shopping-cart"></i> Carrito
     </a>
-    <a href="my_orders.php" class="menu-link">
+    <a href="my_orders" class="menu-link">
     <i class="fas fa-box"></i> Mis Órdenes
     </a>
     </div>
@@ -1093,11 +1093,11 @@ foreach ($_SESSION['cart'] as $it) {
     <div class="menu-section">
     <div class="menu-section-title">Cuenta</div>
     <?php if ($isLoggedIn): ?>
-    <a href="logout.php" class="menu-link">
+    <a href="logout" class="menu-link">
     <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
     </a>
     <?php else: ?>
-    <a href="login.php" class="menu-link">
+    <a href="login" class="menu-link">
     <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
     </a>
     <?php endif; ?>
@@ -1151,7 +1151,7 @@ foreach ($_SESSION['cart'] as $it) {
     <i class="fas fa-box-open"></i>
     <h3>No hay productos disponibles</h3>
     <p>Este espacio aún no tiene productos publicados</p>
-    <a href="venta-garaje.php" class="btn-primary">
+    <a href="venta-garaje" class="btn-primary">
     <i class="fas fa-arrow-left"></i> Volver al inicio
     </a>
     </div>

@@ -441,7 +441,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:linear-gradient(1
     </div>
   </div>
   <div class="footer">
-    <a href="index.php">← Volver al inicio</a>
+    <a href="index">← Volver al inicio</a>
   </div>
 </div>
 
