@@ -83,7 +83,7 @@ $ex = (float)($settings['exchange_rate'] ?? 540.00);
 <body>
 <header class="header">
   <div class="logo">⚙️ Backoffice</div>
-  <nav><a class="btn" href="../index">Ver tienda</a><a class="btn" href="logout.php">Salir</a></nav>
+  <nav><a class="btn" href="../index.php">Ver tienda</a><a class="btn" href="logout.php">Salir</a></nav>
 </header>
 <div class="container">
 <?php if(!empty($msg)): ?><div class="success"><?php echo htmlspecialchars($msg); ?></div><?php endif; ?>

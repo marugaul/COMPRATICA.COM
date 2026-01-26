@@ -207,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="links">
-            <a href="../index">← Volver al sitio</a> |
+            <a href="../index.php">← Volver al sitio</a> |
             <a href="test_login.php">🔧 Diagnóstico completo</a>
         </div>
     </div>
