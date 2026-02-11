@@ -324,6 +324,11 @@ logDebug("RENDERING_PAGE");
       <span>Venta de Garaje</span>
     </a>
 
+    <a href="bienes-raices" class="menu-item">
+      <i class="fas fa-home"></i>
+      <span>Bienes Raíces</span>
+    </a>
+
     <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
       <i class="fas fa-rocket"></i>
       <span>Emprendedores - Muy Pronto</span>
@@ -336,17 +341,17 @@ logDebug("RENDERING_PAGE");
     
     <div class="menu-divider"></div>
     
-    <a href="/affiliate/register.php" class="menu-item">
+    <a href="affiliate/register.php" class="menu-item">
       <i class="fas fa-bullhorn"></i>
       <span>Publicar mi venta</span>
     </a>
 
-    <a href="/affiliate/login.php" class="menu-item">
+    <a href="affiliate/login.php" class="menu-item">
       <i class="fas fa-user-tie"></i>
       <span>Portal Afiliados</span>
     </a>
 
-    <a href="/admin/login.php" class="menu-item">
+    <a href="admin/login.php" class="menu-item">
       <i class="fas fa-user-shield"></i>
       <span>Administrador</span>
     </a>
@@ -413,6 +418,17 @@ logDebug("RENDERING_PAGE");
         </div>
         <h3 class="category-title">Venta de Garaje</h3>
         <p class="category-description">Descubrí tesoros únicos y productos de segunda mano en perfecto estado a precios que te van a encantar, mae</p>
+      </div>
+    </a>
+
+    <!-- BIENES RAÍCES -->
+    <a href="bienes-raices" class="category-card category-bienes-raices">
+      <div class="category-content">
+        <div class="category-icon">
+          <i class="fas fa-home"></i>
+        </div>
+        <h3 class="category-title">Bienes Raíces</h3>
+        <p class="category-description">Encontrá tu casa ideal, apartamento, local comercial o terreno. Alquilá o comprá propiedades en todo Costa Rica</p>
       </div>
     </a>
 
@@ -533,14 +549,15 @@ logDebug("RENDERING_PAGE");
       <h3>Enlaces Rápidos</h3>
       <a href="servicios">Servicios</a>
       <a href="venta-garaje">Venta de Garaje</a>
+      <a href="bienes-raices">Bienes Raíces</a>
       <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
       <span style="opacity: 0.5; cursor: not-allowed;">Emprendedoras (Muy Pronto)</span>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>
-      <a href="/affiliate/login.php">Portal de Afiliados</a>
-      <a href="/register.php">Registrarse</a>
-      <a href="/admin/login.php">Administración</a>
+      <a href="affiliate/login.php">Portal de Afiliados</a>
+      <a href="register.php">Registrarse</a>
+      <a href="admin/login.php">Administración</a>
     </div>
     <div class="footer-section">
       <h3>Contacto</h3>
