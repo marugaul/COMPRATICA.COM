@@ -1699,7 +1699,12 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <i class="fas fa-briefcase"></i>
       <span>Servicios</span>
     </a>
-    
+
+    <a href="bienes-raices" class="menu-item">
+      <i class="fas fa-home"></i>
+      <span>Bienes Raíces</span>
+    </a>
+
     <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
       <i class="fas fa-rocket"></i>
       <span>Emprendedores - Muy Pronto</span>
@@ -2090,6 +2095,8 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <h3>Enlaces Rápidos</h3>
       <a href="index">Inicio</a>
       <a href="servicios">Servicios</a>
+      <a href="venta-garaje">Venta de Garaje</a>
+      <a href="bienes-raices">Bienes Raíces</a>
       <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
       <span style="opacity: 0.5; cursor: not-allowed;">Emprendedoras (Muy Pronto)</span>
     </div>

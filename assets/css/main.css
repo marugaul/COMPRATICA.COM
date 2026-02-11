@@ -415,6 +415,16 @@
       background: linear-gradient(135deg, rgba(206, 17, 38, 0.5) 0%, rgba(230, 57, 70, 0.5) 100%);
     }
 
+    .category-bienes-raices {
+      background-image: url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .category-bienes-raices::before {
+      background: linear-gradient(135deg, rgba(39, 174, 96, 0.5) 0%, rgba(46, 213, 115, 0.5) 100%);
+    }
+
     .category-emprendedores {
       background-image: url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80');
       background-size: cover;
