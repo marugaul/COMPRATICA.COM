@@ -324,6 +324,11 @@ logDebug("RENDERING_PAGE");
       <span>Venta de Garaje</span>
     </a>
 
+    <a href="/jobs/login.php" class="menu-item">
+      <i class="fas fa-briefcase"></i>
+      <span>Empleos y Servicios</span>
+    </a>
+
     <a href="bienes-raices" class="menu-item">
       <i class="fas fa-home"></i>
       <span>Bienes Raíces</span>
@@ -340,15 +345,27 @@ logDebug("RENDERING_PAGE");
     </div>
     
     <div class="menu-divider"></div>
-    
-    <a href="affiliate/register.php" class="menu-item">
+
+    <a href="select-publication-type.php" class="menu-item primary" style="background: linear-gradient(135deg, #002b7f, #ce1126); color: white; font-weight: 600;">
       <i class="fas fa-bullhorn"></i>
-      <span>Publicar mi venta</span>
+      <span>Publicar Ahora</span>
     </a>
 
+    <div class="menu-divider"></div>
+
     <a href="affiliate/login.php" class="menu-item">
-      <i class="fas fa-user-tie"></i>
-      <span>Portal Afiliados</span>
+      <i class="fas fa-tags"></i>
+      <span>Portal Venta Garaje</span>
+    </a>
+
+    <a href="/jobs/login.php" class="menu-item">
+      <i class="fas fa-briefcase"></i>
+      <span>Portal Empleos</span>
+    </a>
+
+    <a href="/real-estate/login.php" class="menu-item">
+      <i class="fas fa-home"></i>
+      <span>Portal Bienes Raíces</span>
     </a>
 
     <a href="admin/login.php" class="menu-item">
