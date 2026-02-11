@@ -358,7 +358,7 @@ try {
     <div class="grid">
       <!-- Columna izquierda: Editor -->
       <div class="card">
-        <form method="post" id="form-sql" action="sql_exec.php?_t=<?= time() ?>">
+        <form method="post" id="form-sql" action="">
           <input type="hidden" name="csrf" value="<?= htmlspecialchars($CSRF) ?>">
           <label for="label">Etiqueta (opcional)</label>
           <input id="label" type="text" name="label" placeholder="Ej: Migración imágenes, limpieza de stock..." value="<?= htmlspecialchars($_POST['label'] ?? '') ?>">
@@ -366,12 +366,12 @@ try {
           <textarea id="sql" name="sql" placeholder="Pega aquí tu SQL..."><?= htmlspecialchars($prev_sql) ?></textarea>
 
           <div class="run">
-            <button class="btn" name="run_sql" value="1">Ejecutar SQL</button>
+            <button type="submit" class="btn" name="run_sql" value="1">Ejecutar SQL</button>
             <label style="display:flex;align-items:center;gap:6px">
               <input id="autosave" type="checkbox" name="autosave" value="1" <?= !empty($_POST['autosave']) ? 'checked' : '' ?>>
               Guardar este SQL tras ejecutar
             </label>
-            <button class="btn" name="save_sql" value="1" type="submit">💾 Guardar en historial</button>
+            <button type="submit" class="btn" name="save_sql" value="1">💾 Guardar en historial</button>
 
             <!-- Botón limpiar -->
             <button class="btn btn-gray" type="button" id="btn-clear-sql">🧹 Limpiar</button>
