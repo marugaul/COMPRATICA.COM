@@ -18,85 +18,35 @@ function logDebug($msg, $data = null) {
 
 logDebug("BIENES_RAICES_START", ['uri' => $_SERVER['REQUEST_URI']]);
 
-$__sessPath = __DIR__ . '/sessions';
-if (!is_dir($__sessPath)) @mkdir($__sessPath, 0755, true);
-if (is_dir($__sessPath) && is_writable($__sessPath)) {
-    ini_set('session.save_path', $__sessPath);
-} else {
-    ini_set('session.save_path', '/tmp');
-}
-
-logDebug("SESSION_PATH_SET", ['path' => $__sessPath]);
-
+// Cargar configuración (config.php ya maneja la sesión automáticamente)
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
 
-// Detectar HTTPS
-$__isHttps = false;
-if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') $__isHttps = true;
-if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') $__isHttps = true;
-if (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') $__isHttps = true;
-if (!empty($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], '"scheme":"https"') !== false) $__isHttps = true;
-
-// Dominio de cookie
-$host = $_SERVER['HTTP_HOST'] ?? parse_url(defined('BASE_URL') ? BASE_URL : '', PHP_URL_HOST) ?? '';
-$cookieDomain = '';
-if ($host && strpos($host, 'localhost') === false && !filter_var($host, FILTER_VALIDATE_IP)) {
-    $clean = preg_replace('/^www\./i', '', $host);
-    if (filter_var($clean, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
-        $cookieDomain = $clean;
-    }
-}
-
-logDebug("BEFORE_SESSION_START", [
+logDebug("AFTER_CONFIG_LOAD", [
     'session_status' => session_status(),
-    'cookies' => $_COOKIE,
-    'cookie_domain' => $cookieDomain,
-    'host' => $host
+    'session_id' => session_id(),
+    'session_data' => $_SESSION
 ]);
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_name('PHPSESSID');
-
-    if (PHP_VERSION_ID < 70300) {
-        ini_set('session.cookie_lifetime', '0');
-        ini_set('session.cookie_path', '/');
-        ini_set('session.cookie_domain', $cookieDomain);
-        ini_set('session.cookie_secure', $__isHttps ? '1' : '0');
-        ini_set('session.cookie_httponly', '1');
-        ini_set('session.cookie_samesite', 'Lax');
-        session_set_cookie_params(0, '/', $cookieDomain, $__isHttps, true);
-    } else {
-        session_set_cookie_params([
-            'lifetime' => 0,
-            'path'     => '/',
-            'domain'   => $cookieDomain,
-            'secure'   => $__isHttps,
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
-    }
-
-    ini_set('session.use_strict_mode', '0');
-    ini_set('session.use_only_cookies', '1');
-    ini_set('session.gc_maxlifetime', '86400');
-    session_start();
-}
-
-logDebug("AFTER_SESSION_START", [
-    'sid' => session_id(),
-    'session_data' => $_SESSION,
-    'cookie_domain' => $cookieDomain
-]);
-
+// Inicializar carrito si no existe
 if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
+    $_SESSION['cart'] = ['groups' => []];
 }
-$cantidadProductos = 0;
-foreach ($_SESSION['cart'] as $it) { $cantidadProductos += (int)($it['qty'] ?? 0); }
 
-// Verificar si el usuario está logueado
-$isLoggedIn = isset($_SESSION['uid']) && $_SESSION['uid'] > 0;
+// Calcular cantidad de productos en el carrito
+$cantidadProductos = 0;
+if (isset($_SESSION['cart']['groups']) && is_array($_SESSION['cart']['groups'])) {
+    foreach ($_SESSION['cart']['groups'] as $group) {
+        if (isset($group['items']) && is_array($group['items'])) {
+            foreach ($group['items'] as $item) {
+                $cantidadProductos += (int)($item['qty'] ?? 0);
+            }
+        }
+    }
+}
+
+// Verificar si el usuario está logueado (usando helper de config.php)
+$isLoggedIn = is_logged_in();
 $userName = $_SESSION['name'] ?? 'Usuario';
 
 logDebug("USER_CHECK", [
@@ -105,24 +55,11 @@ logDebug("USER_CHECK", [
     'userName' => $userName
 ]);
 
-if (!headers_sent()) header('Content-Type: text/html; charset=UTF-8');
-ini_set('default_charset', 'UTF-8');
-
-// CSRF por cookie
-$token = $_COOKIE['vg_csrf'] ?? bin2hex(random_bytes(32));
-$isHttps = $__isHttps;
-if (PHP_VERSION_ID < 70300) {
-    setcookie('vg_csrf', $token, time()+7200, '/', $cookieDomain, $isHttps, false);
-} else {
-    setcookie('vg_csrf', $token, [
-        'expires'  => time()+7200,
-        'path'     => '/',
-        'domain'   => $cookieDomain,
-        'secure'   => $isHttps,
-        'httponly' => false,
-        'samesite' => 'Lax'
-    ]);
+// Configurar charset para la respuesta
+if (!headers_sent()) {
+    header('Content-Type: text/html; charset=UTF-8');
 }
+ini_set('default_charset', 'UTF-8');
 
 $pdo = db();
 
