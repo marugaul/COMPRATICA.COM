@@ -84,6 +84,18 @@ foreach ($listings as $l) {
         <strong>Sesión iniciada</strong> correctamente.
       </div>
     <?php endif; ?>
+
+    <?php if (isset($_GET['msg'])): ?>
+      <?php if ($_GET['msg'] === 'created_free'): ?>
+        <div class="alert success">
+          <strong>¡Propiedad publicada!</strong> Tu propiedad ha sido creada exitosamente y ya está visible en el sitio.
+        </div>
+      <?php elseif ($_GET['msg'] === 'created_pending'): ?>
+        <div class="alert info">
+          <strong>Propiedad creada</strong> — Tu publicación está pendiente de pago. Una vez confirmado el pago, será activada automáticamente.
+        </div>
+      <?php endif; ?>
+    <?php endif; ?>
     <div class="stats-grid">
       <div class="stat-card">
         <h3><?php echo $stats['total']; ?></h3>
