@@ -106,12 +106,12 @@
 
     <div class="menu-divider"></div>
 
-    <a href="affiliate/register.php" class="menu-item">
+    <a href="select-publication-type.php" class="menu-item">
       <i class="fas fa-bullhorn"></i>
       <span>Publicar mi venta</span>
     </a>
 
-    <a href="affiliate/register.php" class="menu-item highlight">
+    <a href="select-publication-type.php" class="menu-item highlight">
       <i class="fas fa-building"></i>
       <span>Publicar Propiedad</span>
     </a>
