@@ -58,6 +58,9 @@ foreach ($listings as $l) {
     .listing-card { background: var(--white); padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
     .empty-state { text-align: center; padding: 4rem 2rem; color: #718096; }
     .empty-state i { font-size: 4rem; margin-bottom: 1rem; color: var(--gray-300); }
+    .alert { padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; }
+    .alert.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .alert.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
   </style>
 </head>
 <body>
@@ -70,6 +73,17 @@ foreach ($listings as $l) {
   </div>
 
   <div class="container">
+    <?php if (isset($_GET['welcome'])): ?>
+      <div class="alert success">
+        <strong>¡Bienvenido!</strong> Tu cuenta ha sido creada exitosamente con Google. Ya podés empezar a publicar tus propiedades.
+      </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['login']) && $_GET['login'] === 'success'): ?>
+      <div class="alert info">
+        <strong>Sesión iniciada</strong> correctamente.
+      </div>
+    <?php endif; ?>
     <div class="stats-grid">
       <div class="stat-card">
         <h3><?php echo $stats['total']; ?></h3>
