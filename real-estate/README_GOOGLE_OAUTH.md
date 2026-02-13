@@ -30,6 +30,22 @@ Esta integración permite a los agentes de bienes raíces registrarse e iniciar 
 - Mensaje de bienvenida para nuevos usuarios de Google
 - Mensaje de confirmación de inicio de sesión
 
+## Instalación
+
+### Prerequisitos
+Antes de usar el módulo de Bienes Raíces, debes ejecutar el script de instalación para crear las tablas necesarias:
+
+```bash
+php instalar-bienes-raices-agentes.php
+```
+
+Este script creará:
+- Tabla `real_estate_agents` con todos los campos necesarios
+- Columna `agent_id` en la tabla `real_estate_listings`
+- Índices apropiados
+
+**IMPORTANTE**: Si ves el error "no such table: real_estate_agents", es porque no se ejecutó este script de instalación.
+
 ## Configuración de Google Cloud Console
 
 ### URIs de redirección autorizadas
