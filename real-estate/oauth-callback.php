@@ -39,6 +39,9 @@ try {
                . $_SERVER['HTTP_HOST'];
     $redirectUri = $baseUrl . '/real-estate/oauth-callback.php';
 
+    // Log para debug
+    error_log('[OAuth Debug] Redirect URI: ' . $redirectUri);
+
     // Intercambiar código por tokens
     $tokenUrl = 'https://oauth2.googleapis.com/token';
     $tokenData = [
@@ -57,20 +60,35 @@ try {
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
 
     if ($httpCode !== 200) {
-        throw new Exception('Error al intercambiar código por token: HTTP ' . $httpCode);
+        error_log('[OAuth Error] Token exchange failed: HTTP ' . $httpCode . ' Response: ' . $response);
+        throw new Exception('Error al intercambiar código por token: HTTP ' . $httpCode . ' - ' . $response);
     }
 
     $tokens = json_decode($response, true);
     if (empty($tokens['id_token'])) {
+        error_log('[OAuth Error] No id_token in response: ' . $response);
         throw new Exception('ID token no recibido de Google');
     }
 
-    // Obtener información del usuario desde el ID token
+    // Obtener información del usuario desde el ID token usando cURL (más confiable que file_get_contents)
     $userInfoUrl = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($tokens['id_token']);
-    $userInfoResponse = file_get_contents($userInfoUrl);
+
+    $ch = curl_init($userInfoUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    $userInfoResponse = curl_exec($ch);
+    $userInfoHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($userInfoHttpCode !== 200) {
+        error_log('[OAuth Error] UserInfo request failed: HTTP ' . $userInfoHttpCode);
+        throw new Exception('Error al obtener información del usuario');
+    }
+
     $userInfo = json_decode($userInfoResponse, true);
 
     if (empty($userInfo['sub']) || empty($userInfo['email'])) {
@@ -122,7 +140,20 @@ try {
     exit;
 
 } catch (Exception $e) {
-    error_log('[OAuth Callback Error] ' . $e->getMessage());
-    header('Location: /real-estate/register.php?error=' . urlencode('Error al autenticar con Google. Por favor, intentá de nuevo.'));
+    $errorMsg = $e->getMessage();
+    error_log('[OAuth Callback Error] ' . $errorMsg);
+
+    // Proporcionar mensajes de error más útiles
+    if (strpos($errorMsg, 'redirect_uri_mismatch') !== false || strpos($errorMsg, 'HTTP 400') !== false) {
+        $userError = 'Error de configuración OAuth. El redirect URI no coincide. Contactá al administrador.';
+    } elseif (strpos($errorMsg, 'invalid_client') !== false) {
+        $userError = 'Credenciales de Google inválidas. Contactá al administrador.';
+    } elseif (strpos($errorMsg, 'access_denied') !== false) {
+        $userError = 'Acceso denegado. No autorizaste el acceso a tu cuenta de Google.';
+    } else {
+        $userError = 'Error al autenticar con Google: ' . $errorMsg;
+    }
+
+    header('Location: /real-estate/register.php?error=' . urlencode($userError));
     exit;
 }

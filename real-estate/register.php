@@ -12,6 +12,12 @@ $pdo = db();
 $msg = '';
 $ok  = false;
 
+// Verificar si hay un error de OAuth en la URL
+if (isset($_GET['error']) && !empty($_GET['error'])) {
+    $msg = $_GET['error'];
+    $ok = false;
+}
+
 function valid_email($e){
   return filter_var($e, FILTER_VALIDATE_EMAIL) !== false;
 }
