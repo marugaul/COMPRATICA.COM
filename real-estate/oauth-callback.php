@@ -144,7 +144,9 @@ try {
     error_log('[OAuth Callback Error] ' . $errorMsg);
 
     // Proporcionar mensajes de error más útiles
-    if (strpos($errorMsg, 'redirect_uri_mismatch') !== false || strpos($errorMsg, 'HTTP 400') !== false) {
+    if (strpos($errorMsg, 'no such table: real_estate_agents') !== false) {
+        $userError = 'Error de configuración: La tabla de agentes no existe. El administrador debe ejecutar el script de instalación (instalar-bienes-raices-agentes.php).';
+    } elseif (strpos($errorMsg, 'redirect_uri_mismatch') !== false || strpos($errorMsg, 'HTTP 400') !== false) {
         $userError = 'Error de configuración OAuth. El redirect URI no coincide. Contactá al administrador.';
     } elseif (strpos($errorMsg, 'invalid_client') !== false) {
         $userError = 'Credenciales de Google inválidas. Contactá al administrador.';
