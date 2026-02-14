@@ -4,8 +4,8 @@ ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/php_error.log');
 error_reporting(E_ALL);
 
+// Only include db.php (which already includes config.php)
 require_once __DIR__ . '/includes/db.php';
-require_once __DIR__ . '/includes/config.php';
 
 // Verificar si ya está logueado
 $isLoggedIn = isset($_SESSION['uid']) && $_SESSION['uid'] > 0;
@@ -19,10 +19,22 @@ ini_set('default_charset', 'UTF-8');
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Seleccionar Tipo de Publicación — <?php echo APP_NAME; ?></title>
+
+  <!-- Fonts optimized with display=swap (non-blocking) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+
+  <!-- Font Awesome loaded asynchronously -->
+  <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css" media="print" onload="this.media='all'">
+
+  <!-- Fallback for browsers without JS -->
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
+  </noscript>
 
   <style>
     :root {
