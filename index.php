@@ -153,12 +153,12 @@ logDebug("RENDERING_PAGE");
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
   <!-- Font Awesome cargado de forma asíncrona -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css" media="print" onload="this.media='all'">
 
   <!-- Fallback para navegadores sin JS -->
   <noscript>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
   </noscript>
 
   <!-- Favicon - Bandera de Costa Rica 🇨🇷 -->

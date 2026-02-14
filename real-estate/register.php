@@ -116,7 +116,7 @@ $captcha_b = $_SESSION['re_reg_captcha_b'] ?? 0;
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Registro Bienes Raíces — <?php echo APP_NAME; ?></title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
   <style>
     :root { --primary: #002b7f; --white: #fff; --dark: #1a1a1a; --gray-700: #4a5568; --gray-300: #cbd5e0; --gray-100: #f7fafc; }
     * { margin: 0; padding: 0; box-sizing: border-box; }

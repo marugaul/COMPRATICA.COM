@@ -390,7 +390,7 @@ if ($content3 && file_put_contents($file3, $content3)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Actualización del Sistema</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/assets/fontawesome-css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
     <div class="container mt-5">
