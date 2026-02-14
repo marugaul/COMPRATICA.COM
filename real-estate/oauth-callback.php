@@ -8,11 +8,51 @@ require_once __DIR__ . '/../includes/db.php';
 
 $pdo = db();
 
+// Función para logging detallado
+function logOAuthError($message, $context = []) {
+    $logDir = __DIR__ . '/../logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+
+    $logFile = $logDir . '/real_estate_oauth.log';
+    $timestamp = date('Y-m-d H:i:s');
+    $logEntry = "[$timestamp] $message\n";
+
+    if (!empty($context)) {
+        $logEntry .= "Context: " . json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
+    }
+
+    $logEntry .= str_repeat('-', 80) . "\n";
+
+    @file_put_contents($logFile, $logEntry, FILE_APPEND);
+    error_log($message); // También log al error_log de PHP
+}
+
+// Log inicio del callback
+logOAuthError('OAuth Callback iniciado', [
+    'GET' => $_GET,
+    'SESSION' => [
+        'oauth_state' => $_SESSION['re_oauth_state'] ?? 'NO SET',
+    ],
+    'SERVER' => [
+        'HTTP_HOST' => $_SERVER['HTTP_HOST'] ?? '',
+        'REQUEST_URI' => $_SERVER['REQUEST_URI'] ?? '',
+        'HTTPS' => $_SERVER['HTTPS'] ?? 'off',
+    ]
+]);
+
 // Verificar estado de seguridad
 $state = $_GET['state'] ?? '';
 $expectedState = $_SESSION['re_oauth_state'] ?? '';
 
 if (empty($state) || empty($expectedState) || !hash_equals($expectedState, $state)) {
+    logOAuthError('Error: Estado de seguridad inválido', [
+        'state_received' => $state,
+        'state_expected' => $expectedState,
+        'state_empty' => empty($state),
+        'expected_empty' => empty($expectedState),
+    ]);
     header('Location: /real-estate/register.php?error=' . urlencode('Estado de seguridad inválido'));
     exit;
 }
@@ -20,6 +60,11 @@ if (empty($state) || empty($expectedState) || !hash_equals($expectedState, $stat
 // Verificar que tenemos un código de autorización
 $code = $_GET['code'] ?? '';
 if (empty($code)) {
+    logOAuthError('Error: Código de autorización no recibido', [
+        'GET_params' => $_GET,
+        'error' => $_GET['error'] ?? 'none',
+        'error_description' => $_GET['error_description'] ?? 'none',
+    ]);
     header('Location: /real-estate/register.php?error=' . urlencode('Código de autorización no recibido'));
     exit;
 }
@@ -64,13 +109,22 @@ try {
     curl_close($ch);
 
     if ($httpCode !== 200) {
-        error_log('[OAuth Error] Token exchange failed: HTTP ' . $httpCode . ' Response: ' . $response);
+        logOAuthError('Error al intercambiar código por token', [
+            'http_code' => $httpCode,
+            'response' => $response,
+            'curl_error' => $curlError,
+            'token_url' => $tokenUrl,
+            'redirect_uri' => $redirectUri,
+        ]);
         throw new Exception('Error al intercambiar código por token: HTTP ' . $httpCode . ' - ' . $response);
     }
 
     $tokens = json_decode($response, true);
     if (empty($tokens['id_token'])) {
-        error_log('[OAuth Error] No id_token in response: ' . $response);
+        logOAuthError('No id_token en la respuesta de Google', [
+            'response' => $response,
+            'tokens' => $tokens,
+        ]);
         throw new Exception('ID token no recibido de Google');
     }
 
@@ -85,7 +139,11 @@ try {
     curl_close($ch);
 
     if ($userInfoHttpCode !== 200) {
-        error_log('[OAuth Error] UserInfo request failed: HTTP ' . $userInfoHttpCode);
+        logOAuthError('Error al obtener información del usuario', [
+            'http_code' => $userInfoHttpCode,
+            'response' => $userInfoResponse,
+            'url' => $userInfoUrl,
+        ]);
         throw new Exception('Error al obtener información del usuario');
     }
 
@@ -115,6 +173,12 @@ try {
         $_SESSION['agent_name'] = $agentName;
         unset($_SESSION['re_oauth_state']);
 
+        logOAuthError('Login exitoso - Agente existente', [
+            'agent_id' => $agentId,
+            'agent_name' => $agentName,
+            'email' => $email,
+        ]);
+
         header('Location: /real-estate/dashboard.php?login=success');
         exit;
     }
@@ -135,13 +199,25 @@ try {
     $_SESSION['agent_name'] = $name;
     unset($_SESSION['re_oauth_state']);
 
+    logOAuthError('Registro exitoso - Nuevo agente creado', [
+        'agent_id' => $agentId,
+        'agent_name' => $name,
+        'email' => $email,
+    ]);
+
     // Redirigir al dashboard con mensaje de bienvenida
     header('Location: /real-estate/dashboard.php?welcome=1');
     exit;
 
 } catch (Exception $e) {
     $errorMsg = $e->getMessage();
-    error_log('[OAuth Callback Error] ' . $errorMsg);
+
+    logOAuthError('Excepción capturada en OAuth callback', [
+        'message' => $errorMsg,
+        'trace' => $e->getTraceAsString(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+    ]);
 
     // Proporcionar mensajes de error más útiles
     if (strpos($errorMsg, 'no such table: real_estate_agents') !== false) {
