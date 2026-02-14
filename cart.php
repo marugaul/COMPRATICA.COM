@@ -172,7 +172,7 @@ if (!headers_sent()) header('Content-Type: text/html; charset=UTF-8'); ini_set('
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrito de Compras — <?= defined('APP_NAME') ? APP_NAME : 'Compratica'; ?></title>
     <meta name="csrf-token" content="<?= h($csrf_meta); ?>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>

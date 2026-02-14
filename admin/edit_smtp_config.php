@@ -97,7 +97,7 @@ $all_configs = $pdo->query("SELECT id, config_name, smtp_host, smtp_port FROM em
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Configuración SMTP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/assets/fontawesome-css/all.min.css" rel="stylesheet">
     <style>
         body {
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
