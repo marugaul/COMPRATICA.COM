@@ -179,6 +179,9 @@ try {
             'email' => $email,
         ]);
 
+        // Asegurar que la sesión se persista antes de redirigir
+        session_write_close();
+
         header('Location: /real-estate/dashboard.php?login=success');
         exit;
     }
@@ -204,6 +207,9 @@ try {
         'agent_name' => $name,
         'email' => $email,
     ]);
+
+    // Asegurar que la sesión se persista antes de redirigir
+    session_write_close();
 
     // Redirigir al dashboard con mensaje de bienvenida
     header('Location: /real-estate/dashboard.php?welcome=1');
