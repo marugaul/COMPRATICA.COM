@@ -1,13 +1,14 @@
 <?php
 // public_html/includes/config.oauth.php
+// IMPORTANTE: Usa constantes (sin comillas) definidas en config.php o config.local.php
 return [
   'google' => [
-    'id'     => 'GOOGLE_CLIENT_ID',
-    'secret' => 'GOOGLE_CLIENT_SECRET',
+    'id'     => GOOGLE_CLIENT_ID,
+    'secret' => GOOGLE_CLIENT_SECRET,
   ],
   'facebook' => [
-    'id'     => 'FACEBOOK_APP_ID',
-    'secret' => 'FACEBOOK_APP_SECRET',
+    'id'     => FACEBOOK_APP_ID,
+    'secret' => FACEBOOK_APP_SECRET,
   ],
   'apple' => [
     // Para cuando activemos Apple Sign-In (ES256)
