@@ -171,12 +171,21 @@ try {
         session_regenerate_id(true);
         $_SESSION['agent_id'] = $agentId;
         $_SESSION['agent_name'] = $agentName;
+        $_SESSION['uid'] = $agentId; // Para compatibilidad con sistema principal
+        $_SESSION['name'] = $agentName; // Para compatibilidad con sistema principal
         unset($_SESSION['re_oauth_state']);
 
         logOAuthError('Login exitoso - Agente existente', [
             'agent_id' => $agentId,
             'agent_name' => $agentName,
             'email' => $email,
+            'session_vars_set' => [
+                'agent_id' => $_SESSION['agent_id'],
+                'agent_name' => $_SESSION['agent_name'],
+                'uid' => $_SESSION['uid'],
+                'name' => $_SESSION['name']
+            ],
+            'session_id' => session_id()
         ]);
 
         // Asegurar que la sesión se persista antes de redirigir
@@ -200,12 +209,21 @@ try {
     session_regenerate_id(true);
     $_SESSION['agent_id'] = $agentId;
     $_SESSION['agent_name'] = $name;
+    $_SESSION['uid'] = $agentId; // Para compatibilidad con sistema principal
+    $_SESSION['name'] = $name; // Para compatibilidad con sistema principal
     unset($_SESSION['re_oauth_state']);
 
     logOAuthError('Registro exitoso - Nuevo agente creado', [
         'agent_id' => $agentId,
         'agent_name' => $name,
         'email' => $email,
+        'session_vars_set' => [
+            'agent_id' => $_SESSION['agent_id'],
+            'agent_name' => $_SESSION['agent_name'],
+            'uid' => $_SESSION['uid'],
+            'name' => $_SESSION['name']
+        ],
+        'session_id' => session_id()
     ]);
 
     // Asegurar que la sesión se persista antes de redirigir
