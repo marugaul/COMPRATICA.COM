@@ -1,5 +1,7 @@
 # Archivos sensibles y de datos
 data.sqlite
+compratica.db
+*.db
 *.log
 php_error.log
 
