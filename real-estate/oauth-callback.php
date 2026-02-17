@@ -2,7 +2,6 @@
 // real-estate/oauth-callback.php
 // Maneja el callback de Google OAuth y crea/vincula agentes de bienes raíces
 
-session_start();
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 
