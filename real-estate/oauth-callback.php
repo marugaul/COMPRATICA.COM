@@ -167,7 +167,10 @@ try {
         $agentId = (int)$existingAgent['id'];
         $agentName = $existingAgent['name'];
 
-        session_regenerate_id(true);
+        // NO usar session_regenerate_id(true) aquí porque borra el archivo de sesión viejo.
+        // Si el navegador (o un proxy/CDN como Cloudflare) no actualiza la cookie con el nuevo ID,
+        // el dashboard.php recibe el ID viejo, no encuentra el archivo (fue borrado) y redirige al login.
+        // La sesión ya fue creada limpiamente en oauth-start.php, solo actualizamos los datos.
         $_SESSION['agent_id'] = $agentId;
         $_SESSION['agent_name'] = $agentName;
         $_SESSION['uid'] = $agentId; // Para compatibilidad con sistema principal
@@ -204,8 +207,7 @@ try {
 
     $agentId = (int)$pdo->lastInsertId();
 
-    // Iniciar sesión automáticamente
-    session_regenerate_id(true);
+    // Iniciar sesión automáticamente (sin session_regenerate_id para evitar pérdida de cookie)
     $_SESSION['agent_id'] = $agentId;
     $_SESSION['agent_name'] = $name;
     $_SESSION['uid'] = $agentId; // Para compatibilidad con sistema principal
