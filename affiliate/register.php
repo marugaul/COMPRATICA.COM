@@ -82,6 +82,12 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
 
     if ($existingAff) {
       // Ya existe - iniciar sesión directamente
+      // Log existing user OAuth login
+      $logFile = __DIR__ . '/../logs/affiliate_oauth.log';
+      $timestamp = date('Y-m-d H:i:s');
+      $logMsg = "[{$timestamp}] OAuth login: Existing affiliate | ID: {$existingAff['id']} | Email: {$email}";
+      @file_put_contents($logFile, $logMsg . PHP_EOL, FILE_APPEND);
+
       $_SESSION['aff_id'] = (int)$existingAff['id'];
       $_SESSION['aff_name'] = $name;
       header('Location: dashboard.php');
@@ -103,6 +109,12 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
     // Iniciar sesión automáticamente
     $_SESSION['aff_id'] = $aff_id;
     $_SESSION['aff_name'] = $name;
+
+    // Log successful OAuth registration
+    $logFile = __DIR__ . '/../logs/affiliate_oauth.log';
+    $timestamp = date('Y-m-d H:i:s');
+    $logMsg = "[{$timestamp}] OAuth success: New affiliate registered | ID: {$aff_id} | Email: {$email} | Name: {$name}";
+    @file_put_contents($logFile, $logMsg . PHP_EOL, FILE_APPEND);
 
     // Enviar email de bienvenida
     try {
@@ -138,6 +150,12 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
     exit;
 
   } catch (Throwable $e) {
+    // Log OAuth error to application log
+    $logFile = __DIR__ . '/../logs/affiliate_oauth.log';
+    $timestamp = date('Y-m-d H:i:s');
+    $logMsg = "[{$timestamp}] OAuth error: " . $e->getMessage() . " | Trace: " . $e->getTraceAsString();
+    @file_put_contents($logFile, $logMsg . PHP_EOL, FILE_APPEND);
+
     error_log("[register.php] OAuth error: " . $e->getMessage());
     $msg = "Error al registrarse con Google: " . $e->getMessage();
   }
