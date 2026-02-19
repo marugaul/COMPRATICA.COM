@@ -94,6 +94,10 @@ foreach ($listings as $l) {
         <div class="alert info">
           <strong>Propiedad creada</strong> — Tu publicación está pendiente de pago. Una vez confirmado el pago, será activada automáticamente.
         </div>
+      <?php elseif ($_GET['msg'] === 'updated'): ?>
+        <div class="alert success">
+          <strong>¡Propiedad actualizada!</strong> Los cambios han sido guardados exitosamente.
+        </div>
       <?php endif; ?>
     <?php endif; ?>
     <div class="stats-grid">

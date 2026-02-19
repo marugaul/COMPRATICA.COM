@@ -697,7 +697,7 @@ logDebug("RENDERING_PAGE", ['listings_count' => count($listings)]);
   <div class="grid">
     <?php foreach ($listings as $listing):
       $images = !empty($listing['images']) ? json_decode($listing['images'], true) : [];
-      $firstImage = !empty($images) && is_array($images) ? $images[0] : 'assets/placeholder.jpg';
+      $firstImage = !empty($images) && is_array($images) ? convert_google_drive_url($images[0]) : 'assets/placeholder.jpg';
 
       // Formatear precio
       $price = $listing['price'];
