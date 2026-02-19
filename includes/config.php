@@ -129,6 +129,15 @@ if (!defined('FACEBOOK_APP_ID')) define('FACEBOOK_APP_ID', '');
 if (!defined('FACEBOOK_APP_SECRET')) define('FACEBOOK_APP_SECRET', '');
 
 // =========================
+// Sightengine API (Moderación de Imágenes)
+// =========================
+// Obtén credenciales gratis en: https://sightengine.com/
+// Plan gratuito: 2000 operaciones/mes sin tarjeta de crédito
+// Detecta: pornografía, violencia, gore, contenido ofensivo
+if (!defined('SIGHTENGINE_API_USER')) define('SIGHTENGINE_API_USER', '');
+if (!defined('SIGHTENGINE_API_SECRET')) define('SIGHTENGINE_API_SECRET', '');
+
+// =========================
 // Helpers generales
 // =========================
 if (!defined('APP_URL')) define('APP_URL', rtrim(BASE_URL, '/'));

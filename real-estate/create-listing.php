@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $selected_features = $_POST['features'] ?? [];
     $features_json = json_encode($selected_features);
 
-    // Imágenes (URLs separadas por comas o líneas)
+    // Imágenes (URLs separadas por comas o líneas + imágenes subidas)
     $images_input = trim($_POST['images'] ?? '');
     $images_array = [];
     if ($images_input !== '') {
@@ -116,6 +116,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $images_array = preg_split('/[\r\n,]+/', $images_input);
       $images_array = array_filter(array_map('trim', $images_array));
     }
+
+    // Agregar imágenes subidas (si las hay)
+    $uploaded_images = $_POST['uploaded_image_urls'] ?? '';
+    if (!empty($uploaded_images)) {
+      $uploaded_array = json_decode($uploaded_images, true);
+      if (is_array($uploaded_array)) {
+        $images_array = array_merge($images_array, $uploaded_array);
+      }
+    }
+
+    // Convertir URLs de Google Drive al formato correcto
+    $images_array = array_map('convert_google_drive_url', $images_array);
+
     $images_json = json_encode($images_array);
 
     // Validaciones
@@ -477,6 +490,114 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       padding-top: 2rem;
       border-top: 2px solid var(--gray-100);
     }
+    /* Estilos para Drag & Drop de imágenes */
+    .drop-zone {
+      border: 2px dashed var(--gray-300);
+      border-radius: var(--radius);
+      padding: 40px;
+      text-align: center;
+      background: var(--gray-100);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--primary);
+      background: #e3f2fd;
+      transform: scale(1.02);
+    }
+    .drop-zone.drag-over {
+      border-style: solid;
+      box-shadow: 0 0 20px rgba(0,43,127,0.2);
+    }
+    .upload-button {
+      display: inline-block;
+      padding: 12px 24px;
+      background: var(--primary);
+      color: var(--white);
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 10px;
+    }
+    .upload-button:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,43,127,0.3);
+    }
+    .image-preview-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .image-preview-item {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transition: all 0.2s;
+      background: var(--gray-100);
+    }
+    .image-preview-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+    .image-preview-item img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      display: block;
+    }
+    .image-preview-remove {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: var(--danger);
+      color: var(--white);
+      border: none;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s;
+      opacity: 0.9;
+    }
+    .image-preview-remove:hover {
+      opacity: 1;
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .image-preview-uploading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      font-size: 12px;
+    }
+    .spinner {
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top: 3px solid var(--white);
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
     @media (max-width: 768px) {
       .container {
         padding: 0 1rem;
@@ -491,6 +612,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
       .submit-section {
         flex-direction: column-reverse;
+      }
+      .image-preview-container {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       }
     }
   </style>
@@ -669,10 +793,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Imágenes
           </h2>
 
+          <!-- Límites de fotos por plan -->
+          <div class="photo-limit-info" id="photoLimitInfo" style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 12px; margin-bottom: 20px; border-radius: 4px;">
+            <i class="fas fa-info-circle" style="color: #2196F3;"></i>
+            <span id="photoLimitText">Seleccioná un plan para ver el límite de fotos</span>
+          </div>
+
+          <!-- Opción 1: Subir archivos (Drag & Drop + Botón) -->
           <div class="form-group">
-            <label>URLs de Imágenes</label>
-            <textarea name="images" placeholder="Ingresá las URLs de las imágenes, una por línea&#10;https://ejemplo.com/imagen1.jpg&#10;https://ejemplo.com/imagen2.jpg"></textarea>
-            <p class="help-text">Ingresá una URL por línea. Podés usar servicios como Imgur, Dropbox, o Google Drive para alojar tus imágenes.</p>
+            <label>
+              <i class="fas fa-cloud-upload-alt"></i> Subir Imágenes
+              <span style="color: #666; font-size: 0.9em;">(Recomendado)</span>
+            </label>
+
+            <!-- Área de drag & drop -->
+            <div id="dropZone" class="drop-zone">
+              <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: #666; margin-bottom: 10px;"></i>
+              <p style="margin: 10px 0; font-size: 16px; color: #333;">Arrastrá las imágenes aquí</p>
+              <p style="margin: 5px 0; color: #666;">o</p>
+              <label for="fileInput" class="upload-button">
+                <i class="fas fa-folder-open"></i> Seleccionar Archivos
+              </label>
+              <input type="file" id="fileInput" name="uploaded_images[]" multiple accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
+              <p style="margin-top: 15px; font-size: 13px; color: #666;">JPG, PNG, GIF o WebP - Máx. 10MB por imagen</p>
+            </div>
+
+            <!-- Vista previa de imágenes -->
+            <div id="imagePreview" class="image-preview-container"></div>
+
+            <!-- Input oculto para almacenar URLs de imágenes subidas -->
+            <input type="hidden" id="uploadedImageUrls" name="uploaded_image_urls" value="">
+          </div>
+
+          <div style="text-align: center; margin: 20px 0; color: #999; font-weight: bold;">
+            - O -
+          </div>
+
+          <!-- Opción 2: URLs de imágenes (opción actual mantenida) -->
+          <div class="form-group">
+            <label>
+              <i class="fas fa-link"></i> URLs de Imágenes
+              <span style="color: #666; font-size: 0.9em;">(Google Drive, Imgur, Dropbox, etc.)</span>
+            </label>
+            <textarea id="imageUrlsTextarea" name="images" placeholder="Ingresá las URLs de las imágenes, una por línea&#10;https://ejemplo.com/imagen1.jpg&#10;https://ejemplo.com/imagen2.jpg"></textarea>
+            <p class="help-text">
+              <i class="fas fa-info-circle"></i>
+              Ingresá una URL por línea. Podés usar servicios como Imgur, Dropbox, o Google Drive para alojar tus imágenes.
+            </p>
           </div>
         </div>
       </div>
@@ -754,5 +921,286 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     </form>
   </div>
+
+  <script>
+    // =========================
+    // Sistema de Upload de Imágenes
+    // =========================
+
+    // Límites de fotos por plan
+    const photoLimits = {
+      '1': 3,  // Plan gratis 7 días
+      '2': 5,  // Plan 30 días
+      '3': 8   // Plan 90 días
+    };
+
+    const planNames = {
+      '1': 'Plan Gratis (7 días)',
+      '2': 'Plan 30 días',
+      '3': 'Plan 90 días'
+    };
+
+    // Estado global
+    let uploadedImages = [];  // URLs de imágenes subidas
+    let selectedPlan = 0;
+    let maxPhotos = 3;  // Por defecto
+
+    // Elementos DOM
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const uploadedImageUrls = document.getElementById('uploadedImageUrls');
+    const imageUrlsTextarea = document.getElementById('imageUrlsTextarea');
+    const photoLimitInfo = document.getElementById('photoLimitInfo');
+    const photoLimitText = document.getElementById('photoLimitText');
+    const pricingPlanSelect = document.querySelector('select[name="pricing_plan_id"]');
+
+    // =========================
+    // Actualizar límite de fotos cuando cambia el plan
+    // =========================
+    if (pricingPlanSelect) {
+      pricingPlanSelect.addEventListener('change', function() {
+        selectedPlan = this.value;
+        maxPhotos = photoLimits[selectedPlan] || 3;
+
+        if (selectedPlan && planNames[selectedPlan]) {
+          photoLimitText.innerHTML = `<strong>${planNames[selectedPlan]}</strong>: Podés subir hasta <strong>${maxPhotos} fotos</strong>`;
+        } else {
+          photoLimitText.textContent = 'Seleccioná un plan para ver el límite de fotos';
+        }
+
+        updatePhotoCount();
+      });
+    }
+
+    // =========================
+    // Drag & Drop
+    // =========================
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+
+      const files = Array.from(e.dataTransfer.files).filter(file =>
+        file.type.startsWith('image/')
+      );
+
+      if (files.length > 0) {
+        handleFiles(files);
+      }
+    });
+
+    // Click en la zona para abrir selector de archivos
+    dropZone.addEventListener('click', (e) => {
+      if (e.target === dropZone || e.target.closest('.drop-zone') && !e.target.closest('.upload-button')) {
+        fileInput.click();
+      }
+    });
+
+    // =========================
+    // Selector de archivos
+    // =========================
+    fileInput.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length > 0) {
+        handleFiles(files);
+      }
+      // Limpiar input para permitir seleccionar el mismo archivo nuevamente
+      e.target.value = '';
+    });
+
+    // =========================
+    // Procesar archivos seleccionados
+    // =========================
+    function handleFiles(files) {
+      const currentCount = uploadedImages.length + countUrlImages();
+
+      if (currentCount + files.length > maxPhotos) {
+        alert(`Tu plan permite máximo ${maxPhotos} fotos. Ya tenés ${currentCount} imagen(es).`);
+        return;
+      }
+
+      files.forEach((file, index) => {
+        // Crear preview inmediato
+        const previewId = 'preview-' + Date.now() + '-' + index;
+        createImagePreview(file, previewId);
+
+        // Subir archivo
+        uploadImage(file, previewId);
+      });
+    }
+
+    // =========================
+    // Crear vista previa de imagen
+    // =========================
+    function createImagePreview(file, previewId) {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const previewItem = document.createElement('div');
+        previewItem.className = 'image-preview-item';
+        previewItem.id = previewId;
+        previewItem.innerHTML = `
+          <img src="${e.target.result}" alt="Preview">
+          <button type="button" class="image-preview-remove" onclick="removeImage('${previewId}')" disabled>
+            <i class="fas fa-times"></i>
+          </button>
+          <div class="image-preview-uploading">
+            <div class="spinner"></div>
+          </div>
+        `;
+        imagePreview.appendChild(previewItem);
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    // =========================
+    // Subir imagen al servidor
+    // =========================
+    function uploadImage(file, previewId) {
+      const formData = new FormData();
+      formData.append('images[]', file);
+      formData.append('pricing_plan_id', selectedPlan);
+      formData.append('current_images_count', uploadedImages.length + countUrlImages());
+      formData.append('csrf_token', '<?= $_SESSION['csrf_token'] ?? '' ?>');
+
+      fetch('upload-image.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        const previewElement = document.getElementById(previewId);
+
+        if (data.success && data.images.length > 0) {
+          // Upload exitoso
+          const imageUrl = data.images[0];
+          uploadedImages.push(imageUrl);
+
+          // Remover spinner
+          const uploading = previewElement.querySelector('.image-preview-uploading');
+          if (uploading) uploading.remove();
+
+          // Habilitar botón de eliminar
+          const removeBtn = previewElement.querySelector('.image-preview-remove');
+          if (removeBtn) {
+            removeBtn.disabled = false;
+            removeBtn.dataset.url = imageUrl;
+          }
+
+          // Actualizar input oculto
+          updateUploadedImagesInput();
+
+          // Mostrar advertencia si la API de moderación no está configurada
+          if (data.moderation_status && data.moderation_status.service === 'Validación básica') {
+            console.warn('Moderación de contenido no configurada. Configure Sightengine API en config.php');
+          }
+        } else {
+          // Upload fallido
+          alert('Error al subir imagen: ' + (data.error || 'Error desconocido'));
+          previewElement.remove();
+        }
+
+        updatePhotoCount();
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error al subir imagen. Por favor intentá nuevamente.');
+        const previewElement = document.getElementById(previewId);
+        if (previewElement) previewElement.remove();
+      });
+    }
+
+    // =========================
+    // Eliminar imagen
+    // =========================
+    window.removeImage = function(previewId) {
+      const previewElement = document.getElementById(previewId);
+      const removeBtn = previewElement.querySelector('.image-preview-remove');
+      const imageUrl = removeBtn.dataset.url;
+
+      // Remover de la lista
+      uploadedImages = uploadedImages.filter(url => url !== imageUrl);
+
+      // Remover del DOM
+      previewElement.remove();
+
+      // Actualizar input oculto
+      updateUploadedImagesInput();
+      updatePhotoCount();
+    };
+
+    // =========================
+    // Actualizar input oculto con URLs de imágenes subidas
+    // =========================
+    function updateUploadedImagesInput() {
+      uploadedImageUrls.value = JSON.stringify(uploadedImages);
+    }
+
+    // =========================
+    // Contar imágenes de URLs
+    // =========================
+    function countUrlImages() {
+      const urls = imageUrlsTextarea.value.trim();
+      if (!urls) return 0;
+      return urls.split(/[\r\n,]+/).filter(url => url.trim()).length;
+    }
+
+    // =========================
+    // Actualizar contador de fotos
+    // =========================
+    function updatePhotoCount() {
+      const total = uploadedImages.length + countUrlImages();
+      if (total > 0) {
+        photoLimitText.innerHTML = `<strong>${planNames[selectedPlan] || 'Plan seleccionado'}</strong>: ${total} de ${maxPhotos} fotos`;
+
+        if (total >= maxPhotos) {
+          photoLimitInfo.style.background = '#fff3cd';
+          photoLimitInfo.style.borderColor = '#ffc107';
+          dropZone.style.opacity = '0.5';
+          dropZone.style.pointerEvents = 'none';
+        } else {
+          photoLimitInfo.style.background = '#e3f2fd';
+          photoLimitInfo.style.borderColor = '#2196F3';
+          dropZone.style.opacity = '1';
+          dropZone.style.pointerEvents = 'auto';
+        }
+      }
+    }
+
+    // Monitorear cambios en el textarea de URLs
+    imageUrlsTextarea.addEventListener('input', updatePhotoCount);
+
+    // =========================
+    // Validación antes de enviar formulario
+    // =========================
+    document.querySelector('form').addEventListener('submit', function(e) {
+      const total = uploadedImages.length + countUrlImages();
+
+      // Combinar URLs de imágenes subidas con URLs del textarea
+      if (uploadedImages.length > 0) {
+        const existingUrls = imageUrlsTextarea.value.trim();
+        const combinedUrls = existingUrls
+          ? existingUrls + '\n' + uploadedImages.join('\n')
+          : uploadedImages.join('\n');
+        imageUrlsTextarea.value = combinedUrls;
+      }
+
+      if (total > maxPhotos) {
+        e.preventDefault();
+        alert(`Tu plan permite máximo ${maxPhotos} fotos. Tenés ${total} imagen(es).`);
+        return false;
+      }
+    });
+  </script>
 </body>
 </html>
