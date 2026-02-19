@@ -133,3 +133,21 @@ if (!defined('FACEBOOK_APP_SECRET')) define('FACEBOOK_APP_SECRET', '');
 // =========================
 if (!defined('APP_URL')) define('APP_URL', rtrim(BASE_URL, '/'));
 function app_base_url() { return APP_URL; }
+
+/**
+ * Convierte URLs de Google Drive al formato de visualización directa
+ * De: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+ * A: https://drive.google.com/uc?export=view&id=FILE_ID
+ */
+function convert_google_drive_url(string $url): string {
+    // Patrón para URLs de Google Drive
+    $pattern = '/https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/';
+
+    if (preg_match($pattern, $url, $matches)) {
+        $fileId = $matches[1];
+        return "https://drive.google.com/uc?export=view&id={$fileId}";
+    }
+
+    // Si no es una URL de Google Drive o ya está en formato correcto, devolver sin cambios
+    return $url;
+}
