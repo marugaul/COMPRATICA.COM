@@ -1,0 +1,16 @@
+<?php
+/**
+ * Configuración de Sightengine API - Moderación de imágenes
+ *
+ * INSTRUCCIONES:
+ * 1. Crea una cuenta gratuita en: https://sightengine.com/
+ * 2. Copia este archivo a: config.sightengine.php
+ * 3. Reemplaza los valores vacíos con tus credenciales de API
+ * 4. NO subas config.sightengine.php a git (ya está en .gitignore)
+ *
+ * Plan gratuito: 2000 operaciones/mes sin tarjeta de crédito
+ * Detecta: pornografía, violencia, gore, contenido ofensivo
+ */
+
+define('SIGHTENGINE_API_USER', '');
+define('SIGHTENGINE_API_SECRET', '');
