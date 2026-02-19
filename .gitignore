@@ -20,6 +20,7 @@ composer.lock
 .user.ini
 php.ini
 includes/config.local.php
+includes/config.sightengine.php
 
 # Archivos de sistema
 .DS_Store

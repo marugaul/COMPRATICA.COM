@@ -122,6 +122,12 @@ if (file_exists(__DIR__ . '/config.local.php')) {
     require_once __DIR__ . '/config.local.php';
 }
 
+// Cargar configuración de Sightengine (credenciales API)
+// NOTA: Este archivo NO debe subirse a git (está en .gitignore)
+if (file_exists(__DIR__ . '/config.sightengine.php')) {
+    require_once __DIR__ . '/config.sightengine.php';
+}
+
 // Definir valores por defecto solo si no fueron definidos en config.local.php
 if (!defined('GOOGLE_CLIENT_ID')) define('GOOGLE_CLIENT_ID', '');
 if (!defined('GOOGLE_CLIENT_SECRET')) define('GOOGLE_CLIENT_SECRET', '');
