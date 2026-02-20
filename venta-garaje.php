@@ -16,7 +16,7 @@ function logDebug($msg, $data = null) {
     @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
 }
 
-logDebug("INDEX_START", ['uri' => $_SERVER['REQUEST_URI']]);
+logDebug("INDEX_START", ['uri' => $_SERVER['REQUEST_URI'] ?? '']);
 
 $__sessPath = __DIR__ . '/sessions';
 if (!is_dir($__sessPath)) @mkdir($__sessPath, 0755, true);

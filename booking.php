@@ -30,7 +30,7 @@ $service_id = isset($_GET['service_id']) ? (int)$_GET['service_id'] : 0;
 $isLoggedIn = isset($_SESSION['uid']) && $_SESSION['uid'] > 0;
 if (!$isLoggedIn) {
     // Redirigir al login y volver después
-    $currentUrl = urlencode($_SERVER['REQUEST_URI']);
+    $currentUrl = urlencode($_SERVER['REQUEST_URI'] ?? '/');
     header("Location: login.php?redirect=$currentUrl");
     exit;
 }

@@ -17,7 +17,7 @@ function logDebug($msg, $data = null) {
     @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
 }
 
-logDebug("INDEX_START", ['uri' => $_SERVER['REQUEST_URI']]);
+logDebug("INDEX_START", ['uri' => $_SERVER['REQUEST_URI'] ?? '']);
 
 // ============= CONFIGURACIÓN DE SESIONES =============
 $__sessPath = __DIR__ . '/sessions';
