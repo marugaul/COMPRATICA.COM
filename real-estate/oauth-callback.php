@@ -4,6 +4,7 @@
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/user_auth.php';
 
 $pdo = db();
 
@@ -157,81 +158,24 @@ try {
     $name = $userInfo['name'] ?? '';
     $emailVerified = ($userInfo['email_verified'] ?? 'false') === 'true';
 
-    // Verificar si ya existe un agente con este email
-    $stmt = $pdo->prepare("SELECT id, name FROM real_estate_agents WHERE email = ? LIMIT 1");
-    $stmt->execute([$email]);
-    $existingAgent = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Usar la función unificada para obtener o crear usuario
+    $user = get_or_create_oauth_user($email, $name, 'google', $googleId);
 
-    if ($existingAgent) {
-        // El agente ya existe, iniciar sesión
-        $agentId = (int)$existingAgent['id'];
-        $agentName = $existingAgent['name'];
-
-        // NO usar session_regenerate_id(true) aquí porque borra el archivo de sesión viejo.
-        // Si el navegador (o un proxy/CDN como Cloudflare) no actualiza la cookie con el nuevo ID,
-        // el dashboard.php recibe el ID viejo, no encuentra el archivo (fue borrado) y redirige al login.
-        // La sesión ya fue creada limpiamente en oauth-start.php, solo actualizamos los datos.
-        $_SESSION['agent_id'] = $agentId;
-        $_SESSION['agent_name'] = $agentName;
-        $_SESSION['uid'] = $agentId; // Para compatibilidad con sistema principal
-        $_SESSION['name'] = $agentName; // Para compatibilidad con sistema principal
-        unset($_SESSION['re_oauth_state']);
-
-        logOAuthError('Login exitoso - Agente existente', [
-            'agent_id' => $agentId,
-            'agent_name' => $agentName,
-            'email' => $email,
-            'session_vars_set' => [
-                'agent_id' => $_SESSION['agent_id'],
-                'agent_name' => $_SESSION['agent_name'],
-                'uid' => $_SESSION['uid'],
-                'name' => $_SESSION['name']
-            ],
-            'session_id' => session_id()
-        ]);
-
-        // Asegurar que la sesión se persista antes de redirigir
-        session_write_close();
-
-        header('Location: /real-estate/dashboard.php?login=success');
-        exit;
-    }
-
-    // El agente no existe, crear uno nuevo
-    // Para Google OAuth, no necesitamos contraseña, usaremos un hash vacío especial
-    $stmt = $pdo->prepare("
-        INSERT INTO real_estate_agents (name, email, phone, password_hash, is_active, created_at)
-        VALUES (?, ?, '', '', 1, datetime('now'))
-    ");
-    $stmt->execute([$name, $email]);
-
-    $agentId = (int)$pdo->lastInsertId();
-
-    // Iniciar sesión automáticamente (sin session_regenerate_id para evitar pérdida de cookie)
-    $_SESSION['agent_id'] = $agentId;
-    $_SESSION['agent_name'] = $name;
-    $_SESSION['uid'] = $agentId; // Para compatibilidad con sistema principal
-    $_SESSION['name'] = $name; // Para compatibilidad con sistema principal
-    unset($_SESSION['re_oauth_state']);
-
-    logOAuthError('Registro exitoso - Nuevo agente creado', [
-        'agent_id' => $agentId,
-        'agent_name' => $name,
+    logOAuthError('Login exitoso vía OAuth', [
+        'user_id' => $user['id'],
         'email' => $email,
-        'session_vars_set' => [
-            'agent_id' => $_SESSION['agent_id'],
-            'agent_name' => $_SESSION['agent_name'],
-            'uid' => $_SESSION['uid'],
-            'name' => $_SESSION['name']
-        ],
-        'session_id' => session_id()
+        'name' => $name
     ]);
+
+    // Iniciar sesión usando la función unificada
+    login_user($user);
+
+    unset($_SESSION['re_oauth_state']);
 
     // Asegurar que la sesión se persista antes de redirigir
     session_write_close();
 
-    // Redirigir al dashboard con mensaje de bienvenida
-    header('Location: /real-estate/dashboard.php?welcome=1');
+    header('Location: /real-estate/dashboard.php?login=success');
     exit;
 
 } catch (Exception $e) {
@@ -245,8 +189,8 @@ try {
     ]);
 
     // Proporcionar mensajes de error más útiles
-    if (strpos($errorMsg, 'no such table: real_estate_agents') !== false) {
-        $userError = 'Error de configuración: La tabla de agentes no existe. El administrador debe ejecutar el script de instalación (instalar-bienes-raices-agentes.php).';
+    if (strpos($errorMsg, 'no such table: users') !== false) {
+        $userError = 'Error de configuración: La tabla de usuarios no existe. Contactá al administrador.';
     } elseif (strpos($errorMsg, 'redirect_uri_mismatch') !== false || strpos($errorMsg, 'HTTP 400') !== false) {
         $userError = 'Error de configuración OAuth. El redirect URI no coincide. Contactá al administrador.';
     } elseif (strpos($errorMsg, 'invalid_client') !== false) {

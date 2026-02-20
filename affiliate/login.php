@@ -16,9 +16,16 @@ if (is_dir($__sessPath) && is_writable($__sessPath)) {
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/affiliate_auth.php';
+require_once __DIR__ . '/../includes/user_auth.php';
 
 $pdo = db();
 $msg = '';
+
+// Si ya tiene sesión, redirigir al dashboard
+if (is_user_logged_in()) {
+    header('Location: dashboard.php');
+    exit;
+}
 
 // ============================================
 // OAUTH GOOGLE - Callback Handler
@@ -80,34 +87,16 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
       throw new RuntimeException('No se pudo obtener información del usuario');
     }
 
-    // Check if affiliate exists
+    // Obtener información del usuario
     $email = $userInfo['email'];
     $name = $userInfo['name'] ?? $userInfo['email'];
+    $oauthId = $userInfo['id'] ?? '';
 
-    $stmt = $pdo->prepare("SELECT * FROM affiliates WHERE email = ? LIMIT 1");
-    $stmt->execute([$email]);
-    $affiliate = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Usar la función unificada para obtener o crear usuario
+    $user = get_or_create_oauth_user($email, $name, 'google', $oauthId);
 
-    if (!$affiliate) {
-      // No existe - redirigir a registro con mensaje
-      $_SESSION['oauth_pending'] = [
-        'email' => $email,
-        'name' => $name,
-        'provider' => 'google'
-      ];
-      header('Location: register.php');
-      exit;
-    }
-
-    // Verificar que la cuenta esté activa
-    if ((int)($affiliate['is_active'] ?? 0) !== 1) {
-      throw new RuntimeException('Tu cuenta aún no ha sido aprobada por el administrador.');
-    }
-
-    // Iniciar sesión
-    session_regenerate_id(true);
-    $_SESSION['aff_id'] = (int)$affiliate['id'];
-    $_SESSION['aff_name'] = (string)($affiliate['name'] ?? '');
+    // Iniciar sesión usando la función unificada
+    login_user($user);
 
     header('Location: dashboard.php');
     exit;
@@ -127,32 +116,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       throw new RuntimeException('Por favor ingresa tu correo y contraseña.');
     }
 
-    $st = $pdo->prepare("SELECT * FROM affiliates WHERE email = ? LIMIT 1");
-    $st->execute([$email]);
-    $a = $st->fetch(PDO::FETCH_ASSOC);
+    $user = authenticate_user($email, $pass);
 
-    if (!$a) {
+    if (!$user) {
       throw new RuntimeException('Credenciales inválidas.');
     }
 
-    $hash = null;
-    if (!empty($a['password_hash'])) {
-      $hash = $a['password_hash'];
-    } elseif (!empty($a['pass_hash'])) {
-      $hash = $a['pass_hash'];
-    }
-
-    if (!$hash || !password_verify($pass, $hash)) {
-      throw new RuntimeException('Credenciales inválidas.');
-    }
-
-    if ((int)($a['is_active'] ?? 0) !== 1) {
-      throw new RuntimeException('Tu cuenta aún no ha sido aprobada por el administrador.');
-    }
-
-    session_regenerate_id(true);
-    $_SESSION['aff_id']   = (int)$a['id'];
-    $_SESSION['aff_name'] = (string)($a['name'] ?? '');
+    login_user($user);
 
     header('Location: dashboard.php');
     exit;
