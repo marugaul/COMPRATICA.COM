@@ -5,30 +5,20 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/user_auth.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!empty($_SESSION['agent_id'])) {
+if (is_user_logged_in()) {
     header('Location: dashboard.php');
     exit;
 }
 
-$pdo = db();
 $msg = '';
 $ok  = false;
 
 if (isset($_GET['error']) && !empty($_GET['error'])) {
     $msg = $_GET['error'];
-}
-
-function srv_valid_email($e) {
-    return filter_var($e, FILTER_VALIDATE_EMAIL) !== false;
-}
-
-function srv_clean_phone($p) {
-    $p = trim((string)$p);
-    if (!preg_match('/^[0-9 \-\+\(\)]{7,20}$/', $p)) return false;
-    return $p;
 }
 
 // Generar CAPTCHA en GET
@@ -64,10 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($name === '' || $email === '' || $phone === '' || $pass === '' || $pass2 === '') {
             throw new RuntimeException('Todos los campos son requeridos.');
         }
-        if (!srv_valid_email($email)) {
+        if (!valid_email($email)) {
             throw new RuntimeException('El correo no es válido.');
         }
-        $phone_ok = srv_clean_phone($phone);
+        $phone_ok = clean_phone($phone);
         if ($phone_ok === false) {
             throw new RuntimeException('El teléfono no es válido.');
         }
@@ -78,18 +68,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new RuntimeException('La contraseña debe tener al menos 6 caracteres.');
         }
 
-        $st = $pdo->prepare("SELECT id FROM real_estate_agents WHERE email = ? LIMIT 1");
-        $st->execute([$email]);
-        if ($st->fetchColumn()) {
-            throw new RuntimeException('Ya existe una cuenta con este correo. Podés iniciar sesión directamente.');
-        }
-
-        $hash = password_hash($pass, PASSWORD_BCRYPT);
-        $ins  = $pdo->prepare("
-            INSERT INTO real_estate_agents (name, email, phone, company_name, password_hash, is_active, created_at)
-            VALUES (?, ?, ?, ?, ?, 1, datetime('now'))
-        ");
-        $ins->execute([$name, $email, $phone_ok, $company, $hash]);
+        // Crear usuario usando la función unificada
+        $userId = create_user([
+            'name' => $name,
+            'email' => $email,
+            'phone' => $phone_ok,
+            'password' => $pass,
+            'company_name' => $company,
+            'is_active' => 1
+        ]);
 
         $ok  = true;
         $msg = '¡Tu cuenta fue creada! Ya podés iniciar sesión.';

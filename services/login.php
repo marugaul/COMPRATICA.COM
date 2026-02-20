@@ -5,16 +5,16 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/user_auth.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 // Si ya tiene sesión, ir al dashboard
-if (!empty($_SESSION['agent_id'])) {
+if (is_user_logged_in()) {
     header('Location: dashboard.php');
     exit;
 }
 
-$pdo = db();
 $msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -26,22 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new RuntimeException('Por favor ingresá tu correo y contraseña.');
         }
 
-        $st = $pdo->prepare("SELECT * FROM real_estate_agents WHERE email = ? LIMIT 1");
-        $st->execute([$email]);
-        $agent = $st->fetch(PDO::FETCH_ASSOC);
+        $user = authenticate_user($email, $pass);
 
-        if (!$agent || !password_verify($pass, $agent['password_hash'])) {
+        if (!$user) {
             throw new RuntimeException('Credenciales inválidas.');
         }
-        if ((int)($agent['is_active'] ?? 0) !== 1) {
-            throw new RuntimeException('Tu cuenta no está activa.');
-        }
 
-        session_regenerate_id(true);
-        $_SESSION['agent_id']   = (int)$agent['id'];
-        $_SESSION['agent_name'] = (string)($agent['name'] ?? '');
-        $_SESSION['uid']        = (int)$agent['id'];
-        $_SESSION['name']       = (string)($agent['name'] ?? '');
+        login_user($user);
 
         header('Location: dashboard.php?login=success');
         exit;

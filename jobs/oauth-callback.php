@@ -1,6 +1,6 @@
 <?php
-// services/oauth-callback.php
-// Maneja el callback de Google OAuth y crea/vincula proveedores de servicios
+// jobs/oauth-callback.php
+// Maneja el callback de Google OAuth y crea/vincula empleadores
 
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
@@ -13,30 +13,30 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 $pdo = db();
 
-function srvLogOAuth($message, $context = []) {
+function jobsLogOAuth($message, $context = []) {
     $logDir  = __DIR__ . '/../logs';
     if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
-    $logFile = $logDir . '/services_oauth.log';
+    $logFile = $logDir . '/jobs_oauth.log';
     $line    = '[' . date('Y-m-d H:i:s') . '] ' . $message;
     if (!empty($context)) $line .= ' | ' . json_encode($context, JSON_UNESCAPED_SLASHES);
     @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
 }
 
-srvLogOAuth('OAuth callback iniciado', ['GET' => $_GET]);
+jobsLogOAuth('OAuth callback iniciado', ['GET' => $_GET]);
 
 // Verificar estado de seguridad
 $state         = $_GET['state'] ?? '';
-$expectedState = $_SESSION['srv_oauth_state'] ?? '';
+$expectedState = $_SESSION['jobs_oauth_state'] ?? '';
 
 if (empty($state) || empty($expectedState) || !hash_equals($expectedState, $state)) {
-    srvLogOAuth('Estado de seguridad inválido', ['received' => $state, 'expected' => $expectedState]);
-    header('Location: /services/register.php?error=' . urlencode('Estado de seguridad inválido.'));
+    jobsLogOAuth('Estado de seguridad inválido', ['received' => $state, 'expected' => $expectedState]);
+    header('Location: /jobs/register.php?error=' . urlencode('Estado de seguridad inválido.'));
     exit;
 }
 
 $code = $_GET['code'] ?? '';
 if (empty($code)) {
-    header('Location: /services/register.php?error=' . urlencode('Código de autorización no recibido.'));
+    header('Location: /jobs/register.php?error=' . urlencode('Código de autorización no recibido.'));
     exit;
 }
 
@@ -44,13 +44,13 @@ $GOOGLE_CLIENT_ID     = defined('GOOGLE_CLIENT_ID') ? GOOGLE_CLIENT_ID : '';
 $GOOGLE_CLIENT_SECRET = defined('GOOGLE_CLIENT_SECRET') ? GOOGLE_CLIENT_SECRET : '';
 
 if (empty($GOOGLE_CLIENT_ID) || empty($GOOGLE_CLIENT_SECRET)) {
-    header('Location: /services/register.php?error=' . urlencode('Credenciales de Google no configuradas.'));
+    header('Location: /jobs/register.php?error=' . urlencode('Credenciales de Google no configuradas.'));
     exit;
 }
 
 try {
     $baseUrl     = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'];
-    $redirectUri = $baseUrl . '/services/oauth-callback.php';
+    $redirectUri = $baseUrl . '/jobs/oauth-callback.php';
 
     // Intercambiar código por tokens
     $tokenData = [
@@ -103,19 +103,19 @@ try {
     // Usar la función unificada para obtener o crear usuario
     $user = get_or_create_oauth_user($email, $name, 'google', $oauthId);
 
-    srvLogOAuth('Login exitoso vía OAuth', ['user_id' => $user['id'], 'email' => $email]);
+    jobsLogOAuth('Login exitoso vía OAuth', ['user_id' => $user['id'], 'email' => $email]);
 
     // Iniciar sesión usando la función unificada
     login_user($user);
 
-    unset($_SESSION['srv_oauth_state']);
+    unset($_SESSION['jobs_oauth_state']);
     session_write_close();
 
-    header('Location: /services/dashboard.php?login=success');
+    header('Location: /jobs/dashboard.php?login=success');
     exit;
 
 } catch (Exception $e) {
-    srvLogOAuth('Error en OAuth', ['message' => $e->getMessage()]);
+    jobsLogOAuth('Error en OAuth', ['message' => $e->getMessage()]);
     $userError = 'Error al autenticar con Google: ' . $e->getMessage();
 
     if (strpos($e->getMessage(), 'redirect_uri_mismatch') !== false) {
@@ -124,6 +124,6 @@ try {
         $userError = 'Credenciales de Google inválidas. Contactá al administrador.';
     }
 
-    header('Location: /services/register.php?error=' . urlencode($userError));
+    header('Location: /jobs/register.php?error=' . urlencode($userError));
     exit;
 }

@@ -5,9 +5,15 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/user_auth.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
-$pdo = db();
+
+// Si ya tiene sesión, ir al dashboard
+if (is_user_logged_in()) {
+    header('Location: dashboard.php');
+    exit;
+}
 
 $msg = '';
 $ok  = false;
@@ -16,16 +22,6 @@ $ok  = false;
 if (isset($_GET['error']) && !empty($_GET['error'])) {
     $msg = $_GET['error'];
     $ok = false;
-}
-
-function valid_email($e){
-  return filter_var($e, FILTER_VALIDATE_EMAIL) !== false;
-}
-
-function clean_phone($p){
-  $p = trim((string)$p);
-  if (!preg_match('/^[0-9 \-\+\(\)]{7,20}$/', $p)) return false;
-  return $p;
 }
 
 /* ---------- CAPTCHA SENCILLO (suma) + honeypot ---------- */
@@ -75,21 +71,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       throw new RuntimeException('La contraseña debe tener al menos 6 caracteres.');
     }
 
-    $st = $pdo->prepare("SELECT id FROM real_estate_agents WHERE email = ? LIMIT 1");
-    $st->execute([$email]);
-    if ($st->fetchColumn()) {
-      throw new RuntimeException('Ya existe una cuenta con este correo.');
-    }
+    // Crear usuario usando la función unificada
+    $userId = create_user([
+      'name' => $name,
+      'email' => $email,
+      'phone' => $phone_ok,
+      'password' => $pass,
+      'company_name' => $company_name,
+      'is_active' => 1
+    ]);
 
-    $hash = password_hash($pass, PASSWORD_BCRYPT);
-
-    $ins = $pdo->prepare("
-      INSERT INTO real_estate_agents (name, email, phone, company_name, password_hash, is_active, created_at)
-      VALUES (?, ?, ?, ?, ?, 1, datetime('now'))
-    ");
-    $ins->execute([$name, $email, $phone_ok, $company_name, $hash]);
-
-    $agent_id = (int)$pdo->lastInsertId();
     $ok = true;
     $msg = "¡Tu cuenta fue creada y activada! Ya podés iniciar sesión.";
 
