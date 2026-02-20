@@ -49,6 +49,57 @@ function db() {
                 );
             ");
             $pdo->exec("INSERT INTO settings (id, exchange_rate) VALUES (1, 540.00)");
+
+            // Crear tabla users unificada
+            $pdo->exec("
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL UNIQUE,
+                    phone TEXT,
+                    password_hash TEXT NOT NULL,
+
+                    -- OAuth columns (for Google/Facebook login)
+                    oauth_provider TEXT,
+                    oauth_id TEXT,
+
+                    -- Company/business fields
+                    company_name TEXT,
+                    company_description TEXT,
+                    company_logo TEXT,
+                    website TEXT,
+
+                    -- Real estate specific
+                    license_number TEXT,
+                    specialization TEXT,
+                    bio TEXT,
+                    profile_image TEXT,
+
+                    -- Social media
+                    facebook TEXT,
+                    instagram TEXT,
+                    whatsapp TEXT,
+
+                    -- Affiliate specific
+                    slug TEXT UNIQUE,
+                    avatar TEXT,
+                    fee_pct REAL DEFAULT 0.10,
+                    offers_products INTEGER DEFAULT 0,
+                    offers_services INTEGER DEFAULT 0,
+                    business_description TEXT,
+
+                    -- Status
+                    is_active INTEGER DEFAULT 1,
+                    created_at TEXT DEFAULT (datetime('now')),
+                    updated_at TEXT DEFAULT (datetime('now'))
+                );
+            ");
+
+            // Crear índices
+            $pdo->exec("CREATE INDEX idx_users_email ON users(email)");
+            $pdo->exec("CREATE INDEX idx_users_slug ON users(slug)");
+            $pdo->exec("CREATE INDEX idx_users_active ON users(is_active)");
+
         } else {
             $colsO = $pdo->query("PRAGMA table_info(orders)")->fetchAll(PDO::FETCH_ASSOC);
             $have = [];
@@ -64,6 +115,70 @@ function db() {
             if(!in_array('settings', $tables)){
                 $pdo->exec("CREATE TABLE settings (id INTEGER PRIMARY KEY CHECK (id=1), exchange_rate REAL NOT NULL DEFAULT 540.00)");
                 $pdo->exec("INSERT INTO settings (id, exchange_rate) VALUES (1, 540.00)");
+            }
+
+            // Crear tabla users si no existe
+            if(!in_array('users', $tables)){
+                $pdo->exec("
+                    CREATE TABLE users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL UNIQUE,
+                        phone TEXT,
+                        password_hash TEXT NOT NULL,
+
+                        -- OAuth columns (for Google/Facebook login)
+                        oauth_provider TEXT,
+                        oauth_id TEXT,
+
+                        -- Company/business fields
+                        company_name TEXT,
+                        company_description TEXT,
+                        company_logo TEXT,
+                        website TEXT,
+
+                        -- Real estate specific
+                        license_number TEXT,
+                        specialization TEXT,
+                        bio TEXT,
+                        profile_image TEXT,
+
+                        -- Social media
+                        facebook TEXT,
+                        instagram TEXT,
+                        whatsapp TEXT,
+
+                        -- Affiliate specific
+                        slug TEXT UNIQUE,
+                        avatar TEXT,
+                        fee_pct REAL DEFAULT 0.10,
+                        offers_products INTEGER DEFAULT 0,
+                        offers_services INTEGER DEFAULT 0,
+                        business_description TEXT,
+
+                        -- Status
+                        is_active INTEGER DEFAULT 1,
+                        created_at TEXT DEFAULT (datetime('now')),
+                        updated_at TEXT DEFAULT (datetime('now'))
+                    );
+                ");
+
+                // Crear índices
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_users_slug ON users(slug)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active)");
+            } else {
+                // Si la tabla existe, verificar que tenga las columnas OAuth
+                $colsU = $pdo->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC);
+                $haveU = [];
+                foreach ($colsU as $c) $haveU[strtolower($c['name'])]=true;
+
+                if(empty($haveU['oauth_provider'])) {
+                    $pdo->exec("ALTER TABLE users ADD COLUMN oauth_provider TEXT");
+                }
+                if(empty($haveU['oauth_id'])) {
+                    $pdo->exec("ALTER TABLE users ADD COLUMN oauth_id TEXT");
+                }
             }
         }
     }
