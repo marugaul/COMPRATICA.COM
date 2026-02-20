@@ -226,7 +226,7 @@ function is_user_logged_in() {
 /**
  * Obtener usuario actual de la sesión
  */
-function get_current_user() {
+function get_session_user() {
     if (!is_user_logged_in()) {
         return null;
     }

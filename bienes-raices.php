@@ -16,7 +16,7 @@ function logDebug($msg, $data = null) {
     @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
 }
 
-logDebug("BIENES_RAICES_START", ['uri' => $_SERVER['REQUEST_URI']]);
+logDebug("BIENES_RAICES_START", ['uri' => $_SERVER['REQUEST_URI'] ?? '']);
 
 // Cargar configuración (config.php ya maneja la sesión automáticamente)
 require_once __DIR__ . '/includes/db.php';

@@ -20,7 +20,7 @@ $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
     $email = trim((string)($_POST['email'] ?? ''));
-    $pass  = (string)($_POST['password'] ?? ''));
+    $pass  = (string)($_POST['password'] ?? '');
 
     if ($email === '' || $pass === '') throw new RuntimeException('Por favor ingresa tu correo y contraseña.');
 
