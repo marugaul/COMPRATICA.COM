@@ -140,23 +140,33 @@ if (PHP_VERSION_ID < 70300) {
     ]);
 }
 
-// Obtener servicios activos del nuevo sistema
+// Obtener servicios activos del sistema de afiliados
 $pdo = db();
 $servicios = [];
 
 try {
     $stmt = $pdo->query("
         SELECT
-            jl.*,
-            je.company_name,
-            je.company_logo,
-            je.name as provider_name
-        FROM job_listings jl
-        INNER JOIN jobs_employers je ON je.id = jl.employer_id
-        WHERE jl.listing_type = 'service'
-          AND jl.is_active = 1
-          AND je.is_active = 1
-        ORDER BY jl.is_featured DESC, jl.created_at DESC
+            s.id,
+            s.title,
+            s.description,
+            s.short_description,
+            s.price_per_hour as service_price,
+            'CRC' as salary_currency,
+            'hourly' as service_price_type,
+            s.slug,
+            a.name as provider_name,
+            a.name as company_name,
+            NULL as location,
+            s.created_at,
+            s.is_active,
+            0 as is_featured,
+            NULL as image_1
+        FROM services s
+        INNER JOIN affiliates a ON a.id = s.affiliate_id
+        WHERE s.is_active = 1
+          AND a.is_active = 1
+        ORDER BY s.created_at DESC
     ");
     $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
