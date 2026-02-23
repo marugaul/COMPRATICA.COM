@@ -112,8 +112,9 @@ function handleGoogleOAuth($code, $clientId, $clientSecret, $redirectUri, $pdo) 
     
     if (!$user) {
         $name = $userData['name'] ?? explode('@', $userData['email'])[0];
-        $ins = $pdo->prepare("INSERT INTO users (name, email, oauth_provider, oauth_id, created_at) VALUES (?, ?, 'google', ?, NOW())");
-        $ins->execute([$name, $userData['email'], $userData['id']]);
+        $randomPass = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
+        $ins = $pdo->prepare("INSERT INTO users (name, email, password_hash, oauth_provider, oauth_id, created_at) VALUES (?, ?, ?, 'google', ?, datetime('now'))");
+        $ins->execute([$name, $userData['email'], $randomPass, $userData['id']]);
         $userId = (int)$pdo->lastInsertId();
     } else {
         $userId = (int)$user['id'];
@@ -146,8 +147,9 @@ function handleFacebookOAuth($code, $appId, $appSecret, $redirectUri, $pdo) {
     
     if (!$user) {
         $name = $userData['name'] ?? 'Usuario Facebook';
-        $ins = $pdo->prepare("INSERT INTO users (name, email, oauth_provider, oauth_id, created_at) VALUES (?, ?, 'facebook', ?, NOW())");
-        $ins->execute([$name, $email, $userData['id']]);
+        $randomPass = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
+        $ins = $pdo->prepare("INSERT INTO users (name, email, password_hash, oauth_provider, oauth_id, created_at) VALUES (?, ?, ?, 'facebook', ?, datetime('now'))");
+        $ins->execute([$name, $email, $randomPass, $userData['id']]);
         $userId = (int)$pdo->lastInsertId();
     } else {
         $userId = (int)$user['id'];

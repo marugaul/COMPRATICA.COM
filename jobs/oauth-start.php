@@ -18,8 +18,7 @@ if (empty($GOOGLE_CLIENT_ID)) {
 
 $_SESSION['jobs_oauth_state'] = bin2hex(random_bytes(16));
 
-$baseUrl     = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'];
-$redirectUri = $baseUrl . '/jobs/oauth-callback.php';
+$redirectUri = rtrim(SITE_URL, '/') . '/jobs/oauth-callback.php';
 
 $googleAuthUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
     'client_id'     => $GOOGLE_CLIENT_ID,
