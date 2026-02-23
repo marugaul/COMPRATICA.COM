@@ -18,6 +18,38 @@ $pdo = db();
 $employer_id = (int)$_SESSION['employer_id'];
 $employer_name = $_SESSION['employer_name'] ?? 'Usuario';
 
+// Mensajes de éxito/error
+$success_message = '';
+$error_message = '';
+
+if (isset($_GET['success'])) {
+  switch ($_GET['success']) {
+    case '1':
+      $success_message = 'Publicación creada exitosamente';
+      break;
+    case 'updated':
+      $success_message = 'Publicación actualizada exitosamente';
+      break;
+    case 'deleted':
+      $success_message = 'Publicación eliminada exitosamente';
+      break;
+  }
+}
+
+if (isset($_GET['error'])) {
+  switch ($_GET['error']) {
+    case 'not_found':
+      $error_message = 'Publicación no encontrada';
+      break;
+    case 'delete_failed':
+      $error_message = 'Error al eliminar la publicación';
+      break;
+    case 'invalid_id':
+      $error_message = 'ID de publicación inválido';
+      break;
+  }
+}
+
 // Obtener publicaciones del empleador
 $stmt = $pdo->prepare("
   SELECT * FROM job_listings
@@ -232,6 +264,27 @@ foreach ($listings as $listing) {
       margin-bottom: 1rem;
       color: var(--gray-300);
     }
+
+    .alert {
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .alert-success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .alert-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
   </style>
 </head>
 <body>
@@ -244,6 +297,20 @@ foreach ($listings as $listing) {
   </div>
 
   <div class="container">
+    <?php if ($success_message): ?>
+      <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <?php echo htmlspecialchars($success_message); ?>
+      </div>
+    <?php endif; ?>
+
+    <?php if ($error_message): ?>
+      <div class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <?php echo htmlspecialchars($error_message); ?>
+      </div>
+    <?php endif; ?>
+
     <div class="stats-grid">
       <div class="stat-card">
         <h3><?php echo $stats['total']; ?></h3>
