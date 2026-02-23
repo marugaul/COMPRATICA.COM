@@ -49,8 +49,7 @@ if (empty($GOOGLE_CLIENT_ID) || empty($GOOGLE_CLIENT_SECRET)) {
 }
 
 try {
-    $baseUrl     = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'];
-    $redirectUri = $baseUrl . '/jobs/oauth-callback.php';
+    $redirectUri = rtrim(SITE_URL, '/') . '/jobs/oauth-callback.php';
 
     // Intercambiar código por tokens
     $tokenData = [
