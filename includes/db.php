@@ -100,6 +100,123 @@ function db() {
             $pdo->exec("CREATE INDEX idx_users_slug ON users(slug)");
             $pdo->exec("CREATE INDEX idx_users_active ON users(is_active)");
 
+            // Crear tabla de publicaciones de empleos y servicios
+            $pdo->exec("
+                CREATE TABLE job_listings (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  employer_id INTEGER NOT NULL,
+                  listing_type TEXT NOT NULL CHECK(listing_type IN ('job', 'service')),
+                  title TEXT NOT NULL,
+                  description TEXT NOT NULL,
+                  category TEXT,
+                  job_type TEXT CHECK(job_type IN ('full-time', 'part-time', 'freelance', 'contract', 'internship', NULL)),
+                  salary_min REAL,
+                  salary_max REAL,
+                  salary_currency TEXT DEFAULT 'CRC',
+                  salary_period TEXT CHECK(salary_period IN ('hour', 'day', 'week', 'month', 'year', 'project', NULL)),
+                  service_price REAL,
+                  service_price_type TEXT CHECK(service_price_type IN ('fixed', 'hourly', 'daily', 'negotiable', NULL)),
+                  location TEXT,
+                  province TEXT,
+                  canton TEXT,
+                  distrito TEXT,
+                  remote_allowed INTEGER DEFAULT 0,
+                  requirements TEXT,
+                  benefits TEXT,
+                  contact_name TEXT,
+                  contact_email TEXT,
+                  contact_phone TEXT,
+                  contact_whatsapp TEXT,
+                  application_url TEXT,
+                  image_1 TEXT,
+                  image_2 TEXT,
+                  image_3 TEXT,
+                  image_4 TEXT,
+                  image_5 TEXT,
+                  is_active INTEGER DEFAULT 1,
+                  is_featured INTEGER DEFAULT 0,
+                  start_date TEXT,
+                  end_date TEXT,
+                  views_count INTEGER DEFAULT 0,
+                  applications_count INTEGER DEFAULT 0,
+                  created_at TEXT DEFAULT (datetime('now')),
+                  updated_at TEXT DEFAULT (datetime('now')),
+                  FOREIGN KEY (employer_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            ");
+
+            // Índices para job_listings
+            $pdo->exec("CREATE INDEX idx_job_listings_employer ON job_listings(employer_id)");
+            $pdo->exec("CREATE INDEX idx_job_listings_type ON job_listings(listing_type)");
+            $pdo->exec("CREATE INDEX idx_job_listings_category ON job_listings(category)");
+            $pdo->exec("CREATE INDEX idx_job_listings_active ON job_listings(is_active)");
+            $pdo->exec("CREATE INDEX idx_job_listings_province ON job_listings(province)");
+            $pdo->exec("CREATE INDEX idx_job_listings_dates ON job_listings(start_date, end_date)");
+
+            // Crear tabla de categorías
+            $pdo->exec("
+                CREATE TABLE job_categories (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  name TEXT NOT NULL UNIQUE,
+                  icon TEXT,
+                  parent_category TEXT,
+                  display_order INTEGER DEFAULT 0,
+                  active INTEGER DEFAULT 1
+                )
+            ");
+
+            // Crear tabla de aplicaciones
+            $pdo->exec("
+                CREATE TABLE job_applications (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  listing_id INTEGER NOT NULL,
+                  applicant_name TEXT NOT NULL,
+                  applicant_email TEXT NOT NULL,
+                  applicant_phone TEXT,
+                  resume_url TEXT,
+                  cover_letter TEXT,
+                  status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'reviewed', 'interview', 'rejected', 'accepted')),
+                  notes TEXT,
+                  created_at TEXT DEFAULT (datetime('now')),
+                  updated_at TEXT DEFAULT (datetime('now')),
+                  FOREIGN KEY (listing_id) REFERENCES job_listings(id) ON DELETE CASCADE
+                )
+            ");
+
+            $pdo->exec("CREATE INDEX idx_applications_listing ON job_applications(listing_id)");
+            $pdo->exec("CREATE INDEX idx_applications_status ON job_applications(status)");
+
+            // Insertar categorías por defecto
+            $categories = [
+                ['EMP: Tecnología e Informática', 'fa-laptop-code', 'Empleos', 1],
+                ['EMP: Administración y Finanzas', 'fa-calculator', 'Empleos', 2],
+                ['EMP: Ventas y Marketing', 'fa-chart-line', 'Empleos', 3],
+                ['EMP: Salud y Medicina', 'fa-heartbeat', 'Empleos', 4],
+                ['EMP: Educación', 'fa-graduation-cap', 'Empleos', 5],
+                ['EMP: Construcción', 'fa-hard-hat', 'Empleos', 6],
+                ['EMP: Hostelería y Turismo', 'fa-hotel', 'Empleos', 7],
+                ['EMP: Transporte y Logística', 'fa-truck', 'Empleos', 8],
+                ['EMP: Servicio al Cliente', 'fa-headset', 'Empleos', 9],
+                ['EMP: Legal y Jurídico', 'fa-gavel', 'Empleos', 10],
+                ['SERV: Desarrollo Web y Apps', 'fa-code', 'Servicios', 20],
+                ['SERV: Diseño Gráfico', 'fa-palette', 'Servicios', 21],
+                ['SERV: Marketing Digital', 'fa-bullhorn', 'Servicios', 22],
+                ['SERV: Fotografía y Video', 'fa-camera', 'Servicios', 23],
+                ['SERV: Consultoría', 'fa-user-tie', 'Servicios', 24],
+                ['SERV: Reparaciones', 'fa-tools', 'Servicios', 25],
+                ['SERV: Limpieza', 'fa-broom', 'Servicios', 26],
+                ['SERV: Belleza y Estética', 'fa-cut', 'Servicios', 27],
+                ['SERV: Eventos', 'fa-calendar-alt', 'Servicios', 28],
+                ['SERV: Clases Particulares', 'fa-chalkboard-teacher', 'Servicios', 29],
+                ['SERV: Traducción', 'fa-language', 'Servicios', 30],
+                ['SERV: Legal', 'fa-balance-scale', 'Servicios', 31]
+            ];
+
+            $stmt = $pdo->prepare("INSERT INTO job_categories (name, icon, parent_category, display_order) VALUES (?, ?, ?, ?)");
+            foreach ($categories as $cat) {
+                $stmt->execute($cat);
+            }
+
         } else {
             $colsO = $pdo->query("PRAGMA table_info(orders)")->fetchAll(PDO::FETCH_ASSOC);
             $have = [];
@@ -179,6 +296,126 @@ function db() {
                 if(empty($haveU['oauth_id'])) {
                     $pdo->exec("ALTER TABLE users ADD COLUMN oauth_id TEXT");
                 }
+            }
+
+            // Crear tablas de empleos y servicios si no existen
+            if(!in_array('job_listings', $tables)){
+                $pdo->exec("
+                    CREATE TABLE job_listings (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      employer_id INTEGER NOT NULL,
+                      listing_type TEXT NOT NULL CHECK(listing_type IN ('job', 'service')),
+                      title TEXT NOT NULL,
+                      description TEXT NOT NULL,
+                      category TEXT,
+                      job_type TEXT CHECK(job_type IN ('full-time', 'part-time', 'freelance', 'contract', 'internship', NULL)),
+                      salary_min REAL,
+                      salary_max REAL,
+                      salary_currency TEXT DEFAULT 'CRC',
+                      salary_period TEXT CHECK(salary_period IN ('hour', 'day', 'week', 'month', 'year', 'project', NULL)),
+                      service_price REAL,
+                      service_price_type TEXT CHECK(service_price_type IN ('fixed', 'hourly', 'daily', 'negotiable', NULL)),
+                      location TEXT,
+                      province TEXT,
+                      canton TEXT,
+                      distrito TEXT,
+                      remote_allowed INTEGER DEFAULT 0,
+                      requirements TEXT,
+                      benefits TEXT,
+                      contact_name TEXT,
+                      contact_email TEXT,
+                      contact_phone TEXT,
+                      contact_whatsapp TEXT,
+                      application_url TEXT,
+                      image_1 TEXT,
+                      image_2 TEXT,
+                      image_3 TEXT,
+                      image_4 TEXT,
+                      image_5 TEXT,
+                      is_active INTEGER DEFAULT 1,
+                      is_featured INTEGER DEFAULT 0,
+                      start_date TEXT,
+                      end_date TEXT,
+                      views_count INTEGER DEFAULT 0,
+                      applications_count INTEGER DEFAULT 0,
+                      created_at TEXT DEFAULT (datetime('now')),
+                      updated_at TEXT DEFAULT (datetime('now')),
+                      FOREIGN KEY (employer_id) REFERENCES users(id) ON DELETE CASCADE
+                    )
+                ");
+
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_employer ON job_listings(employer_id)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_type ON job_listings(listing_type)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_category ON job_listings(category)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_active ON job_listings(is_active)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_province ON job_listings(province)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_dates ON job_listings(start_date, end_date)");
+            }
+
+            if(!in_array('job_categories', $tables)){
+                $pdo->exec("
+                    CREATE TABLE job_categories (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      name TEXT NOT NULL UNIQUE,
+                      icon TEXT,
+                      parent_category TEXT,
+                      display_order INTEGER DEFAULT 0,
+                      active INTEGER DEFAULT 1
+                    )
+                ");
+
+                // Insertar categorías por defecto
+                $categories = [
+                    ['EMP: Tecnología e Informática', 'fa-laptop-code', 'Empleos', 1],
+                    ['EMP: Administración y Finanzas', 'fa-calculator', 'Empleos', 2],
+                    ['EMP: Ventas y Marketing', 'fa-chart-line', 'Empleos', 3],
+                    ['EMP: Salud y Medicina', 'fa-heartbeat', 'Empleos', 4],
+                    ['EMP: Educación', 'fa-graduation-cap', 'Empleos', 5],
+                    ['EMP: Construcción', 'fa-hard-hat', 'Empleos', 6],
+                    ['EMP: Hostelería y Turismo', 'fa-hotel', 'Empleos', 7],
+                    ['EMP: Transporte y Logística', 'fa-truck', 'Empleos', 8],
+                    ['EMP: Servicio al Cliente', 'fa-headset', 'Empleos', 9],
+                    ['EMP: Legal y Jurídico', 'fa-gavel', 'Empleos', 10],
+                    ['SERV: Desarrollo Web y Apps', 'fa-code', 'Servicios', 20],
+                    ['SERV: Diseño Gráfico', 'fa-palette', 'Servicios', 21],
+                    ['SERV: Marketing Digital', 'fa-bullhorn', 'Servicios', 22],
+                    ['SERV: Fotografía y Video', 'fa-camera', 'Servicios', 23],
+                    ['SERV: Consultoría', 'fa-user-tie', 'Servicios', 24],
+                    ['SERV: Reparaciones', 'fa-tools', 'Servicios', 25],
+                    ['SERV: Limpieza', 'fa-broom', 'Servicios', 26],
+                    ['SERV: Belleza y Estética', 'fa-cut', 'Servicios', 27],
+                    ['SERV: Eventos', 'fa-calendar-alt', 'Servicios', 28],
+                    ['SERV: Clases Particulares', 'fa-chalkboard-teacher', 'Servicios', 29],
+                    ['SERV: Traducción', 'fa-language', 'Servicios', 30],
+                    ['SERV: Legal', 'fa-balance-scale', 'Servicios', 31]
+                ];
+
+                $stmt = $pdo->prepare("INSERT INTO job_categories (name, icon, parent_category, display_order) VALUES (?, ?, ?, ?)");
+                foreach ($categories as $cat) {
+                    $stmt->execute($cat);
+                }
+            }
+
+            if(!in_array('job_applications', $tables)){
+                $pdo->exec("
+                    CREATE TABLE job_applications (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      listing_id INTEGER NOT NULL,
+                      applicant_name TEXT NOT NULL,
+                      applicant_email TEXT NOT NULL,
+                      applicant_phone TEXT,
+                      resume_url TEXT,
+                      cover_letter TEXT,
+                      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'reviewed', 'interview', 'rejected', 'accepted')),
+                      notes TEXT,
+                      created_at TEXT DEFAULT (datetime('now')),
+                      updated_at TEXT DEFAULT (datetime('now')),
+                      FOREIGN KEY (listing_id) REFERENCES job_listings(id) ON DELETE CASCADE
+                    )
+                ");
+
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_applications_listing ON job_applications(listing_id)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_applications_status ON job_applications(status)");
             }
         }
     }
