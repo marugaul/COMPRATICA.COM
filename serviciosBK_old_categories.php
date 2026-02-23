@@ -140,30 +140,32 @@ if (PHP_VERSION_ID < 70300) {
     ]);
 }
 
-// Obtener servicios activos del nuevo sistema
+// Obtener categorías de servicios
 $pdo = db();
-$servicios = [];
+$categories = [];
+$totalServices = 0;
 
 try {
     $stmt = $pdo->query("
         SELECT
-            jl.*,
-            je.company_name,
-            je.company_logo,
-            je.name as provider_name
-        FROM job_listings jl
-        INNER JOIN jobs_employers je ON je.id = jl.employer_id
-        WHERE jl.listing_type = 'service'
-          AND jl.is_active = 1
-          AND je.is_active = 1
-        ORDER BY jl.is_featured DESC, jl.created_at DESC
+            sc.*,
+            COUNT(s.id) as service_count
+        FROM service_categories sc
+        LEFT JOIN services s ON s.category_id = sc.id AND s.is_active = 1
+        WHERE sc.is_active = 1
+        GROUP BY sc.id
+        ORDER BY sc.display_order ASC, sc.name ASC
     ");
-    $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($categories as $cat) {
+        $totalServices += (int)$cat['service_count'];
+    }
 } catch (Exception $e) {
-    logDebug("ERROR_LOADING_SERVICES", ['error' => $e->getMessage()]);
+    logDebug("ERROR_LOADING_CATEGORIES", ['error' => $e->getMessage()]);
 }
 
-logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
+logDebug("RENDERING_PAGE", ['categories_count' => count($categories), 'total_services' => $totalServices]);
 ?>
 <!doctype html>
 <html lang="es">
@@ -1067,10 +1069,6 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
     </div>
   </a>
   <nav class="header-nav">
-    <a href="empleos" class="btn-icon" title="Ver Empleos" aria-label="Ver empleos">
-      <i class="fas fa-briefcase"></i>
-    </a>
-
     <button id="cartButton" class="btn-icon" title="Carrito" aria-label="Ver carrito">
       <i class="fas fa-shopping-cart"></i>
       <span id="cartBadge" class="cart-badge" style="display:none">0</span>
@@ -1168,13 +1166,8 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
       <span>Inicio</span>
     </a>
 
-    <a href="empleos" class="menu-item">
-      <i class="fas fa-briefcase"></i>
-      <span>Empleos</span>
-    </a>
-
     <a href="servicios" class="menu-item">
-      <i class="fas fa-tools"></i>
+      <i class="fas fa-briefcase"></i>
       <span>Servicios</span>
     </a>
 
@@ -1234,16 +1227,16 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
 
       <div class="hero-stats">
         <div class="stat-item">
-          <div class="stat-number"><?php echo count($servicios); ?></div>
-          <div class="stat-label">Servicios Disponibles</div>
+          <div class="stat-number"><?php echo count($categories); ?></div>
+          <div class="stat-label">Categorías</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number"><?php echo $totalServices; ?>+</div>
+          <div class="stat-label">Servicios</div>
         </div>
         <div class="stat-item">
           <div class="stat-number">100%</div>
-          <div class="stat-label">Verificados</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-number">Directo</div>
-          <div class="stat-label">Sin Intermediarios</div>
+          <div class="stat-label">Ticos</div>
         </div>
       </div>
     </div>
@@ -1266,89 +1259,78 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
     </form>
   </section>
 
-  <!-- Services Section -->
+  <!-- Categories Section -->
   <div class="section-header">
-    <h2 class="section-title">Servicios Disponibles</h2>
+    <h2 class="section-title">Explorá Nuestros Servicios</h2>
     <p class="section-subtitle">
-      Encuentra el servicio que necesitas
+      Seleccioná la categoría que necesitás y encontrá a los mejores profesionales
     </p>
   </div>
 
-  <?php if (empty($servicios)): ?>
-    <div style="text-align: center; padding: 4rem 2rem; color: var(--gray-500);">
-      <i class="fas fa-tools" style="font-size: 4rem; color: var(--gray-300); margin-bottom: 1rem;"></i>
-      <h3 style="color: var(--gray-600); margin-bottom: 0.5rem;">No hay servicios disponibles en este momento</h3>
-      <p>Vuelve pronto para ver nuevas ofertas de servicios</p>
-    </div>
-  <?php else: ?>
-    <div class="categories-grid">
-      <?php foreach ($servicios as $service): ?>
-        <div class="category-card" onclick="window.location.href='publicacion-detalle.php?id=<?php echo $service['id']; ?>'" style="cursor: pointer;">
-          <?php if ($service['is_featured']): ?>
-            <div style="margin-bottom: 1rem;">
-              <span class="badge" style="background: var(--warning); color: var(--white);">
-                <i class="fas fa-star"></i>
-                Destacado
-              </span>
-            </div>
-          <?php endif; ?>
+  <div class="categories-grid">
+    <?php if (empty($categories)): ?>
+      <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+        <i class="fas fa-box-open" style="font-size: 4rem; color: var(--gray-300); margin-bottom: 1rem;"></i>
+        <h3 style="color: var(--gray-600); margin-bottom: 0.5rem;">No hay categorías disponibles aún</h3>
+        <p style="color: var(--gray-500);">Estamos trabajando para traerte los mejores servicios</p>
+      </div>
+    <?php else: ?>
+      <?php foreach ($categories as $cat): ?>
+        <?php
+        // Shuttle Aeropuerto usa página de búsqueda especial
+        $categoryUrl = ($cat['slug'] === 'shuttle-aeropuerto')
+            ? 'shuttle_search.php'
+            : 'services_list.php?category=' . urlencode($cat['slug']);
 
-          <?php if ($service['image_1']): ?>
-            <div style="width: 100%; height: 200px; margin-bottom: 1.5rem; border-radius: var(--radius); overflow: hidden;">
-              <img src="<?php echo htmlspecialchars($service['image_1']); ?>" alt="<?php echo htmlspecialchars($service['title']); ?>" style="width: 100%; height: 100%; object-fit: cover;">
-            </div>
-          <?php else: ?>
-            <div class="category-icon">
-              <i class="fas fa-tools"></i>
-            </div>
-          <?php endif; ?>
+        // Deshabilitar Shuttle (Muy Pronto)
+        $isDisabled = ($cat['slug'] === 'shuttle-aeropuerto');
+        ?>
+        <?php if ($isDisabled): ?>
+        <div class="category-card" style="opacity: 0.6; cursor: not-allowed; pointer-events: none;">
+        <?php else: ?>
+        <a href="<?php echo $categoryUrl; ?>" class="category-card <?php echo $cat['requires_online_payment'] ? 'payment-required' : ''; ?>">
+        <?php endif; ?>
+          <div class="category-icon">
+            <i class="<?php echo htmlspecialchars($cat['icon']); ?>"></i>
+          </div>
 
-          <h3 class="category-title"><?php echo htmlspecialchars($service['title']); ?></h3>
+          <h3 class="category-title"><?php echo htmlspecialchars($cat['name']); ?></h3>
 
           <p class="category-description">
-            <?php echo nl2br(htmlspecialchars(substr($service['description'], 0, 150))); ?>
-            <?php if (strlen($service['description']) > 150) echo '...'; ?>
+            <?php if ($isDisabled): ?>
+              <strong style="color: #f59e0b;">Muy Pronto</strong>
+            <?php else: ?>
+              <?php echo htmlspecialchars($cat['description']); ?>
+            <?php endif; ?>
           </p>
 
           <div class="category-footer">
             <div class="category-count">
-              <?php if ($service['service_price']): ?>
-                <?php
-                $currency = $service['salary_currency'] === 'USD' ? '$' : '₡';
-                echo '<strong style="font-size: 1.25rem; color: var(--accent);">' . $currency . number_format($service['service_price']) . '</strong>';
-                if ($service['service_price_type']) {
-                  $types = [
-                    'fixed' => '',
-                    'hourly' => '/hora',
-                    'daily' => '/día',
-                    'negotiable' => ' (negociable)'
-                  ];
-                  echo $types[$service['service_price_type']] ?? '';
-                }
-                ?>
-              <?php else: ?>
-                <span>Precio a consultar</span>
-              <?php endif; ?>
+              <span class="badge"><?php echo (int)$cat['service_count']; ?></span>
+              <span>servicios disponibles</span>
             </div>
-
-            <?php if ($service['location']): ?>
-              <span style="font-size: 0.85rem; color: var(--gray-600);">
-                <i class="fas fa-map-marker-alt"></i>
-                <?php echo htmlspecialchars($service['location']); ?>
+            <?php if ($cat['requires_online_payment']): ?>
+              <span class="payment-badge">
+                <i class="fas fa-credit-card"></i>
+                Pago online
               </span>
             <?php endif; ?>
           </div>
 
           <div style="margin-top: 1.5rem;">
             <span class="category-link">
-              Ver detalles
+              Ver servicios
               <i class="fas fa-arrow-right"></i>
             </span>
           </div>
+        <?php if ($isDisabled): ?>
         </div>
+        <?php else: ?>
+        </a>
+        <?php endif; ?>
       <?php endforeach; ?>
-    </div>
-  <?php endif; ?>
+    <?php endif; ?>
+  </div>
 </div>
 
 <script>
