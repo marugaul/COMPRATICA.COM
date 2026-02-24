@@ -79,9 +79,9 @@
       <span>Inicio</span>
     </a>
 
-    <a href="servicios" class="menu-item">
-      <i class="fas fa-briefcase"></i>
-      <span>Servicios</span>
+    <a href="/servicios" class="menu-item">
+      <i class="fas fa-concierge-bell"></i>
+      <span>Empleos y Servicios</span>
     </a>
 
     <a href="venta-garaje" class="menu-item">
@@ -117,8 +117,23 @@
     </a>
 
     <a href="affiliate/login.php" class="menu-item">
-      <i class="fas fa-user-tie"></i>
-      <span>Portal Afiliados</span>
+      <i class="fas fa-tags"></i>
+      <span>Portal Venta Garaje</span>
+    </a>
+
+    <a href="/servicios" class="menu-item">
+      <i class="fas fa-concierge-bell"></i>
+      <span>Portal Servicios</span>
+    </a>
+
+    <a href="/jobs/login.php" class="menu-item">
+      <i class="fas fa-briefcase"></i>
+      <span>Portal Empleos</span>
+    </a>
+
+    <a href="/real-estate/login.php" class="menu-item">
+      <i class="fas fa-home"></i>
+      <span>Portal Bienes Raíces</span>
     </a>
 
     <a href="admin/login.php" class="menu-item">

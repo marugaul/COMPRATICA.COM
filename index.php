@@ -314,18 +314,13 @@ logDebug("RENDERING_PAGE");
       <span>Inicio</span>
     </a>
     
-    <a href="servicios" class="menu-item">
-      <i class="fas fa-briefcase"></i>
-      <span>Servicios</span>
-    </a>
-
     <a href="venta-garaje" class="menu-item">
       <i class="fas fa-tags"></i>
       <span>Venta de Garaje</span>
     </a>
 
-    <a href="/jobs/login.php" class="menu-item">
-      <i class="fas fa-briefcase"></i>
+    <a href="/servicios" class="menu-item">
+      <i class="fas fa-concierge-bell"></i>
       <span>Empleos y Servicios</span>
     </a>
 
@@ -356,6 +351,11 @@ logDebug("RENDERING_PAGE");
     <a href="affiliate/login.php" class="menu-item">
       <i class="fas fa-tags"></i>
       <span>Portal Venta Garaje</span>
+    </a>
+
+    <a href="/servicios" class="menu-item">
+      <i class="fas fa-concierge-bell"></i>
+      <span>Portal Servicios</span>
     </a>
 
     <a href="/jobs/login.php" class="menu-item">
