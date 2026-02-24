@@ -166,7 +166,6 @@ try {
         INNER JOIN affiliates a ON a.id = s.affiliate_id
         WHERE s.is_active = 1
           AND a.is_active = 1
-          AND a.offers_services = 1
         ORDER BY s.created_at DESC
     ");
     $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
