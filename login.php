@@ -182,7 +182,7 @@ if (isset($_GET['oauth']) && isset($_GET['code'])) {
             $_SESSION['name'] = $result['name'];
             $_SESSION['role'] = 'active';
             
-            session_regenerate_id(true);
+            session_regenerate_id(false);
             logDebug("OAUTH_LOGIN_OK", ['provider' => $_GET['oauth'], 'uid' => $result['user_id']]);
             
             header('Location: ' . $redirect);
@@ -226,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $_SESSION['name'] = $user['name'] ?? '';
                     $_SESSION['role'] = $user['status'] ?? 'active';
 
-                    session_regenerate_id(true);
+                    session_regenerate_id(false);
                     header('Location: ' . $redirect);
                     exit;
                 } else {

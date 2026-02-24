@@ -1179,14 +1179,9 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
       <span>Inicio</span>
     </a>
 
-    <a href="empleos" class="menu-item">
-      <i class="fas fa-briefcase"></i>
-      <span>Empleos</span>
-    </a>
-
-    <a href="servicios" class="menu-item">
-      <i class="fas fa-tools"></i>
-      <span>Servicios</span>
+    <a href="/servicios" class="menu-item">
+      <i class="fas fa-concierge-bell"></i>
+      <span>Empleos y Servicios</span>
     </a>
 
     <a href="venta-garaje" class="menu-item">
@@ -1212,8 +1207,23 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
     </a>
 
     <a href="affiliate/login.php" class="menu-item">
-      <i class="fas fa-user-tie"></i>
-      <span>Portal Afiliados</span>
+      <i class="fas fa-tags"></i>
+      <span>Portal Venta Garaje</span>
+    </a>
+
+    <a href="/servicios" class="menu-item">
+      <i class="fas fa-concierge-bell"></i>
+      <span>Portal Servicios</span>
+    </a>
+
+    <a href="/jobs/login.php" class="menu-item">
+      <i class="fas fa-briefcase"></i>
+      <span>Portal Empleos</span>
+    </a>
+
+    <a href="/real-estate/login.php" class="menu-item">
+      <i class="fas fa-home"></i>
+      <span>Portal Bienes Raíces</span>
     </a>
 
     <a href="admin/login.php" class="menu-item">
