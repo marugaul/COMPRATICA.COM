@@ -191,10 +191,8 @@ if (isset($_GET['oauth']) && isset($_GET['code'])) {
             $_SESSION['user_name'] = $result['name'];
             $_SESSION['role'] = 'active';
 
-            session_regenerate_id(true);  // Delete old session file
             logDebug("OAUTH_LOGIN_OK", ['provider' => $_GET['oauth'], 'uid' => $result['user_id']]);
 
-            session_write_close();  // Write session data to disk before redirect
             header('Location: ' . $redirect);
             exit;
         } elseif ($result && isset($result['error'])) {
@@ -240,8 +238,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $_SESSION['user_name'] = $user['name'] ?? '';
                     $_SESSION['role'] = $user['status'] ?? 'active';
 
-                    session_regenerate_id(true);  // Delete old session file
-                    session_write_close();  // Write session data to disk before redirect
                     header('Location: ' . $redirect);
                     exit;
                 } else {
@@ -290,8 +286,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $_SESSION['user_name'] = $name;
                         $_SESSION['role'] = 'active';
 
-                        session_regenerate_id(true);  // Delete old session file
-                        session_write_close();  // Write session data to disk before redirect
                         header('Location: ' . $redirect);
                         exit;
                     }
