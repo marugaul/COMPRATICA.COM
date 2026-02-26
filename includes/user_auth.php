@@ -209,7 +209,25 @@ function login_user($user) {
     $_SESSION['agent_name'] = (string)$user['name'];
     $_SESSION['employer_id'] = (int)$user['id']; // Para empleos
     $_SESSION['employer_name'] = (string)$user['name'];
-    $_SESSION['aff_id'] = (int)$user['id'];      // Para afiliados
+
+    // Para afiliados: buscar ID en la tabla affiliates (no users)
+    // La tabla sales usa affiliate_id que apunta a affiliates.id, no a users.id
+    try {
+        $pdo = db();
+        $affStmt = $pdo->prepare("SELECT id FROM affiliates WHERE email = ? LIMIT 1");
+        $affStmt->execute([$user['email']]);
+        $affiliate = $affStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($affiliate) {
+            $_SESSION['aff_id'] = (int)$affiliate['id'];  // ID de tabla affiliates
+        } else {
+            // Fallback: si no existe en affiliates, usar users.id
+            $_SESSION['aff_id'] = (int)$user['id'];
+        }
+    } catch (Exception $e) {
+        // Si hay error, usar users.id como fallback
+        $_SESSION['aff_id'] = (int)$user['id'];
+    }
 }
 
 /**
