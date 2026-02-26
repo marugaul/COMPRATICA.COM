@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual: Portal de Venta de Garaje - Afiliados</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+        }
+
+        .page {
+            page-break-after: always;
+            min-height: 27cm;
+            padding: 1cm;
+        }
+
+        .page:last-child {
+            page-break-after: auto;
+        }
+
+        .portada {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 25cm;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 3cm;
+        }
+
+        .portada h1 {
+            font-size: 42px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .portada h2 {
+            font-size: 24px;
+            font-weight: 300;
+            margin-bottom: 40px;
+        }
+
+        .portada .version {
+            margin-top: 60px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #764ba2;
+            font-size: 22px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        h3 {
+            color: #555;
+            font-size: 18px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .paso {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .paso-numero {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 35px;
+            height: 35px;
+            line-height: 35px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .paso h3 {
+            display: inline-block;
+            color: #667eea;
+            margin: 0;
+        }
+
+        .paso p {
+            margin-top: 10px;
+            margin-left: 45px;
+        }
+
+        .nota {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .nota strong {
+            color: #856404;
+        }
+
+        .importante {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .importante strong {
+            color: #721c24;
+        }
+
+        .exito {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .exito strong {
+            color: #155724;
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .campo {
+            background: white;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .campo strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 1cm;
+            right: 2cm;
+            font-size: 12px;
+            color: #999;
+        }
+
+        @media print {
+            .page {
+                page-break-after: always;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+
+        .url {
+            color: #667eea;
+            font-weight: bold;
+            background: #e7e9fc;
+            padding: 8px;
+            border-radius: 5px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        table th {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            text-align: left;
+        }
+
+        table td {
+            padding: 10px;
+            border: 1px solid #dee2e6;
+        }
+
+        table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PÁGINA 1: PORTADA -->
+    <div class="page portada">
+        <h1>📦 MANUAL DE USUARIO</h1>
+        <h2>Portal de Venta de Garaje<br>Para Afiliados</h2>
+        <p style="font-size: 18px; max-width: 600px; margin-top: 30px;">
+            Guía rápida y fácil para crear tu venta de garaje y publicar productos en minutos
+        </p>
+        <div class="version">
+            <p>Versión 1.0 - Febrero 2026</p>
+            <p>COMPRATICA.COM</p>
+        </div>
+    </div>
+
+    <!-- PÁGINA 2: REGISTRO E INGRESO -->
+    <div class="page">
+        <h1>1️⃣ Registro e Ingreso al Portal</h1>
+
+        <p>Para poder crear ventas de garaje y publicar productos, primero debes registrarte como afiliado en la plataforma.</p>
+
+        <div class="paso">
+            <span class="paso-numero">1</span>
+            <h3>Accede a la página de registro</h3>
+            <p>Abre tu navegador y visita:</p>
+            <div class="url">https://tudominio.com/affiliate/register.php</div>
+        </div>
+
+        <div class="paso">
+            <span class="paso-numero">2</span>
+            <h3>Inicia sesión con Google</h3>
+            <p>Haz clic en el botón <strong>"Iniciar sesión con Google"</strong></p>
+            <p>Se abrirá una ventana de Google para que autorices el acceso.</p>
+        </div>
+
+        <div class="paso">
+            <span class="paso-numero">3</span>
+            <h3>Autoriza el acceso</h3>
+            <p>Selecciona tu cuenta de Google y acepta los permisos solicitados.</p>
+            <p>El sistema creará automáticamente tu cuenta de afiliado.</p>
+        </div>
+
+        <div class="exito">
+            <strong>✅ ¡Listo!</strong> Serás redirigido automáticamente al panel de control de afiliados.
+        </div>
+
+        <div class="nota">
+            <strong>💡 Nota:</strong> Si ya tienes una cuenta, el sistema te iniciará sesión automáticamente. No necesitas registrarte dos veces.
+        </div>
+
+        <h2>Panel de Control</h2>
+        <p>Una vez dentro, verás tu panel de control con las siguientes opciones:</p>
+        <ul>
+            <li><strong>Mis Ventas:</strong> Gestiona tus eventos de venta de garaje</li>
+            <li><strong>Mis Productos:</strong> Crea y edita los artículos que vendes</li>
+            <li><strong>Órdenes:</strong> Revisa las compras de tus clientes</li>
+            <li><strong>Métodos de Pago:</strong> Configura cómo recibirás el dinero</li>
+        </ul>
+    </div>
+
+    <!-- PÁGINA 3: CREAR VENTA DE GARAJE -->
+    <div class="page">
+        <h1>2️⃣ Crear una Venta de Garaje</h1>
+
+        <p>Antes de publicar productos, debes crear un evento de venta. Piensa en esto como crear un "espacio" donde colocarás todos tus artículos.</p>
+
+        <div class="paso">
+            <span class="paso-numero">1</span>
+            <h3>Ve a "Mis Ventas"</h3>
+            <p>Desde el panel de control, haz clic en <strong>"Mis Ventas"</strong> en el menú.</p>
+            <div class="url">https://tudominio.com/affiliate/sales.php</div>
+        </div>
+
+        <div class="paso">
+            <span class="paso-numero">2</span>
+            <h3>Haz clic en "Crear Nueva Venta"</h3>
+            <p>Verás un botón para agregar una nueva venta. Haz clic ahí.</p>
+        </div>
+
+        <div class="paso">
+            <span class="paso-numero">3</span>
+            <h3>Completa el formulario</h3>
+            <p>Llena los siguientes campos:</p>
+        </div>
+
+        <table>
+            <tr>
+                <th>Campo</th>
+                <th>Descripción</th>
+                <th>Ejemplo</th>
+            </tr>
+            <tr>
+                <td><strong>Título</strong></td>
+                <td>Nombre de tu venta</td>
+                <td>"Venta de Garaje Casa 123"</td>
+            </tr>
+            <tr>
+                <td><strong>Fecha inicio</strong></td>
+                <td>Cuándo empieza la venta</td>
+                <td>16/03/2026 08:00 AM</td>
+            </tr>
+            <tr>
+                <td><strong>Fecha fin</strong></td>
+                <td>Cuándo termina la venta</td>
+                <td>16/03/2026 06:00 PM</td>
+            </tr>
+            <tr>
+                <td><strong>Imagen de portada</strong></td>
+                <td>Foto principal (opcional)</td>
+                <td>foto_casa.jpg</td>
+            </tr>
+            <tr>
+                <td><strong>Venta privada</strong></td>
+                <td>Si requiere código de acceso</td>
+                <td>No / Sí + código 6 dígitos</td>
+            </tr>
+        </table>
+
+        <div class="paso">
+            <span class="paso-numero">4</span>
+            <h3>Guarda la venta</h3>
+            <p>Haz clic en <strong>"Guardar"</strong>. Serás redirigido a la página de pago.</p>
+        </div>
+
+        <div class="importante">
+            <strong>⚠️ Tarifa de Activación:</strong> Para activar tu venta de garaje debes pagar una tarifa de ₡2,000 (dos mil colones). Esto ayuda a mantener la plataforma y asegura ventas de calidad.
+        </div>
+
+        <div class="paso">
+            <span class="paso-numero">5</span>
+            <h3>Realiza el pago</h3>
+            <p>Sigue las instrucciones para pagar la tarifa de activación. Una vez pagado, tu venta estará activa y visible en el portal público.</p>
+        </div>
+    </div>
+
+    <!-- PÁGINA 4: CREAR PRODUCTOS -->
+    <div class="page">
+        <h1>3️⃣ Crear y Publicar Productos</h1>
+
+        <p>Ahora que tienes una venta activa, es momento de agregar los productos que vas a vender.</p>
+
+        <div class="paso">
+            <span class="paso-numero">1</span>
+            <h3>Ve a "Mis Productos"</h3>
+            <p>Desde el panel, haz clic en <strong>"Mis Productos"</strong></p>
+            <div class="url">https://tudominio.com/affiliate/products.php</div>
+        </div>
+
+        <div class="paso">
+            <span class="paso-numero">2</span>
+            <h3>Haz clic en "Agregar Nuevo Producto"</h3>
+            <p>Verás el formulario para crear un producto.</p>
+        </div>
+
+        <div class="paso">
+            <span class="paso-numero">3</span>
+            <h3>Completa la información del producto</h3>
+        </div>
+
+        <div class="campo">
+            <strong>🏷️ Nombre del producto *</strong>
+            Título corto y descriptivo. Ejemplo: "Sofá de cuero rojo 3 puestos"
+        </div>
+
+        <div class="campo">
+            <strong>📝 Descripción</strong>
+            Detalles adicionales, estado, medidas, etc. Ejemplo: "Poco uso, excelente estado. Medidas: 2m x 90cm"
+        </div>
+
+        <div class="campo">
+            <strong>💰 Precio *</strong>
+            Precio de venta. Ejemplo: 25000
+        </div>
+
+        <div class="campo">
+            <strong>💵 Moneda</strong>
+            Selecciona CRC (colones) o USD (dólares)
+        </div>
+
+        <div class="campo">
+            <strong>📦 Stock *</strong>
+            Cantidad disponible. Ejemplo: 1 (si solo tienes uno)
+        </div>
+
+        <div class="campo">
+            <strong>📷 Imagen 1</strong>
+            Foto principal del producto (JPG, PNG, WEBP). Tamaño recomendado: 800x800px
+        </div>
+
+        <div class="campo">
+            <strong>📷 Imagen 2</strong>
+            Segunda foto opcional desde otro ángulo
+        </div>
+
+        <div class="campo">
+            <strong>🗂️ Categoría</strong>
+            Selecciona la categoría apropiada: Muebles, Electrónica, Ropa, etc.
+        </div>
+
+        <div class="campo">
+            <strong>🏪 Venta/Espacio *</strong>
+            Selecciona en qué venta quieres publicar este producto. Ejemplo: "Venta de Garaje Casa 123"
+        </div>
+
+        <div class="campo">
+            <strong>✅ Activo</strong>
+            Marca esta casilla para que el producto sea visible en el portal público
+        </div>
+
+        <div class="paso">
+            <span class="paso-numero">4</span>
+            <h3>Guarda el producto</h3>
+            <p>Haz clic en <strong>"Guardar"</strong> y tu producto será publicado inmediatamente.</p>
+        </div>
+
+        <div class="exito">
+            <strong>🎉 ¡Felicidades!</strong> Tu producto ya está visible en el portal público de venta de garaje.
+        </div>
+
+        <div class="nota">
+            <strong>💡 Consejo:</strong> Repite los pasos 2-4 para agregar todos los productos que quieras vender.
+        </div>
+    </div>
+
+    <!-- PÁGINA 5: CONSEJOS Y SOPORTE -->
+    <div class="page">
+        <h1>4️⃣ Consejos para Mejores Ventas</h1>
+
+        <h2>📸 Fotos de Calidad</h2>
+        <ul>
+            <li>Usa buena iluminación natural</li>
+            <li>Toma fotos desde varios ángulos</li>
+            <li>Asegúrate de que el producto sea el foco principal</li>
+            <li>Evita fotos borrosas o muy oscuras</li>
+        </ul>
+
+        <h2>✍️ Descripciones Efectivas</h2>
+        <ul>
+            <li>Sé honesto sobre el estado del producto</li>
+            <li>Incluye medidas y especificaciones importantes</li>
+            <li>Menciona si tiene algún defecto o detalle</li>
+            <li>Indica si incluye accesorios o extras</li>
+        </ul>
+
+        <h2>💵 Precios Competitivos</h2>
+        <ul>
+            <li>Investiga precios similares en el mercado</li>
+            <li>Recuerda que es una venta de garaje (precios más bajos)</li>
+            <li>Sé flexible para negociar</li>
+        </ul>
+
+        <h2>🔄 Gestión de Productos</h2>
+        <p><strong>Para editar un producto:</strong></p>
+        <ol>
+            <li>Ve a "Mis Productos"</li>
+            <li>Busca el producto en la lista</li>
+            <li>Haz clic en "Editar"</li>
+            <li>Modifica los campos necesarios</li>
+            <li>Guarda los cambios</li>
+        </ol>
+
+        <p style="margin-top: 20px;"><strong>Para desactivar un producto vendido:</strong></p>
+        <ol>
+            <li>Edita el producto</li>
+            <li>Desmarca la casilla "Activo"</li>
+            <li>O cambia el Stock a 0</li>
+        </ol>
+
+        <h2>👥 Cómo Ven los Clientes tus Productos</h2>
+        <p>Los clientes pueden buscar tus productos en:</p>
+        <div class="url">https://tudominio.com/venta-garaje.php</div>
+        <p>Pueden buscar por:</p>
+        <ul>
+            <li><strong>Palabra clave:</strong> Nombre del producto, descripción</li>
+            <li><strong>Estado:</strong> Ventas activas, próximas o finalizadas</li>
+            <li><strong>Categoría:</strong> Tipo de producto</li>
+            <li><strong>Orden:</strong> Fecha, finalizando pronto, recientes</li>
+        </ul>
+
+        <div class="importante">
+            <strong>⚠️ Recuerda:</strong> Solo las ventas con la tarifa de activación pagada aparecen en el portal público.
+        </div>
+
+        <h2>📞 Soporte y Ayuda</h2>
+        <p>Si tienes problemas o dudas:</p>
+        <ul>
+            <li>Revisa que tu venta esté activa (tarifa pagada)</li>
+            <li>Verifica que tus productos tengan la casilla "Activo" marcada</li>
+            <li>Confirma que el stock sea mayor a 0</li>
+            <li>Asegúrate de tener buenas fotos y descripciones</li>
+        </ul>
+
+        <div class="exito" style="margin-top: 40px; padding: 20px;">
+            <h2 style="color: #155724; margin-top: 0;">🎯 Resumen Rápido</h2>
+            <ol style="margin-left: 20px;">
+                <li><strong>Regístrate</strong> con tu cuenta de Google</li>
+                <li><strong>Crea una venta</strong> de garaje con fecha y título</li>
+                <li><strong>Paga</strong> la tarifa de activación (₡2,000)</li>
+                <li><strong>Agrega productos</strong> con fotos y descripciones</li>
+                <li><strong>¡Empieza a vender!</strong> 🎉</li>
+            </ol>
+        </div>
+
+        <div style="text-align: center; margin-top: 50px; color: #999; font-size: 14px;">
+            <p>Este manual es una guía de referencia rápida.</p>
+            <p><strong>COMPRATICA.COM</strong> - Portal de Venta de Garaje</p>
+            <p>Versión 1.0 - Febrero 2026</p>
+        </div>
+    </div>
+
+    <script>
+        // Instrucciones para generar PDF
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Para guardar como PDF:');
+            console.log('1. Presiona Ctrl+P (Windows/Linux) o Cmd+P (Mac)');
+            console.log('2. Selecciona "Guardar como PDF" como destino');
+            console.log('3. Ajusta márgenes a "Ninguno" para mejor resultado');
+            console.log('4. Haz clic en "Guardar"');
+        });
+    </script>
+
+</body>
+</html>
