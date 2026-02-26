@@ -3,7 +3,7 @@
 ini_set('display_errors', 0);
 require_once __DIR__ . '/../includes/config.php';
 
-// Asegurar sesión iniciada con el mismo nombre (vg_session)
+// Asegurar sesión iniciada (usa PHPSESSID configurado globalmente)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 /* =========================
    Sesión endurecida (unifica nombre con config.php)
    ========================= */
-$SESSION_NAME = 'vg_session'; // <-- igual que en includes/config.php
+$SESSION_NAME = 'PHPSESSID'; // <-- Estandarizado para todo el sitio
 
 if (session_status() === PHP_SESSION_NONE) {
   // Configuración segura de la sesión
@@ -21,10 +21,21 @@ if (session_status() === PHP_SESSION_NONE) {
 
   // Cookie params coherentes en todo el sitio
   $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+
+  // Detectar dominio para cookies
+  $host = $_SERVER['HTTP_HOST'] ?? '';
+  $cookieDomain = '';
+  if ($host && strpos($host, 'localhost') === false && !filter_var($host, FILTER_VALIDATE_IP)) {
+    $clean = preg_replace('/^www\./i', '', $host);
+    if (filter_var($clean, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
+      $cookieDomain = $clean;
+    }
+  }
+
   session_set_cookie_params([
     'lifetime' => 0,
     'path'     => '/',
-    'domain'   => '.compratica.com', // comparte entre www y sin www
+    'domain'   => $cookieDomain,
     'secure'   => $isHttps,
     'httponly' => true,
     'samesite' => 'Lax',
@@ -53,11 +64,22 @@ function security_set_csrf_cookie(): void {
   $token = (string)($_SESSION['csrf_token'] ?? '');
   if ($token === '') return;
   $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+
+  // Detectar dominio para cookies
+  $host = $_SERVER['HTTP_HOST'] ?? '';
+  $cookieDomain = '';
+  if ($host && strpos($host, 'localhost') === false && !filter_var($host, FILTER_VALIDATE_IP)) {
+    $clean = preg_replace('/^www\./i', '', $host);
+    if (filter_var($clean, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
+      $cookieDomain = $clean;
+    }
+  }
+
   // Exponer cookie legible por JS (no httponly) para que el front la reenvíe por header
   setcookie('vg_csrf', $token, [
     'expires'  => time() + 60*60*24, // 1 día
     'path'     => '/',
-    'domain'   => '.compratica.com',
+    'domain'   => $cookieDomain,
     'secure'   => $isHttps,
     'httponly' => false,            // <-- JS la puede leer
     'samesite' => 'Lax',
