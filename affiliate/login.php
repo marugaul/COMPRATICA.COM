@@ -15,6 +15,54 @@ if (is_dir($__sessPath) && is_writable($__sessPath)) {
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
+
+// ============= CONFIGURACIÓN DE SESIÓN (igual que index.php) =============
+// Detectar HTTPS
+$__isHttps = false;
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') $__isHttps = true;
+if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') $__isHttps = true;
+if (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') $__isHttps = true;
+if (!empty($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], '"scheme":"https"') !== false) $__isHttps = true;
+
+// Dominio de cookie (igual que index.php para compartir sesión)
+$host = $_SERVER['HTTP_HOST'] ?? parse_url(defined('BASE_URL') ? BASE_URL : '', PHP_URL_HOST) ?? '';
+$cookieDomain = '';
+if ($host && strpos($host, 'localhost') === false && !filter_var($host, FILTER_VALIDATE_IP)) {
+    $clean = preg_replace('/^www\./i', '', $host);
+    if (filter_var($clean, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
+        $cookieDomain = $clean;
+    }
+}
+
+// Configurar parámetros de sesión ANTES de session_start
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_name('PHPSESSID');
+
+    if (PHP_VERSION_ID < 70300) {
+        ini_set('session.cookie_lifetime', '0');
+        ini_set('session.cookie_path', '/');
+        ini_set('session.cookie_domain', $cookieDomain);
+        ini_set('session.cookie_secure', $__isHttps ? '1' : '0');
+        ini_set('session.cookie_httponly', '1');
+        ini_set('session.cookie_samesite', 'Lax');
+        session_set_cookie_params(0, '/', $cookieDomain, $__isHttps, true);
+    } else {
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path'     => '/',
+            'domain'   => $cookieDomain,
+            'secure'   => $__isHttps,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+
+    ini_set('session.use_strict_mode', '0');
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.gc_maxlifetime', '86400');
+    session_start();
+}
+
 require_once __DIR__ . '/../includes/affiliate_auth.php';
 require_once __DIR__ . '/../includes/user_auth.php';
 
