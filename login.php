@@ -75,6 +75,11 @@ $error = '';
 $success = '';
 $redirect = $_GET['redirect'] ?? 'index.php';
 
+// Sanitize redirect to prevent open redirect vulnerability
+if (strpos($redirect, 'http') === 0 || strpos($redirect, '//') === 0) {
+    $redirect = 'index.php';
+}
+
 if (isset($_SESSION['uid']) && $_SESSION['uid'] > 0 && empty($_GET['reset']) && empty($_GET['oauth'])) {
     header('Location: ' . $redirect);
     exit;
@@ -176,15 +181,20 @@ if (isset($_GET['oauth']) && isset($_GET['code'])) {
                 $stmt = $pdo->prepare("UPDATE carts SET user_id = ? WHERE guest_sid = ?");
                 $stmt->execute([$result['user_id'], $old_sid]);
             } catch (Exception $e) {}
-            
+
+            // Set all session variables (both legacy and standardized)
             $_SESSION['uid'] = $result['user_id'];
+            $_SESSION['user_id'] = $result['user_id'];
             $_SESSION['email'] = $result['email'];
+            $_SESSION['user_email'] = $result['email'];
             $_SESSION['name'] = $result['name'];
+            $_SESSION['user_name'] = $result['name'];
             $_SESSION['role'] = 'active';
-            
-            session_regenerate_id(false);
+
+            session_regenerate_id(true);  // Delete old session file
             logDebug("OAUTH_LOGIN_OK", ['provider' => $_GET['oauth'], 'uid' => $result['user_id']]);
-            
+
+            session_write_close();  // Write session data to disk before redirect
             header('Location: ' . $redirect);
             exit;
         } elseif ($result && isset($result['error'])) {
@@ -221,12 +231,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $stmt->execute([$user['id'], $old_sid]);
                     } catch (Exception $e) {}
 
+                    // Set all session variables (both legacy and standardized)
                     $_SESSION['uid'] = (int)$user['id'];
+                    $_SESSION['user_id'] = (int)$user['id'];
                     $_SESSION['email'] = $user['email'];
+                    $_SESSION['user_email'] = $user['email'];
                     $_SESSION['name'] = $user['name'] ?? '';
+                    $_SESSION['user_name'] = $user['name'] ?? '';
                     $_SESSION['role'] = $user['status'] ?? 'active';
 
-                    session_regenerate_id(false);
+                    session_regenerate_id(true);  // Delete old session file
+                    session_write_close();  // Write session data to disk before redirect
                     header('Location: ' . $redirect);
                     exit;
                 } else {
@@ -266,12 +281,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             $stmt->execute([$newUid, $old_sid]);
                         } catch (Exception $e) {}
 
+                        // Set all session variables (both legacy and standardized)
                         $_SESSION['uid'] = $newUid;
+                        $_SESSION['user_id'] = $newUid;
                         $_SESSION['email'] = $email;
+                        $_SESSION['user_email'] = $email;
                         $_SESSION['name'] = $name;
+                        $_SESSION['user_name'] = $name;
                         $_SESSION['role'] = 'active';
 
-                        session_regenerate_id(true);
+                        session_regenerate_id(true);  // Delete old session file
+                        session_write_close();  // Write session data to disk before redirect
                         header('Location: ' . $redirect);
                         exit;
                     }
