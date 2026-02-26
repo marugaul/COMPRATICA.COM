@@ -228,6 +228,9 @@ function login_user($user) {
         // Si hay error, usar users.id como fallback
         $_SESSION['aff_id'] = (int)$user['id'];
     }
+
+    // Write session data to disk to ensure it persists across requests
+    session_write_close();
 }
 
 /**
