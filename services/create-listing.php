@@ -31,7 +31,7 @@ try {
 // Cargar planes de precios
 $pricing_plans = [];
 try {
-    $planStmt = $pdo->query("SELECT * FROM listing_pricing WHERE is_active=1 ORDER BY display_order ASC");
+    $planStmt = $pdo->query("SELECT * FROM service_pricing WHERE is_active=1 ORDER BY display_order ASC");
     $pricing_plans = $planStmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     error_log('[services/create-listing.php] Error al cargar planes: ' . $e->getMessage());
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!in_array($currency, ['CRC', 'USD'])) $currency = 'CRC';
 
         // Obtener plan de precios
-        $planStmt = $pdo->prepare("SELECT * FROM listing_pricing WHERE id = ? LIMIT 1");
+        $planStmt = $pdo->prepare("SELECT * FROM service_pricing WHERE id = ? LIMIT 1");
         $planStmt->execute([$pricing_plan_id]);
         $plan = $planStmt->fetch(PDO::FETCH_ASSOC);
         if (!$plan) throw new RuntimeException('Plan de precios inválido.');

@@ -42,16 +42,20 @@ if (isset($_POST['csrf_token']) && $_POST['csrf_token'] !== ($_SESSION['csrf_tok
 // Obtener el plan del usuario si se proporciona
 $pricingPlanId = isset($_POST['pricing_plan_id']) ? (int)$_POST['pricing_plan_id'] : 0;
 
-// Definir límites de fotos por plan
-$photoLimits = [
-    0 => 3,  // Plan gratis / sin plan especificado
-    1 => 3,  // Plan gratis 7 días (ID 1 en la BD)
-    2 => 5,  // Plan 30 días
-    3 => 8   // Plan 90 días
-];
-
-// Obtener el límite para este plan
-$maxPhotos = $photoLimits[$pricingPlanId] ?? 3;
+// Obtener el límite de fotos del plan desde la base de datos
+$maxPhotos = 3; // Valor por defecto
+if ($pricingPlanId > 0) {
+    try {
+        $stmt = $pdo->prepare("SELECT max_photos FROM listing_pricing WHERE id = ? LIMIT 1");
+        $stmt->execute([$pricingPlanId]);
+        $plan = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($plan && isset($plan['max_photos'])) {
+            $maxPhotos = (int)$plan['max_photos'];
+        }
+    } catch (Exception $e) {
+        error_log('[upload-image.php] Error al obtener límite de fotos: ' . $e->getMessage());
+    }
+}
 
 // Contar cuántas imágenes se están subiendo actualmente
 $currentImagesCount = isset($_POST['current_images_count']) ? (int)$_POST['current_images_count'] : 0;
