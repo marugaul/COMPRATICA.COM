@@ -3,6 +3,23 @@
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
+// ============= SISTEMA DE LOGGING =============
+$logDir = __DIR__ . '/../logs';
+if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+$logFile = $logDir . '/affiliate_login_debug.log';
+
+function logDebug($msg, $data = null) {
+    global $logFile;
+    $line = '[' . date('Y-m-d H:i:s') . '] ' . $msg;
+    if ($data !== null) {
+        $enc = @json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $line .= ' | ' . ($enc !== false ? $enc : print_r($data, true));
+    }
+    @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
+}
+
+logDebug("AFFILIATE_LOGIN_START", ['uri' => $_SERVER['REQUEST_URI'] ?? '', 'method' => $_SERVER['REQUEST_METHOD'] ?? '']);
+
 // IMPORTANTE: Configurar sesiones ANTES de cargar affiliate_auth.php (que hace session_start)
 $__sessPath = __DIR__ . '/../sessions';
 if (!is_dir($__sessPath)) @mkdir($__sessPath, 0755, true);
@@ -12,6 +29,8 @@ if (is_dir($__sessPath) && is_writable($__sessPath)) {
     // Fallback a /tmp si no se puede escribir en sessions
     ini_set('session.save_path', '/tmp');
 }
+
+logDebug("SESSION_PATH_SET", ['path' => session_save_path()]);
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
@@ -38,6 +57,14 @@ if ($host && strpos($host, 'localhost') === false && !filter_var($host, FILTER_V
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_name('PHPSESSID');
 
+    logDebug("BEFORE_SESSION_START", [
+        'session_status' => session_status(),
+        'cookies' => $_COOKIE,
+        'cookie_domain' => $cookieDomain,
+        'host' => $host,
+        'https' => $__isHttps
+    ]);
+
     if (PHP_VERSION_ID < 70300) {
         ini_set('session.cookie_lifetime', '0');
         ini_set('session.cookie_path', '/');
@@ -61,6 +88,12 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     ini_set('session.use_only_cookies', '1');
     ini_set('session.gc_maxlifetime', '86400');
     session_start();
+
+    logDebug("AFTER_SESSION_START", [
+        'sid' => session_id(),
+        'session_data' => $_SESSION,
+        'cookie_domain' => $cookieDomain
+    ]);
 }
 
 require_once __DIR__ . '/../includes/affiliate_auth.php';
@@ -70,7 +103,19 @@ $pdo = db();
 $msg = '';
 
 // Si ya tiene sesión de afiliado, redirigir al dashboard
-if (aff_logged_in()) {
+$isAffLoggedIn = aff_logged_in();
+$isUserLoggedIn = is_user_logged_in();
+
+logDebug("AUTH_CHECK", [
+    'aff_logged_in' => $isAffLoggedIn,
+    'user_logged_in' => $isUserLoggedIn,
+    'aff_id' => $_SESSION['aff_id'] ?? null,
+    'user_id' => $_SESSION['user_id'] ?? null,
+    'session_keys' => array_keys($_SESSION)
+]);
+
+if ($isAffLoggedIn) {
+    logDebug("REDIRECTING_TO_DASHBOARD", ['aff_id' => $_SESSION['aff_id']]);
     header('Location: dashboard.php');
     exit;
 }
@@ -79,6 +124,7 @@ if (aff_logged_in()) {
 // OAUTH GOOGLE - Callback Handler
 // ============================================
 if (isset($_GET['code']) && !empty($_GET['code'])) {
+  logDebug("OAUTH_CALLBACK_START", ['code_length' => strlen($_GET['code'])]);
   try {
     $code = $_GET['code'];
 
@@ -140,22 +186,34 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
     $name = $userInfo['name'] ?? $userInfo['email'];
     $oauthId = $userInfo['id'] ?? '';
 
+    logDebug("OAUTH_USER_INFO", ['email' => $email, 'name' => $name, 'oauth_id' => $oauthId]);
+
     // Usar la función unificada para obtener o crear usuario
     $user = get_or_create_oauth_user($email, $name, 'google', $oauthId);
 
+    logDebug("OAUTH_USER_OBTAINED", ['user_id' => $user['id'], 'email' => $user['email']]);
+
     // Iniciar sesión usando la función unificada
     login_user($user);
+
+    logDebug("OAUTH_LOGIN_SUCCESS", [
+        'user_id' => $_SESSION['user_id'] ?? null,
+        'aff_id' => $_SESSION['aff_id'] ?? null,
+        'session_keys' => array_keys($_SESSION)
+    ]);
 
     header('Location: dashboard.php');
     exit;
 
   } catch (Throwable $e) {
+    logDebug("OAUTH_ERROR", ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
     error_log("[affiliate/login.php] OAuth error: " . $e->getMessage());
     $msg = "Error al iniciar sesión con Google: " . $e->getMessage();
   }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  logDebug("POST_LOGIN_START", ['email' => $_POST['email'] ?? '']);
   try {
     $email = trim((string)($_POST['email'] ?? ''));
     $pass  = (string)($_POST['password'] ?? '');
@@ -164,21 +222,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       throw new RuntimeException('Por favor ingresa tu correo y contraseña.');
     }
 
+    logDebug("AUTHENTICATING_USER", ['email' => $email]);
     $user = authenticate_user($email, $pass);
 
     if (!$user) {
+      logDebug("AUTHENTICATION_FAILED", ['email' => $email]);
       throw new RuntimeException('Credenciales inválidas.');
     }
 
+    logDebug("AUTHENTICATION_SUCCESS", ['user_id' => $user['id'], 'email' => $user['email']]);
+
     login_user($user);
+
+    logDebug("POST_LOGIN_SUCCESS", [
+        'user_id' => $_SESSION['user_id'] ?? null,
+        'aff_id' => $_SESSION['aff_id'] ?? null,
+        'session_keys' => array_keys($_SESSION)
+    ]);
 
     header('Location: dashboard.php');
     exit;
 
   } catch (Throwable $e) {
+    logDebug("POST_LOGIN_ERROR", ['error' => $e->getMessage()]);
     $msg = $e->getMessage();
   }
 }
+
+logDebug("RENDERING_LOGIN_FORM", ['has_error_msg' => !empty($msg)]);
 ?>
 <!doctype html>
 <html lang="es">
