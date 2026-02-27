@@ -182,6 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Procesar renovación de plan si se seleccionó uno
     $updatePlanFields = '';
     $planParams = [];
+    $new_payment_status = null;
     if ($renew_plan_id > 0) {
       // Obtener información del nuevo plan
       $planStmt = $pdo->prepare("SELECT * FROM listing_pricing WHERE id = ? AND is_active = 1 LIMIT 1");
@@ -263,7 +264,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Redirigir con mensaje apropiado
     if ($renew_plan_id > 0) {
-      header('Location: dashboard.php?msg=renewed');
+      // Si es plan de pago, redirigir a opciones de pago
+      if ($new_payment_status === 'pending') {
+        header('Location: dashboard.php?msg=renewed_pending&listing_id=' . $listing_id);
+      } else {
+        // Plan gratuito - renovación completada
+        header('Location: dashboard.php?msg=renewed');
+      }
     } else {
       header('Location: dashboard.php?msg=updated');
     }

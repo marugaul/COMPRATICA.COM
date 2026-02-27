@@ -111,6 +111,51 @@ foreach ($listings as $l) {
         <div class="alert success">
           <strong>¡Plan renovado exitosamente!</strong> Tu publicación ha sido renovada y volverá a ser visible en el sitio.
         </div>
+      <?php elseif ($_GET['msg'] === 'renewed_pending'): ?>
+        <?php
+          // Obtener información del plan renovado
+          $listing_id = isset($_GET['listing_id']) ? (int)$_GET['listing_id'] : 0;
+          $planInfo = null;
+          if ($listing_id > 0) {
+            $planStmt = $pdo->prepare("
+              SELECT l.pricing_plan_id, p.name, p.price_usd, p.price_crc, p.payment_methods
+              FROM real_estate_listings l
+              LEFT JOIN listing_pricing p ON l.pricing_plan_id = p.id
+              WHERE l.id = ? AND l.agent_id = ?
+              LIMIT 1
+            ");
+            $planStmt->execute([$listing_id, $agent_id]);
+            $planInfo = $planStmt->fetch(PDO::FETCH_ASSOC);
+          }
+        ?>
+        <div class="alert info">
+          <strong>Plan renovado - Pago pendiente</strong> — Tu publicación ha sido renovada pero requiere confirmación de pago para activarse.
+          <?php if ($planInfo): ?>
+            <br><br>
+            <strong>Plan seleccionado:</strong> <?= htmlspecialchars($planInfo['name']) ?>
+            <br>
+            <strong>Monto a pagar:</strong>
+            <?php if ($planInfo['price_usd'] > 0): ?>
+              $<?= number_format($planInfo['price_usd'], 2) ?> USD
+            <?php endif; ?>
+            <?php if ($planInfo['price_crc'] > 0): ?>
+              <?= $planInfo['price_usd'] > 0 ? ' o ' : '' ?>₡<?= number_format($planInfo['price_crc'], 0) ?> CRC
+            <?php endif; ?>
+          <?php endif; ?>
+          <br><br>
+          <strong>Opciones de pago:</strong>
+          <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+            <?php if (defined('SINPE_PHONE') && SINPE_PHONE): ?>
+              <li>SINPE Móvil: <strong><?= htmlspecialchars(SINPE_PHONE) ?></strong></li>
+            <?php endif; ?>
+            <?php if (defined('PAYPAL_EMAIL') && PAYPAL_EMAIL): ?>
+              <li>PayPal: <strong><?= htmlspecialchars(PAYPAL_EMAIL) ?></strong></li>
+            <?php endif; ?>
+          </ul>
+          <p style="margin-top: 1rem; font-size: 0.9rem;">
+            Una vez realizado el pago, envíe el comprobante a <strong>pagos@<?php echo parse_url(APP_URL, PHP_URL_HOST) ?? 'compratica.com'; ?></strong> con el número de publicación <strong>#<?= $listing_id ?></strong>.
+          </p>
+        </div>
       <?php endif; ?>
     <?php endif; ?>
     <div class="stats-grid">
