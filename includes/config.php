@@ -15,6 +15,14 @@ if (!defined('APP_TZ')) define('APP_TZ', 'America/Costa_Rica');
 date_default_timezone_set(APP_TZ);
 
 // =========================
+// Tipos de Publicación
+// =========================
+define('PUBLICATION_TYPE_GARAGE_SALE', 'garage_sale');
+define('PUBLICATION_TYPE_REAL_ESTATE', 'real_estate');
+define('PUBLICATION_TYPE_SERVICES', 'services');
+define('PUBLICATION_TYPE_JOBS', 'jobs');
+
+// =========================
 // Acceso Admin
 // =========================
 define('ADMIN_USER', 'marugaul');
