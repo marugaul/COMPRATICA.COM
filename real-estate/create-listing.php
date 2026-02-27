@@ -915,9 +915,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <!-- BOTONES DE ACCIÓN -->
       <div class="submit-section">
         <a href="dashboard.php" class="btn btn-secondary">Cancelar</a>
-        <button type="submit" class="btn">
-          <i class="fas fa-save"></i> Publicar Propiedad
+        <button type="submit" class="btn" id="submitBtn">
+          <i class="fas fa-save"></i> <span id="submitBtnText">Publicar Propiedad</span>
         </button>
+      </div>
+
+      <!-- Modal de pago (se muestra si es plan de pago) -->
+      <div id="paymentModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 500px; width: 90%;">
+          <h3 style="margin-bottom: 1rem; color: #002b7f;">
+            <i class="fas fa-credit-card"></i> Información de Pago
+          </h3>
+          <p style="margin-bottom: 1.5rem; color: #4a5568;">
+            Tu propiedad será creada y quedará pendiente de pago. Una vez que confirmés el pago, será activada automáticamente.
+          </p>
+          <div style="background: #f7fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            <p style="font-weight: 600; color: #002b7f; margin-bottom: 0.5rem;">
+              Plan seleccionado: <span id="selectedPlanName"></span>
+            </p>
+            <p style="font-size: 1.5rem; font-weight: 800; color: #27ae60; margin: 0;">
+              <span id="selectedPlanPrice"></span>
+            </p>
+          </div>
+          <div style="display: flex; gap: 1rem;">
+            <button type="button" onclick="closePaymentModal()" style="flex: 1; padding: 0.875rem; background: #cbd5e0; color: #1a1a1a; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+              Cancelar
+            </button>
+            <button type="button" onclick="confirmPublish()" style="flex: 1; padding: 0.875rem; background: #002b7f; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+              <i class="fas fa-check"></i> Continuar
+            </button>
+          </div>
+        </div>
       </div>
     </form>
   </div>
@@ -940,6 +968,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       '3': 'Plan 90 días'
     };
 
+    // Información de planes (precio y si es gratis)
+    const plansData = <?= json_encode($pricing_plans) ?>;
+
     // Estado global
     let uploadedImages = [];  // URLs de imágenes subidas
     let selectedPlan = 0;
@@ -953,13 +984,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     const imageUrlsTextarea = document.getElementById('imageUrlsTextarea');
     const photoLimitInfo = document.getElementById('photoLimitInfo');
     const photoLimitText = document.getElementById('photoLimitText');
-    const pricingPlanSelect = document.querySelector('select[name="pricing_plan_id"]');
+    const pricingPlanRadios = document.querySelectorAll('input[name="pricing_plan_id"]');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const paymentModal = document.getElementById('paymentModal');
 
     // =========================
     // Actualizar límite de fotos cuando cambia el plan
     // =========================
-    if (pricingPlanSelect) {
-      pricingPlanSelect.addEventListener('change', function() {
+    pricingPlanRadios.forEach(radio => {
+      radio.addEventListener('change', function() {
         selectedPlan = this.value;
         maxPhotos = photoLimits[selectedPlan] || 3;
 
@@ -969,9 +1003,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           photoLimitText.textContent = 'Seleccioná un plan para ver el límite de fotos';
         }
 
+        // Actualizar texto del botón según el plan
+        const plan = plansData.find(p => p.id == selectedPlan);
+        if (plan && (plan.price_usd > 0 || plan.price_crc > 0)) {
+          submitBtnText.innerHTML = '<i class="fas fa-credit-card"></i> Continuar al Pago';
+        } else {
+          submitBtnText.innerHTML = '<i class="fas fa-save"></i> Publicar Propiedad';
+        }
+
         updatePhotoCount();
       });
-    }
+    });
 
     // =========================
     // Drag & Drop
@@ -1181,9 +1223,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     imageUrlsTextarea.addEventListener('input', updatePhotoCount);
 
     // =========================
+    // Funciones del modal de pago
+    // =========================
+    function showPaymentModal(planId) {
+      const plan = plansData.find(p => p.id == planId);
+      if (!plan) return;
+
+      document.getElementById('selectedPlanName').textContent = plan.name;
+      const priceText = plan.price_usd > 0 || plan.price_crc > 0
+        ? `$${parseFloat(plan.price_usd).toFixed(2)} / ₡${parseFloat(plan.price_crc).toLocaleString('es-CR', {minimumFractionDigits: 0})}`
+        : 'Gratis';
+      document.getElementById('selectedPlanPrice').textContent = priceText;
+
+      paymentModal.style.display = 'flex';
+    }
+
+    function closePaymentModal() {
+      paymentModal.style.display = 'none';
+    }
+
+    function confirmPublish() {
+      // Cerrar modal y enviar el formulario
+      closePaymentModal();
+      document.querySelector('form').submit();
+    }
+
+    // Cerrar modal al hacer clic fuera
+    paymentModal.addEventListener('click', function(e) {
+      if (e.target === paymentModal) {
+        closePaymentModal();
+      }
+    });
+
+    // =========================
     // Validación antes de enviar formulario
     // =========================
     document.querySelector('form').addEventListener('submit', function(e) {
+      e.preventDefault();
+
       const total = uploadedImages.length + countUrlImages();
 
       // Combinar URLs de imágenes subidas con URLs del textarea
@@ -1196,10 +1273,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
 
       if (total > maxPhotos) {
-        e.preventDefault();
         alert(`Tu plan permite máximo ${maxPhotos} fotos. Tenés ${total} imagen(es).`);
         return false;
       }
+
+      // Verificar si se seleccionó un plan
+      const selectedPlanRadio = document.querySelector('input[name="pricing_plan_id"]:checked');
+      if (!selectedPlanRadio) {
+        alert('Por favor seleccioná un plan de publicación.');
+        return false;
+      }
+
+      const planId = selectedPlanRadio.value;
+      const plan = plansData.find(p => p.id == planId);
+
+      // Si es plan de pago, mostrar modal de confirmación
+      if (plan && (plan.price_usd > 0 || plan.price_crc > 0)) {
+        showPaymentModal(planId);
+        return false;
+      }
+
+      // Si es gratis, enviar directamente
+      this.submit();
     });
   </script>
 </body>

@@ -25,9 +25,18 @@ $stmt = $pdo->prepare("
 $stmt->execute([$agent_id]);
 $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$stats = ['total' => count($listings), 'active' => 0, 'sale' => 0, 'rent' => 0];
+$stats = ['total' => count($listings), 'active' => 0, 'expired' => 0, 'sale' => 0, 'rent' => 0];
 foreach ($listings as $l) {
-  if ($l['is_active']) $stats['active']++;
+  // Verificar si está expirada
+  $isExpired = false;
+  if ($l['end_date']) {
+    $endDate = new DateTime($l['end_date']);
+    $now = new DateTime();
+    $isExpired = $now > $endDate;
+  }
+
+  if ($l['is_active'] && !$isExpired) $stats['active']++;
+  if ($isExpired) $stats['expired']++;
   if ($l['listing_type'] === 'sale') $stats['sale']++;
   else $stats['rent']++;
 }
@@ -98,6 +107,10 @@ foreach ($listings as $l) {
         <div class="alert success">
           <strong>¡Propiedad actualizada!</strong> Los cambios han sido guardados exitosamente.
         </div>
+      <?php elseif ($_GET['msg'] === 'renewed'): ?>
+        <div class="alert success">
+          <strong>¡Plan renovado exitosamente!</strong> Tu publicación ha sido renovada y volverá a ser visible en el sitio.
+        </div>
       <?php endif; ?>
     <?php endif; ?>
     <div class="stats-grid">
@@ -106,16 +119,16 @@ foreach ($listings as $l) {
         <p>Total Propiedades</p>
       </div>
       <div class="stat-card">
-        <h3><?php echo $stats['active']; ?></h3>
-        <p>Activas</p>
+        <h3 style="color: #27ae60;"><?php echo $stats['active']; ?></h3>
+        <p>Activas y Vigentes</p>
+      </div>
+      <div class="stat-card">
+        <h3 style="color: #e74c3c;"><?php echo $stats['expired']; ?></h3>
+        <p>Expiradas</p>
       </div>
       <div class="stat-card">
         <h3><?php echo $stats['sale']; ?></h3>
         <p>En Venta</p>
-      </div>
-      <div class="stat-card">
-        <h3><?php echo $stats['rent']; ?></h3>
-        <p>En Alquiler</p>
       </div>
     </div>
 
@@ -133,13 +146,55 @@ foreach ($listings as $l) {
         <a href="create-listing.php" class="btn">Crear Primera Propiedad</a>
       </div>
     <?php else: ?>
-      <?php foreach ($listings as $l): ?>
-        <div class="listing-card">
+      <?php foreach ($listings as $l):
+        // Verificar estado de expiración
+        $isExpired = false;
+        $daysRemaining = 0;
+        $statusText = '';
+        $statusColor = '';
+
+        if ($l['end_date']) {
+          $endDate = new DateTime($l['end_date']);
+          $now = new DateTime();
+          $interval = $now->diff($endDate);
+          $daysRemaining = (int)$interval->format('%r%a');
+          $isExpired = $daysRemaining < 0;
+
+          if ($isExpired) {
+            $statusText = 'Expirada hace ' . abs($daysRemaining) . ' día' . (abs($daysRemaining) !== 1 ? 's' : '');
+            $statusColor = '#e74c3c';
+          } elseif ($daysRemaining <= 7) {
+            $statusText = 'Vence en ' . $daysRemaining . ' día' . ($daysRemaining !== 1 ? 's' : '');
+            $statusColor = '#f39c12';
+          } else {
+            $statusText = 'Activa - Vence en ' . $daysRemaining . ' días';
+            $statusColor = '#27ae60';
+          }
+        } else {
+          $statusText = $l['is_active'] ? 'Activa' : 'Inactiva';
+          $statusColor = $l['is_active'] ? '#27ae60' : '#718096';
+        }
+      ?>
+        <div class="listing-card" style="<?= $isExpired ? 'border-left: 4px solid #e74c3c;' : ($daysRemaining <= 7 && $daysRemaining > 0 ? 'border-left: 4px solid #f39c12;' : '') ?>">
           <div>
             <h3><?php echo htmlspecialchars($l['title']); ?></h3>
-            <p><?php echo $l['listing_type'] === 'sale' ? 'Venta' : 'Alquiler'; ?> - <?php echo $l['is_active'] ? 'Activa' : 'Inactiva'; ?></p>
+            <p>
+              <?php echo $l['listing_type'] === 'sale' ? 'Venta' : 'Alquiler'; ?> -
+              <span style="color: <?= $statusColor ?>; font-weight: 600;">
+                <?php if ($isExpired): ?>
+                  <i class="fas fa-exclamation-triangle"></i>
+                <?php elseif ($daysRemaining <= 7 && $daysRemaining > 0): ?>
+                  <i class="fas fa-clock"></i>
+                <?php else: ?>
+                  <i class="fas fa-check-circle"></i>
+                <?php endif; ?>
+                <?= $statusText ?>
+              </span>
+            </p>
           </div>
-          <a href="edit-listing.php?id=<?php echo $l['id']; ?>" class="btn">Editar</a>
+          <a href="edit-listing.php?id=<?php echo $l['id']; ?>" class="btn" style="<?= $isExpired ? 'background: #e74c3c;' : '' ?>">
+            <?= $isExpired ? '<i class="fas fa-sync-alt"></i> Renovar' : 'Editar' ?>
+          </a>
         </div>
       <?php endforeach; ?>
     <?php endif; ?>
