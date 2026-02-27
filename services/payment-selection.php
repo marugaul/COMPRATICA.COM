@@ -56,6 +56,10 @@ $has_paypal = in_array('paypal', $payment_methods);
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pago de Publicación — <?php echo APP_NAME; ?></title>
+  <?php if (defined('PAYPAL_CLIENT_ID') && PAYPAL_CLIENT_ID): ?>
+  <!-- PayPal SDK -->
+  <script src="https://www.paypal.com/sdk/js?client-id=<?= PAYPAL_CLIENT_ID ?>&currency=USD"></script>
+  <?php endif; ?>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
   <style>
@@ -416,9 +420,11 @@ $has_paypal = in_array('paypal', $payment_methods);
             <?php endif; ?>
           </div>
           <div style="margin-top: 1.5rem;">
-            <button class="btn paypal-btn" onclick="payWithPayPal()">
+            <div id="paypal-button-container"></div>
+            <div id="paypal-error" style="display:none; color: red; margin-top: 1rem;"></div>
+            <!--button class="btn paypal-btn" onclick="payWithPayPal()">
               <i class="fab fa-paypal"></i> Pagar con PayPal
-            </button>
+            </button-->
           </div>
         </div>
         <?php endif; ?>
@@ -450,7 +456,63 @@ $has_paypal = in_array('paypal', $payment_methods);
       alert('Integración con PayPal en desarrollo. Por favor usa SINPE Móvil temporalmente.');
     }
 
-    // File upload handler
+    <?php if (defined('PAYPAL_CLIENT_ID') && PAYPAL_CLIENT_ID && $has_paypal): ?>
+    // PayPal Checkout Integration
+    paypal.Buttons({
+      createOrder: function(data, actions) {
+        return actions.order.create({
+          purchase_units: [{
+            amount: {
+              value: '<?= number_format($listing['price_usd'], 2, '.', '') ?>'
+            },
+            description: 'Publicación de Servicio: <?= htmlspecialchars($listing['title']) ?>',
+            custom_id: 'service_<?= $listing_id ?>'
+          }]
+        });
+      },
+      onApprove: function(data, actions) {
+        return actions.order.capture().then(function(details) {
+          // Enviar confirmación al servidor
+          return fetch('/api/process-paypal-payment.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              listing_id: <?= $listing_id ?>,
+              listing_type: 'service',
+              paypal_order_id: data.orderID,
+              payer_email: details.payer.email_address,
+              amount: <?= $listing['price_usd'] ?>
+            })
+          })
+          .then(response => response.json())
+          .then(result => {
+            if (result.ok) {
+              alert('¡Pago exitoso! Tu publicación está ahora activa.');
+              window.location.href = 'dashboard.php?msg=payment_success';
+            } else {
+              throw new Error(result.error || 'Error al procesar el pago');
+            }
+          });
+        });
+      },
+      onError: function(err) {
+        console.error('Error de PayPal:', err);
+        document.getElementById('paypal-error').style.display = 'block';
+        document.getElementById('paypal-error').textContent =
+          'Hubo un error al procesar el pago. Por favor intenta de nuevo o usa SINPE Móvil.';
+      }
+    }).render('#paypal-button-container');
+    <?php else: ?>
+    // PayPal no configurado
+    const container = document.getElementById('paypal-button-container');
+    if (container) {
+      container.innerHTML = '<p style="color: #e74c3c; padding: 1rem; background: #fee; border-radius: 8px;">PayPal no está configurado. Por favor usa SINPE Móvil.</p>';
+    }
+    <?php endif; ?>
+
+    // SINPE File upload handler
     document.getElementById('sinpe-receipt')?.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
@@ -465,10 +527,30 @@ $has_paypal = in_array('paypal', $payment_methods);
     function uploadReceipt(file) {
       const formData = new FormData();
       formData.append('receipt', file);
-      formData.append('listing_id', <?= $listing_id ?>);
+      formData.append('listing_id', '<?= $listing_id ?>');
+      formData.append('listing_type', 'service');
 
-      // TODO: Implementar endpoint de carga de comprobantes
-      alert('Funcionalidad de carga de comprobantes en desarrollo.');
+      const uploadArea = document.querySelector('.upload-section');
+      uploadArea.innerHTML = '<p style="text-align:center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Subiendo comprobante...</p>';
+
+      fetch('/api/upload-sinpe-receipt.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.ok) {
+          uploadArea.innerHTML = '<p style="color: #27ae60; text-align:center; padding: 2rem;"><i class="fas fa-check-circle"></i> ' + result.message + '</p>';
+          setTimeout(() => {
+            window.location.href = 'dashboard.php?msg=receipt_uploaded';
+          }, 2000);
+        } else {
+          throw new Error(result.error || 'Error al subir el comprobante');
+        }
+      })
+      .catch(error => {
+        uploadArea.innerHTML = '<p style="color: #e74c3c; text-align:center; padding: 2rem;"><i class="fas fa-exclamation-triangle"></i> ' + error.message + '</p>';
+      });
     }
   </script>
 </body>
