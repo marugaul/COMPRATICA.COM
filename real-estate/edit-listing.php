@@ -266,7 +266,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($renew_plan_id > 0) {
       // Si es plan de pago, redirigir a opciones de pago
       if ($new_payment_status === 'pending') {
-        header('Location: dashboard.php?msg=renewed_pending&listing_id=' . $listing_id);
+        header('Location: payment-selection.php?listing_id=' . $listing_id);
       } else {
         // Plan gratuito - renovación completada
         header('Location: dashboard.php?msg=renewed');
