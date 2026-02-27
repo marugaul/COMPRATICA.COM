@@ -69,8 +69,8 @@ require_once __DIR__ . '/../includes/user_auth.php';
 $pdo = db();
 $msg = '';
 
-// Si ya tiene sesión, redirigir al dashboard
-if (is_user_logged_in()) {
+// Si ya tiene sesión de afiliado, redirigir al dashboard
+if (aff_logged_in()) {
     header('Location: dashboard.php');
     exit;
 }
