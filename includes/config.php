@@ -38,6 +38,15 @@ define('ADMIN_DASHBOARD_PATH', '/admin/dashboard.php');
 define('SINPE_PHONE', '88902814');
 define('PAYPAL_EMAIL', 'marco.ulate@crv-soft.com');
 
+// PayPal API Configuration
+// Para activar PayPal, configura tus credenciales aquí
+define('PAYPAL_MODE', 'sandbox'); // 'sandbox' para pruebas, 'live' para producción
+define('PAYPAL_CLIENT_ID', ''); // Tu Client ID de PayPal (sandbox o live)
+define('PAYPAL_SECRET', ''); // Tu Secret de PayPal (sandbox o live)
+
+// URLs de API de PayPal (se configuran automáticamente según PAYPAL_MODE)
+define('PAYPAL_API_URL', PAYPAL_MODE === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
+
 // =========================
 // Sesión (UNIFICADA - Compatible con todo el sitio)
 // =========================

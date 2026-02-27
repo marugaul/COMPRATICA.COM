@@ -29,6 +29,10 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $job_categories = array_filter($categories, fn($c) => str_starts_with($c['name'], 'EMP:'));
 $service_categories = array_filter($categories, fn($c) => str_starts_with($c['name'], 'SERV:'));
 
+// Cargar planes de precios
+$planStmt = $pdo->query("SELECT * FROM job_pricing WHERE is_active=1 ORDER BY display_order ASC");
+$pricing_plans = $planStmt->fetchAll(PDO::FETCH_ASSOC);
+
 // Procesar formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
@@ -42,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $category = $_POST['category'] ?? '';
+    $pricing_plan_id = (int)($_POST['pricing_plan_id'] ?? 0);
 
     if (!in_array($listing_type, ['job', 'service'])) {
       throw new Exception('Tipo de publicación inválido');
@@ -54,6 +59,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($description) || strlen($description) < 20) {
       throw new Exception('La descripción debe tener al menos 20 caracteres');
     }
+
+    if ($pricing_plan_id <= 0) {
+      throw new Exception('Debes seleccionar un plan de publicación');
+    }
+
+    // Obtener detalles del plan
+    $planStmt = $pdo->prepare("SELECT * FROM job_pricing WHERE id = ? LIMIT 1");
+    $planStmt->execute([$pricing_plan_id]);
+    $plan = $planStmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$plan) {
+      throw new Exception('Plan de precios inválido');
+    }
+
+    // Determinar estado de pago
+    $payment_status = ($plan['price_usd'] == 0 && $plan['price_crc'] == 0) ? 'free' : 'pending';
+
+    // Calcular fechas
+    $start_date = date('Y-m-d H:i:s');
+    $end_date = date('Y-m-d H:i:s', strtotime("+{$plan['duration_days']} days"));
 
     // Preparar datos para inserción
     $data = [
@@ -74,9 +99,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       'contact_phone' => trim($_POST['contact_phone'] ?? ''),
       'contact_whatsapp' => trim($_POST['contact_whatsapp'] ?? ''),
       'application_url' => trim($_POST['application_url'] ?? ''),
+      'pricing_plan_id' => $pricing_plan_id,
+      'payment_status' => $payment_status,
       'is_active' => 1,
-      'start_date' => date('Y-m-d H:i:s'),
-      'end_date' => !empty($_POST['end_date']) ? date('Y-m-d H:i:s', strtotime($_POST['end_date'])) : null
+      'start_date' => $start_date,
+      'end_date' => $end_date
     ];
 
     // Campos específicos de empleo
@@ -108,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       location, province, canton, distrito, remote_allowed,
       requirements, benefits,
       contact_name, contact_email, contact_phone, contact_whatsapp, application_url,
-      is_active, start_date, end_date
+      pricing_plan_id, payment_status, is_active, start_date, end_date
     ) VALUES (
       :employer_id, :listing_type, :title, :description, :category,
       :job_type, :salary_min, :salary_max, :salary_currency, :salary_period,
@@ -116,14 +143,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       :location, :province, :canton, :distrito, :remote_allowed,
       :requirements, :benefits,
       :contact_name, :contact_email, :contact_phone, :contact_whatsapp, :application_url,
-      :is_active, :start_date, :end_date
+      :pricing_plan_id, :payment_status, :is_active, :start_date, :end_date
     )";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($data);
 
-    // Redirigir al dashboard
-    header('Location: dashboard.php?success=1');
+    $listing_id = (int)$pdo->lastInsertId();
+
+    // Redirigir según el tipo de plan
+    if ($payment_status === 'free') {
+      header('Location: dashboard.php?success=1');
+    } else {
+      header('Location: payment-selection.php?listing_id=' . $listing_id);
+    }
     exit;
 
   } catch (Exception $e) {
@@ -368,6 +401,20 @@ $provincias = [
 
     .hidden {
       display: none;
+    }
+
+    .plan-option {
+      position: relative;
+    }
+
+    .plan-option:hover {
+      border-color: var(--primary) !important;
+      background: rgba(39, 174, 96, 0.05);
+    }
+
+    .plan-option.selected {
+      border-color: var(--primary) !important;
+      background: rgba(39, 174, 96, 0.1);
     }
 
     @media (max-width: 768px) {
@@ -620,15 +667,35 @@ $provincias = [
         </div>
       </div>
 
-      <!-- Duración -->
+      <!-- Plan de Publicación -->
       <div class="card">
-        <h2 style="margin-bottom: 1rem;">Duración de la Publicación</h2>
-
-        <div class="form-group">
-          <label>Fecha de Fin (Opcional)</label>
-          <input type="date" name="end_date">
-          <p class="help-text">Dejá en blanco para que la publicación esté activa indefinidamente</p>
+        <h2 style="margin-bottom: 1rem;"><i class="fas fa-rocket"></i> Plan de Publicación</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+          <?php foreach ($pricing_plans as $plan): ?>
+            <?php $isFree = ((float)$plan['price_usd'] == 0 && (float)$plan['price_crc'] == 0); ?>
+            <label class="plan-option <?php echo $isFree ? 'selected' : ''; ?>" style="border: 2px solid var(--gray-300); border-radius: 8px; padding: 1.5rem; cursor: pointer; transition: all 0.25s; text-align: center;">
+              <input type="radio" name="pricing_plan_id" value="<?php echo $plan['id']; ?>" <?php echo $isFree ? 'checked' : ''; ?> style="display: none;">
+              <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">
+                <?php echo $isFree ? '✓ GRATIS' : '★ DESTACADO'; ?>
+              </div>
+              <div style="font-size: 1.5rem; font-weight: 700; color: var(--dark); margin-bottom: 0.25rem;">
+                <?php if ($isFree): ?>
+                  $0
+                <?php else: ?>
+                  $<?php echo number_format((float)$plan['price_usd'], 2); ?>
+                <?php endif; ?>
+              </div>
+              <div style="font-weight: 600; margin-bottom: 0.25rem;"><?php echo htmlspecialchars($plan['name']); ?></div>
+              <div style="font-size: 0.875rem; color: var(--gray-500);"><?php echo htmlspecialchars($plan['description'] ?? ''); ?></div>
+              <?php if (!$isFree): ?>
+                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--gray-500);">
+                  ₡<?php echo number_format((float)$plan['price_crc'], 0, '.', ','); ?> CRC
+                </div>
+              <?php endif; ?>
+            </label>
+          <?php endforeach; ?>
         </div>
+        <p class="help-text"><i class="fas fa-info-circle"></i> Los planes de pago se activan al confirmar el pago via SINPE Móvil o PayPal. Podés empezar gratis sin compromiso.</p>
       </div>
 
       <div class="form-actions">
@@ -674,6 +741,16 @@ $provincias = [
           jobCategories.classList.add('hidden');
           serviceCategories.classList.remove('hidden');
         }
+      });
+    });
+
+    // Selección de planes
+    const planOptions = document.querySelectorAll('.plan-option');
+    planOptions.forEach(option => {
+      option.addEventListener('click', function() {
+        planOptions.forEach(opt => opt.classList.remove('selected'));
+        this.classList.add('selected');
+        this.querySelector('input[type="radio"]').checked = true;
       });
     });
   </script>
