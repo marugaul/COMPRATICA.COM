@@ -901,6 +901,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
                   </div>
                   <div class="plan-duration"><?= $plan['duration_days'] ?> días</div>
+                  <div style="background: #e3f2fd; padding: 0.5rem; border-radius: 6px; margin-top: 0.5rem; font-size: 0.9rem;">
+                    <i class="fas fa-camera" style="color: #1976d2;"></i>
+                    Hasta <strong><?= (int)($plan['max_photos'] ?? 3) ?> fotos</strong>
+                  </div>
                   <?php if ($plan['description']): ?>
                     <p class="help-text" style="margin-top: 0.5rem;"><?= htmlspecialchars($plan['description']) ?></p>
                   <?php endif; ?>
@@ -955,21 +959,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Sistema de Upload de Imágenes
     // =========================
 
-    // Límites de fotos por plan
-    const photoLimits = {
-      '1': 3,  // Plan gratis 7 días
-      '2': 5,  // Plan 30 días
-      '3': 8   // Plan 90 días
-    };
-
-    const planNames = {
-      '1': 'Plan Gratis (7 días)',
-      '2': 'Plan 30 días',
-      '3': 'Plan 90 días'
-    };
-
-    // Información de planes (precio y si es gratis)
+    // Información de planes (precio, límites de fotos, etc.)
     const plansData = <?= json_encode($pricing_plans) ?>;
+
+    // Crear objeto de límites de fotos desde los datos de la BD
+    const photoLimits = {};
+    const planNames = {};
+    plansData.forEach(plan => {
+      photoLimits[plan.id] = parseInt(plan.max_photos) || 3;
+      planNames[plan.id] = plan.name;
+    });
 
     // Estado global
     let uploadedImages = [];  // URLs de imágenes subidas

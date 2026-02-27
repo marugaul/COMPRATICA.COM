@@ -43,7 +43,7 @@ try {
 // Planes de precios
 $pricing_plans = [];
 try {
-    $planStmt = $pdo->query("SELECT * FROM listing_pricing WHERE is_active=1 ORDER BY display_order ASC");
+    $planStmt = $pdo->query("SELECT * FROM service_pricing WHERE is_active=1 ORDER BY display_order ASC");
     $pricing_plans = $planStmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {}
 
@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Si cambia el plan, actualizar fechas y estado de pago
         $newPlanId = $pricing_plan_id;
         $updatePlan = ($newPlanId !== (int)$listing['pricing_plan_id']);
-        $planStmt2 = $pdo->prepare("SELECT * FROM listing_pricing WHERE id = ? LIMIT 1");
+        $planStmt2 = $pdo->prepare("SELECT * FROM service_pricing WHERE id = ? LIMIT 1");
         $planStmt2->execute([$newPlanId]);
         $newPlan = $planStmt2->fetch(PDO::FETCH_ASSOC);
 
