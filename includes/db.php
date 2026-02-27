@@ -217,6 +217,25 @@ function db() {
                 $stmt->execute($cat);
             }
 
+            // Crear tabla de sesiones de usuario
+            $pdo->exec("
+                CREATE TABLE user_sessions (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  user_id INTEGER NOT NULL,
+                  session_id TEXT NOT NULL,
+                  ip_address TEXT,
+                  user_agent TEXT,
+                  created_at TEXT DEFAULT (datetime('now')),
+                  last_activity TEXT DEFAULT (datetime('now')),
+                  revoked INTEGER DEFAULT 0,
+                  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            ");
+
+            $pdo->exec("CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id)");
+            $pdo->exec("CREATE INDEX idx_user_sessions_session_id ON user_sessions(session_id)");
+            $pdo->exec("CREATE INDEX idx_user_sessions_revoked ON user_sessions(revoked)");
+
         } else {
             $colsO = $pdo->query("PRAGMA table_info(orders)")->fetchAll(PDO::FETCH_ASSOC);
             $have = [];
@@ -416,6 +435,27 @@ function db() {
 
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_applications_listing ON job_applications(listing_id)");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_applications_status ON job_applications(status)");
+            }
+
+            // Crear tabla de sesiones de usuario si no existe
+            if(!in_array('user_sessions', $tables)){
+                $pdo->exec("
+                    CREATE TABLE user_sessions (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      user_id INTEGER NOT NULL,
+                      session_id TEXT NOT NULL,
+                      ip_address TEXT,
+                      user_agent TEXT,
+                      created_at TEXT DEFAULT (datetime('now')),
+                      last_activity TEXT DEFAULT (datetime('now')),
+                      revoked INTEGER DEFAULT 0,
+                      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                    )
+                ");
+
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_user_sessions_session_id ON user_sessions(session_id)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_user_sessions_revoked ON user_sessions(revoked)");
             }
         }
     }
