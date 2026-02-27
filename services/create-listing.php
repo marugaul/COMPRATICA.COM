@@ -140,10 +140,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pricing_plan_id, $start_date, $end_date, $payment_status
         ]);
 
+        $listing_id = (int)$pdo->lastInsertId();
+
         if ($payment_status === 'free') {
             header('Location: dashboard.php?msg=created_free');
         } else {
-            header('Location: dashboard.php?msg=created_pending&listing_id=' . (int)$pdo->lastInsertId());
+            header('Location: payment-selection.php?listing_id=' . $listing_id);
         }
         exit;
 
