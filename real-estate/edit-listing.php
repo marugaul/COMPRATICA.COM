@@ -1283,6 +1283,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     });
 
+    // =========================
+    // Event listener para cambio de plan
+    // =========================
+    document.querySelectorAll('input[name="renew_plan_id"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (this.checked) {
+          const newPlanId = parseInt(this.value);
+          selectedPlan = newPlanId;
+          maxPhotos = photoLimits[selectedPlan] || 3;
+          console.log(`Plan cambiado a: ${planNames[selectedPlan]} (ID: ${selectedPlan}), Máximo de fotos: ${maxPhotos}`);
+          updatePhotoCount();
+        }
+      });
+    });
+
     // Inicializar contador
     updatePhotoCount();
   </script>
