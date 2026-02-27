@@ -627,7 +627,7 @@ $plans = $pdo->query("
             <td><?= $plan['duration_days'] ?> días</td>
             <td>$<?= number_format($plan['price_usd'], 2) ?></td>
             <td>₡<?= number_format($plan['price_crc'], 0) ?></td>
-            <td><strong><?= $plan['max_photos'] ?></strong> fotos</td>
+            <td><strong><?= $plan['max_photos'] ?? 3 ?></strong> fotos</td>
             <td>
               <?php
               $methodLabels = [];
