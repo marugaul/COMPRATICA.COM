@@ -4,16 +4,16 @@
  * Muestra exactamente qué BD está usando bienes_raices_config.php
  */
 
+// Usar exactamente el mismo código que bienes_raices_config.php
+require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/db.php';
+
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 echo "<h1>🔍 Diagnóstico Bienes Raíces</h1>";
 echo "<hr>";
-
-// Usar exactamente el mismo código que bienes_raices_config.php
-require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../includes/db.php';
 
 echo "<h2>1. Conexión de Base de Datos</h2>";
 

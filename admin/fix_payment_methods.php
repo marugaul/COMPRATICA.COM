@@ -5,15 +5,15 @@
  * Ejecutar este archivo una vez para solucionar el error: "no such column: payment_methods"
  */
 
+// Usar las mismas configuraciones que el resto del sistema
+require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/db.php';
+
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 echo "<h1>🔧 Fix Payment Methods</h1>";
 echo "<hr>";
-
-// Usar las mismas configuraciones que el resto del sistema
-require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/db.php';
 
 $pdo = db();
 
