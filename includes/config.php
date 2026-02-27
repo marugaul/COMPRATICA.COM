@@ -39,13 +39,15 @@ define('SINPE_PHONE', '88902814');
 define('PAYPAL_EMAIL', 'marco.ulate@crv-soft.com');
 
 // PayPal API Configuration
-// Para activar PayPal, configura tus credenciales aquí
-define('PAYPAL_MODE', 'sandbox'); // 'sandbox' para pruebas, 'live' para producción
-define('PAYPAL_CLIENT_ID', ''); // Tu Client ID de PayPal (sandbox o live)
-define('PAYPAL_SECRET', ''); // Tu Secret de PayPal (sandbox o live)
+// NOTA: Las credenciales se configuran en config.local.php (archivo seguro no versionado)
+if (!defined('PAYPAL_MODE')) define('PAYPAL_MODE', 'sandbox'); // 'sandbox' para pruebas, 'live' para producción
+if (!defined('PAYPAL_CLIENT_ID')) define('PAYPAL_CLIENT_ID', ''); // Se define en config.local.php
+if (!defined('PAYPAL_SECRET')) define('PAYPAL_SECRET', ''); // Se define en config.local.php
 
 // URLs de API de PayPal (se configuran automáticamente según PAYPAL_MODE)
-define('PAYPAL_API_URL', PAYPAL_MODE === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
+if (!defined('PAYPAL_API_URL')) {
+    define('PAYPAL_API_URL', PAYPAL_MODE === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
+}
 
 // =========================
 // Sesión (UNIFICADA - Compatible con todo el sitio)
