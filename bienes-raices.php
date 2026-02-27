@@ -81,6 +81,8 @@ $ordenamiento = $_GET['orden'] ?? 'recientes'; // 'recientes', 'precio_asc', 'pr
 
 // Construir WHERE dinámico
 $where = ["l.is_active = 1"];
+// Solo mostrar propiedades con pago confirmado (free o confirmed)
+$where[] = "(l.payment_status = 'free' OR l.payment_status = 'confirmed')";
 $params = [];
 
 // Filtro por búsqueda

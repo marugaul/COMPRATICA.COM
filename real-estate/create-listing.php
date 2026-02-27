@@ -223,8 +223,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       header('Location: dashboard.php?msg=created_free');
       exit;
     } else {
-      // Redirigir a página de pago (por implementar)
-      header('Location: dashboard.php?msg=created_pending&listing_id=' . $listing_id);
+      // Redirigir a página de pago
+      header('Location: payment-selection.php?listing_id=' . $listing_id);
       exit;
     }
 

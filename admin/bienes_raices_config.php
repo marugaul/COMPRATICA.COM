@@ -153,6 +153,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
     }
+
+    if ($action === 'approve_payment') {
+        $listing_id = (int)($_POST['listing_id'] ?? 0);
+        if ($listing_id > 0) {
+            try {
+                $stmt = $pdo->prepare("
+                    UPDATE real_estate_listings
+                    SET payment_status = 'confirmed',
+                        is_active = 1,
+                        updated_at = datetime('now')
+                    WHERE id = ?
+                ");
+                $stmt->execute([$listing_id]);
+                $msg = "✅ Pago aprobado correctamente. La publicación está ahora activa.";
+                $msgType = 'success';
+            } catch (Exception $e) {
+                $msg = "❌ Error al aprobar pago: " . $e->getMessage();
+                $msgType = 'error';
+            }
+        }
+    }
+
+    if ($action === 'reject_payment') {
+        $listing_id = (int)($_POST['listing_id'] ?? 0);
+        if ($listing_id > 0) {
+            try {
+                $stmt = $pdo->prepare("
+                    UPDATE real_estate_listings
+                    SET payment_status = 'rejected',
+                        is_active = 0,
+                        updated_at = datetime('now')
+                    WHERE id = ?
+                ");
+                $stmt->execute([$listing_id]);
+                $msg = "✅ Pago rechazado. La publicación ha sido desactivada.";
+                $msgType = 'success';
+            } catch (Exception $e) {
+                $msg = "❌ Error al rechazar pago: " . $e->getMessage();
+                $msgType = 'error';
+            }
+        }
+    }
 }
 
 // Cargar todos los planes
@@ -162,6 +204,24 @@ $plans = $pdo->query("
         (SELECT COUNT(*) FROM real_estate_listings WHERE pricing_plan_id = p.id) as listings_count
     FROM listing_pricing p
     ORDER BY display_order ASC, id ASC
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// Cargar publicaciones pendientes de pago
+$pending_listings = $pdo->query("
+    SELECT
+        l.*,
+        p.name as plan_name,
+        p.price_usd,
+        p.price_crc,
+        p.payment_methods,
+        a.name as agent_name,
+        a.email as agent_email,
+        a.phone as agent_phone
+    FROM real_estate_listings l
+    LEFT JOIN listing_pricing p ON l.pricing_plan_id = p.id
+    LEFT JOIN real_estate_agents a ON l.agent_id = a.id
+    WHERE l.payment_status = 'pending'
+    ORDER BY l.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
@@ -580,6 +640,104 @@ $plans = $pdo->query("
       </div>
     </div>
   </div>
+
+  <!-- Publicaciones Pendientes de Pago -->
+  <?php if (!empty($pending_listings)): ?>
+  <div class="section">
+    <h2 class="section-title">
+      <i class="fas fa-clock"></i>
+      Publicaciones Pendientes de Pago
+      <span class="badge warning" style="margin-left: 1rem;"><?= count($pending_listings) ?> pendientes</span>
+    </h2>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Agente</th>
+            <th>Plan</th>
+            <th>Precio</th>
+            <th>Métodos de Pago</th>
+            <th>Fecha Creación</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach($pending_listings as $listing):
+            $payment_methods = explode(',', $listing['payment_methods'] ?? '');
+          ?>
+          <tr style="background: rgba(243, 156, 18, 0.05);">
+            <td><strong><?= $listing['id'] ?></strong></td>
+            <td>
+              <strong><?= h($listing['title']) ?></strong>
+              <br><small style="color: var(--gray-600);"><?= h(substr($listing['description'] ?? '', 0, 50)) ?>...</small>
+            </td>
+            <td>
+              <strong><?= h($listing['agent_name']) ?></strong>
+              <br><small style="color: var(--gray-600);"><?= h($listing['agent_email']) ?></small>
+              <?php if ($listing['agent_phone']): ?>
+                <br><small style="color: var(--gray-600);"><i class="fas fa-phone"></i> <?= h($listing['agent_phone']) ?></small>
+              <?php endif; ?>
+            </td>
+            <td>
+              <strong><?= h($listing['plan_name']) ?></strong>
+            </td>
+            <td>
+              <?php if ($listing['price_usd'] > 0): ?>
+                <strong>$<?= number_format($listing['price_usd'], 2) ?> USD</strong>
+              <?php endif; ?>
+              <?php if ($listing['price_crc'] > 0): ?>
+                <br><strong>₡<?= number_format($listing['price_crc'], 0) ?> CRC</strong>
+              <?php endif; ?>
+            </td>
+            <td>
+              <?php
+              $methodLabels = [];
+              if (in_array('sinpe', $payment_methods)) $methodLabels[] = '<span class="badge info">SINPE</span>';
+              if (in_array('paypal', $payment_methods)) $methodLabels[] = '<span class="badge success">PayPal</span>';
+              echo implode(' ', $methodLabels);
+              ?>
+            </td>
+            <td>
+              <small><?= date('d/m/Y H:i', strtotime($listing['created_at'])) ?></small>
+            </td>
+            <td>
+              <form method="post" style="display:inline; margin-right: 0.5rem;" onsubmit="return confirm('¿Confirmar que el pago fue recibido?');">
+                <input type="hidden" name="action" value="approve_payment">
+                <input type="hidden" name="listing_id" value="<?= $listing['id'] ?>">
+                <button class="btn success" type="submit" title="Aprobar pago">
+                  <i class="fas fa-check"></i> Aprobar
+                </button>
+              </form>
+              <form method="post" style="display:inline;" onsubmit="return confirm('¿Rechazar este pago?');">
+                <input type="hidden" name="action" value="reject_payment">
+                <input type="hidden" name="listing_id" value="<?= $listing['id'] ?>">
+                <button class="btn danger" type="submit" title="Rechazar pago">
+                  <i class="fas fa-times"></i> Rechazar
+                </button>
+              </form>
+              <a href="../propiedad-detalle?id=<?= $listing['id'] ?>" class="btn" target="_blank" title="Ver publicación" style="display: inline-flex; align-items: center; margin-left: 0.5rem;">
+                <i class="fas fa-eye"></i>
+              </a>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+    <div class="alert info" style="margin-top: 1rem;">
+      <i class="fas fa-info-circle"></i>
+      <strong>Instrucciones:</strong>
+      <ul style="margin: 0.5rem 0 0 1.5rem;">
+        <li><strong>SINPE:</strong> Verificar manualmente el comprobante enviado por el cliente antes de aprobar.</li>
+        <li><strong>PayPal:</strong> Los pagos exitosos por PayPal se aprueban automáticamente.</li>
+        <li>Al aprobar, la publicación se activará inmediatamente y será visible en el sitio.</li>
+        <li>Al rechazar, la publicación permanecerá desactivada.</li>
+      </ul>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <!-- Botón para crear nuevo plan -->
   <div class="section">

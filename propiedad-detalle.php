@@ -59,6 +59,7 @@ $stmt = $pdo->prepare("
   LEFT JOIN categories c ON c.id = l.category_id
   LEFT JOIN real_estate_agents a ON a.id = l.agent_id
   WHERE l.id = ? AND l.is_active = 1
+    AND (l.payment_status = 'free' OR l.payment_status = 'confirmed')
   LIMIT 1
 ");
 $stmt->execute([$listingId]);
