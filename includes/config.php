@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Configuración general
 // =========================
 define('APP_NAME', 'VentaGaraje online');
-define('BASE_URL', 'https://www.compratica.com');
+define('BASE_URL', 'https://compratica.com');
 define('SITE_URL', 'https://compratica.com');
 define('SITE_EMAIL', 'info@compratica.com');
 define('ADMIN_EMAIL', 'marco.ulate@crv-soft.com');
