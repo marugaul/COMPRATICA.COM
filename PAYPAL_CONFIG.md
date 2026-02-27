@@ -2,25 +2,33 @@
 
 ## Credenciales de PayPal
 
-Para activar los pagos con PayPal en producción o sandbox, necesitas configurar tus credenciales en `/includes/config.php`.
+Para activar los pagos con PayPal en producción o sandbox, necesitas configurar tus credenciales en `/includes/config.local.php`.
 
-### Agregar a config.php:
+**⚠️ IMPORTANTE:** Las credenciales **NUNCA** deben agregarse directamente a `config.php` ya que ese archivo se versiona en git. Siempre usa `config.local.php` que está en `.gitignore`.
+
+### Agregar a config.local.php:
 
 ```php
-// =========================
-// PayPal Configuration
-// =========================
-
-// Para Sandbox (Desarrollo):
-define('PAYPAL_MODE', 'sandbox'); // 'sandbox' o 'live'
-define('PAYPAL_CLIENT_ID', 'TU_CLIENT_ID_DE_SANDBOX');
-define('PAYPAL_SECRET', 'TU_SECRET_DE_SANDBOX');
-
-// Para Producción:
-// define('PAYPAL_MODE', 'live');
-// define('PAYPAL_CLIENT_ID', 'TU_CLIENT_ID_DE_PRODUCCION');
-// define('PAYPAL_SECRET', 'TU_SECRET_DE_PRODUCCION');
+// ===========================
+// PayPal API Credentials
+// ===========================
+define('PAYPAL_CLIENT_ID', 'TU_CLIENT_ID_AQUI');
+define('PAYPAL_SECRET', 'TU_SECRET_AQUI');
 ```
+
+### Cambiar Modo (Sandbox/Producción):
+
+Para cambiar entre sandbox y producción, edita `PAYPAL_MODE` en `/includes/config.php`:
+
+```php
+// Para Sandbox (Desarrollo):
+define('PAYPAL_MODE', 'sandbox');
+
+// Para Producción (cuando estés listo):
+// define('PAYPAL_MODE', 'live');
+```
+
+**Nota:** Las credenciales de sandbox y producción son diferentes. Asegúrate de actualizar tanto el modo como las credenciales cuando cambies de ambiente.
 
 ## Cómo obtener las credenciales
 
