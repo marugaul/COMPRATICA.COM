@@ -443,7 +443,7 @@ $products = $q->fetchAll(PDO::FETCH_ASSOC);
 
       <div class="form-grid">
         <label>
-          <i class="fas fa-dollar-sign"></i> Precio
+          Precio
           <input class="input" type="number" step="0.01" name="price" placeholder="0.00" required>
         </label>
 
@@ -505,7 +505,7 @@ $products = $q->fetchAll(PDO::FETCH_ASSOC);
         <th><i class="fas fa-tag"></i> Nombre</th>
         <th><i class="fas fa-folder-open"></i> Categoría</th>
         <th><i class="fas fa-store"></i> Espacio</th>
-        <th><i class="fas fa-dollar-sign"></i> Precio</th>
+        <th>Precio</th>
         <th><i class="fas fa-boxes"></i> Stock</th>
         <th><i class="fas fa-toggle-on"></i> Activo</th>
         <th><i class="fas fa-cog"></i> Acciones</th>
