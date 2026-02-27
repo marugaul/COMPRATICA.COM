@@ -34,6 +34,17 @@ if (!$listing) {
   exit;
 }
 
+// Verificar si la publicación está expirada
+$isExpired = false;
+$daysRemaining = 0;
+if ($listing['end_date']) {
+  $endDate = new DateTime($listing['end_date']);
+  $now = new DateTime();
+  $interval = $now->diff($endDate);
+  $daysRemaining = (int)$interval->format('%r%a'); // negativo si expiró
+  $isExpired = $daysRemaining < 0;
+}
+
 // Decodificar JSON
 $features_arr = json_decode($listing['features'] ?? '[]', true) ?: [];
 $images_arr = json_decode($listing['images'] ?? '[]', true) ?: [];
@@ -104,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $price = (float)($_POST['price'] ?? 0);
     $currency = trim($_POST['currency'] ?? 'CRC');
     $listing_type = trim($_POST['listing_type'] ?? 'sale');
+    $renew_plan_id = (int)($_POST['renew_plan_id'] ?? 0);
 
     // Ubicación
     $province = trim($_POST['province'] ?? '');
@@ -167,6 +179,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $listing_type = 'sale';
     }
 
+    // Procesar renovación de plan si se seleccionó uno
+    $updatePlanFields = '';
+    $planParams = [];
+    if ($renew_plan_id > 0) {
+      // Obtener información del nuevo plan
+      $planStmt = $pdo->prepare("SELECT * FROM listing_pricing WHERE id = ? AND is_active = 1 LIMIT 1");
+      $planStmt->execute([$renew_plan_id]);
+      $newPlan = $planStmt->fetch(PDO::FETCH_ASSOC);
+
+      if ($newPlan) {
+        // Calcular nuevas fechas
+        $new_start_date = date('Y-m-d H:i:s');
+        $new_end_date = date('Y-m-d H:i:s', strtotime("+{$newPlan['duration_days']} days"));
+        $new_payment_status = ($newPlan['price_usd'] == 0 && $newPlan['price_crc'] == 0) ? 'free' : 'pending';
+
+        $updatePlanFields = ', pricing_plan_id = ?, start_date = ?, end_date = ?, payment_status = ?';
+        $planParams = [$renew_plan_id, $new_start_date, $new_end_date, $new_payment_status];
+      }
+    }
+
     // Actualizar la publicación
     $updateStmt = $pdo->prepare("
       UPDATE real_estate_listings SET
@@ -191,10 +223,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         contact_whatsapp = ?,
         listing_type = ?,
         updated_at = datetime('now')
+        $updatePlanFields
       WHERE id = ? AND agent_id = ?
     ");
 
-    $updateStmt->execute([
+    $executeParams = [
       $category_id,
       $title,
       $description,
@@ -214,12 +247,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $contact_phone,
       $contact_email,
       $contact_whatsapp,
-      $listing_type,
-      $listing_id,
-      $agent_id
-    ]);
+      $listing_type
+    ];
 
-    header('Location: dashboard.php?msg=updated');
+    // Agregar parámetros del plan si se renovó
+    if (!empty($planParams)) {
+      $executeParams = array_merge($executeParams, $planParams);
+    }
+
+    // Agregar ID de listing y agent_id al final
+    $executeParams[] = $listing_id;
+    $executeParams[] = $agent_id;
+
+    $updateStmt->execute($executeParams);
+
+    // Redirigir con mensaje apropiado
+    if ($renew_plan_id > 0) {
+      header('Location: dashboard.php?msg=renewed');
+    } else {
+      header('Location: dashboard.php?msg=updated');
+    }
     exit;
 
   } catch (Throwable $e) {
@@ -801,6 +848,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
         </div>
       </div>
+
+      <!-- ESTADO DE LA PUBLICACIÓN Y RENOVACIÓN -->
+      <?php if ($isExpired || $daysRemaining <= 7): ?>
+      <div class="form-card" style="border: 2px solid <?= $isExpired ? '#e74c3c' : '#f39c12' ?>; background: <?= $isExpired ? '#fee' : '#fff3cd' ?>;">
+        <div class="form-section">
+          <h2 class="section-title" style="color: <?= $isExpired ? '#e74c3c' : '#f39c12' ?>;">
+            <i class="fas fa-<?= $isExpired ? 'exclamation-triangle' : 'clock' ?>"></i>
+            <?= $isExpired ? 'Publicación Expirada' : 'Publicación por Vencer' ?>
+          </h2>
+
+          <?php if ($isExpired): ?>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+              <p style="color: #e74c3c; font-weight: 600; margin-bottom: 1rem;">
+                <i class="fas fa-times-circle"></i> Tu publicación expiró hace <?= abs($daysRemaining) ?> día<?= abs($daysRemaining) !== 1 ? 's' : '' ?> y ya no es visible en el listado público.
+              </p>
+              <p style="color: #4a5568; margin-bottom: 0;">
+                Seleccioná un nuevo plan abajo para renovar tu publicación y que vuelva a ser visible.
+              </p>
+            </div>
+          <?php else: ?>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+              <p style="color: #f39c12; font-weight: 600; margin-bottom: 0.5rem;">
+                <i class="fas fa-hourglass-half"></i> Tu publicación vence en <?= $daysRemaining ?> día<?= $daysRemaining !== 1 ? 's' : '' ?>.
+              </p>
+              <p style="color: #4a5568; margin-bottom: 0;">
+                Podés renovar tu plan ahora para extender la vigencia de tu publicación.
+              </p>
+            </div>
+          <?php endif; ?>
+
+          <!-- Selector de plan de renovación -->
+          <div class="form-group">
+            <label style="font-size: 1.125rem; color: #002b7f;">
+              <i class="fas fa-sync-alt"></i> Renovar Plan de Publicación
+            </label>
+            <p class="help-text" style="margin-bottom: 1rem;">
+              Seleccioná un plan para extender la vigencia de tu publicación. Los cambios se aplicarán al guardar.
+            </p>
+
+            <div class="pricing-plans" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+              <?php foreach ($pricing_plans as $plan): ?>
+                <label class="plan-card" for="renew_plan_<?= $plan['id'] ?>" style="border: 2px solid #cbd5e0; border-radius: 12px; padding: 1.5rem; cursor: pointer; transition: all 0.2s; position: relative;">
+                  <input type="radio" name="renew_plan_id" value="<?= $plan['id'] ?>" id="renew_plan_<?= $plan['id'] ?>" style="position: absolute; opacity: 0;">
+                  <div class="plan-content" style="padding: 0.5rem; border-radius: 12px; transition: background 0.2s;">
+                    <div class="plan-name" style="font-weight: 700; font-size: 1.125rem; margin-bottom: 0.5rem; color: #1a1a1a;">
+                      <?= htmlspecialchars($plan['name']) ?>
+                    </div>
+                    <div class="plan-price" style="font-size: 1.5rem; font-weight: 800; color: #27ae60; margin-bottom: 0.5rem;">
+                      <?php if ($plan['price_usd'] == 0 && $plan['price_crc'] == 0): ?>
+                        Gratis
+                      <?php else: ?>
+                        $<?= number_format($plan['price_usd'], 2) ?> / ₡<?= number_format($plan['price_crc'], 0) ?>
+                      <?php endif; ?>
+                    </div>
+                    <div class="plan-duration" style="font-size: 0.875rem; color: #718096;">
+                      <?= $plan['duration_days'] ?> días
+                    </div>
+                    <?php if ($plan['description']): ?>
+                      <p class="help-text" style="margin-top: 0.5rem;"><?= htmlspecialchars($plan['description']) ?></p>
+                    <?php endif; ?>
+                  </div>
+                  <div class="plan-checkmark" style="display: none; position: absolute; top: 1rem; right: 1rem; width: 24px; height: 24px; background: #27ae60; color: white; border-radius: 50%; text-align: center; line-height: 24px; font-size: 0.875rem;">
+                    <i class="fas fa-check"></i>
+                  </div>
+                </label>
+              <?php endforeach; ?>
+            </div>
+          </div>
+
+          <style>
+            .plan-card:hover {
+              border-color: #002b7f !important;
+              box-shadow: 0 4px 12px rgba(0,43,127,0.15);
+            }
+            .plan-card input[type="radio"]:checked + .plan-content {
+              background: rgba(0,43,127,0.05);
+            }
+            .plan-card input[type="radio"]:checked ~ .plan-checkmark {
+              display: block !important;
+            }
+          </style>
+        </div>
+      </div>
+      <?php endif; ?>
 
       <!-- CONTACTO -->
       <div class="form-card">
