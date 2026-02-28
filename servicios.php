@@ -192,7 +192,7 @@ try {
         INNER JOIN users u ON u.id = jl.employer_id
         WHERE jl.listing_type = 'service'
           AND jl.is_active = 1
-          AND u.is_active = 1
+          AND u.status = 'active'
 
         ORDER BY is_featured DESC, created_at DESC
     ");
