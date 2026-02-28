@@ -139,6 +139,10 @@ function db() {
                   end_date TEXT,
                   views_count INTEGER DEFAULT 0,
                   applications_count INTEGER DEFAULT 0,
+                  pricing_plan_id INTEGER,
+                  payment_status TEXT DEFAULT 'pending' CHECK(payment_status IN ('pending', 'confirmed', 'free')),
+                  payment_id TEXT,
+                  payment_date TEXT,
                   created_at TEXT DEFAULT (datetime('now')),
                   updated_at TEXT DEFAULT (datetime('now')),
                   FOREIGN KEY (employer_id) REFERENCES users(id) ON DELETE CASCADE
@@ -152,6 +156,8 @@ function db() {
             $pdo->exec("CREATE INDEX idx_job_listings_active ON job_listings(is_active)");
             $pdo->exec("CREATE INDEX idx_job_listings_province ON job_listings(province)");
             $pdo->exec("CREATE INDEX idx_job_listings_dates ON job_listings(start_date, end_date)");
+            $pdo->exec("CREATE INDEX idx_job_listings_pricing_plan ON job_listings(pricing_plan_id)");
+            $pdo->exec("CREATE INDEX idx_job_listings_payment_status ON job_listings(payment_status)");
 
             // Crear tabla de categorías
             $pdo->exec("
@@ -369,6 +375,28 @@ function db() {
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_active ON job_listings(is_active)");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_province ON job_listings(province)");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_dates ON job_listings(start_date, end_date)");
+            } else {
+                // Si la tabla existe, verificar que tenga las columnas de pago
+                $colsJ = $pdo->query("PRAGMA table_info(job_listings)")->fetchAll(PDO::FETCH_ASSOC);
+                $haveJ = [];
+                foreach ($colsJ as $c) $haveJ[strtolower($c['name'])]=true;
+
+                if(empty($haveJ['pricing_plan_id'])) {
+                    $pdo->exec("ALTER TABLE job_listings ADD COLUMN pricing_plan_id INTEGER");
+                }
+                if(empty($haveJ['payment_status'])) {
+                    $pdo->exec("ALTER TABLE job_listings ADD COLUMN payment_status TEXT DEFAULT 'pending' CHECK(payment_status IN ('pending', 'confirmed', 'free'))");
+                }
+                if(empty($haveJ['payment_id'])) {
+                    $pdo->exec("ALTER TABLE job_listings ADD COLUMN payment_id TEXT");
+                }
+                if(empty($haveJ['payment_date'])) {
+                    $pdo->exec("ALTER TABLE job_listings ADD COLUMN payment_date TEXT");
+                }
+
+                // Crear índices si no existen
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_pricing_plan ON job_listings(pricing_plan_id)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_payment_status ON job_listings(payment_status)");
             }
 
             if(!in_array('job_categories', $tables)){
