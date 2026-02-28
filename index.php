@@ -353,14 +353,9 @@ logDebug("RENDERING_PAGE");
       <span>Portal Venta Garaje</span>
     </a>
 
-    <a href="/servicios" class="menu-item">
-      <i class="fas fa-concierge-bell"></i>
-      <span>Portal Servicios</span>
-    </a>
-
     <a href="/jobs/login.php" class="menu-item">
       <i class="fas fa-briefcase"></i>
-      <span>Portal Empleos</span>
+      <span>Portal Empleos y Servicios</span>
     </a>
 
     <a href="/real-estate/login.php" class="menu-item">
