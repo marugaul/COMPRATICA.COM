@@ -111,7 +111,7 @@ try {
         INNER JOIN users u ON u.id = jl.employer_id
         WHERE jl.listing_type = 'job'
           AND jl.is_active = 1
-          AND u.is_active = 1
+          AND u.status = 'active'
         ORDER BY jl.is_featured DESC, jl.created_at DESC
     ");
     $empleos = $stmt->fetchAll(PDO::FETCH_ASSOC);
