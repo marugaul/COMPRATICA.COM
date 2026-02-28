@@ -181,7 +181,7 @@ try {
             jl.service_price_type,
             NULL as slug,
             u.name as provider_name,
-            u.name as company_name,
+            COALESCE(u.company_name, u.name) as company_name,
             jl.location,
             jl.created_at,
             jl.is_active,
