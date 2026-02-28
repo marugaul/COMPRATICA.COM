@@ -146,6 +146,7 @@ $servicios = [];
 
 try {
     // UNION de servicios del sistema antiguo (affiliates) y nuevo (job_listings)
+    // Usando índices numéricos en ORDER BY para compatibilidad con SQLite UNION
     $stmt = $pdo->query("
         SELECT
             s.id,
@@ -194,12 +195,13 @@ try {
           AND jl.is_active = 1
           AND u.status = 'active'
 
-        ORDER BY is_featured DESC, created_at DESC
+        ORDER BY 14 DESC, 12 DESC
     ");
     $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
     logDebug("SERVICES_LOADED_SUCCESS", ['count' => count($servicios)]);
 } catch (Exception $e) {
     logDebug("ERROR_LOADING_SERVICES", ['error' => $e->getMessage()]);
+    error_log("Error loading services: " . $e->getMessage());
 }
 
 logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
