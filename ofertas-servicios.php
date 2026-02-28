@@ -105,14 +105,14 @@ try {
     $stmt = $pdo->query("
         SELECT
             jl.*,
-            je.company_name,
-            je.company_logo,
-            je.name as provider_name
+            u.company_name,
+            u.company_logo,
+            u.name as provider_name
         FROM job_listings jl
-        INNER JOIN jobs_employers je ON je.id = jl.employer_id
+        INNER JOIN users u ON u.id = jl.employer_id
         WHERE jl.listing_type = 'service'
           AND jl.is_active = 1
-          AND je.is_active = 1
+          AND u.is_active = 1
         ORDER BY jl.is_featured DESC, jl.created_at DESC
     ");
     $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);

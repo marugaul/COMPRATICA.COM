@@ -81,17 +81,17 @@ try {
     $stmt = $pdo->prepare("
         SELECT
             jl.*,
-            je.company_name,
-            je.company_logo,
-            je.name as provider_name,
-            je.email as provider_email,
-            je.phone as provider_phone,
-            je.website as provider_website
+            u.company_name,
+            u.company_logo,
+            u.name as provider_name,
+            u.email as provider_email,
+            u.phone as provider_phone,
+            u.website as provider_website
         FROM job_listings jl
-        INNER JOIN jobs_employers je ON je.id = jl.employer_id
+        INNER JOIN users u ON u.id = jl.employer_id
         WHERE jl.id = ?
           AND jl.is_active = 1
-          AND je.is_active = 1
+          AND u.is_active = 1
         LIMIT 1
     ");
     $stmt->execute([$id]);

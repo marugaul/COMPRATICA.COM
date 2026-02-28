@@ -140,11 +140,12 @@ if (PHP_VERSION_ID < 70300) {
     ]);
 }
 
-// Obtener servicios activos del sistema de afiliados
+// Obtener servicios activos de ambos sistemas
 $pdo = db();
 $servicios = [];
 
 try {
+    // UNION de servicios del sistema antiguo (affiliates) y nuevo (job_listings)
     $stmt = $pdo->query("
         SELECT
             s.id,
@@ -161,12 +162,39 @@ try {
             s.created_at,
             s.is_active,
             0 as is_featured,
-            s.cover_image as image_1
+            s.cover_image as image_1,
+            'services' as source_table
         FROM services s
         INNER JOIN affiliates a ON a.id = s.affiliate_id
         WHERE s.is_active = 1
           AND a.is_active = 1
-        ORDER BY s.created_at DESC
+
+        UNION ALL
+
+        SELECT
+            jl.id,
+            jl.title,
+            jl.description,
+            jl.description as short_description,
+            jl.service_price,
+            jl.salary_currency,
+            jl.service_price_type,
+            NULL as slug,
+            u.name as provider_name,
+            u.company_name,
+            jl.location,
+            jl.created_at,
+            jl.is_active,
+            jl.is_featured,
+            jl.image_1,
+            'job_listings' as source_table
+        FROM job_listings jl
+        INNER JOIN users u ON u.id = jl.employer_id
+        WHERE jl.listing_type = 'service'
+          AND jl.is_active = 1
+          AND u.is_active = 1
+
+        ORDER BY is_featured DESC, created_at DESC
     ");
     $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
     logDebug("SERVICES_LOADED_SUCCESS", ['count' => count($servicios)]);
