@@ -164,6 +164,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Determinar estado de pago
     $payment_status = ($plan['price_usd'] == 0 && $plan['price_crc'] == 0) ? 'free' : 'pending';
 
+    // Solo activar si el plan es gratis, de lo contrario esperar aprobación del admin
+    $is_active = ($payment_status === 'free') ? 1 : 0;
+
     // Insertar la publicación
     $insertStmt = $pdo->prepare("
       INSERT INTO real_estate_listings (
@@ -182,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ?, ?,
         ?, ?, ?, ?,
         ?, ?,
-        1, ?, ?, ?,
+        ?, ?, ?, ?,
         datetime('now'), datetime('now')
       )
     ");
@@ -211,6 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $contact_whatsapp,
       $listing_type,
       $pricing_plan_id,
+      $is_active,
       $start_date,
       $end_date,
       $payment_status
