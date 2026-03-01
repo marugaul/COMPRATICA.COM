@@ -860,14 +860,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="form-group">
               <label>Teléfono</label>
-              <input type="tel" name="contact_phone" placeholder="8888-8888">
+              <input type="tel" name="contact_phone" placeholder="8888-8888" pattern="[\d\s\-\+]{7,15}" title="Ingrese un número de teléfono válido (ej: 88888888 o 8888-8888)">
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>WhatsApp</label>
-              <input type="tel" name="contact_whatsapp" placeholder="8888-8888">
+              <input type="tel" name="contact_whatsapp" placeholder="8888-8888" pattern="[\d\s\-\+]{7,15}" title="Ingrese un número de WhatsApp válido (ej: 50688888888 o +506 8888 8888)">
               <p class="help-text">Los clientes podrán contactarte directamente por WhatsApp</p>
             </div>
 
