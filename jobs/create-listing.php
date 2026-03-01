@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       'application_url' => trim($_POST['application_url'] ?? ''),
       'pricing_plan_id' => $pricing_plan_id,
       'payment_status' => $payment_status,
-      'is_active' => 1,
+      'is_active' => ($payment_status === 'free') ? 1 : 0,
       'start_date' => $start_date,
       'end_date' => $end_date
     ];

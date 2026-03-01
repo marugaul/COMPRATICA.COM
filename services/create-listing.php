@@ -112,6 +112,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $end_date       = date('Y-m-d H:i:s', strtotime("+{$plan['duration_days']} days"));
         $payment_status = ((float)$plan['price_usd'] == 0 && (float)$plan['price_crc'] == 0) ? 'free' : 'pending';
 
+        // Solo activar si el plan es gratis, de lo contrario esperar aprobación del admin
+        $is_active = ($payment_status === 'free') ? 1 : 0;
+
         $insertStmt = $pdo->prepare("
             INSERT INTO service_listings (
                 agent_id, category_id, title, description,
@@ -127,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ?, ?, ?, ?,
                 ?, ?, ?, ?,
                 ?, ?, ?, ?, ?,
-                ?, 1, ?, ?, ?,
+                ?, ?, ?, ?, ?,
                 datetime('now'), datetime('now')
             )
         ");
@@ -137,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $province, $canton, $district, $location_description,
             $experience_years, $skills_json, $availability, $images_json,
             $contact_name, $contact_phone, $contact_email, $contact_whatsapp, $website,
-            $pricing_plan_id, $start_date, $end_date, $payment_status
+            $pricing_plan_id, $is_active, $start_date, $end_date, $payment_status
         ]);
 
         $listing_id = (int)$pdo->lastInsertId();
