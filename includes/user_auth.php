@@ -13,23 +13,49 @@ require_once __DIR__ . '/db.php';
 function authenticate_user($email, $password) {
     $pdo = db();
 
+    // Log para debugging
+    $logFile = __DIR__ . '/../logs/auth_debug.log';
+    $logMsg = '[' . date('Y-m-d H:i:s') . '] authenticate_user() called for email: ' . $email . PHP_EOL;
+    @file_put_contents($logFile, $logMsg, FILE_APPEND);
+
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
+        $logMsg = '[' . date('Y-m-d H:i:s') . '] ERROR: Usuario no encontrado para email: ' . $email . PHP_EOL;
+        @file_put_contents($logFile, $logMsg, FILE_APPEND);
         return false;
     }
 
+    $logMsg = '[' . date('Y-m-d H:i:s') . '] Usuario encontrado: ID=' . $user['id'] . ', name=' . $user['name'] . PHP_EOL;
+    @file_put_contents($logFile, $logMsg, FILE_APPEND);
+
     // Verificar contraseña
-    if (!password_verify($password, $user['password_hash'])) {
+    $passwordOk = password_verify($password, $user['password_hash']);
+    $logMsg = '[' . date('Y-m-d H:i:s') . '] password_verify result: ' . ($passwordOk ? 'TRUE' : 'FALSE') . PHP_EOL;
+    @file_put_contents($logFile, $logMsg, FILE_APPEND);
+
+    if (!$passwordOk) {
+        $logMsg = '[' . date('Y-m-d H:i:s') . '] ERROR: Contraseña incorrecta para ' . $email . PHP_EOL;
+        @file_put_contents($logFile, $logMsg, FILE_APPEND);
         return false;
     }
 
     // Verificar que esté activo
-    if ((int)($user['is_active'] ?? 0) !== 1) {
+    $isActiveValue = $user['is_active'] ?? 0;
+    $isActiveInt = (int)$isActiveValue;
+    $logMsg = '[' . date('Y-m-d H:i:s') . '] is_active check: value=' . $isActiveValue . ', int=' . $isActiveInt . PHP_EOL;
+    @file_put_contents($logFile, $logMsg, FILE_APPEND);
+
+    if ($isActiveInt !== 1) {
+        $logMsg = '[' . date('Y-m-d H:i:s') . '] ERROR: Usuario inactivo (is_active=' . $isActiveInt . ')' . PHP_EOL;
+        @file_put_contents($logFile, $logMsg, FILE_APPEND);
         throw new RuntimeException('Tu cuenta no está activa.');
     }
+
+    $logMsg = '[' . date('Y-m-d H:i:s') . '] SUCCESS: Autenticación exitosa para ' . $email . PHP_EOL;
+    @file_put_contents($logFile, $logMsg, FILE_APPEND);
 
     return $user;
 }
