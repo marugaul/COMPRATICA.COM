@@ -22,6 +22,97 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Compratica - Marketplace Costa Rica">
   <meta name="twitter:description" content="Compra y vende productos online con pago seguro por SINPE QR y WhatsApp.">
+  <meta name="twitter:image" content="https://compratica.com/logo.png">
+
+  <!-- Preconnect para mejorar performance -->
+  <link rel="preconnect" href="https://wa.me">
+  <link rel="dns-prefetch" href="https://wa.me">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/logo.png">
+
+  <!-- Schema.org Structured Data para SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Compratica",
+    "url": "https://compratica.com",
+    "description": "Marketplace de Costa Rica para compra y venta online con SINPE QR",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://compratica.com/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Compratica",
+    "url": "https://compratica.com",
+    "logo": "https://compratica.com/logo.png",
+    "description": "Marketplace líder en Costa Rica",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "email": "info@compratica.com",
+      "contactType": "Customer Service",
+      "areaServed": "CR",
+      "availableLanguage": "Spanish"
+    },
+    "sameAs": [
+      "https://facebook.com/compratica",
+      "https://instagram.com/compratica"
+    ]
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": [
+      {
+        "@type": "Product",
+        "position": 1,
+        "name": "Producto 1",
+        "image": "https://compratica.com/producto1.jpg",
+        "offers": {
+          "@type": "Offer",
+          "price": "12500",
+          "priceCurrency": "CRC",
+          "availability": "https://schema.org/InStock"
+        }
+      },
+      {
+        "@type": "Product",
+        "position": 2,
+        "name": "Producto 2",
+        "image": "https://compratica.com/producto2.jpg",
+        "offers": {
+          "@type": "Offer",
+          "price": "18000",
+          "priceCurrency": "CRC",
+          "availability": "https://schema.org/InStock"
+        }
+      },
+      {
+        "@type": "Product",
+        "position": 3,
+        "name": "Producto 3",
+        "image": "https://compratica.com/producto3.jpg",
+        "offers": {
+          "@type": "Offer",
+          "price": "9900",
+          "priceCurrency": "CRC",
+          "availability": "https://schema.org/InStock"
+        }
+      }
+    ]
+  }
+  </script>
 
   <style>
     body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f9f9f9; color:#333; }
@@ -33,7 +124,8 @@
     .card { background:white; border:1px solid #ddd; border-radius:8px; width:320px; box-shadow:0 2px 6px rgba(0,0,0,.08); overflow:hidden; }
     .card img { width:100%; height:auto; display:block; }
     .card .p { padding:12px 14px 18px; }
-    .name { font-size:20px; font-weight:bold; margin:6px 0; }
+    .name { font-size:20px; font-weight:bold; margin:6px 0 8px; }
+    h2.name { margin:6px 0 8px; }
     .price { color:#0077cc; font-weight:bold; font-size:18px; }
     .btn { display:inline-block; margin-top:10px; padding:10px 14px; background:#28a745; color:white; text-decoration:none; border-radius:6px; font-weight:bold; }
     .qrlabel { font-weight:bold; margin:8px 0 4px; }
@@ -51,40 +143,49 @@
   <div class="grid">
 
     <!-- Producto 1 -->
-    <div class="card">
-      <img src="producto1.jpg" alt="Producto 1">
+    <article class="card" itemscope itemtype="https://schema.org/Product">
+      <img src="producto1.jpg" alt="Producto 1" loading="lazy" itemprop="image">
       <div class="p">
-        <div class="name">Producto 1</div>
-        <div class="price">₡12,500</div>
+        <h2 class="name" itemprop="name">Producto 1</h2>
+        <div class="price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+          <span itemprop="price" content="12500">₡12,500</span>
+          <meta itemprop="priceCurrency" content="CRC">
+        </div>
         <div class="qrlabel">Escanea el QR para pagar:</div>
-        <img src="qr_sinpe_producto1.png" alt="SINPE QR Producto 1">
-        <a class="btn" href="https://wa.me/506XXXXXXXX?text=Hola%20ya%20pagu%C3%A9%20el%20Producto%201%20por%20SINPE%20QR" target="_blank">Confirmar pago</a>
+        <img src="qr_sinpe_producto1.png" alt="SINPE QR Producto 1" loading="lazy">
+        <a class="btn" href="https://wa.me/506XXXXXXXX?text=Hola%20ya%20pagu%C3%A9%20el%20Producto%201%20por%20SINPE%20QR" target="_blank" rel="noopener">Confirmar pago por WhatsApp</a>
       </div>
-    </div>
+    </article>
 
     <!-- Producto 2 -->
-    <div class="card">
-      <img src="producto2.jpg" alt="Producto 2">
+    <article class="card" itemscope itemtype="https://schema.org/Product">
+      <img src="producto2.jpg" alt="Producto 2" loading="lazy" itemprop="image">
       <div class="p">
-        <div class="name">Producto 2</div>
-        <div class="price">₡18,000</div>
+        <h2 class="name" itemprop="name">Producto 2</h2>
+        <div class="price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+          <span itemprop="price" content="18000">₡18,000</span>
+          <meta itemprop="priceCurrency" content="CRC">
+        </div>
         <div class="qrlabel">Escanea el QR para pagar:</div>
-        <img src="qr_sinpe_producto2.png" alt="SINPE QR Producto 2">
-        <a class="btn" href="https://wa.me/506XXXXXXXX?text=Hola%20ya%20pagu%C3%A9%20el%20Producto%202%20por%20SINPE%20QR" target="_blank">Confirmar pago</a>
+        <img src="qr_sinpe_producto2.png" alt="SINPE QR Producto 2" loading="lazy">
+        <a class="btn" href="https://wa.me/506XXXXXXXX?text=Hola%20ya%20pagu%C3%A9%20el%20Producto%202%20por%20SINPE%20QR" target="_blank" rel="noopener">Confirmar pago por WhatsApp</a>
       </div>
-    </div>
+    </article>
 
     <!-- Producto 3 -->
-    <div class="card">
-      <img src="producto3.jpg" alt="Producto 3">
+    <article class="card" itemscope itemtype="https://schema.org/Product">
+      <img src="producto3.jpg" alt="Producto 3" loading="lazy" itemprop="image">
       <div class="p">
-        <div class="name">Producto 3</div>
-        <div class="price">₡9,900</div>
+        <h2 class="name" itemprop="name">Producto 3</h2>
+        <div class="price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+          <span itemprop="price" content="9900">₡9,900</span>
+          <meta itemprop="priceCurrency" content="CRC">
+        </div>
         <div class="qrlabel">Escanea el QR para pagar:</div>
-        <img src="qr_sinpe_producto3.png" alt="SINPE QR Producto 3">
-        <a class="btn" href="https://wa.me/506XXXXXXXX?text=Hola%20ya%20pagu%C3%A9%20el%20Producto%203%20por%20SINPE%20QR" target="_blank">Confirmar pago</a>
+        <img src="qr_sinpe_producto3.png" alt="SINPE QR Producto 3" loading="lazy">
+        <a class="btn" href="https://wa.me/506XXXXXXXX?text=Hola%20ya%20pagu%C3%A9%20el%20Producto%203%20por%20SINPE%20QR" target="_blank" rel="noopener">Confirmar pago por WhatsApp</a>
       </div>
-    </div>
+    </article>
 
   </div>
 </div>
