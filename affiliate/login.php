@@ -640,6 +640,9 @@ logDebug("RENDERING_LOGIN_FORM", ['has_error_msg' => !empty($msg)]);
       <div>
         <label>Contraseña</label>
         <input class="input" type="password" name="password" required>
+        <div style="text-align: right; margin-top: 0.5rem;">
+          <a href="forgot-password.php" class="link" style="font-size: 0.875rem;">¿Olvidaste tu contraseña?</a>
+        </div>
       </div>
 
       <button class="btn btn-primary" type="submit">
