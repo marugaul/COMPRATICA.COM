@@ -24,33 +24,94 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
         }
         $hash = password_hash($pass, PASSWORD_BCRYPT);
 
-        // Nota: usamos password_hash (columna) NO pass_hash.
+        // Crear en tabla affiliates
         $stmt = $pdo->prepare("
           INSERT INTO affiliates (name, email, phone, password_hash, created_at, updated_at)
           VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
         ");
         $stmt->execute([$name, $email, $phone, $hash]);
-        $msg = 'Afiliado creado.';
+
+        // También crear/actualizar en tabla users (para que el login funcione)
+        $userCheck = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+        $userCheck->execute([$email]);
+        $existingUser = $userCheck->fetch(PDO::FETCH_ASSOC);
+
+        if ($existingUser) {
+          // Si ya existe (por ejemplo, se registró como cliente), actualizar contraseña
+          $updateUser = $pdo->prepare("
+            UPDATE users
+            SET name=?, phone=?, password_hash=?, oauth_provider=NULL, oauth_id=NULL, updated_at=datetime('now')
+            WHERE email=?
+          ");
+          $updateUser->execute([$name, $phone, $hash, $email]);
+        } else {
+          // Crear nuevo usuario en users
+          $createUser = $pdo->prepare("
+            INSERT INTO users (name, email, phone, password_hash, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+          ");
+          $createUser->execute([$name, $email, $phone, $hash]);
+        }
+
+        $msg = 'Afiliado creado (sincronizado en ambas tablas).';
 
       } else { // update
-        // Si se proporciona nueva contraseña, se actualiza; si no, se deja igual.
+        // Si se proporciona nueva contraseña, se actualiza EN AMBAS TABLAS (users y affiliates)
         if ($pass !== '') {
           $hash = password_hash($pass, PASSWORD_BCRYPT);
+
+          // Actualizar en tabla affiliates
           $stmt = $pdo->prepare("
             UPDATE affiliates
             SET name=?, email=?, phone=?, password_hash=?, updated_at=datetime('now')
             WHERE id=?
           ");
           $stmt->execute([$name, $email, $phone, $hash, $id]);
+
+          // También actualizar en tabla users (para que el login funcione)
+          // Buscar si existe el usuario en users por email
+          $userCheck = $pdo->prepare("SELECT id, oauth_provider FROM users WHERE email = ? LIMIT 1");
+          $userCheck->execute([$email]);
+          $existingUser = $userCheck->fetch(PDO::FETCH_ASSOC);
+
+          if ($existingUser) {
+            // Actualizar usuario existente
+            // Si tiene oauth_provider, lo limpiamos porque ahora usará contraseña manual
+            $updateUser = $pdo->prepare("
+              UPDATE users
+              SET name=?, password_hash=?, oauth_provider=NULL, oauth_id=NULL, updated_at=datetime('now')
+              WHERE email=?
+            ");
+            $updateUser->execute([$name, $hash, $email]);
+          } else {
+            // Crear usuario en users si no existe
+            $createUser = $pdo->prepare("
+              INSERT INTO users (name, email, phone, password_hash, is_active, created_at, updated_at)
+              VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+            ");
+            $createUser->execute([$name, $email, $phone, $hash]);
+          }
+
         } else {
+          // Sin cambio de contraseña, solo actualizar datos básicos
           $stmt = $pdo->prepare("
             UPDATE affiliates
             SET name=?, email=?, phone=?, updated_at=datetime('now')
             WHERE id=?
           ");
           $stmt->execute([$name, $email, $phone, $id]);
+
+          // También sincronizar datos en users (sin tocar contraseña)
+          $userCheck = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+          $userCheck->execute([$email]);
+          if ($userCheck->fetch()) {
+            $updateUser = $pdo->prepare("
+              UPDATE users SET name=?, phone=?, updated_at=datetime('now') WHERE email=?
+            ");
+            $updateUser->execute([$name, $phone, $email]);
+          }
         }
-        $msg = 'Afiliado actualizado.';
+        $msg = 'Afiliado actualizado (sincronizado en ambas tablas).';
       }
 
     } elseif (isset($_POST['delete'])) {
@@ -63,9 +124,20 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
   }
 }
 
-// Listado
-$rows = $pdo->query("SELECT id, name, email, phone, created_at FROM affiliates ORDER BY created_at DESC LIMIT 200")
-            ->fetchAll(PDO::FETCH_ASSOC);
+// Listado con información de OAuth desde tabla users
+$rows = $pdo->query("
+  SELECT
+    a.id,
+    a.name,
+    a.email,
+    a.phone,
+    a.created_at,
+    u.oauth_provider
+  FROM affiliates a
+  LEFT JOIN users u ON a.email = u.email
+  ORDER BY a.created_at DESC
+  LIMIT 200
+")->fetchAll(PDO::FETCH_ASSOC);
 
 if (!function_exists('h')) {
     function h($v) {
@@ -406,6 +478,7 @@ if (!function_exists('h')) {
             <th>Nombre</th>
             <th>Correo</th>
             <th>Teléfono</th>
+            <th>Login</th>
             <th>Fecha Creación</th>
             <th>Acciones</th>
           </tr>
@@ -417,6 +490,18 @@ if (!function_exists('h')) {
             <td><?= h($r['name']) ?></td>
             <td><?= h($r['email']) ?></td>
             <td><?= h($r['phone'] ?: '—') ?></td>
+            <td>
+              <?php if (!empty($r['oauth_provider'])): ?>
+                <span style="background: #e3f2fd; color: #1976d2; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+                  <i class="fab fa-<?= $r['oauth_provider'] === 'google' ? 'google' : 'facebook' ?>"></i>
+                  <?= ucfirst($r['oauth_provider']) ?>
+                </span>
+              <?php else: ?>
+                <span style="color: var(--gray-600); font-size: 0.85rem;">
+                  <i class="fas fa-key"></i> Password
+                </span>
+              <?php endif; ?>
+            </td>
             <td><span style="color: var(--gray-600); font-size: 0.85rem;"><?= h($r['created_at'] ?: '—') ?></span></td>
             <td class="actions">
               <form method="post" style="display:inline-block;max-width:520px">
@@ -450,6 +535,12 @@ if (!function_exists('h')) {
                         <i class="fas fa-lock"></i> Nueva contraseña (opcional)
                       </label>
                       <input class="input" name="pass" type="password" placeholder="Dejar en blanco para no cambiar">
+                      <?php if (!empty($r['oauth_provider'])): ?>
+                        <small style="color: #f39c12; display: block; margin-top: 0.5rem;">
+                          <i class="fas fa-exclamation-triangle"></i>
+                          Este usuario usa login con <?= ucfirst($r['oauth_provider']) ?>. Al establecer una contraseña, el login OAuth se deshabilitará.
+                        </small>
+                      <?php endif; ?>
                     </div>
                     <button class="btn primary" name="update" value="1">
                       <i class="fas fa-save"></i>
