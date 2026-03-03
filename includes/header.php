@@ -99,10 +99,10 @@
       <span>Emprendedores - Muy Pronto</span>
     </div>
 
-    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
+    <a href="emprendedoras-catalogo.php" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
       <i class="fas fa-crown"></i>
-      <span>Emprendedoras - Muy Pronto</span>
-    </div>
+      <span>✨ Emprendedoras</span>
+    </a>
 
     <div class="menu-divider"></div>
 
