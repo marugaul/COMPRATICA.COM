@@ -101,6 +101,37 @@ require_once __DIR__ . '/../includes/user_auth.php';
 
 $pdo = db();
 $msg = '';
+$cacheCleared = false;
+
+// Limpiar cache si se solicita
+if (isset($_GET['clear_cache'])) {
+  logDebug("CLEAR_CACHE_REQUESTED");
+  if (function_exists('opcache_reset')) {
+    if (opcache_reset()) {
+      $cacheCleared = true;
+      logDebug("CACHE_CLEARED_SUCCESS");
+      $msg = '✓ Cache limpiado exitosamente. Intenta hacer login nuevamente.';
+    } else {
+      logDebug("CACHE_CLEAR_FAILED");
+      $msg = '⚠️ No se pudo limpiar el cache.';
+    }
+  } else {
+    logDebug("OPCACHE_NOT_AVAILABLE");
+    $msg = '⚠️ OPcache no está disponible en este servidor.';
+  }
+  // Invalidar archivos específicos
+  $filesToInvalidate = [
+    __DIR__ . '/../includes/user_auth.php',
+    __DIR__ . '/../includes/affiliate_auth.php',
+    __DIR__ . '/../includes/config.php'
+  ];
+  foreach ($filesToInvalidate as $file) {
+    $realPath = realpath($file);
+    if ($realPath && function_exists('opcache_invalidate')) {
+      opcache_invalidate($realPath, true);
+    }
+  }
+}
 
 // Si ya tiene sesión de afiliado, redirigir al dashboard
 $isAffLoggedIn = aff_logged_in();
@@ -649,6 +680,13 @@ logDebug("RENDERING_LOGIN_FORM", ['has_error_msg' => !empty($msg)]);
         <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
       </button>
     </form>
+
+    <!-- Botón para limpiar cache -->
+    <div style="margin-top: 1rem; text-align: center;">
+      <a href="?clear_cache=1" class="link" style="font-size: 0.8rem; color: #6c757d;">
+        <i class="fas fa-sync-alt"></i> Limpiar caché del servidor
+      </a>
+    </div>
 
     <p class="small">
       ¿No tienes cuenta?
