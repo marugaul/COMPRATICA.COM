@@ -14,7 +14,7 @@ function authenticate_user($email, $password) {
     $pdo = db();
 
     // Log para debugging
-    $logFile = __DIR__ . '/../logs/auth_debug.log';
+    $logFile = __DIR__ . '/../public_html/logs/auth_debug.log';
     $logMsg = '[' . date('Y-m-d H:i:s') . '] authenticate_user() called for email: ' . $email . PHP_EOL;
     @file_put_contents($logFile, $logMsg, FILE_APPEND);
 
