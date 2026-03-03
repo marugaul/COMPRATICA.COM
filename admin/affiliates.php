@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
         // Crear en tabla affiliates
         $stmt = $pdo->prepare("
           INSERT INTO affiliates (name, email, phone, password_hash, created_at, updated_at)
-          VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
+          VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ");
         $stmt->execute([$name, $email, $phone, $hash]);
 
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           // Si ya existe (por ejemplo, se registró como cliente), actualizar contraseña
           $updateUser = $pdo->prepare("
             UPDATE users
-            SET name=?, phone=?, password_hash=?, oauth_provider=NULL, oauth_id=NULL, updated_at=datetime('now')
+            SET name=?, phone=?, password_hash=?, oauth_provider=NULL, oauth_id=NULL, updated_at=CURRENT_TIMESTAMP
             WHERE email=?
           ");
           $updateUser->execute([$name, $phone, $hash, $email]);
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           // Crear nuevo usuario en users
           $createUser = $pdo->prepare("
             INSERT INTO users (name, email, phone, password_hash, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+            VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
           ");
           $createUser->execute([$name, $email, $phone, $hash]);
         }
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           // Solo actualizar datos básicos, NO tocar contraseña ni OAuth
           $stmt = $pdo->prepare("
             UPDATE affiliates
-            SET name=?, email=?, phone=?, updated_at=datetime('now')
+            SET name=?, email=?, phone=?, updated_at=CURRENT_TIMESTAMP
             WHERE id=?
           ");
           $stmt->execute([$name, $email, $phone, $id]);
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           $userCheck->execute([$email]);
           if ($userCheck->fetch()) {
             $updateUser = $pdo->prepare("
-              UPDATE users SET name=?, phone=?, updated_at=datetime('now') WHERE email=?
+              UPDATE users SET name=?, phone=?, updated_at=CURRENT_TIMESTAMP WHERE email=?
             ");
             $updateUser->execute([$name, $phone, $email]);
           }
@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           // Actualizar en affiliates
           $stmt = $pdo->prepare("
             UPDATE affiliates
-            SET name=?, email=?, phone=?, password_hash=?, updated_at=datetime('now')
+            SET name=?, email=?, phone=?, password_hash=?, updated_at=CURRENT_TIMESTAMP
             WHERE id=?
           ");
           $stmt->execute([$name, $email, $phone, $hash, $id]);
@@ -99,14 +99,14 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           if ($existingUser) {
             $updateUser = $pdo->prepare("
               UPDATE users
-              SET name=?, password_hash=?, updated_at=datetime('now')
+              SET name=?, password_hash=?, updated_at=CURRENT_TIMESTAMP
               WHERE email=?
             ");
             $updateUser->execute([$name, $hash, $email]);
           } else {
             $createUser = $pdo->prepare("
               INSERT INTO users (name, email, phone, password_hash, is_active, created_at, updated_at)
-              VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+              VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ");
             $createUser->execute([$name, $email, $phone, $hash]);
           }
@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           // Actualizar en affiliates
           $stmt = $pdo->prepare("
             UPDATE affiliates
-            SET name=?, email=?, phone=?, password_hash=?, updated_at=datetime('now')
+            SET name=?, email=?, phone=?, password_hash=?, updated_at=CURRENT_TIMESTAMP
             WHERE id=?
           ");
           $stmt->execute([$name, $email, $phone, $hash, $id]);
@@ -132,14 +132,14 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           if ($existingUser) {
             $updateUser = $pdo->prepare("
               UPDATE users
-              SET name=?, password_hash=?, oauth_provider=NULL, oauth_id=NULL, updated_at=datetime('now')
+              SET name=?, password_hash=?, oauth_provider=NULL, oauth_id=NULL, updated_at=CURRENT_TIMESTAMP
               WHERE email=?
             ");
             $updateUser->execute([$name, $hash, $email]);
           } else {
             $createUser = $pdo->prepare("
               INSERT INTO users (name, email, phone, password_hash, is_active, created_at, updated_at)
-              VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+              VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ");
             $createUser->execute([$name, $email, $phone, $hash]);
           }
@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           // Actualizar en affiliates
           $stmt = $pdo->prepare("
             UPDATE affiliates
-            SET name=?, email=?, phone=?, password_hash=?, updated_at=datetime('now')
+            SET name=?, email=?, phone=?, password_hash=?, updated_at=CURRENT_TIMESTAMP
             WHERE id=?
           ");
           $stmt->execute([$name, $email, $phone, $hash, $id]);
@@ -165,14 +165,14 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           if ($existingUser) {
             $updateUser = $pdo->prepare("
               UPDATE users
-              SET name=?, password_hash=?, updated_at=datetime('now')
+              SET name=?, password_hash=?, updated_at=CURRENT_TIMESTAMP
               WHERE email=?
             ");
             $updateUser->execute([$name, $hash, $email]);
           } else {
             $createUser = $pdo->prepare("
               INSERT INTO users (name, email, phone, password_hash, is_active, created_at, updated_at)
-              VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+              VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ");
             $createUser->execute([$name, $email, $phone, $hash]);
           }
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           // Sin cambio de contraseña, solo actualizar datos básicos
           $stmt = $pdo->prepare("
             UPDATE affiliates
-            SET name=?, email=?, phone=?, updated_at=datetime('now')
+            SET name=?, email=?, phone=?, updated_at=CURRENT_TIMESTAMP
             WHERE id=?
           ");
           $stmt->execute([$name, $email, $phone, $id]);
@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
           $userCheck->execute([$email]);
           if ($userCheck->fetch()) {
             $updateUser = $pdo->prepare("
-              UPDATE users SET name=?, phone=?, updated_at=datetime('now') WHERE email=?
+              UPDATE users SET name=?, phone=?, updated_at=CURRENT_TIMESTAMP WHERE email=?
             ");
             $updateUser->execute([$name, $phone, $email]);
           }
