@@ -456,15 +456,15 @@ logDebug("RENDERING_PAGE");
     </div>
 
     <!-- EMPRENDEDORAS -->
-    <div class="category-card category-emprendedoras" style="opacity: 0.6; cursor: not-allowed; position: relative;">
+    <a href="emprendedoras.php" class="category-card category-emprendedoras">
       <div class="category-content">
         <div class="category-icon">
           <i class="fas fa-crown"></i>
         </div>
         <h3 class="category-title">Emprendedoras</h3>
-        <p class="category-description" style="font-weight: bold; color: #ff6b35;">Muy Pronto</p>
+        <p class="category-description">Marketplace exclusivo para emprendedoras ticas</p>
       </div>
-    </div>
+    </a>
   </div>
 </section>
 
