@@ -334,10 +334,10 @@ logDebug("RENDERING_PAGE");
       <span>Emprendedores - Muy Pronto</span>
     </div>
 
-    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
+    <a href="emprendedoras-dashboard.php" class="menu-item">
       <i class="fas fa-crown"></i>
-      <span>Emprendedoras - Muy Pronto</span>
-    </div>
+      <span>Dashboard Emprendedoras</span>
+    </a>
     
     <div class="menu-divider"></div>
 
@@ -563,7 +563,7 @@ logDebug("RENDERING_PAGE");
       <a href="venta-garaje">Venta de Garaje</a>
       <a href="bienes-raices">Bienes Raíces</a>
       <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
-      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedoras (Muy Pronto)</span>
+      <a href="emprendedoras.php">Emprendedoras</a>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>
