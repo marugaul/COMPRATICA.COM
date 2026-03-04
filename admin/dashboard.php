@@ -31,6 +31,19 @@ try {
   error_log('[admin/dashboard.php] No se pudieron cargar categorías: ' . $e->getMessage());
 }
 
+// ⬅️ NUEVO: Obtener espacios activos
+$sales = [];
+try {
+  $salesStmt = $pdo->query("SELECT s.id, s.title, s.affiliate_id, a.name as affiliate_name
+                            FROM sales s
+                            LEFT JOIN affiliates a ON a.id = s.affiliate_id
+                            WHERE s.is_active=1
+                            ORDER BY s.start_at DESC");
+  $sales = $salesStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+  error_log('[admin/dashboard.php] No se pudieron cargar espacios: ' . $e->getMessage());
+}
+
 /**
  * Helper seguro para escapar HTML sin warnings por valores null.
  * Siempre devolverá string, usando ENT_QUOTES y UTF-8.
@@ -63,6 +76,22 @@ if ($action === 'create' || $action === 'update') {
     if (!in_array($currency, ['CRC','USD'])) $currency = 'CRC';
     $active = isset($_POST['active']) ? 1 : 0;
 
+    // ⬅️ NUEVO: Obtener sale_id y auto-asignar affiliate_id
+    $sale_id = (int)($_POST['sale_id'] ?? 0);
+    $affiliate_id = null;
+
+    if ($sale_id > 0) {
+        // Auto-obtener affiliate_id del espacio
+        $stmt = $pdo->prepare("SELECT affiliate_id FROM sales WHERE id=?");
+        $stmt->execute([$sale_id]);
+        $affiliate_id = (int)$stmt->fetchColumn();
+
+        if (!$affiliate_id) {
+            $msg = "Error: Espacio no válido.";
+            $sale_id = null;
+        }
+    }
+
     $imageName = null;
     if (!empty($_FILES['image']['name'])) {
         $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
@@ -83,9 +112,10 @@ if ($action === 'create' || $action === 'update') {
         }
     }
 
-    if ($action === 'create') {
-        $stmt = $pdo->prepare("INSERT INTO products (name, description, price, stock, image, currency, active, category, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)");
-        $stmt->execute([$name,$desc,$price,$stock,$imageName,$currency,$active,$category,date('Y-m-d H:i:s'),date('Y-m-d H:i:s')]);
+    if ($action === 'create' && !isset($msg)) {
+        // ⬅️ MODIFICADO: Incluir affiliate_id y sale_id
+        $stmt = $pdo->prepare("INSERT INTO products (affiliate_id, sale_id, name, description, price, stock, image, currency, active, category, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+        $stmt->execute([$affiliate_id, $sale_id, $name,$desc,$price,$stock,$imageName,$currency,$active,$category,date('Y-m-d H:i:s'),date('Y-m-d H:i:s')]);
 
         // ⬅️ NUEVO: si hay segunda imagen, guardarla
         if ($imageName2 !== null) {
@@ -94,13 +124,14 @@ if ($action === 'create' || $action === 'update') {
         }
 
         $msg = "Producto creado.";
-    } else {
+    } else if (!isset($msg)) {
+        // ⬅️ MODIFICADO: Incluir affiliate_id y sale_id en UPDATE
         if ($imageName) {
-            $stmt = $pdo->prepare("UPDATE products SET name=?, description=?, price=?, stock=?, image=?, currency=?, active=?, category=?, updated_at=? WHERE id=?");
-            $stmt->execute([$name,$desc,$price,$stock,$imageName,$currency,$active,$category,date('Y-m-d H:i:s'),$id]);
+            $stmt = $pdo->prepare("UPDATE products SET affiliate_id=?, sale_id=?, name=?, description=?, price=?, stock=?, image=?, currency=?, active=?, category=?, updated_at=? WHERE id=?");
+            $stmt->execute([$affiliate_id, $sale_id, $name,$desc,$price,$stock,$imageName,$currency,$active,$category,date('Y-m-d H:i:s'),$id]);
         } else {
-            $stmt = $pdo->prepare("UPDATE products SET name=?, description=?, price=?, stock=?, currency=?, active=?, category=?, updated_at=? WHERE id=?");
-            $stmt->execute([$name,$desc,$price,$stock,$currency,$active,$category,date('Y-m-d H:i:s'),$id]);
+            $stmt = $pdo->prepare("UPDATE products SET affiliate_id=?, sale_id=?, name=?, description=?, price=?, stock=?, currency=?, active=?, category=?, updated_at=? WHERE id=?");
+            $stmt->execute([$affiliate_id, $sale_id, $name,$desc,$price,$stock,$currency,$active,$category,date('Y-m-d H:i:s'),$id]);
         }
 
         // ⬅️ NUEVO: si hay segunda imagen al editar, guardarla
@@ -715,6 +746,17 @@ $stats = [
           <textarea class="input" name="description" id="description" rows="3"></textarea>
         </div>
         <div class="form-group">
+          <label>Espacio de Venta</label>
+          <select class="input" name="sale_id" id="sale_id">
+            <option value="">Selecciona un espacio (opcional)</option>
+            <?php foreach($sales as $sale): ?>
+              <option value="<?= (int)$sale['id'] ?>">
+                <?= h($sale['title']) ?> - <?= h($sale['affiliate_name'] ?? 'Sin afiliado') ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="form-group">
           <label>Categoría</label>
           <select class="input" name="category" id="category">
             <option value="">Selecciona una categoría (opcional)</option>
@@ -905,6 +947,7 @@ function fillForm(p){
   document.getElementById('currency').value = (p.currency || 'CRC').toUpperCase();
   document.getElementById('stock').value = p.stock || 0;
   document.getElementById('description').value = p.description || '';
+  document.getElementById('sale_id').value = p.sale_id || ''; // ⬅️ NUEVO
   document.getElementById('category').value = p.category || '';
   document.getElementById('active').checked = p.active == 1 || p.active === '1';
   window.scrollTo({top:0, behavior:'smooth'});
