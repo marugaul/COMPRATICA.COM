@@ -95,50 +95,66 @@ $featuredProducts = $pdo->query("
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .hero-emprendedoras {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 80px 20px;
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe4e1 50%, #fff0e6 100%);
+            color: #333;
+            padding: 60px 20px 40px;
             text-align: center;
             position: relative;
             overflow: hidden;
+            border-bottom: 4px solid #ff6b9d;
         }
         .hero-emprendedoras::before {
-            content: "✨";
+            content: "🏪";
             position: absolute;
-            font-size: 15rem;
-            opacity: 0.1;
-            top: -50px;
-            right: -50px;
+            font-size: 12rem;
+            opacity: 0.08;
+            top: -20px;
+            right: 10%;
             animation: float 6s ease-in-out infinite;
         }
+        .hero-emprendedoras::after {
+            content: "🌸";
+            position: absolute;
+            font-size: 8rem;
+            opacity: 0.1;
+            bottom: 20px;
+            left: 5%;
+            animation: float 8s ease-in-out infinite reverse;
+        }
         @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
         }
         .hero-emprendedoras h1 {
-            font-size: 3rem;
-            margin-bottom: 20px;
+            font-size: 2.8rem;
+            margin-bottom: 15px;
             font-weight: 800;
+            line-height: 1.2;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.5);
         }
         .hero-emprendedoras p {
-            font-size: 1.3rem;
-            opacity: 0.95;
+            font-size: 1.2rem;
+            opacity: 0.85;
             max-width: 700px;
-            margin: 0 auto 30px;
+            margin: 0 auto 25px;
+            color: #555;
         }
         .hero-cta {
             display: inline-block;
-            background: white;
-            color: #667eea;
-            padding: 15px 40px;
+            background: linear-gradient(135deg, #ff6b9d 0%, #ec4899 100%);
+            color: white;
+            padding: 15px 45px;
             border-radius: 50px;
             font-weight: 700;
             text-decoration: none;
             transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+            position: relative;
+            z-index: 10;
         }
         .hero-cta:hover {
             transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 25px rgba(255, 107, 157, 0.5);
         }
         .container {
             max-width: 1400px;
@@ -227,32 +243,84 @@ $featuredProducts = $pdo->query("
             color: white;
         }
         .section-title {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 2.2rem;
+            font-weight: 800;
             margin: 60px 0 30px;
             text-align: center;
             color: #333;
+            position: relative;
+            padding-bottom: 15px;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b9d, #ec4899);
+            border-radius: 2px;
         }
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 30px;
-            margin: 40px auto;
+            gap: 50px 30px;
+            margin: 60px auto 40px;
         }
         .product-card {
             background: white;
-            border-radius: 15px;
-            overflow: hidden;
+            border-radius: 15px 15px 20px 20px;
+            overflow: visible;
             transition: all 0.3s;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
             cursor: pointer;
             text-decoration: none;
             color: inherit;
             display: block;
+            position: relative;
+            margin-top: 40px;
         }
+        /* Toldo estilo mercadito con rayas */
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: -35px;
+            left: 0;
+            right: 0;
+            height: 45px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--awning-color-1, #ef4444) 0px,
+                var(--awning-color-1, #ef4444) 35px,
+                var(--awning-color-2, #dc2626) 35px,
+                var(--awning-color-2, #dc2626) 70px
+            );
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        /* Borde ondulado del toldo */
+        .product-card::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 0;
+            right: 0;
+            height: 18px;
+            background: radial-gradient(circle at 50% 0%, transparent 13px, white 13px);
+            background-size: 26px 18px;
+            background-position: 0 0;
+        }
+        /* Colores diferentes para cada puesto */
+        .product-card:nth-child(6n+1) { --awning-color-1: #ef4444; --awning-color-2: #dc2626; }
+        .product-card:nth-child(6n+2) { --awning-color-1: #f97316; --awning-color-2: #ea580c; }
+        .product-card:nth-child(6n+3) { --awning-color-1: #22c55e; --awning-color-2: #16a34a; }
+        .product-card:nth-child(6n+4) { --awning-color-1: #ec4899; --awning-color-2: #db2777; }
+        .product-card:nth-child(6n+5) { --awning-color-1: #8b5cf6; --awning-color-2: #7c3aed; }
+        .product-card:nth-child(6n+6) { --awning-color-1: #06b6d4; --awning-color-2: #0891b2; }
         .product-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            transform: translateY(-12px);
+            box-shadow: 0 20px 45px rgba(0,0,0,0.2);
         }
         .product-image {
             width: 100%;
@@ -324,17 +392,11 @@ $featuredProducts = $pdo->query("
     <?php include __DIR__ . '/includes/header.php'; ?>
 
     <div class="hero-emprendedoras">
-        <h1>✨ Emprendedoras ✨</h1>
-        <p>Descubre productos únicos hechos con amor por emprendedoras costarricenses</p>
-        <?php if ($isLoggedIn): ?>
-            <a href="emprendedoras-dashboard.php" class="hero-cta">
-                <i class="fas fa-store"></i> Mi Tienda
-            </a>
-        <?php else: ?>
-            <a href="emprendedoras-planes.php" class="hero-cta">
-                <i class="fas fa-rocket"></i> Vende tus Productos
-            </a>
-        <?php endif; ?>
+        <h1>¡Bienvenida el <span style="color: #ff6b9d;">Mercadito</span> Compratica! ❤️</h1>
+        <p>Descubre, apoya y compra directo a emprendedoras costarricenses.</p>
+        <a href="#puestos" class="hero-cta">
+            <i class="fas fa-arrow-down"></i> Explorar puestos
+        </a>
     </div>
 
     <div class="container">
@@ -362,21 +424,26 @@ $featuredProducts = $pdo->query("
             </div>
         </form>
 
-        <div class="categories-grid">
-            <a href="emprendedoras-catalogo.php" class="category-card <?php echo $categoryFilter === 0 ? 'active' : ''; ?>">
-                <i class="fas fa-th"></i>
-                <div><strong>Todas</strong></div>
-            </a>
-            <?php foreach ($categories as $cat): ?>
-                <a href="?category=<?php echo $cat['id']; ?>" class="category-card <?php echo $categoryFilter === $cat['id'] ? 'active' : ''; ?>">
-                    <i class="<?php echo htmlspecialchars($cat['icon'] ?? 'fas fa-box'); ?>"></i>
-                    <div><strong><?php echo htmlspecialchars($cat['name']); ?></strong></div>
+        <div style="background: white; padding: 25px 0; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-radius: 15px;">
+            <h3 style="text-align: center; margin-bottom: 20px; color: #ff6b9d; font-size: 1.3rem;">
+                <i class="fas fa-store"></i> Pasillos del Mercadito
+            </h3>
+            <div class="categories-grid">
+                <a href="emprendedoras-catalogo.php" class="category-card <?php echo $categoryFilter === 0 ? 'active' : ''; ?>">
+                    <i class="fas fa-th"></i>
+                    <div><strong>Todas</strong></div>
                 </a>
-            <?php endforeach; ?>
+                <?php foreach ($categories as $cat): ?>
+                    <a href="?category=<?php echo $cat['id']; ?>" class="category-card <?php echo $categoryFilter === $cat['id'] ? 'active' : ''; ?>">
+                        <i class="<?php echo htmlspecialchars($cat['icon'] ?? 'fas fa-box'); ?>"></i>
+                        <div><strong><?php echo htmlspecialchars($cat['name']); ?></strong></div>
+                    </a>
+                <?php endforeach; ?>
+            </div>
         </div>
 
         <?php if (!empty($featuredProducts) && $categoryFilter === 0 && empty($searchQuery)): ?>
-            <h2 class="section-title">⭐ Productos Destacados</h2>
+            <h2 class="section-title" id="puestos">🏆 Puestos Destacados</h2>
             <div class="products-grid">
                 <?php foreach ($featuredProducts as $product): ?>
                     <a href="emprendedoras-producto.php?id=<?php echo $product['id']; ?>" class="product-card">

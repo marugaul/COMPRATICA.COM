@@ -370,7 +370,7 @@ $isLoggedIn = true;
                         <label class="image-upload-box">
                             <i class="fas fa-camera"></i>
                             <div>Imagen <?php echo $i; ?></div>
-                            <input type="file" name="image_<?php echo $i; ?>" accept="image/*">
+                            <input type="file" name="image_<?php echo $i; ?>" accept="image/*" capture="camera">
                         </label>
                     <?php endfor; ?>
                 </div>
