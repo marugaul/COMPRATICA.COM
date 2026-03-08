@@ -14,7 +14,7 @@ require_once __DIR__ . '/includes/logger.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
-    header('Location: login.php?redirect=emprendedoras-dashboard.php');
+    header('Location: emprendedoras-login.php');
     exit;
 }
 

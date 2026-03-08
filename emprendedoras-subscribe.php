@@ -13,7 +13,7 @@ require_once __DIR__ . '/includes/config.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
-    header('Location: login.php?redirect=emprendedoras-planes.php');
+    header('Location: emprendedoras-login.php');
     exit;
 }
 
