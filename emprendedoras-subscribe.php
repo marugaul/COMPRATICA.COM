@@ -100,60 +100,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'selec
             exit;
         }
 
-        // --- PayPal: construir y auto-enviar formulario ---
+        // --- PayPal / Apple Pay / Google Pay: guardar en sesión y mostrar botones SDK ---
         if ($paymentMethod === 'paypal') {
             $_SESSION['ent_sub_plan_id']   = $planId;
             $_SESSION['ent_sub_billing']   = $billingPeriod;
             $_SESSION['ent_sub_price']     = $price;
-
-            $base        = rtrim(SITE_URL, '/');
-            $paypalEmail = defined('PAYPAL_EMAIL') ? PAYPAL_EMAIL : '';
-            $paypalMode  = defined('PAYPAL_MODE')  ? PAYPAL_MODE  : 'sandbox';
-            $paypalUrl   = $paypalMode === 'live'
-                ? 'https://www.paypal.com/cgi-bin/webscr'
-                : 'https://www.sandbox.paypal.com/cgi-bin/webscr';
-
-            $customData = json_encode([
-                'type'           => 'entrepreneur_subscription',
-                'user_id'        => $userId,
-                'plan_id'        => $planId,
-                'billing_period' => $billingPeriod,
-            ]);
-
-            $priceUSD  = round($price / 650, 2); // Conversión CRC → USD (ajustar según tipo de cambio)
-            $itemName  = "CompraTica - {$plan['name']} ({$billingPeriod})";
-            $returnUrl = $base . '/emprendedoras-paypal-return.php';
-            $cancelUrl = $base . '/emprendedoras-subscribe.php?plan_id=' . $planId;
-            $notifyUrl = $base . '/emprendedoras-paypal-ipn.php';
-
-            // Renderizar formulario auto-submit
-            ?><!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8"><title>Redirigiendo a PayPal...</title>
-<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;text-align:center;}</style>
-</head>
-<body>
-<div>
-  <h2>⏳ Redirigiendo a PayPal...</h2>
-  <p>Por favor espera un momento.</p>
-  <form id="pp" action="<?= htmlspecialchars($paypalUrl, ENT_QUOTES) ?>" method="POST">
-    <input type="hidden" name="cmd"           value="_xclick">
-    <input type="hidden" name="business"      value="<?= htmlspecialchars($paypalEmail, ENT_QUOTES) ?>">
-    <input type="hidden" name="item_name"     value="<?= htmlspecialchars($itemName, ENT_QUOTES) ?>">
-    <input type="hidden" name="amount"        value="<?= htmlspecialchars((string)$priceUSD, ENT_QUOTES) ?>">
-    <input type="hidden" name="currency_code" value="USD">
-    <input type="hidden" name="custom"        value="<?= htmlspecialchars($customData, ENT_QUOTES) ?>">
-    <input type="hidden" name="return"        value="<?= htmlspecialchars($returnUrl, ENT_QUOTES) ?>">
-    <input type="hidden" name="cancel_return" value="<?= htmlspecialchars($cancelUrl, ENT_QUOTES) ?>">
-    <input type="hidden" name="notify_url"    value="<?= htmlspecialchars($notifyUrl, ENT_QUOTES) ?>">
-    <input type="hidden" name="no_shipping"   value="1">
-    <input type="hidden" name="charset"       value="utf-8">
-  </form>
-  <script>document.getElementById('pp').submit();</script>
-</div>
-</body>
-</html>
-<?php
+            header("Location: emprendedoras-subscribe.php?plan_id={$planId}&step=wallet");
             exit;
         }
     }
@@ -493,6 +445,124 @@ $isLoggedIn = true;
             </div>
         </div>
 
+        <?php elseif ($step === 'wallet'): ?>
+        <!-- ======== PASO WALLET: PayPal JS SDK (PayPal + Apple Pay + Google Pay) ======== -->
+        <?php
+        $subPlanId = (int)($_SESSION['ent_sub_plan_id'] ?? $planId);
+        $subPeriod = $_SESSION['ent_sub_billing'] ?? 'monthly';
+        $subPrice  = (float)($_SESSION['ent_sub_price'] ?? ($subPeriod === 'annual' ? $plan['price_annual'] : $plan['price_monthly']));
+        $priceUSD  = number_format(round($subPrice / 650, 2), 2, '.', '');
+        $itemDesc  = addslashes($plan['name'] . ' - ' . ($subPeriod === 'annual' ? 'Anual' : 'Mensual'));
+        $paypalClientId = defined('PAYPAL_CLIENT_ID') ? PAYPAL_CLIENT_ID : '';
+        $paypalMode     = defined('PAYPAL_MODE') ? PAYPAL_MODE : 'sandbox';
+        $sdkUrl = 'https://www.paypal.com/sdk/js?client-id=' . urlencode($paypalClientId)
+                . '&currency=USD&enable-funding=applepay,googlepay,venmo&components=buttons';
+        if ($paypalMode !== 'live') {
+            $sdkUrl .= '&buyer-country=US';
+        }
+        ?>
+        <div class="card">
+            <h2><i class="fas fa-wallet" style="color:#667eea;"></i> Selecciona tu método de pago</h2>
+
+            <div class="alert alert-info">
+                <strong>Plan:</strong> <?= htmlspecialchars($plan['name']) ?> &mdash;
+                <strong>Período:</strong> <?= $subPeriod === 'annual' ? 'Anual' : 'Mensual' ?> &mdash;
+                <strong>Total:</strong> ₡<?= number_format($subPrice, 0) ?> (US$<?= $priceUSD ?>)
+            </div>
+
+            <p style="color:#555;margin-bottom:20px;font-size:0.95rem;">
+                Los botones disponibles dependen de tu dispositivo y navegador.
+                En <strong>iPhone/Mac con Safari</strong> verás <strong>Apple Pay</strong>.
+                En <strong>Android/Chrome</strong> verás <strong>Google Pay</strong>.
+            </p>
+
+            <div id="paypal-button-container" style="min-height:50px;"></div>
+
+            <div id="wallet-error" class="alert alert-error" style="display:none;margin-top:15px;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="wallet-error-msg">Error al procesar el pago. Por favor intenta de nuevo.</span>
+            </div>
+
+            <div id="wallet-processing" style="display:none;text-align:center;padding:20px;">
+                <i class="fas fa-spinner fa-spin" style="font-size:2rem;color:#667eea;"></i>
+                <p style="color:#667eea;font-weight:600;margin-top:10px;">Activando tu suscripción...</p>
+            </div>
+
+            <a href="emprendedoras-subscribe.php?plan_id=<?= $planId ?>" class="back-link" style="margin-top:24px;">
+                <i class="fas fa-arrow-left"></i> Volver a opciones de pago
+            </a>
+        </div>
+
+        <script src="<?= htmlspecialchars($sdkUrl, ENT_QUOTES) ?>"></script>
+        <script>
+        (function() {
+            var planId       = <?= $subPlanId ?>;
+            var billingPeriod = '<?= htmlspecialchars($subPeriod, ENT_QUOTES) ?>';
+            var priceUsd     = '<?= $priceUSD ?>';
+            var itemDesc     = '<?= $itemDesc ?>';
+
+            paypal.Buttons({
+                style: {
+                    layout: 'vertical',
+                    color:  'gold',
+                    shape:  'pill',
+                    label:  'pay'
+                },
+                createOrder: function(data, actions) {
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: { value: priceUsd },
+                            description: itemDesc,
+                            custom_id: JSON.stringify({
+                                type: 'entrepreneur_subscription',
+                                plan_id: planId,
+                                billing_period: billingPeriod
+                            })
+                        }]
+                    });
+                },
+                onApprove: function(data, actions) {
+                    return actions.order.capture().then(function(details) {
+                        document.getElementById('paypal-button-container').style.display = 'none';
+                        document.getElementById('wallet-processing').style.display = 'block';
+
+                        return fetch('/api/activate-subscription-paypal.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                paypal_order_id: data.orderID,
+                                plan_id: planId,
+                                billing_period: billingPeriod,
+                                amount_usd: priceUsd
+                            })
+                        })
+                        .then(function(r) { return r.json(); })
+                        .then(function(result) {
+                            if (result.ok) {
+                                window.location.href = 'emprendedoras-dashboard.php?suscrita=1';
+                            } else {
+                                document.getElementById('wallet-processing').style.display = 'none';
+                                document.getElementById('paypal-button-container').style.display = 'block';
+                                var errEl = document.getElementById('wallet-error');
+                                document.getElementById('wallet-error-msg').textContent = result.error || 'Error al activar la suscripción.';
+                                errEl.style.display = 'block';
+                            }
+                        });
+                    });
+                },
+                onError: function(err) {
+                    console.error('PayPal error:', err);
+                    document.getElementById('wallet-processing').style.display = 'none';
+                    document.getElementById('wallet-error').style.display = 'block';
+                    document.getElementById('wallet-error-msg').textContent = 'Ocurrió un error con el pago. Por favor intenta de nuevo.';
+                },
+                onCancel: function() {
+                    // user cancelled, just stay on page
+                }
+            }).render('#paypal-button-container');
+        })();
+        </script>
+
         <?php elseif ($step === 'sinpe'): ?>
         <!-- ======== PASO SINPE: instrucciones + upload ======== -->
         <div class="card">
@@ -577,9 +647,13 @@ $isLoggedIn = true;
                         </label>
                         <label class="payment-option" onclick="selectPayment(this, 'paypal')">
                             <input type="radio" name="payment_method" value="paypal" required>
-                            <div class="icon"><i class="fab fa-paypal" style="color:#003087;"></i></div>
-                            <div><strong>PayPal</strong></div>
-                            <div style="font-size:0.85rem;color:#666;margin-top:4px;">Tarjeta o cuenta PayPal</div>
+                            <div class="icon">
+                                <i class="fab fa-paypal" style="color:#003087;"></i>
+                                <i class="fab fa-apple" style="color:#555;font-size:1.6rem;vertical-align:middle;margin-left:4px;"></i>
+                                <i class="fab fa-google" style="color:#4285F4;font-size:1.4rem;vertical-align:middle;margin-left:4px;"></i>
+                            </div>
+                            <div><strong>PayPal / Apple Pay / Google Pay</strong></div>
+                            <div style="font-size:0.85rem;color:#666;margin-top:4px;">Tarjeta, cuenta PayPal o wallet</div>
                         </label>
                     </div>
                 </div>
