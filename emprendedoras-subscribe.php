@@ -71,18 +71,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'selec
                 VALUES (?,?,'active','free',datetime('now'),datetime('now'),?,0)
             ")->execute([$userId, $planId, $endDate]);
 
-            // Email al cliente
-            @send_email(
-                $userEmail,
-                '✅ Tu Plan Gratuito en CompraTica está activo',
-                _email_cliente_activado($userName, $plan['name'], $billingPeriod, 0)
-            );
-            // Email al admin
-            @send_email(
-                ADMIN_EMAIL,
-                "[Emprendedoras] Nueva suscripción gratuita - {$userName}",
-                _email_admin_nueva_sub($userName, $userEmail, $plan['name'], $billingPeriod, 0, 'Gratuito')
-            );
+            // Emails — try/catch para no bloquear el redirect
+            $logFile = __DIR__ . '/logs/emprendedoras_subscribe.log';
+            if (!is_dir(dirname($logFile))) @mkdir(dirname($logFile), 0755, true);
+            try {
+                send_email($userEmail, '✅ Tu Plan Gratuito en CompraTica está activo',
+                    _email_cliente_activado($userName, $plan['name'], $billingPeriod, 0));
+            } catch (Throwable $e) {
+                @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] EMAIL_FREE_CLIENTE | ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
+            }
+            try {
+                send_email(ADMIN_EMAIL, "[Emprendedoras] Nueva suscripción gratuita - {$userName}",
+                    _email_admin_nueva_sub($userName, $userEmail, $plan['name'], $billingPeriod, 0, 'Gratuito'));
+            } catch (Throwable $e) {
+                @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] EMAIL_FREE_ADMIN | ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
+            }
 
             header('Location: emprendedoras-dashboard.php?suscrita=1');
             exit;
@@ -163,82 +166,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
     $billingPeriod = $_SESSION['ent_sub_billing'] ?? 'monthly';
     $price         = (float)($_SESSION['ent_sub_price'] ?? 0);
 
-    // Validar archivo
-    if (!isset($_FILES['comprobante']) || $_FILES['comprobante']['error'] !== UPLOAD_ERR_OK) {
-        $error = 'Debes subir el comprobante de pago.';
-    } else {
-        $file      = $_FILES['comprobante'];
-        $finfo     = finfo_open(FILEINFO_MIME_TYPE);
-        $mime      = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-        $allowed   = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    do { // bloque único para poder usar break en validaciones
+        // Validar archivo
+        if (!isset($_FILES['comprobante']) || $_FILES['comprobante']['error'] !== UPLOAD_ERR_OK) {
+            $error = 'Debes subir el comprobante de pago.';
+            break;
+        }
 
+        $file    = $_FILES['comprobante'];
+        $mime    = '';
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime  = (string)finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+        } else {
+            // fallback por extensión
+            $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $mime = match($ext) { 'pdf' => 'application/pdf', 'png' => 'image/png', 'webp' => 'image/webp', default => 'image/jpeg' };
+        }
+
+        $allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
         if (!in_array($mime, $allowed)) {
             $error = 'Tipo de archivo no permitido. Solo JPG, PNG, WEBP o PDF.';
-        } elseif ($file['size'] > 5 * 1024 * 1024) {
-            $error = 'El archivo no puede superar 5 MB.';
-        } else {
-            // Guardar archivo
-            $uploadDir = __DIR__ . '/uploads/subscription-receipts';
-            if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
-            $ext      = match($mime) { 'application/pdf' => 'pdf', 'image/png' => 'png', 'image/webp' => 'webp', default => 'jpg' };
-            $filename = sprintf('sinpe_%d_%d_%s.%s', $userId, $planId, bin2hex(random_bytes(6)), $ext);
-            $filepath = $uploadDir . '/' . $filename;
-
-            if (!move_uploaded_file($file['tmp_name'], $filepath)) {
-                $error = 'Error al guardar el archivo. Intenta de nuevo.';
-            } else {
-                $receiptUrl = '/uploads/subscription-receipts/' . $filename;
-
-                // Cancelar suscripciones previas
-                $pdo->prepare("UPDATE entrepreneur_subscriptions SET status='cancelled', updated_at=datetime('now') WHERE user_id=? AND status='active'")
-                    ->execute([$userId]);
-
-                // Crear suscripción pendiente
-                $pdo->prepare("
-                    INSERT INTO entrepreneur_subscriptions (user_id,plan_id,status,payment_method,start_date,auto_renew)
-                    VALUES (?,?,'pending','sinpe',datetime('now'),0)
-                ")->execute([$userId, $planId]);
-
-                // Guardar comprobante en tabla receipts
-                $pdo->exec("CREATE TABLE IF NOT EXISTS payment_receipts (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    listing_type TEXT,
-                    listing_id INTEGER,
-                    user_id INTEGER NOT NULL,
-                    receipt_url TEXT NOT NULL,
-                    status TEXT DEFAULT 'pending',
-                    uploaded_at TEXT DEFAULT (datetime('now')),
-                    reviewed_at TEXT, reviewed_by INTEGER, notes TEXT
-                )");
-                $pdo->prepare("INSERT INTO payment_receipts (listing_type,listing_id,user_id,receipt_url,status) VALUES ('subscription',?,?,?,'pending')")
-                    ->execute([$planId, $userId, $receiptUrl]);
-
-                // Email al cliente
-                @send_email(
-                    $userEmail,
-                    '📋 Comprobante recibido - CompraTica Emprendedoras',
-                    _email_cliente_sinpe($userName, $plan['name'], $billingPeriod, $price)
-                );
-
-                // Email al admin con link al comprobante
-                $adminReceiptLink = rtrim(SITE_URL, '/') . $receiptUrl;
-                @send_email(
-                    ADMIN_EMAIL,
-                    "[Emprendedoras] 🧾 Nuevo comprobante SINPE - {$userName}",
-                    _email_admin_sinpe($userName, $userEmail, $plan['name'], $billingPeriod, $price, $adminReceiptLink)
-                );
-
-                // Limpiar sesión
-                unset($_SESSION['ent_sub_plan_id'], $_SESSION['ent_sub_billing'], $_SESSION['ent_sub_price']);
-
-                $success = '¡Comprobante enviado! Activaremos tu cuenta en un máximo de 24 horas hábiles.';
-                $step = 'done';
-            }
+            break;
         }
-    }
+        if ($file['size'] > 5 * 1024 * 1024) {
+            $error = 'El archivo no puede superar 5 MB.';
+            break;
+        }
+
+        // Guardar archivo
+        $uploadDir = __DIR__ . '/uploads/subscription-receipts';
+        if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+        $extMap   = ['application/pdf' => 'pdf', 'image/png' => 'png', 'image/webp' => 'webp'];
+        $ext      = $extMap[$mime] ?? 'jpg';
+        $filename = sprintf('sinpe_%d_%d_%s.%s', $userId, $planId, bin2hex(random_bytes(6)), $ext);
+        $filepath = $uploadDir . '/' . $filename;
+
+        if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+            $error = 'Error al guardar el archivo. Intenta de nuevo.';
+            break;
+        }
+
+        $receiptUrl = '/uploads/subscription-receipts/' . $filename;
+
+        try {
+            // Cancelar suscripciones previas
+            $pdo->prepare("UPDATE entrepreneur_subscriptions SET status='cancelled', updated_at=datetime('now') WHERE user_id=? AND status IN ('active','pending')")
+                ->execute([$userId]);
+
+            // Crear suscripción pendiente
+            $pdo->prepare("
+                INSERT INTO entrepreneur_subscriptions (user_id,plan_id,status,payment_method,start_date,auto_renew)
+                VALUES (?,?,'pending','sinpe',datetime('now'),0)
+            ")->execute([$userId, $planId]);
+
+            // Guardar comprobante
+            $pdo->exec("CREATE TABLE IF NOT EXISTS payment_receipts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                listing_type TEXT, listing_id INTEGER,
+                user_id INTEGER NOT NULL, receipt_url TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                uploaded_at TEXT DEFAULT (datetime('now')),
+                reviewed_at TEXT, reviewed_by INTEGER, notes TEXT
+            )");
+            $pdo->prepare("INSERT INTO payment_receipts (listing_type,listing_id,user_id,receipt_url,status) VALUES ('subscription',?,?,?,'pending')")
+                ->execute([$planId, $userId, $receiptUrl]);
+        } catch (Exception $e) {
+            $error = 'Error al registrar la suscripción. Por favor contacta soporte.';
+            @file_put_contents(__DIR__ . '/logs/emprendedoras_subscribe.log',
+                '[' . date('Y-m-d H:i:s') . '] DB_ERROR | ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
+            break;
+        }
+
+        // Limpiar sesión
+        unset($_SESSION['ent_sub_plan_id'], $_SESSION['ent_sub_billing'], $_SESSION['ent_sub_price']);
+
+        // Emails — siempre en try/catch individual para no bloquear el flujo
+        $adminReceiptLink = rtrim(SITE_URL, '/') . $receiptUrl;
+        $logFile = __DIR__ . '/logs/emprendedoras_subscribe.log';
+        if (!is_dir(dirname($logFile))) @mkdir(dirname($logFile), 0755, true);
+
+        try {
+            send_email(
+                $userEmail,
+                '📋 Comprobante recibido - CompraTica Emprendedoras',
+                _email_cliente_sinpe($userName, $plan['name'], $billingPeriod, $price)
+            );
+        } catch (Throwable $e) {
+            @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] EMAIL_CLIENTE_ERR | ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
+        }
+
+        try {
+            send_email(
+                ADMIN_EMAIL,
+                "[Emprendedoras] Nuevo comprobante SINPE - {$userName}",
+                _email_admin_sinpe($userName, $userEmail, $plan['name'], $billingPeriod, $price, $adminReceiptLink)
+            );
+        } catch (Throwable $e) {
+            @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] EMAIL_ADMIN_ERR | ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
+        }
+
+        // PRG: redirigir para evitar re-submit y página en blanco
+        $_SESSION['ent_sub_success'] = '¡Comprobante enviado! Activaremos tu cuenta en un máximo de 24 horas hábiles.';
+        header("Location: emprendedoras-subscribe.php?plan_id={$planId}&step=done");
+        exit;
+
+    } while (false);
 
     if ($error) $step = 'sinpe';
+}
+
+// Leer mensaje de éxito guardado en sesión (después del redirect)
+if ($step === 'done' && isset($_SESSION['ent_sub_success'])) {
+    $success = $_SESSION['ent_sub_success'];
+    unset($_SESSION['ent_sub_success']);
 }
 
 // ============================================================

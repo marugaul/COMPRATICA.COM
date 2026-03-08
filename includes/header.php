@@ -136,6 +136,11 @@
       <span>Portal Bienes Raíces</span>
     </a>
 
+    <a href="emprendedoras-dashboard" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+      <i class="fas fa-crown"></i>
+      <span>Portal Emprendedoras</span>
+    </a>
+
     <a href="admin/login.php" class="menu-item">
       <i class="fas fa-user-shield"></i>
       <span>Administrador</span>
