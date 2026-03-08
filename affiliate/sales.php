@@ -16,6 +16,40 @@ if (!function_exists('now_cr')) {
     return (new DateTime('now', $tz))->format('Y-m-d H:i:s');
   }
 }
+// Re-activar espacio existente
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reactivate'])) {
+  try {
+    $sale_id = (int)($_POST['sale_id'] ?? 0);
+    if ($sale_id <= 0) throw new RuntimeException('ID de espacio inválido.');
+    // Verificar que el espacio pertenece al afiliado
+    $chk = $pdo->prepare("SELECT id FROM sales WHERE id=? AND affiliate_id=?");
+    $chk->execute([$sale_id, $aff_id]);
+    if (!$chk->fetchColumn()) throw new RuntimeException('Espacio no encontrado.');
+    // Crear nuevo fee de activación
+    $fee_crc = (float)get_setting('SALE_FEE_CRC', 2000);
+    $ex      = (float)(function_exists('get_exchange_rate') ? get_exchange_rate() : 1);
+    if ($ex <= 0) $ex = 1;
+    $amount_usd = $fee_crc / $ex;
+    $pdo->prepare("INSERT INTO sale_fees
+      (affiliate_id, sale_id, amount_crc, amount_usd, exrate_used, status, created_at, updated_at)
+      VALUES (:aff, :sale, :crc, :usd, :ex, 'Pendiente', :now, :now)")
+      ->execute([
+        ':aff'  => $aff_id,
+        ':sale' => $sale_id,
+        ':crc'  => $fee_crc,
+        ':usd'  => $amount_usd,
+        ':ex'   => $ex,
+        ':now'  => now_cr(),
+      ]);
+    $fee_id = (int)$pdo->lastInsertId();
+    header("Location: sales_pay.php?fee_id=" . $fee_id);
+    exit;
+  } catch (Throwable $e) {
+    error_log("[affiliate/sales.php] Reactivate error: " . $e->getMessage());
+    $msg = 'Error al re-activar el espacio: ' . $e->getMessage();
+  }
+}
+
 // Crear espacio
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create'])) {
   try {
@@ -640,23 +674,41 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
         <th>Ubicación</th>
         <th>Acciones</th>
       </tr>
-      <?php foreach($sales as $s): 
+      <?php foreach($sales as $s):
         // ⭐ Verificar si tiene ubicación de recogida configurada
         $stmt = $pdo->prepare("
-          SELECT id, address, city, contact_name 
-          FROM sale_pickup_locations 
+          SELECT id, address, city, contact_name
+          FROM sale_pickup_locations
           WHERE sale_id = ? AND is_active = 1
           LIMIT 1
         ");
         $stmt->execute([(int)$s['id']]);
         $pickup_location = $stmt->fetch(PDO::FETCH_ASSOC);
         $has_location = !empty($pickup_location);
+        // Fee más reciente
+        $feeQ = $pdo->prepare("SELECT id, status FROM sale_fees WHERE sale_id=? AND affiliate_id=? ORDER BY id DESC LIMIT 1");
+        $feeQ->execute([(int)$s['id'], $aff_id]);
+        $latestFee = $feeQ->fetch(PDO::FETCH_ASSOC);
+        $lastFeeStatus = $latestFee['status'] ?? null;
+        $lastFeeId     = $latestFee ? (int)$latestFee['id'] : 0;
+        // ¿Se puede re-activar? Solo si el último fee fue pagado y el espacio no está activo
+        $canReactivate = (!empty($s['is_active']) === false) && $lastFeeStatus === 'Pagado';
       ?>
         <tr>
           <td><?= htmlspecialchars($s['title']) ?></td>
           <td><?= htmlspecialchars($s['start_at']) ?></td>
           <td><?= htmlspecialchars($s['end_at']) ?></td>
-          <td><?= !empty($s['is_active']) ? 'Sí' : 'No' ?></td>
+          <td>
+            <?php if (!empty($s['is_active'])): ?>
+              <span class="location-badge badge-success"><i class="fas fa-check-circle"></i> Activo</span>
+            <?php elseif ($lastFeeStatus === 'Pendiente'): ?>
+              <span class="location-badge badge-warning"><i class="fas fa-clock"></i> Pago pendiente</span>
+            <?php else: ?>
+              <span class="location-badge" style="background:rgba(231,76,60,0.1);color:#c0392b;border:1px solid rgba(231,76,60,0.3);">
+                <i class="fas fa-times-circle"></i> Inactivo
+              </span>
+            <?php endif; ?>
+          </td>
           <td>
             <?php if ($has_location): ?>
               <span class="location-badge badge-success">
@@ -681,14 +733,16 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
               <i class="fas fa-edit"></i> Editar
             </a>
 
-            <?php
-              // Si ya hay fee creado, ir por fee_id; si no, por sale_id
-              $q = $pdo->prepare("SELECT id FROM sale_fees WHERE sale_id=? AND affiliate_id=? ORDER BY id DESC LIMIT 1");
-              $q->execute([(int)$s['id'], $aff_id]);
-              $existing_fee_id = (int)$q->fetchColumn();
-              if ($existing_fee_id):
-            ?>
-              <a class="btn" href="sales_pay.php?fee_id=<?= (int)$existing_fee_id ?>">Pagar/Estado</a>
+            <?php if ($canReactivate): ?>
+              <form method="post" style="display:inline;" onsubmit="return confirm('¿Deseas re-activar este espacio? Se generará un nuevo cobro de activación.');">
+                <input type="hidden" name="sale_id" value="<?= (int)$s['id'] ?>">
+                <button type="submit" name="reactivate" value="1" class="btn"
+                  style="background:linear-gradient(135deg,#27ae60,#2ecc71);color:white;">
+                  <i class="fas fa-redo"></i> Re-activar Espacio
+                </button>
+              </form>
+            <?php elseif ($lastFeeId > 0): ?>
+              <a class="btn" href="sales_pay.php?fee_id=<?= $lastFeeId ?>">Pagar/Estado</a>
             <?php else: ?>
               <a class="btn" href="sales_pay.php?sale_id=<?= (int)$s['id'] ?>">Pagar/Estado</a>
             <?php endif; ?>
