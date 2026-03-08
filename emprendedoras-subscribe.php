@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'selec
     $paymentMethod = $_POST['payment_method'] ?? '';
     $price         = $billingPeriod === 'annual' ? (float)$plan['price_annual'] : (float)$plan['price_monthly'];
 
-    if (!in_array($paymentMethod, ['free', 'sinpe', 'paypal'], true) && $price > 0) {
+    if (!in_array($paymentMethod, ['free', 'sinpe', 'paypal', 'stripe'], true) && $price > 0) {
         $error = 'Selecciona un método de pago.';
     } else {
         // --- Plan gratuito: activar de inmediato ---
@@ -106,6 +106,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'selec
             $_SESSION['ent_sub_billing']   = $billingPeriod;
             $_SESSION['ent_sub_price']     = $price;
             header("Location: emprendedoras-subscribe.php?plan_id={$planId}&step=wallet");
+            exit;
+        }
+
+        // --- Stripe: guardar en sesión y mostrar formulario Stripe ---
+        if ($paymentMethod === 'stripe') {
+            $_SESSION['ent_sub_plan_id']   = $planId;
+            $_SESSION['ent_sub_billing']   = $billingPeriod;
+            $_SESSION['ent_sub_price']     = $price;
+            header("Location: emprendedoras-subscribe.php?plan_id={$planId}&step=stripe");
             exit;
         }
     }
@@ -326,6 +335,54 @@ function _email_admin_sinpe(string $nombre, string $email, string $plan, string 
     </div>";
 }
 
+// ============================================================
+// PASO STRIPE: crear PaymentIntent server-side
+// ============================================================
+$stripeClientSecret = '';
+$stripeError        = '';
+if ($step === 'stripe') {
+    $stripeSecretKey = defined('STRIPE_SECRET_KEY') ? STRIPE_SECRET_KEY : '';
+    $stripeSubPlanId = (int)($_SESSION['ent_sub_plan_id'] ?? $planId);
+    $stripeSubPeriod = $_SESSION['ent_sub_billing'] ?? 'monthly';
+    $stripeSubPrice  = (float)($_SESSION['ent_sub_price'] ?? ($stripeSubPeriod === 'annual' ? $plan['price_annual'] : $plan['price_monthly']));
+    $stripeAmountCents = (int)round(($stripeSubPrice / 650) * 100); // CRC → USD → centavos
+
+    if (!$stripeSecretKey) {
+        $stripeError = 'Stripe no está configurado en el servidor.';
+    } else {
+        $ch = curl_init('https://api.stripe.com/v1/payment_intents');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => http_build_query([
+                'amount'                        => $stripeAmountCents,
+                'currency'                      => 'usd',
+                'description'                   => $plan['name'] . ' - ' . ($stripeSubPeriod === 'annual' ? 'Anual' : 'Mensual'),
+                'metadata[user_id]'             => $userId,
+                'metadata[plan_id]'             => $stripeSubPlanId,
+                'metadata[billing_period]'      => $stripeSubPeriod,
+                'automatic_payment_methods[enabled]' => 'true',
+            ]),
+            CURLOPT_USERPWD        => $stripeSecretKey . ':',
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $piJson  = curl_exec($ch);
+        $piErr   = curl_error($ch);
+        curl_close($ch);
+
+        if ($piErr) {
+            $stripeError = 'Error conectando con Stripe. Por favor intenta de nuevo.';
+        } else {
+            $piData = json_decode((string)$piJson, true);
+            $stripeClientSecret = $piData['client_secret'] ?? '';
+            if (!$stripeClientSecret) {
+                $stripeError = $piData['error']['message'] ?? 'Error al iniciar el pago con Stripe.';
+            }
+        }
+    }
+}
+
 // Variables para la vista
 $sinpePhone   = defined('SINPE_PHONE') ? SINPE_PHONE : '';
 $cantidadProductos = 0;
@@ -369,7 +426,7 @@ $isLoggedIn = true;
             border-radius: 12px; font-size: 1rem; background: white;
         }
         .form-group select:focus { outline: none; border-color: #667eea; }
-        .payment-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 8px; }
+        .payment-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 8px; }
         .payment-option {
             border: 2px solid #e0e0e0; padding: 20px; border-radius: 14px;
             cursor: pointer; transition: all 0.3s; text-align: center; position: relative;
@@ -402,6 +459,11 @@ $isLoggedIn = true;
         .done-box { text-align: center; padding: 40px 20px; }
         .done-box .icon { font-size: 5rem; margin-bottom: 20px; }
         .done-box h2 { font-size: 1.8rem; color: #065f46; margin-bottom: 10px; }
+        /* Stripe Elements */
+        #stripe-payment-element { margin-bottom: 20px; }
+        #stripe-submit { width: 100%; padding: 16px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 50px; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: all 0.3s; margin-top: 10px; }
+        #stripe-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102,126,234,0.4); }
+        #stripe-submit:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
     </style>
 </head>
 <body>
@@ -563,6 +625,134 @@ $isLoggedIn = true;
         })();
         </script>
 
+        <?php elseif ($step === 'stripe'): ?>
+        <!-- ======== PASO STRIPE: formulario tarjeta vía Stripe.js ======== -->
+        <?php
+        $stripePublicKey = defined('STRIPE_PUBLIC_KEY') ? STRIPE_PUBLIC_KEY : '';
+        $stripeSubPeriodLabel = isset($stripeSubPeriod) ? ($stripeSubPeriod === 'annual' ? 'Anual' : 'Mensual') : 'Mensual';
+        $stripeSubPriceLabel  = isset($stripeSubPrice)  ? number_format($stripeSubPrice, 0) : '0';
+        $stripeSubUsdLabel    = isset($stripeAmountCents) ? number_format($stripeAmountCents / 100, 2) : '0.00';
+        ?>
+        <div class="card">
+            <h2><i class="fas fa-credit-card" style="color:#635bff;"></i> Pago con Tarjeta</h2>
+
+            <div class="alert alert-info">
+                <strong>Plan:</strong> <?= htmlspecialchars($plan['name']) ?> &mdash;
+                <strong>Período:</strong> <?= $stripeSubPeriodLabel ?> &mdash;
+                <strong>Total:</strong> ₡<?= $stripeSubPriceLabel ?> (US$<?= $stripeSubUsdLabel ?>)
+            </div>
+
+            <?php if ($stripeError): ?>
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($stripeError) ?>
+                </div>
+                <a href="emprendedoras-subscribe.php?plan_id=<?= $planId ?>" class="back-link">
+                    <i class="fas fa-arrow-left"></i> Volver a opciones de pago
+                </a>
+            <?php else: ?>
+                <form id="stripe-form">
+                    <div id="stripe-payment-element"></div>
+
+                    <div id="stripe-error-msg" class="alert alert-error" style="display:none;margin-bottom:15px;">
+                        <i class="fas fa-exclamation-circle"></i> <span id="stripe-error-text"></span>
+                    </div>
+
+                    <div id="stripe-processing" style="display:none;text-align:center;padding:20px;">
+                        <i class="fas fa-spinner fa-spin" style="font-size:2rem;color:#635bff;"></i>
+                        <p style="color:#635bff;font-weight:600;margin-top:10px;">Activando tu suscripción...</p>
+                    </div>
+
+                    <button id="stripe-submit" type="submit">
+                        <i class="fas fa-lock"></i> Pagar US$<?= $stripeSubUsdLabel ?>
+                    </button>
+                </form>
+
+                <p style="text-align:center;color:#999;font-size:0.82rem;margin-top:12px;">
+                    <i class="fas fa-shield-alt"></i> Pago seguro procesado por <strong>Stripe</strong>. Nunca almacenamos datos de tu tarjeta.
+                </p>
+
+                <a href="emprendedoras-subscribe.php?plan_id=<?= $planId ?>" class="back-link">
+                    <i class="fas fa-arrow-left"></i> Volver a opciones de pago
+                </a>
+
+                <script src="https://js.stripe.com/v3/"></script>
+                <script>
+                (function() {
+                    var stripe  = Stripe(<?= json_encode($stripePublicKey) ?>);
+                    var planId  = <?= (int)($stripeSubPlanId ?? $planId) ?>;
+                    var billing = <?= json_encode($stripeSubPeriod ?? 'monthly') ?>;
+                    var amtUsd  = <?= json_encode($stripeSubUsdLabel) ?>;
+
+                    var elements = stripe.elements({
+                        clientSecret: <?= json_encode($stripeClientSecret) ?>,
+                        appearance: { theme: 'stripe', variables: { colorPrimary: '#667eea' } }
+                    });
+
+                    var paymentElement = elements.create('payment');
+                    paymentElement.mount('#stripe-payment-element');
+
+                    document.getElementById('stripe-form').addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        var submitBtn     = document.getElementById('stripe-submit');
+                        var processingDiv = document.getElementById('stripe-processing');
+                        var errorDiv      = document.getElementById('stripe-error-msg');
+                        var errorText     = document.getElementById('stripe-error-text');
+
+                        submitBtn.disabled = true;
+                        errorDiv.style.display = 'none';
+
+                        var result = await stripe.confirmPayment({
+                            elements: elements,
+                            redirect: 'if_required'
+                        });
+
+                        if (result.error) {
+                            errorText.textContent = result.error.message || 'Error al procesar el pago.';
+                            errorDiv.style.display = 'block';
+                            submitBtn.disabled = false;
+                            return;
+                        }
+
+                        if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+                            submitBtn.style.display = 'none';
+                            processingDiv.style.display = 'block';
+
+                            fetch('/api/activate-subscription-stripe.php', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    payment_intent_id: result.paymentIntent.id,
+                                    plan_id:           planId,
+                                    billing_period:    billing,
+                                    amount_usd:        parseFloat(amtUsd)
+                                })
+                            })
+                            .then(r => r.json())
+                            .then(function(res) {
+                                if (res.ok) {
+                                    window.location.href = 'emprendedoras-dashboard.php?suscrita=1';
+                                } else {
+                                    processingDiv.style.display = 'none';
+                                    submitBtn.style.display = 'block';
+                                    submitBtn.disabled = false;
+                                    errorText.textContent = res.error || 'Error al activar la suscripción.';
+                                    errorDiv.style.display = 'block';
+                                }
+                            })
+                            .catch(function() {
+                                processingDiv.style.display = 'none';
+                                submitBtn.style.display = 'block';
+                                submitBtn.disabled = false;
+                                errorText.textContent = 'Error de conexión. Contacta soporte con tu comprobante de pago.';
+                                errorDiv.style.display = 'block';
+                            });
+                        }
+                    });
+                })();
+                </script>
+            <?php endif; ?>
+        </div>
+
         <?php elseif ($step === 'sinpe'): ?>
         <!-- ======== PASO SINPE: instrucciones + upload ======== -->
         <div class="card">
@@ -653,7 +843,13 @@ $isLoggedIn = true;
                                 <i class="fab fa-google" style="color:#4285F4;font-size:1.4rem;vertical-align:middle;margin-left:4px;"></i>
                             </div>
                             <div><strong>PayPal / Apple Pay / Google Pay</strong></div>
-                            <div style="font-size:0.85rem;color:#666;margin-top:4px;">Tarjeta, cuenta PayPal o wallet</div>
+                            <div style="font-size:0.85rem;color:#666;margin-top:4px;">Cuenta PayPal o wallet</div>
+                        </label>
+                        <label class="payment-option" onclick="selectPayment(this, 'stripe')">
+                            <input type="radio" name="payment_method" value="stripe" required>
+                            <div class="icon"><i class="fas fa-credit-card" style="color:#635bff;"></i></div>
+                            <div><strong>Tarjeta de crédito / débito</strong></div>
+                            <div style="font-size:0.85rem;color:#666;margin-top:4px;">Visa, Mastercard, Amex</div>
                         </label>
                     </div>
                 </div>
