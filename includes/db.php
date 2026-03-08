@@ -590,11 +590,27 @@ function db() {
                         name TEXT NOT NULL,
                         description TEXT,
                         price REAL NOT NULL DEFAULT 0,
+                        currency TEXT NOT NULL DEFAULT 'CRC',
                         stock INTEGER DEFAULT 0,
+                        sku TEXT,
                         image_1 TEXT,
                         image_2 TEXT,
                         image_3 TEXT,
+                        image_4 TEXT,
+                        image_5 TEXT,
                         whatsapp_number TEXT,
+                        weight_kg REAL,
+                        size_cm_length REAL,
+                        size_cm_width REAL,
+                        size_cm_height REAL,
+                        accepts_sinpe INTEGER DEFAULT 0,
+                        accepts_paypal INTEGER DEFAULT 0,
+                        sinpe_phone TEXT,
+                        paypal_email TEXT,
+                        featured INTEGER DEFAULT 0,
+                        shipping_available INTEGER DEFAULT 0,
+                        pickup_available INTEGER DEFAULT 0,
+                        pickup_location TEXT,
                         is_active INTEGER NOT NULL DEFAULT 1,
                         views_count INTEGER NOT NULL DEFAULT 0,
                         sales_count INTEGER NOT NULL DEFAULT 0,
@@ -606,6 +622,28 @@ function db() {
                 ");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_ent_prod_user ON entrepreneur_products(user_id)");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_ent_prod_active ON entrepreneur_products(is_active)");
+            } else {
+                // Migrar columnas faltantes en tablas existentes
+                $colsEP = $pdo->query("PRAGMA table_info(entrepreneur_products)")->fetchAll(PDO::FETCH_ASSOC);
+                $haveEP = [];
+                foreach ($colsEP as $c) $haveEP[strtolower($c['name'])] = true;
+
+                if(empty($haveEP['sku']))               $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN sku TEXT");
+                if(empty($haveEP['currency']))           $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN currency TEXT NOT NULL DEFAULT 'CRC'");
+                if(empty($haveEP['image_4']))            $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN image_4 TEXT");
+                if(empty($haveEP['image_5']))            $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN image_5 TEXT");
+                if(empty($haveEP['weight_kg']))          $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN weight_kg REAL");
+                if(empty($haveEP['size_cm_length']))     $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN size_cm_length REAL");
+                if(empty($haveEP['size_cm_width']))      $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN size_cm_width REAL");
+                if(empty($haveEP['size_cm_height']))     $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN size_cm_height REAL");
+                if(empty($haveEP['accepts_sinpe']))      $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN accepts_sinpe INTEGER DEFAULT 0");
+                if(empty($haveEP['accepts_paypal']))     $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN accepts_paypal INTEGER DEFAULT 0");
+                if(empty($haveEP['sinpe_phone']))        $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN sinpe_phone TEXT");
+                if(empty($haveEP['paypal_email']))       $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN paypal_email TEXT");
+                if(empty($haveEP['featured']))           $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN featured INTEGER DEFAULT 0");
+                if(empty($haveEP['shipping_available'])) $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN shipping_available INTEGER DEFAULT 0");
+                if(empty($haveEP['pickup_available']))   $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN pickup_available INTEGER DEFAULT 0");
+                if(empty($haveEP['pickup_location']))    $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN pickup_location TEXT");
             }
 
             if(!in_array('entrepreneur_orders', $tables)){
