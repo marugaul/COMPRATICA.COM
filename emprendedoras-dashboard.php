@@ -2,27 +2,15 @@
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+$__sessPath = __DIR__ . '/sessions';
+if (!is_dir($__sessPath)) @mkdir($__sessPath, 0755, true);
+if (is_dir($__sessPath) && is_writable($__sessPath)) {
+    ini_set('session.save_path', $__sessPath);
+}
 session_start();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
-
-// Debug logging
-$logFile = __DIR__ . '/logs/emprendedoras_dashboard_debug.log';
-$logDir = dirname($logFile);
-if (!is_dir($logDir)) {
-    @mkdir($logDir, 0755, true);
-}
-$timestamp = date('Y-m-d H:i:s');
-$logData = [
-    'timestamp' => $timestamp,
-    'uri' => $_SERVER['REQUEST_URI'] ?? '',
-    'session_id' => session_id(),
-    'user_id' => $_SESSION['uid'] ?? null,
-    'user_name' => $_SESSION['name'] ?? 'Guest',
-    'ip' => $_SERVER['REMOTE_ADDR'] ?? '',
-    'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? ''
-];
-@file_put_contents($logFile, '[' . $timestamp . '] DASHBOARD_ACCESS | ' . json_encode($logData) . "\n", FILE_APPEND);
+require_once __DIR__ . '/includes/logger.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
@@ -48,16 +36,13 @@ try {
     ");
     $stmt->execute([$userId]);
     $subscription = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] SUBSCRIPTION_CHECK | ' . json_encode(['user_id' => $userId, 'has_subscription' => !empty($subscription)]) . "\n", FILE_APPEND);
 } catch (Exception $e) {
-    @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] SUBSCRIPTION_ERROR | ' . json_encode(['user_id' => $userId, 'error' => $e->getMessage()]) . "\n", FILE_APPEND);
+    logError('emprendedoras_dashboard.log', 'SUBSCRIPTION_ERROR', ['user_id' => $userId, 'error' => $e->getMessage()]);
     die('Error al verificar suscripción. Por favor contacta soporte.');
 }
 
 // Si no tiene suscripción, redirigir a planes
 if (!$subscription) {
-    @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] NO_SUBSCRIPTION_REDIRECT | ' . json_encode(['user_id' => $userId]) . "\n", FILE_APPEND);
     header('Location: emprendedoras-planes.php');
     exit;
 }
@@ -111,14 +96,6 @@ $canAddProducts = true;
 if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscription['max_products']) {
     $canAddProducts = false;
 }
-
-// Log successful dashboard rendering
-@file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] DASHBOARD_RENDERING | ' . json_encode([
-    'user_id' => $userId,
-    'plan' => $subscription['plan_name'],
-    'total_products' => $stats['total_products'],
-    'can_add_products' => $canAddProducts
-]) . "\n", FILE_APPEND);
 ?>
 <!DOCTYPE html>
 <html lang="es">

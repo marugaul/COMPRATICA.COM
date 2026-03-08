@@ -2,6 +2,11 @@
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+$__sessPath = __DIR__ . '/sessions';
+if (!is_dir($__sessPath)) @mkdir($__sessPath, 0755, true);
+if (is_dir($__sessPath) && is_writable($__sessPath)) {
+    ini_set('session.save_path', $__sessPath);
+}
 session_start();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
@@ -387,6 +392,19 @@ $featuredProducts = $pdo->query("
             color: #666;
             margin-bottom: 10px;
         }
+        .categories-section {
+            background: white;
+            padding: 25px 0;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-radius: 15px;
+        }
+        .categories-section-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ff6b9d;
+            font-size: 1.3rem;
+        }
     </style>
 </head>
 <body>
@@ -395,9 +413,15 @@ $featuredProducts = $pdo->query("
     <div class="hero-emprendedoras">
         <h1>¡Bienvenida el <span style="color: #ff6b9d;">Mercadito</span> Compratica! ❤️</h1>
         <p>Descubre, apoya y compra directo a emprendedoras costarricenses.</p>
-        <a href="#puestos" class="hero-cta">
-            <i class="fas fa-arrow-down"></i> Explorar puestos
-        </a>
+        <?php if ($isLoggedIn): ?>
+            <a href="emprendedoras-dashboard.php" class="hero-cta">
+                <i class="fas fa-store"></i> Mi Tienda
+            </a>
+        <?php else: ?>
+            <a href="emprendedoras-planes.php" class="hero-cta">
+                <i class="fas fa-rocket"></i> Vende tus Productos
+            </a>
+        <?php endif; ?>
     </div>
 
     <div class="container">
@@ -425,8 +449,8 @@ $featuredProducts = $pdo->query("
             </div>
         </form>
 
-        <div style="background: white; padding: 25px 0; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-radius: 15px;">
-            <h3 style="text-align: center; margin-bottom: 20px; color: #ff6b9d; font-size: 1.3rem;">
+        <div class="categories-section">
+            <h3 class="categories-section-title">
                 <i class="fas fa-store"></i> Pasillos del Mercadito
             </h3>
             <div class="categories-grid">
