@@ -24,29 +24,30 @@ $userEmail = $_SESSION['email'] ?? '';
 
 $pdo = db();
 
-// Obtener suscripción activa
+// Obtener suscripción más reciente (activa o pendiente)
 try {
     $stmt = $pdo->prepare("
         SELECT s.*, p.name as plan_name, p.max_products, p.commission_rate
         FROM entrepreneur_subscriptions s
         JOIN entrepreneur_plans p ON s.plan_id = p.id
-        WHERE s.user_id = ? AND s.status = 'active'
+        WHERE s.user_id = ? AND s.status IN ('active', 'pending')
         ORDER BY s.created_at DESC
         LIMIT 1
     ");
     $stmt->execute([$userId]);
     $subscription = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    // Tablas aún no creadas o error de DB → redirigir a planes
     header('Location: emprendedoras-planes.php');
     exit;
 }
 
-// Si no tiene suscripción, redirigir a planes
+// Sin suscripción → ir a planes
 if (!$subscription) {
     header('Location: emprendedoras-planes.php');
     exit;
 }
+
+$isPending = $subscription['status'] === 'pending';
 
 // Obtener estadísticas de productos
 $stmt = $pdo->prepare("
@@ -326,8 +327,40 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             <p>Bienvenida a tu dashboard de emprendedora</p>
             <div class="plan-badge">
                 <i class="fas fa-crown"></i> <?php echo htmlspecialchars($subscription['plan_name']); ?>
+                <?php if ($isPending): ?>
+                    &nbsp;— <span style="color:#fde68a;">⏳ Pendiente de aprobación</span>
+                <?php else: ?>
+                    &nbsp;— <span style="color:#bbf7d0;">✅ Activo</span>
+                <?php endif; ?>
             </div>
         </div>
+
+        <?php if ($isPending): ?>
+        <div style="background:#fffbeb;border:2px solid #f59e0b;border-radius:16px;padding:30px 35px;margin-bottom:30px;display:flex;align-items:flex-start;gap:20px;">
+            <div style="font-size:3rem;line-height:1;">⏳</div>
+            <div>
+                <h3 style="margin:0 0 8px;color:#92400e;font-size:1.25rem;">Tu suscripción está pendiente de aprobación</h3>
+                <p style="margin:0 0 12px;color:#78350f;line-height:1.6;">
+                    Recibimos tu comprobante de pago. Un administrador lo verificará y activará tu cuenta a la brevedad.<br>
+                    Recibirás un correo cuando tu cuenta sea aprobada.
+                </p>
+                <table style="border-collapse:collapse;font-size:0.9rem;color:#78350f;">
+                    <tr>
+                        <td style="padding:3px 12px 3px 0;font-weight:600;">Plan:</td>
+                        <td><?php echo htmlspecialchars($subscription['plan_name']); ?></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:3px 12px 3px 0;font-weight:600;">Método de pago:</td>
+                        <td><?php echo ucfirst(htmlspecialchars($subscription['payment_method'] ?? 'N/A')); ?></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:3px 12px 3px 0;font-weight:600;">Solicitud enviada:</td>
+                        <td><?php echo date('d/m/Y H:i', strtotime($subscription['created_at'])); ?></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <div class="stats-grid">
             <div class="stat-card">
@@ -352,7 +385,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             </div>
         </div>
 
-        <?php if (!$canAddProducts): ?>
+        <?php if (!$isPending && !$canAddProducts): ?>
             <div class="alert alert-warning">
                 <i class="fas fa-exclamation-triangle"></i>
                 <strong>Límite alcanzado:</strong> Has llegado al límite de productos de tu plan (<?php echo $subscription['max_products']; ?> productos).
@@ -363,7 +396,11 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         <div class="section">
             <div class="section-header">
                 <h2><i class="fas fa-box"></i> Mis Productos</h2>
-                <?php if ($canAddProducts): ?>
+                <?php if ($isPending): ?>
+                    <button class="btn-primary" style="opacity: 0.5; cursor: not-allowed;" disabled>
+                        <i class="fas fa-lock"></i> Cuenta pendiente
+                    </button>
+                <?php elseif ($canAddProducts): ?>
                     <a href="emprendedoras-producto-crear.php" class="btn-primary">
                         <i class="fas fa-plus"></i> Agregar Producto
                     </a>
@@ -374,7 +411,13 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                 <?php endif; ?>
             </div>
 
-            <?php if (empty($products)): ?>
+            <?php if ($isPending): ?>
+                <div class="empty-state">
+                    <i class="fas fa-lock" style="color:#f59e0b;"></i>
+                    <h3>Sección bloqueada</h3>
+                    <p>Podrás agregar productos una vez que tu suscripción sea aprobada por el administrador.</p>
+                </div>
+            <?php elseif (empty($products)): ?>
                 <div class="empty-state">
                     <i class="fas fa-box-open"></i>
                     <h3>No tienes productos aún</h3>
