@@ -1,0 +1,524 @@
+<?php
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
+$__sessPath = __DIR__ . '/sessions';
+if (!is_dir($__sessPath)) @mkdir($__sessPath, 0755, true);
+if (is_dir($__sessPath) && is_writable($__sessPath)) {
+    ini_set('session.save_path', $__sessPath);
+}
+session_start();
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/config.php';
+
+if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
+    header('Location: login.php?redirect=emprendedoras-dashboard.php');
+    exit;
+}
+
+$userId = $_SESSION['uid'];
+$pdo    = db();
+
+// Obtener el producto y verificar que pertenece al usuario
+$productId = intval($_GET['id'] ?? 0);
+if (!$productId) {
+    header('Location: emprendedoras-dashboard.php');
+    exit;
+}
+
+$stmt = $pdo->prepare("SELECT * FROM entrepreneur_products WHERE id = ? AND user_id = ?");
+$stmt->execute([$productId, $userId]);
+$product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$product) {
+    header('Location: emprendedoras-dashboard.php?error=not_found');
+    exit;
+}
+
+// Verificar suscripción activa
+$stmt = $pdo->prepare("
+    SELECT s.*, p.max_products
+    FROM entrepreneur_subscriptions s
+    JOIN entrepreneur_plans p ON s.plan_id = p.id
+    WHERE s.user_id = ? AND s.status = 'active'
+    LIMIT 1
+");
+$stmt->execute([$userId]);
+$subscription = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$subscription) {
+    header('Location: emprendedoras-planes.php');
+    exit;
+}
+
+// Obtener categorías
+$categories = $pdo->query("
+    SELECT * FROM entrepreneur_categories
+    WHERE is_active = 1
+    ORDER BY display_order
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// Obtener métodos de pago del usuario
+$stmt = $pdo->prepare("SELECT * FROM affiliate_payment_methods WHERE affiliate_id = ?");
+$stmt->execute([$userId]);
+$paymentMethods = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$error   = '';
+$success = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name              = trim($_POST['name'] ?? '');
+    $description       = trim($_POST['description'] ?? '');
+    $price             = floatval($_POST['price'] ?? 0);
+    $categoryId        = intval($_POST['category_id'] ?? 0);
+    $stock             = intval($_POST['stock'] ?? 0);
+    $sku               = trim($_POST['sku'] ?? '');
+    $weight            = floatval($_POST['weight_kg'] ?? 0);
+    $acceptsSinpe      = isset($_POST['accepts_sinpe']) ? 1 : 0;
+    $acceptsPaypal     = isset($_POST['accepts_paypal']) ? 1 : 0;
+    $sinpePhone        = trim($_POST['sinpe_phone'] ?? '');
+    $paypalEmail       = trim($_POST['paypal_email'] ?? '');
+    $shippingAvailable = isset($_POST['shipping_available']) ? 1 : 0;
+    $pickupAvailable   = isset($_POST['pickup_available']) ? 1 : 0;
+    $pickupLocation    = trim($_POST['pickup_location'] ?? '');
+    $isActive          = isset($_POST['is_active']) ? 1 : 0;
+
+    if (empty($name)) {
+        $error = 'El nombre del producto es obligatorio';
+    } elseif ($price <= 0) {
+        $error = 'El precio debe ser mayor a 0';
+    } elseif (!$acceptsSinpe && !$acceptsPaypal) {
+        $error = 'Debes aceptar al menos un método de pago';
+    } elseif ($acceptsSinpe && empty($sinpePhone)) {
+        $error = 'Debes proporcionar un número de teléfono SINPE';
+    } elseif ($acceptsPaypal && empty($paypalEmail)) {
+        $error = 'Debes proporcionar un correo de PayPal';
+    } else {
+        try {
+            $uploadDir   = __DIR__ . '/uploads/emprendedoras/';
+            $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+            if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+
+            // Mantener imágenes actuales por defecto
+            $images = [
+                1 => $product['image_1'],
+                2 => $product['image_2'],
+                3 => $product['image_3'],
+                4 => $product['image_4'],
+                5 => $product['image_5'],
+            ];
+
+            // Procesar nuevas imágenes (solo reemplazar si se subió una nueva)
+            for ($i = 1; $i <= 5; $i++) {
+                if (isset($_FILES["image_$i"]) && $_FILES["image_$i"]['error'] === UPLOAD_ERR_OK) {
+                    $ext = strtolower(pathinfo($_FILES["image_$i"]['name'], PATHINFO_EXTENSION));
+                    if (!in_array($ext, $allowedExts)) continue;
+                    $filename    = 'product_' . $userId . '_' . time() . '_' . $i . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+                    $destination = $uploadDir . $filename;
+                    if (move_uploaded_file($_FILES["image_$i"]['tmp_name'], $destination)) {
+                        // Borrar imagen anterior si existe y es local
+                        $oldImg = $images[$i] ?? '';
+                        if ($oldImg && str_starts_with($oldImg, '/uploads/')) {
+                            $oldPath = __DIR__ . $oldImg;
+                            if (file_exists($oldPath)) @unlink($oldPath);
+                        }
+                        $images[$i] = '/uploads/emprendedoras/' . $filename;
+                    }
+                }
+
+                // Eliminar imagen si se marcó el checkbox "borrar"
+                if (!empty($_POST["delete_image_$i"])) {
+                    $oldImg = $images[$i] ?? '';
+                    if ($oldImg && str_starts_with($oldImg, '/uploads/')) {
+                        $oldPath = __DIR__ . $oldImg;
+                        if (file_exists($oldPath)) @unlink($oldPath);
+                    }
+                    $images[$i] = null;
+                }
+            }
+
+            $stmt = $pdo->prepare("
+                UPDATE entrepreneur_products SET
+                    category_id        = ?,
+                    name               = ?,
+                    description        = ?,
+                    price              = ?,
+                    stock              = ?,
+                    sku                = ?,
+                    image_1            = ?,
+                    image_2            = ?,
+                    image_3            = ?,
+                    image_4            = ?,
+                    image_5            = ?,
+                    weight_kg          = ?,
+                    accepts_sinpe      = ?,
+                    accepts_paypal     = ?,
+                    sinpe_phone        = ?,
+                    paypal_email       = ?,
+                    shipping_available = ?,
+                    pickup_available   = ?,
+                    pickup_location    = ?,
+                    is_active          = ?,
+                    updated_at         = datetime('now')
+                WHERE id = ? AND user_id = ?
+            ");
+
+            $stmt->execute([
+                $categoryId, $name, $description, $price, $stock, $sku,
+                $images[1], $images[2], $images[3], $images[4], $images[5],
+                $weight, $acceptsSinpe, $acceptsPaypal,
+                $sinpePhone, $paypalEmail,
+                $shippingAvailable, $pickupAvailable, $pickupLocation,
+                $isActive,
+                $productId, $userId
+            ]);
+
+            // Recargar el producto actualizado
+            $stmt2 = $pdo->prepare("SELECT * FROM entrepreneur_products WHERE id = ? AND user_id = ?");
+            $stmt2->execute([$productId, $userId]);
+            $product = $stmt2->fetch(PDO::FETCH_ASSOC);
+
+            $success = '¡Producto actualizado exitosamente!';
+
+        } catch (Exception $e) {
+            $error = 'Error al actualizar el producto: ' . $e->getMessage();
+        }
+    }
+}
+
+$cantidadProductos = 0;
+if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+    foreach ($_SESSION['cart'] as $it) {
+        $cantidadProductos += (int)($it['qty'] ?? 0);
+    }
+}
+$isLoggedIn = true;
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Producto | Emprendedoras</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/compratica-header.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .form-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        .form-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        .form-header { margin-bottom: 30px; }
+        .form-header h1 { font-size: 2rem; color: #333; margin-bottom: 10px; }
+        .form-header p { color: #666; }
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 8px; color: #333; }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0;
+            border-radius: 10px; font-size: 1rem; transition: border-color 0.3s; font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus { outline: none; border-color: #667eea; }
+        .form-group textarea { min-height: 120px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; }
+        .checkbox-group input[type="checkbox"] { width: auto; }
+        .image-upload-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .image-slot { position: relative; }
+        .image-preview {
+            width: 100%; aspect-ratio: 1; object-fit: cover;
+            border-radius: 10px; border: 2px solid #e0e0e0;
+        }
+        .image-upload-box {
+            border: 2px dashed #e0e0e0; border-radius: 10px;
+            padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            aspect-ratio: 1;
+        }
+        .image-upload-box:hover { border-color: #667eea; background: #f8f9ff; }
+        .image-upload-box i { font-size: 2rem; color: #667eea; margin-bottom: 8px; }
+        .image-upload-box input[type="file"] { display: none; }
+        .btn-delete-img {
+            position: absolute; top: 6px; right: 6px;
+            background: rgba(220,53,69,0.85); color: white; border: none;
+            border-radius: 50%; width: 26px; height: 26px; font-size: 0.75rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-submit {
+            width: 100%; padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 50px;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s;
+        }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102,126,234,0.4); }
+        .alert { padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; }
+        .alert-error { background: #fee; color: #c33; border: 1px solid #fcc; }
+        .alert-success { background: #efe; color: #3c3; border: 1px solid #cfc; }
+        .section-title {
+            font-size: 1.3rem; color: #333; margin: 30px 0 20px 0;
+            padding-bottom: 10px; border-bottom: 2px solid #667eea;
+        }
+        .status-badge {
+            display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+        }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-inactive { background: #f8d7da; color: #721c24; }
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+            .form-card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <?php include __DIR__ . '/includes/header.php'; ?>
+
+    <div class="form-container">
+        <div class="form-card">
+            <div class="form-header">
+                <h1>
+                    <i class="fas fa-edit"></i> Editar Producto
+                    <span class="status-badge <?= $product['is_active'] ? 'status-active' : 'status-inactive' ?>">
+                        <?= $product['is_active'] ? 'Activo' : 'Inactivo' ?>
+                    </span>
+                </h1>
+                <p>Modifica la información de tu producto</p>
+            </div>
+
+            <?php if ($error): ?>
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <?= htmlspecialchars($error) ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($success): ?>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    <?= htmlspecialchars($success) ?>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST" enctype="multipart/form-data">
+
+                <div class="section-title">Información Básica</div>
+
+                <div class="form-group">
+                    <label>Nombre del Producto *</label>
+                    <input type="text" name="name" required placeholder="Ej: Café Orgánico Tarrazú"
+                           value="<?= htmlspecialchars($product['name']) ?>">
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea name="description" placeholder="Describe tu producto..."><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Categoría *</label>
+                        <select name="category_id" required>
+                            <option value="">Selecciona una categoría</option>
+                            <?php foreach ($categories as $cat): ?>
+                                <option value="<?= $cat['id'] ?>" <?= (int)$product['category_id'] === (int)$cat['id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($cat['name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>SKU (opcional)</label>
+                        <input type="text" name="sku" placeholder="Código del producto"
+                               value="<?= htmlspecialchars($product['sku'] ?? '') ?>">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Precio (CRC) *</label>
+                        <input type="number" name="price" required min="1" step="1"
+                               value="<?= (int)$product['price'] ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cantidad en Stock</label>
+                        <input type="number" name="stock" min="0"
+                               value="<?= (int)($product['stock'] ?? 0) ?>">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Peso (kg) - para envíos</label>
+                    <input type="number" name="weight_kg" min="0" step="0.01"
+                           value="<?= htmlspecialchars($product['weight_kg'] ?? '') ?>">
+                </div>
+
+                <div class="section-title">Imágenes del Producto</div>
+                <p style="color:#666;margin-bottom:15px;font-size:0.9rem;">
+                    Sube nuevas imágenes para reemplazar las actuales. Usa el botón
+                    <i class="fas fa-times" style="color:#dc3545;"></i> para eliminar una imagen.
+                </p>
+
+                <div class="image-upload-group">
+                    <?php for ($i = 1; $i <= 5; $i++):
+                        $currentImg = $product["image_$i"] ?? null;
+                    ?>
+                        <div class="image-slot" id="slot-<?= $i ?>">
+                            <?php if ($currentImg): ?>
+                                <img src="<?= htmlspecialchars($currentImg) ?>"
+                                     alt="Imagen <?= $i ?>"
+                                     class="image-preview"
+                                     id="preview-<?= $i ?>">
+                                <button type="button" class="btn-delete-img"
+                                        onclick="deleteImage(<?= $i ?>)"
+                                        title="Eliminar imagen">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <input type="hidden" name="delete_image_<?= $i ?>" id="delete_<?= $i ?>" value="">
+                            <?php endif; ?>
+
+                            <label class="image-upload-box" id="upload-box-<?= $i ?>"
+                                   style="<?= $currentImg ? 'display:none;' : '' ?>">
+                                <i class="fas fa-camera"></i>
+                                <div>Imagen <?= $i ?></div>
+                                <input type="file" name="image_<?= $i ?>" accept="image/*"
+                                       onchange="previewImage(this, <?= $i ?>)">
+                            </label>
+                        </div>
+                    <?php endfor; ?>
+                </div>
+
+                <div class="section-title">Métodos de Pago Aceptados</div>
+
+                <div class="checkbox-group" style="margin-bottom:15px;">
+                    <input type="checkbox" id="accepts_sinpe" name="accepts_sinpe" value="1"
+                           <?= $product['accepts_sinpe'] ? 'checked' : '' ?>>
+                    <label for="accepts_sinpe" style="margin:0;">
+                        <i class="fas fa-mobile-alt"></i> SINPE Móvil
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Número de teléfono SINPE</label>
+                    <input type="tel" name="sinpe_phone" placeholder="8888-8888"
+                           value="<?= htmlspecialchars($product['sinpe_phone'] ?? $paymentMethods['sinpe_phone'] ?? '') ?>">
+                </div>
+
+                <div class="checkbox-group" style="margin-bottom:15px;">
+                    <input type="checkbox" id="accepts_paypal" name="accepts_paypal" value="1"
+                           <?= $product['accepts_paypal'] ? 'checked' : '' ?>>
+                    <label for="accepts_paypal" style="margin:0;">
+                        <i class="fab fa-paypal"></i> PayPal
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Correo de PayPal</label>
+                    <input type="email" name="paypal_email" placeholder="tu@email.com"
+                           value="<?= htmlspecialchars($product['paypal_email'] ?? $paymentMethods['paypal_email'] ?? '') ?>">
+                </div>
+
+                <div class="section-title">Opciones de Entrega</div>
+
+                <div class="checkbox-group" style="margin-bottom:15px;">
+                    <input type="checkbox" id="shipping_available" name="shipping_available" value="1"
+                           <?= $product['shipping_available'] ? 'checked' : '' ?>>
+                    <label for="shipping_available" style="margin:0;">
+                        <i class="fas fa-shipping-fast"></i> Ofrezco envío a domicilio
+                    </label>
+                </div>
+
+                <div class="checkbox-group" style="margin-bottom:15px;">
+                    <input type="checkbox" id="pickup_available" name="pickup_available" value="1"
+                           <?= $product['pickup_available'] ? 'checked' : '' ?>>
+                    <label for="pickup_available" style="margin:0;">
+                        <i class="fas fa-store"></i> Ofrezco retiro en persona
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Ubicación para retiro (opcional)</label>
+                    <input type="text" name="pickup_location" placeholder="Ej: San José, Barrio Escalante"
+                           value="<?= htmlspecialchars($product['pickup_location'] ?? '') ?>">
+                </div>
+
+                <div class="section-title">Estado del Producto</div>
+
+                <div class="checkbox-group" style="margin-bottom:25px;">
+                    <input type="checkbox" id="is_active" name="is_active" value="1"
+                           <?= $product['is_active'] ? 'checked' : '' ?>>
+                    <label for="is_active" style="margin:0;">
+                        <i class="fas fa-eye"></i> Producto visible al público
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+
+                <p style="text-align:center;margin-top:20px;">
+                    <a href="emprendedoras-dashboard.php" style="color:#667eea;">
+                        <i class="fas fa-arrow-left"></i> Volver al dashboard
+                    </a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <?php include __DIR__ . '/includes/footer.php'; ?>
+
+    <script>
+    function previewImage(input, slot) {
+        if (!input.files || !input.files[0]) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var slotEl   = document.getElementById('slot-' + slot);
+            var uploadBox = document.getElementById('upload-box-' + slot);
+
+            // Crear o actualizar preview
+            var preview = document.getElementById('preview-' + slot);
+            if (!preview) {
+                preview = document.createElement('img');
+                preview.id        = 'preview-' + slot;
+                preview.className = 'image-preview';
+                preview.alt       = 'Imagen ' + slot;
+                slotEl.insertBefore(preview, uploadBox);
+
+                // Botón de eliminar
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-delete-img';
+                btn.title = 'Eliminar imagen';
+                btn.innerHTML = '<i class="fas fa-times"></i>';
+                btn.onclick = function() { deleteImage(slot); };
+                slotEl.insertBefore(btn, uploadBox);
+            }
+            preview.src = e.target.result;
+            uploadBox.style.display = 'none';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    function deleteImage(slot) {
+        var preview  = document.getElementById('preview-' + slot);
+        var uploadBox = document.getElementById('upload-box-' + slot);
+        var deleteInput = document.getElementById('delete_' + slot);
+
+        // Marcar para borrar en el servidor
+        if (deleteInput) deleteInput.value = '1';
+
+        // Ocultar preview y mostrar upload box
+        if (preview) preview.remove();
+        var btn = document.querySelector('#slot-' + slot + ' .btn-delete-img');
+        if (btn) btn.remove();
+        if (uploadBox) uploadBox.style.display = '';
+
+        // Limpiar el file input si existía
+        var fileInput = uploadBox ? uploadBox.querySelector('input[type=file]') : null;
+        if (fileInput) fileInput.value = '';
+    }
+    </script>
+</body>
+</html>
