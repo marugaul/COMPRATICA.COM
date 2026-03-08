@@ -37,8 +37,9 @@ try {
     $stmt->execute([$userId]);
     $subscription = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    logError('emprendedoras_dashboard.log', 'SUBSCRIPTION_ERROR', ['user_id' => $userId, 'error' => $e->getMessage()]);
-    die('Error al verificar suscripción. Por favor contacta soporte.');
+    // Tablas aún no creadas o error de DB → redirigir a planes
+    header('Location: emprendedoras-planes.php');
+    exit;
 }
 
 // Si no tiene suscripción, redirigir a planes
