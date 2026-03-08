@@ -150,17 +150,22 @@ $all = $pdo->query("
     LIMIT 100
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// Obtener comprobantes para suscripciones pendientes
+// Obtener comprobantes para suscripciones pendientes (keyed by user_id)
 $receiptMap = [];
 if (!empty($pending)) {
-    $ids = implode(',', array_map(fn($r) => (int)$r['id'], $pending));
+    $userIds = implode(',', array_map(fn($r) => (int)$r['user_id'], $pending));
     try {
         $recs = $pdo->query("
             SELECT * FROM payment_receipts
-            WHERE entity_type='entrepreneur_subscription' AND entity_id IN ($ids)
+            WHERE listing_type='subscription' AND user_id IN ($userIds)
+            ORDER BY id DESC
         ")->fetchAll(PDO::FETCH_ASSOC);
+        // Keep only the most recent receipt per user
         foreach ($recs as $rec) {
-            $receiptMap[$rec['entity_id']] = $rec;
+            $uid = (int)$rec['user_id'];
+            if (!isset($receiptMap[$uid])) {
+                $receiptMap[$uid] = $rec;
+            }
         }
     } catch (Throwable $e) {}
 }
@@ -272,7 +277,7 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                 </thead>
                 <tbody>
                 <?php foreach ($pending as $row): ?>
-                    <?php $receipt = $receiptMap[$row['id']] ?? null; ?>
+                    <?php $receipt = $receiptMap[(int)$row['user_id']] ?? null; ?>
                     <tr>
                         <td><?php echo $row['id']; ?></td>
                         <td><strong><?php echo h($row['user_name']); ?></strong></td>
@@ -280,8 +285,8 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                         <td><?php echo h($row['plan_name']); ?></td>
                         <td><?php echo ucfirst(h($row['payment_method'] ?? 'N/A')); ?></td>
                         <td>
-                            <?php if ($receipt && !empty($receipt['file_path'])): ?>
-                                <a href="../<?php echo h($receipt['file_path']); ?>" target="_blank" class="btn btn-view">
+                            <?php if ($receipt && !empty($receipt['receipt_url'])): ?>
+                                <a href="<?php echo h($receipt['receipt_url']); ?>" target="_blank" class="btn btn-view">
                                     <i class="fas fa-image"></i> Ver
                                 </a>
                             <?php else: ?>
