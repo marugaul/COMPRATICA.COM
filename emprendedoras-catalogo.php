@@ -330,10 +330,22 @@ $featuredProducts = $pdo->query("
         }
         .product-image {
             width: 100%;
-            height: 250px;
+            height: 220px;
             object-fit: cover;
+            object-position: center;
             background: #f5f5f5;
+            display: block;
+            border-radius: 0;
+        }
+        /* Wrapper para que el toldo quede detrás de la imagen */
+        .product-card::before,
+        .product-card::after {
+            z-index: 0;
+        }
+        .product-image,
+        .product-info {
             position: relative;
+            z-index: 1;
         }
         .product-badge {
             position: absolute;
