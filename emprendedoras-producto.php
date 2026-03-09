@@ -145,6 +145,24 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
         /* Descripción */
         .description-box { background: #fafafa; border-radius: 12px; padding: 18px; color: #444; line-height: 1.7; }
 
+        /* Carrito */
+        .btn-add-cart {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 16px; border-radius: 12px; border: none;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; font-size: 1.05rem; font-weight: 700; cursor: pointer;
+            transition: all 0.3s; text-decoration: none;
+        }
+        .btn-add-cart:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
+        .btn-add-cart:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .cart-toast {
+            position: fixed; bottom: 28px; right: 28px; z-index: 9998;
+            background: #111; color: white; padding: 14px 22px; border-radius: 12px;
+            font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            transform: translateY(80px); opacity: 0; transition: all 0.35s;
+        }
+        .cart-toast.show { transform: translateY(0); opacity: 1; }
+
         /* Métodos de pago */
         .pay-section { border-top: 1px solid #f0f0f0; padding-top: 18px; }
         .pay-section h4 { font-size: 1rem; color: #333; margin-bottom: 12px; }
@@ -301,6 +319,20 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
             </div>
             <?php endif; ?>
 
+            <!-- Agregar al carrito -->
+            <?php if ($stock > 0): ?>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <div style="display:flex;align-items:center;border:2px solid #e0e0e0;border-radius:10px;overflow:hidden;">
+                    <button onclick="this.nextElementSibling.value=Math.max(1,+this.nextElementSibling.value-1)" style="width:36px;height:42px;border:none;background:white;font-size:1.2rem;cursor:pointer;font-weight:700;">−</button>
+                    <input type="number" id="qty-input" value="1" min="1" max="<?= $stock ?>" style="width:46px;height:42px;text-align:center;border:none;border-left:2px solid #e0e0e0;border-right:2px solid #e0e0e0;font-weight:700;font-size:1rem;">
+                    <button onclick="this.previousElementSibling.value=Math.min(<?= $stock ?>,+this.previousElementSibling.value+1)" style="width:36px;height:42px;border:none;background:white;font-size:1.2rem;cursor:pointer;font-weight:700;">+</button>
+                </div>
+                <button class="btn-add-cart" id="btn-cart" onclick="addToCart(<?= $productId ?>)">
+                    <i class="fas fa-shopping-bag"></i> Agregar al carrito
+                </button>
+            </div>
+            <?php endif; ?>
+
             <!-- Métodos de pago -->
             <div class="pay-section">
                 <h4><i class="fas fa-lock" style="color:#667eea;"></i> Formas de pago</h4>
@@ -373,6 +405,8 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
 
+<div class="cart-toast" id="cart-toast"></div>
+
 <script>
 function changeImage(thumb, src) {
     document.getElementById('main-img').src = src;
@@ -392,6 +426,48 @@ document.getElementById('lightbox').addEventListener('click', function(e) {
     if (e.target === this) closeLightbox();
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+function showToast(msg, ok) {
+    const t = document.getElementById('cart-toast');
+    t.innerHTML = (ok ? '🛍️ ' : '⚠️ ') + msg;
+    t.style.background = ok ? '#111' : '#ef4444';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function addToCart(pid) {
+    const qty = parseInt(document.getElementById('qty-input').value) || 1;
+    const btn = document.getElementById('btn-cart');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Agregando...';
+    fetch('/api/emp-cart.php?action=add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({product_id: pid, qty: qty})
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) {
+            showToast(d.message || '¡Producto agregado!', true);
+            btn.innerHTML = '<i class="fas fa-check"></i> ¡Agregado!';
+            // Actualizar contador del header si existe
+            document.querySelectorAll('.emp-cart-count').forEach(el => el.textContent = d.cart_count);
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-shopping-bag"></i> Agregar al carrito';
+            }, 2000);
+        } else {
+            showToast(d.error || 'Error al agregar', false);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-shopping-bag"></i> Agregar al carrito';
+        }
+    })
+    .catch(() => {
+        showToast('Error de conexión', false);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-shopping-bag"></i> Agregar al carrito';
+    });
+}
 </script>
 </body>
 </html>

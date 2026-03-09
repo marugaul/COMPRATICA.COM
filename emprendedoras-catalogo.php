@@ -417,6 +417,35 @@ $featuredProducts = $pdo->query("
             color: #ff6b9d;
             font-size: 1.3rem;
         }
+        .btn-add-catalog {
+            display: block; width: 100%; margin-top: 10px;
+            padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; border: none; border-radius: 10px;
+            font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.25s;
+        }
+        .btn-add-catalog:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(102,126,234,0.4); }
+        .btn-add-catalog:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .emp-cart-fab {
+            position: fixed; bottom: 28px; right: 28px; z-index: 999;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; width: 60px; height: 60px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 20px rgba(102,126,234,0.5); text-decoration: none;
+            font-size: 1.4rem; transition: transform 0.2s;
+        }
+        .emp-cart-fab:hover { transform: scale(1.1); }
+        .emp-cart-fab .count {
+            position: absolute; top: -4px; right: -4px; background: #ef4444;
+            color: white; border-radius: 50%; width: 22px; height: 22px;
+            font-size: 0.72rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
+        }
+        .catalog-toast {
+            position: fixed; bottom: 100px; right: 28px; z-index: 9998;
+            background: #111; color: white; padding: 12px 18px; border-radius: 10px;
+            font-weight: 600; font-size: 0.9rem; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            transform: translateY(60px); opacity: 0; transition: all 0.3s; pointer-events: none;
+        }
+        .catalog-toast.show { transform: translateY(0); opacity: 1; }
     </style>
 </head>
 <body>
@@ -503,6 +532,13 @@ $featuredProducts = $pdo->query("
                                 <span><i class="fas fa-eye"></i> <?php echo $product['views_count']; ?></span>
                                 <span><i class="fas fa-shopping-cart"></i> <?php echo $product['sales_count']; ?></span>
                             </div>
+                            <?php if (($product['stock'] ?? 0) > 0): ?>
+                            <button class="btn-add-catalog" onclick="event.preventDefault();addToCatalogCart(<?php echo $product['id']; ?>,this)">
+                                <i class="fas fa-shopping-bag"></i> Agregar
+                            </button>
+                            <?php else: ?>
+                            <div style="text-align:center;color:#ef4444;font-size:0.82rem;margin-top:8px;font-weight:600;">Sin stock</div>
+                            <?php endif; ?>
                         </div>
                     </a>
                 <?php endforeach; ?>
@@ -560,6 +596,13 @@ $featuredProducts = $pdo->query("
                                 <span><i class="fas fa-eye"></i> <?php echo $product['views_count']; ?></span>
                                 <span><i class="fas fa-shopping-cart"></i> <?php echo $product['sales_count']; ?></span>
                             </div>
+                            <?php if (($product['stock'] ?? 0) > 0): ?>
+                            <button class="btn-add-catalog" onclick="event.preventDefault();addToCatalogCart(<?php echo $product['id']; ?>,this)">
+                                <i class="fas fa-shopping-bag"></i> Agregar
+                            </button>
+                            <?php else: ?>
+                            <div style="text-align:center;color:#ef4444;font-size:0.82rem;margin-top:8px;font-weight:600;">Sin stock</div>
+                            <?php endif; ?>
                         </div>
                     </a>
                 <?php endforeach; ?>
@@ -578,5 +621,59 @@ $featuredProducts = $pdo->query("
     </div>
 
     <?php include __DIR__ . '/includes/footer.php'; ?>
+
+<!-- Botón flotante del carrito -->
+<a href="emprendedoras-carrito.php" class="emp-cart-fab" id="emp-fab" style="display:none;">
+    <i class="fas fa-shopping-bag"></i>
+    <span class="count emp-cart-count" id="fab-count">0</span>
+</a>
+<div class="catalog-toast" id="catalog-toast"></div>
+
+<script>
+function showCatalogToast(msg, ok) {
+    const t = document.getElementById('catalog-toast');
+    t.innerHTML = (ok ? '🛍️ ' : '⚠️ ') + msg;
+    t.style.background = ok ? '#111' : '#ef4444';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function addToCatalogCart(pid, btn) {
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    fetch('/api/emp-cart.php?action=add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({product_id: pid, qty: 1})
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) {
+            showCatalogToast(d.message || '¡Agregado!', true);
+            btn.innerHTML = '<i class="fas fa-check"></i> ¡Listo!';
+            updateFab(d.cart_count);
+            setTimeout(() => { btn.disabled = false; btn.innerHTML = orig; }, 2000);
+        } else {
+            showCatalogToast(d.error || 'Error al agregar', false);
+            btn.disabled = false; btn.innerHTML = orig;
+        }
+    })
+    .catch(() => { showCatalogToast('Error de conexión', false); btn.disabled = false; btn.innerHTML = orig; });
+}
+
+function updateFab(count) {
+    const fab = document.getElementById('emp-fab');
+    const cnt = document.getElementById('fab-count');
+    cnt.textContent = count;
+    fab.style.display = count > 0 ? 'flex' : 'none';
+}
+
+// Cargar conteo inicial
+fetch('/api/emp-cart.php?action=get')
+    .then(r => r.json())
+    .then(d => { if (d.ok) updateFab(d.count); })
+    .catch(() => {});
+</script>
 </body>
 </html>
