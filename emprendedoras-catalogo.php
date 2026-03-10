@@ -644,6 +644,7 @@ function addToCatalogCart(pid, btn) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     fetch('/api/emp-cart.php?action=add', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({product_id: pid, qty: 1})
     })
@@ -670,7 +671,7 @@ function updateFab(count) {
 }
 
 // Cargar conteo inicial
-fetch('/api/emp-cart.php?action=get')
+fetch('/api/emp-cart.php?action=get', {credentials:'same-origin'})
     .then(r => r.json())
     .then(d => { if (d.ok) updateFab(d.count); })
     .catch(() => {});
