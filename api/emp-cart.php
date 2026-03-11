@@ -7,19 +7,8 @@
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
-$__sessPath = __DIR__ . '/../sessions';
-if (!is_dir($__sessPath)) @mkdir($__sessPath, 0700, true);
-if (is_dir($__sessPath) && is_writable($__sessPath)) {
-    ini_set('session.save_path', $__sessPath);
-}
-$__isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_name('PHPSESSID');
-    session_set_cookie_params(['lifetime'=>0,'path'=>'/','domain'=>'','secure'=>$__isHttps,'httponly'=>true,'samesite'=>'Lax']);
-    ini_set('session.use_only_cookies','1');
-    ini_set('session.gc_maxlifetime','86400');
-    session_start();
-}
+// Usar config.php para una sesión consistente con el resto del sitio
+require_once __DIR__ . '/../includes/config.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 require_once __DIR__ . '/../includes/db.php';

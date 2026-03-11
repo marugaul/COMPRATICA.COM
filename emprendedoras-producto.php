@@ -163,27 +163,6 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
         }
         .cart-toast.show { transform: translateY(0); opacity: 1; }
 
-        /* Métodos de pago */
-        .pay-section { border-top: 1px solid #f0f0f0; padding-top: 18px; }
-        .pay-section h4 { font-size: 1rem; color: #333; margin-bottom: 12px; }
-        .pay-methods { display: flex; flex-direction: column; gap: 10px; }
-        .btn-pay {
-            display: flex; align-items: center; gap: 12px;
-            padding: 14px 20px; border-radius: 12px; border: none;
-            font-size: 1rem; font-weight: 700; cursor: pointer; text-decoration: none;
-            transition: all 0.25s; width: 100%;
-        }
-        .btn-sinpe {
-            background: linear-gradient(135deg, #00b09b, #00d2a0);
-            color: white;
-        }
-        .btn-sinpe:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,176,155,0.4); }
-        .btn-paypal {
-            background: linear-gradient(135deg, #003087, #009cde);
-            color: white;
-        }
-        .btn-paypal:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,48,135,0.3); }
-
         /* Entrega */
         .delivery-row { display: flex; gap: 12px; flex-wrap: wrap; }
         .delivery-chip {
@@ -331,35 +310,32 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
                     <i class="fas fa-shopping-bag"></i> Agregar al carrito
                 </button>
             </div>
+
+            <!-- Banner Ver Carrito (aparece después de agregar) -->
+            <div id="cart-banner" style="display:none;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border-radius:12px;padding:14px 20px;display:none;align-items:center;justify-content:space-between;gap:12px;">
+                <span><i class="fas fa-check-circle"></i> <strong id="cart-banner-msg">¡Producto agregado!</strong></span>
+                <a href="emprendedoras-carrito.php" style="background:white;color:#667eea;padding:8px 18px;border-radius:8px;font-weight:700;text-decoration:none;white-space:nowrap;font-size:0.9rem;">
+                    <i class="fas fa-shopping-bag"></i> Ver carrito
+                </a>
+            </div>
+            <?php else: ?>
+            <div style="text-align:center;padding:14px;background:#fee2e2;border-radius:10px;color:#991b1b;font-weight:700;">
+                <i class="fas fa-times-circle"></i> Producto sin stock
+            </div>
             <?php endif; ?>
 
-            <!-- Métodos de pago -->
-            <div class="pay-section">
-                <h4><i class="fas fa-lock" style="color:#667eea;"></i> Formas de pago</h4>
-                <div class="pay-methods">
-                    <?php if ($product['accepts_sinpe'] && $sinpePhone): ?>
-                        <a href="https://wa.me/506<?= $sinpeWA ?>?text=<?= urlencode('Hola, me interesa el producto: ' . $product['name'] . ' que vi en CompraTica. ¿Está disponible?') ?>"
-                           target="_blank" rel="noopener" class="btn-pay btn-sinpe">
-                            <i class="fas fa-mobile-alt" style="font-size:1.3rem;"></i>
-                            <div>
-                                <div>Pagar con SINPE Móvil</div>
-                                <div style="font-size:0.8rem;font-weight:400;opacity:0.9;">Tel: <?= htmlspecialchars($sinpePhone) ?></div>
-                            </div>
-                        </a>
-                    <?php endif; ?>
-
-                    <?php if ($product['accepts_paypal'] && $paypalEmail): ?>
-                        <a href="https://www.paypal.com/paypalme/<?= urlencode($paypalEmail) ?>/<?= number_format((float)$product['price'] / 650, 2, '.', '') ?>USD"
-                           target="_blank" rel="noopener" class="btn-pay btn-paypal">
-                            <i class="fab fa-paypal" style="font-size:1.3rem;"></i>
-                            <div>
-                                <div>Pagar con PayPal</div>
-                                <div style="font-size:0.8rem;font-weight:400;opacity:0.9;">≈ US$<?= number_format((float)$product['price'] / 650, 2) ?></div>
-                            </div>
-                        </a>
-                    <?php endif; ?>
+            <!-- WhatsApp contacto -->
+            <?php if ($sinpePhone): ?>
+            <a href="https://wa.me/506<?= $sinpeWA ?>?text=<?= urlencode('Hola, me interesa el producto: ' . $product['name'] . ' que vi en CompraTica. ¿Está disponible?') ?>"
+               target="_blank" rel="noopener"
+               style="display:flex;align-items:center;gap:10px;background:#25D366;color:white;padding:13px 20px;border-radius:12px;text-decoration:none;font-weight:700;">
+                <i class="fab fa-whatsapp" style="font-size:1.3rem;"></i>
+                <div>
+                    <div>Consultar disponibilidad</div>
+                    <div style="font-size:0.8rem;font-weight:400;opacity:0.9;">Contactar a <?= htmlspecialchars($product['seller_name']) ?></div>
                 </div>
-            </div>
+            </a>
+            <?php endif; ?>
 
             <!-- Stats -->
             <div style="display:flex;gap:20px;color:#999;font-size:0.85rem;padding-top:4px;">
@@ -442,20 +418,23 @@ function addToCart(pid) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Agregando...';
     fetch('/api/emp-cart.php?action=add', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({product_id: pid, qty: qty})
     })
     .then(r => r.json())
     .then(d => {
         if (d.ok) {
-            showToast(d.message || '¡Producto agregado!', true);
+            // Mostrar banner con enlace al carrito
+            const banner = document.getElementById('cart-banner');
+            document.getElementById('cart-banner-msg').textContent = d.message || '¡Producto agregado!';
+            banner.style.display = 'flex';
             btn.innerHTML = '<i class="fas fa-check"></i> ¡Agregado!';
-            // Actualizar contador del header si existe
             document.querySelectorAll('.emp-cart-count').forEach(el => el.textContent = d.cart_count);
             setTimeout(() => {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-shopping-bag"></i> Agregar al carrito';
-            }, 2000);
+            }, 3000);
         } else {
             showToast(d.error || 'Error al agregar', false);
             btn.disabled = false;
