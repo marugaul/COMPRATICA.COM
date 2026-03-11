@@ -295,12 +295,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['csrf']) && hash_equal
                 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
               }
             } else {
-              $res = $pdo->query($toExecute);
-              if ($res instanceof PDOStatement && $res->columnCount() > 0) {
-                $rows = $res->fetchAll(PDO::FETCH_ASSOC) ?: [];
-              } else {
-                $pdo->exec($toExecute);
-              }
+              $pdo->exec($toExecute);
             }
 
             if (!empty($rows)) {
