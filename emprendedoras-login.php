@@ -57,6 +57,17 @@ $FACEBOOK_REDIRECT_URI = ($__isHttps ? 'https://' : 'http://') . $host . '/empre
 $error   = '';
 $success = '';
 
+// --- Log de login ---
+$__logDir = __DIR__ . '/logs';
+if (!is_dir($__logDir)) @mkdir($__logDir, 0755, true);
+$__logFile = $__logDir . '/emprendedoras-login.log';
+function empLog(string $level, string $msg, array $ctx = []): void {
+    global $__logFile;
+    $line = '[' . date('Y-m-d H:i:s') . '] [' . $level . '] ' . $msg;
+    if ($ctx) $line .= ' | ' . json_encode($ctx, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    @file_put_contents($__logFile, $line . PHP_EOL, FILE_APPEND);
+}
+
 // Si ya está logueado, redirigir al dashboard
 if (isset($_SESSION['uid']) && $_SESSION['uid'] > 0 && empty($_GET['oauth'])) {
     header('Location: emprendedoras-dashboard.php');
@@ -188,6 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $ok = $storedHash ? password_verify($password, $storedHash) : false;
 
                 if ($user && $ok) {
+                    empLog('INFO', 'LOGIN_OK', ['email' => $email, 'user_id' => $user['id'], 'ip' => $_SERVER['REMOTE_ADDR'] ?? '']);
                     $_SESSION['uid']        = (int)$user['id'];
                     $_SESSION['user_id']    = (int)$user['id'];
                     $_SESSION['email']      = $user['email'];
@@ -199,6 +211,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     header('Location: emprendedoras-dashboard.php');
                     exit;
                 } else {
+                    $reason = !$user ? 'usuario_no_encontrado' : (!$storedHash ? 'sin_hash' : 'password_incorrecta');
+                    empLog('ERROR', 'LOGIN_FAIL', [
+                        'email'   => $email,
+                        'reason'  => $reason,
+                        'ip'      => $_SERVER['REMOTE_ADDR'] ?? '',
+                        'ua'      => substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 80),
+                    ]);
                     $error = 'Email o contraseña incorrectos';
                 }
             } else {
