@@ -469,7 +469,7 @@ logDebug("RENDERING_PAGE");
     </div>
 
     <!-- EMPRENDEDORAS -->
-    <a href="emprendedoras.php" class="category-card category-emprendedoras">
+    <a href="emprendedoras-catalogo.php" class="category-card category-emprendedoras">
       <div class="category-content">
         <div class="category-icon">
           <i class="fas fa-crown"></i>
@@ -576,7 +576,7 @@ logDebug("RENDERING_PAGE");
       <a href="venta-garaje">Venta de Garaje</a>
       <a href="bienes-raices">Bienes Raíces</a>
       <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
-      <a href="emprendedoras.php">Emprendedoras</a>
+      <a href="emprendedoras-catalogo.php">Emprendedoras</a>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>
