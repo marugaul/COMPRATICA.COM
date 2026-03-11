@@ -385,6 +385,12 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
 <div class="cart-toast" id="cart-toast"></div>
 
 <script>
+document.querySelectorAll('#hamburger-menu a').forEach(function(a) {
+    if (a.getAttribute('href') === 'cart' || a.getAttribute('href') === '/cart') {
+        a.setAttribute('href', '/emprendedoras-carrito.php');
+    }
+});
+
 function changeImage(thumb, src) {
     document.getElementById('main-img').src = src;
     document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));

@@ -178,6 +178,13 @@ $cartCount  = array_sum(array_column($cartItems, 'qty'));
 <?php include __DIR__ . '/includes/footer.php'; ?>
 
 <script>
+// Redirigir "Mi Carrito" del menú al carrito de emprendedoras
+document.querySelectorAll('#hamburger-menu a').forEach(function(a) {
+    if (a.getAttribute('href') === 'cart' || a.getAttribute('href') === '/cart') {
+        a.setAttribute('href', '/emprendedoras-carrito.php');
+    }
+});
+
 function changeQty(pid, delta) {
     const el  = document.getElementById('qty-' + pid);
     const cur = parseInt(el.textContent);
