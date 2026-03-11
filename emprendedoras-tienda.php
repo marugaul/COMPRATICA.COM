@@ -3,6 +3,7 @@ ini_set('display_errors', '0');
 error_reporting(E_ALL);
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/live_embed.php';
 
 $isLoggedIn = isset($_SESSION['uid']) && $_SESSION['uid'] > 0;
 $userName   = $_SESSION['name'] ?? 'Usuario';
@@ -211,6 +212,52 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
             .store-avatar { margin-top: -50px; }
             .store-products { grid-template-columns: repeat(2,1fr); gap: 14px; }
         }
+
+        /* ── Live embed en tienda ── */
+        .store-live-section {
+            max-width: 960px; margin: 0 auto 24px; padding: 0 20px;
+        }
+        .store-live-box {
+            border-radius: 14px; overflow: hidden;
+            box-shadow: 0 6px 28px rgba(0,0,0,.15);
+        }
+        .store-live-box-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px; color: white; gap: 10px;
+        }
+        .store-live-box-header span {
+            display: flex; align-items: center; gap: 8px;
+            font-weight: 700; font-size: 0.95rem;
+        }
+        .store-live-iframe-wrap {
+            position: relative; width: 100%; padding-bottom: 56.25%; background: #000;
+        }
+        .store-live-iframe-wrap iframe {
+            position: absolute; inset: 0; width: 100%; height: 100%; border: none;
+        }
+        .store-live-footer {
+            background: #111; padding: 8px 14px;
+            display: flex; align-items: center; justify-content: flex-end;
+        }
+        .store-live-footer a {
+            color: #ccc; font-size: 0.8rem; text-decoration: none;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .store-live-footer a:hover { color: white; }
+        /* Para Instagram/TikTok (sin embed) */
+        .store-live-nonembed {
+            border-radius: 14px; overflow: hidden;
+            box-shadow: 0 6px 28px rgba(0,0,0,.15);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px; gap: 12px;
+        }
+        .store-live-nonembed span {
+            font-size: 0.9rem; color: #555; display: flex; align-items: center; gap: 8px;
+        }
+        .store-live-nonembed a {
+            font-weight: 700; padding: 8px 16px; border-radius: 10px;
+            text-decoration: none; color: white; white-space: nowrap; font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
@@ -237,6 +284,46 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
         </div>
     </div>
 </div>
+
+<?php if ($seller['is_live'] && !empty($seller['live_link'])): ?>
+<?php $lv = parseLiveUrl($seller['live_link']); ?>
+<div class="store-live-section">
+    <?php if ($lv['embedUrl']): ?>
+    <div class="store-live-box">
+        <div class="store-live-box-header" style="background:<?= $lv['color'] ?>">
+            <span>
+                <i class="<?= $lv['icon'] ?>"></i>
+                <?= htmlspecialchars($seller['live_title'] ?: 'EN VIVO') ?>
+            </span>
+            <span style="font-size:0.78rem;opacity:.85;">
+                <i class="fas fa-circle" style="color:#fff;animation:pulse-dot 1.2s infinite;"></i> EN VIVO
+            </span>
+        </div>
+        <div class="store-live-iframe-wrap">
+            <iframe src="<?= htmlspecialchars($lv['embedUrl']) ?>"
+                    allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <div class="store-live-footer">
+            <a href="<?= htmlspecialchars($seller['live_link']) ?>" target="_blank">
+                <i class="fas fa-external-link-alt"></i> Abrir en <?= $lv['platform'] ?>
+            </a>
+        </div>
+    </div>
+    <?php else: ?>
+    <div class="store-live-nonembed" style="background:#fef2f2;border:2px solid <?= $lv['color'] ?>20">
+        <span>
+            <i class="<?= $lv['icon'] ?>" style="color:<?= $lv['color'] ?>;font-size:1.4rem;"></i>
+            Esta emprendedora está en vivo en <?= $lv['platform'] ?>.<br>
+            <small>El live de <?= $lv['platform'] ?> solo se puede ver en la app o el sitio oficial.</small>
+        </span>
+        <a href="<?= htmlspecialchars($seller['live_link']) ?>" target="_blank"
+           style="background:<?= $lv['color'] ?>">
+            <i class="fas fa-external-link-alt"></i> Ver en <?= $lv['platform'] ?>
+        </a>
+    </div>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <!-- Filtros -->
 <div class="store-filters">

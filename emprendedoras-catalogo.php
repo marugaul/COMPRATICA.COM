@@ -3,6 +3,7 @@ ini_set('display_errors', '0');
 error_reporting(E_ALL);
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/live_embed.php';
 
 $isLoggedIn = isset($_SESSION['uid']) && $_SESSION['uid'] > 0;
 $userName   = $_SESSION['name'] ?? 'Usuario';
@@ -318,6 +319,58 @@ $awningPalette = [
             .hero h1 { font-size: 1.9rem; }
             .puesto-products { grid-template-columns: repeat(2, 1fr); }
         }
+
+        /* ── Panel de live incrustado ── */
+        .live-panel {
+            display: none;
+            background: #000;
+            position: relative;
+        }
+        .live-panel.open { display: block; }
+        .live-panel iframe {
+            width: 100%; height: 0;
+            padding-bottom: 56.25%; /* 16:9 */
+            display: block; border: none;
+            position: relative;
+        }
+        /* iframe dentro de un wrapper aspect-ratio */
+        .live-iframe-wrap {
+            position: relative; width: 100%; padding-bottom: 56.25%; background: #000;
+        }
+        .live-iframe-wrap iframe {
+            position: absolute; inset: 0; width: 100%; height: 100%; border: none;
+        }
+        .live-panel-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 12px; background: #111; gap: 8px;
+        }
+        .live-panel-platform {
+            color: #ccc; font-size: 0.78rem; display: flex; align-items: center; gap: 6px;
+        }
+        .live-panel-links { display: flex; gap: 8px; }
+        .live-panel-links a {
+            font-size: 0.75rem; font-weight: 700; padding: 4px 10px;
+            border-radius: 6px; text-decoration: none; white-space: nowrap;
+        }
+        .live-btn-ext {
+            background: #333; color: #fff;
+        }
+        .live-btn-close {
+            background: #ef4444; color: #fff;
+        }
+        /* Badge-botón para abrir el live */
+        .live-badge { cursor: pointer; }
+        /* Plataformas sin embed */
+        .live-nonembed-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px; gap: 8px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .live-nonembed-bar span { font-size: 0.8rem; color: #555; display: flex; align-items: center; gap: 6px; }
+        .live-nonembed-bar a {
+            font-size: 0.8rem; font-weight: 700; padding: 5px 12px;
+            border-radius: 8px; text-decoration: none; color: white; white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -429,12 +482,58 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
                 <div class="puesto-meta"><?= $pCount ?> producto<?= $pCount !== 1 ? 's' : '' ?></div>
             </div>
             <?php if ($isLive): ?>
-                <a href="<?= $liveLink ?>" target="_blank" class="live-badge">
-                    <span class="live-dot"></span>
-                    <?= $liveTitle ?: 'EN VIVO' ?>
-                </a>
+                <?php $lv = parseLiveUrl($liveLink); ?>
+                <?php if ($lv['embedUrl']): ?>
+                    <button class="live-badge" onclick="toggleLive(<?= $sid ?>)" type="button">
+                        <span class="live-dot"></span>
+                        <?= $liveTitle ?: 'EN VIVO' ?>
+                    </button>
+                <?php else: ?>
+                    <a href="<?= $liveLink ?>" target="_blank" class="live-badge"
+                       style="background:<?= $lv['color'] ?>">
+                        <span class="live-dot"></span>
+                        <?= $liveTitle ?: 'EN VIVO' ?>
+                    </a>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
+
+        <!-- Panel live incrustado (YouTube / Facebook) -->
+        <?php if ($isLive): ?>
+            <?php $lv = parseLiveUrl($liveLink); ?>
+            <?php if ($lv['embedUrl']): ?>
+            <div class="live-panel" id="live-<?= $sid ?>">
+                <div class="live-iframe-wrap">
+                    <iframe src="" data-src="<?= htmlspecialchars($lv['embedUrl']) ?>"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowfullscreen loading="lazy"></iframe>
+                </div>
+                <div class="live-panel-footer">
+                    <span class="live-panel-platform">
+                        <i class="<?= $lv['icon'] ?>" style="color:<?= $lv['color'] ?>"></i>
+                        <?= $lv['platform'] ?>
+                    </span>
+                    <div class="live-panel-links">
+                        <a href="<?= htmlspecialchars($liveLink) ?>" target="_blank" class="live-btn-ext">
+                            <i class="fas fa-external-link-alt"></i> Abrir en <?= $lv['platform'] ?>
+                        </a>
+                        <button class="live-btn-close" onclick="toggleLive(<?= $sid ?>)" type="button">
+                            <i class="fas fa-times"></i> Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <?php else: ?>
+            <div class="live-nonembed-bar">
+                <span><i class="<?= $lv['icon'] ?>" style="color:<?= $lv['color'] ?>"></i>
+                    Live en <?= $lv['platform'] ?> — solo disponible en la app</span>
+                <a href="<?= htmlspecialchars($liveLink) ?>" target="_blank"
+                   style="background:<?= $lv['color'] ?>">
+                    <i class="fas fa-external-link-alt"></i> Ver Live
+                </a>
+            </div>
+            <?php endif; ?>
+        <?php endif; ?>
 
         <!-- Productos (grilla 3×) -->
         <div class="puesto-products">
@@ -532,6 +631,24 @@ fetch('/api/emp-cart.php?action=get', {credentials: 'same-origin'})
     .then(r => r.json())
     .then(d => { if (d.ok) updateFab(d.count); })
     .catch(() => {});
+</script>
+<script>
+function toggleLive(sid) {
+    const panel = document.getElementById('live-' + sid);
+    if (!panel) return;
+    const isOpen = panel.classList.toggle('open');
+    // Cargar iframe src solo al abrir (lazy)
+    if (isOpen) {
+        const iframe = panel.querySelector('iframe');
+        if (iframe && !iframe.src) {
+            iframe.src = iframe.dataset.src;
+        }
+    } else {
+        // Pausar quitando src
+        const iframe = panel.querySelector('iframe');
+        if (iframe) iframe.src = '';
+    }
+}
 </script>
 </body>
 </html>
