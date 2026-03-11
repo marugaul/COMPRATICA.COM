@@ -124,13 +124,43 @@ function firstToken(string $sql): string {
   return $token ?: '';
 }
 
-// Devuelve solo la primera sentencia (hasta el primer ; si existe)
-function firstStatement(string $sql): string {
-  $pos = strpos($sql, ';');
-  if ($pos !== false) {
-    return trim(substr($sql, 0, $pos));
+// Divide el SQL en sentencias individuales (respeta ; dentro de strings)
+function splitStatements(string $sql): array {
+  $statements = [];
+  $current = '';
+  $inString = false;
+  $stringChar = '';
+  $len = strlen($sql);
+
+  for ($i = 0; $i < $len; $i++) {
+    $ch = $sql[$i];
+
+    if ($inString) {
+      $current .= $ch;
+      if ($ch === $stringChar && ($i === 0 || $sql[$i-1] !== '\\')) {
+        $inString = false;
+      }
+    } elseif ($ch === "'" || $ch === '"') {
+      $inString = true;
+      $stringChar = $ch;
+      $current .= $ch;
+    } elseif ($ch === ';') {
+      $trimmed = trim($current);
+      if ($trimmed !== '') {
+        $statements[] = $trimmed;
+      }
+      $current = '';
+    } else {
+      $current .= $ch;
+    }
   }
-  return trim($sql);
+
+  $trimmed = trim($current);
+  if ($trimmed !== '') {
+    $statements[] = $trimmed;
+  }
+
+  return $statements;
 }
 
 /* ========== NO LOGUEADO: mostrar login y validar credenciales ========== */
@@ -238,63 +268,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['csrf']) && hash_equal
       try {
         $start = microtime(true);
 
-        // Normaliza y detecta correctamente la sentencia a ejecutar
         $originalSql = $sql;
         $sqlNoComments = stripSqlComments($originalSql);
-        $toExecute = firstStatement($sqlNoComments);     // ejecutamos solo la primera sentencia visible
-        $first = firstToken($toExecute);
-        $shouldFetch = in_array($first, ['SELECT','PRAGMA','EXPLAIN','SHOW','WITH'], true);
+        $stmts = splitStatements($sqlNoComments);
 
-        $rows = [];
-        $executedSql = $toExecute; // para mostrar exactamente lo ejecutado
-
-        if ($toExecute === '') {
+        if (empty($stmts)) {
           $msg = '⚠️ El SQL quedó vacío tras quitar comentarios o no se detectó sentencia ejecutable.';
         } else {
-          if ($shouldFetch) {
-            $stmt = $pdo->query($toExecute);
-            if ($stmt instanceof PDOStatement) {
-              $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-            }
-          } else {
-            // Intentar query() primero: si hay cursor (columnCount>0), mostramos; si no, exec()
-            $res = $pdo->query($toExecute);
-            if ($res instanceof PDOStatement && $res->columnCount() > 0) {
-              $rows = $res->fetchAll(PDO::FETCH_ASSOC) ?: [];
+          $totalRows = 0;
+          $html = '';
+
+          foreach ($stmts as $idx => $toExecute) {
+            $first = firstToken($toExecute);
+            $shouldFetch = in_array($first, ['SELECT','PRAGMA','EXPLAIN','SHOW','WITH'], true);
+
+            // Cabecera por sentencia
+            $html .= "<div style='margin-top:8px;padding:8px;border:1px dashed #d1d5db;border-radius:8px;background:#fafafa'>";
+            $html .= "<div style='font-size:12px;color:#6b7280;margin-bottom:6px'>SQL ejecutado" . (count($stmts)>1 ? " (".($idx+1)."/".count($stmts).")" : "") . ":</div>";
+            $html .= "<pre style='white-space:pre-wrap;margin:0'>".htmlspecialchars($toExecute)."</pre>";
+            $html .= "</div>";
+
+            $rows = [];
+            if ($shouldFetch) {
+              $stmt = $pdo->query($toExecute);
+              if ($stmt instanceof PDOStatement) {
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+              }
             } else {
-              $pdo->exec($toExecute);
+              $res = $pdo->query($toExecute);
+              if ($res instanceof PDOStatement && $res->columnCount() > 0) {
+                $rows = $res->fetchAll(PDO::FETCH_ASSOC) ?: [];
+              } else {
+                $pdo->exec($toExecute);
+              }
+            }
+
+            if (!empty($rows)) {
+              $cols = array_keys($rows[0]);
+              $t  = "<div style='overflow:auto;margin-top:10px'><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;min-width:600px'>";
+              $t .= "<tr style='background:#f3f4f6'>";
+              foreach ($cols as $c) $t .= "<th>".htmlspecialchars($c)."</th>";
+              $t .= "</tr>";
+              foreach ($rows as $r) {
+                $t .= "<tr>";
+                foreach ($cols as $c) $t .= "<td>".htmlspecialchars((string)($r[$c] ?? ''))."</td>";
+                $t .= "</tr>";
+              }
+              $t .= "</table></div>";
+              $html .= $t;
+              $totalRows += count($rows);
             }
           }
 
           $elapsed = round((microtime(true) - $start) * 1000, 2);
-
-          // Muestra exactamente qué se ejecutó
-          $htmlHeader  = "<div style='margin-top:8px;padding:8px;border:1px dashed #d1d5db;border-radius:8px;background:#fafafa'>";
-          $htmlHeader .= "<div style='font-size:12px;color:#6b7280;margin-bottom:6px'>SQL ejecutado:</div>";
-          $htmlHeader .= "<pre style='white-space:pre-wrap;margin:0'>".htmlspecialchars($executedSql)."</pre>";
-          $htmlHeader .= "</div>";
-
-          if (!empty($rows)) {
-            $cols = array_keys($rows[0]);
-            $t  = "<div style='overflow:auto;margin-top:10px'><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;min-width:600px'>";
-            $t .= "<tr style='background:#f3f4f6'>";
-            foreach ($cols as $c) $t .= "<th>".htmlspecialchars($c)."</th>";
-            $t .= "</tr>";
-            foreach ($rows as $r) {
-              $t .= "<tr>";
-              foreach ($cols as $c) $t .= "<td>".htmlspecialchars((string)($r[$c] ?? '')) . "</td>";
-              $t .= "</tr>";
-            }
-            $t .= "</table></div>";
-            $html = $htmlHeader . $t;
-            $msg = "✅ Resultado mostrado ({$elapsed} ms, ".count($rows)." filas)";
-          } else {
-            $html = $htmlHeader;
-            $msg = "✅ SQL ejecutado ({$elapsed} ms, sin filas)";
-          }
+          $stmtCount = count($stmts);
+          $msg = "✅ {$stmtCount} sentencia(s) ejecutada(s) ({$elapsed} ms" . ($totalRows > 0 ? ", {$totalRows} fila(s)" : "") . ")";
 
           if ($autosave) {
-            saveHistory($pdo, $originalSql, $label ?: null); // guardamos lo que escribió tal cual
+            saveHistory($pdo, $originalSql, $label ?: null);
             $msg .= "<br>💾 También se guardó en el historial.";
           }
         }
