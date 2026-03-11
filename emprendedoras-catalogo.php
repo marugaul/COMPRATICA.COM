@@ -219,7 +219,7 @@ $awningPalette = [
             overflow: hidden; cursor: pointer; text-decoration: none; display: block;
         }
         .puesto-product-cell img {
-            width: 100%; height: 100%; object-fit: cover;
+            width: 100%; height: 100%; object-fit: contain; background: #f8f8f8;
             transition: transform .35s;
         }
         .puesto-product-cell:hover img { transform: scale(1.08); }

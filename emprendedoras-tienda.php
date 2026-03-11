@@ -158,7 +158,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
         }
         .store-product-card:hover { transform: translateY(-6px); box-shadow: 0 12px 32px rgba(0,0,0,.15); }
         .store-product-card img {
-            width: 100%; height: 200px; object-fit: cover;
+            width: 100%; height: 200px; object-fit: contain; background: #f8f8f8;
         }
         .store-product-noimg {
             width: 100%; height: 200px; background: #f5f5f5;
