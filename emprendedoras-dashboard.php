@@ -93,6 +93,34 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
 }
 $isLoggedIn = true;
 
+// ── Manejar toggle EN VIVO ────────────────────────────────────────────────
+$liveMsg = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'toggle_live') {
+    $goLive    = (int)($_POST['go_live'] ?? 0);
+    $liveTitle = trim($_POST['live_title'] ?? '');
+    $liveLink  = trim($_POST['live_link'] ?? '');
+    if ($goLive) {
+        $pdo->prepare("UPDATE users SET is_live=1, live_title=?, live_link=?, live_started_at=datetime('now') WHERE id=?")
+            ->execute([$liveTitle ?: 'EN VIVO', $liveLink ?: null, $userId]);
+        $liveMsg = ['ok', '🔴 ¡Estás EN VIVO! Tu puesto aparece primero en el mercadito.'];
+    } else {
+        $pdo->prepare("UPDATE users SET is_live=0, live_title=NULL, live_link=NULL, live_started_at=NULL WHERE id=?")
+            ->execute([$userId]);
+        $liveMsg = ['info', '⚫ Transmisión finalizada. Tu puesto volvió al orden normal.'];
+    }
+    header('Location: emprendedoras-dashboard.php#live-section');
+    exit;
+}
+
+// Cargar datos de live actuales
+try {
+    $liveData = $pdo->prepare("SELECT COALESCE(is_live,0) AS is_live, live_title, live_link FROM users WHERE id=?");
+    $liveData->execute([$userId]);
+    $liveData = $liveData->fetch(PDO::FETCH_ASSOC);
+} catch (Throwable $_e) {
+    $liveData = ['is_live' => 0, 'live_title' => '', 'live_link' => ''];
+}
+
 // Verificar límite de productos
 $canAddProducts = true;
 if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscription['max_products']) {
@@ -392,6 +420,81 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                 <a href="emprendedoras-planes.php" style="color: #667eea; font-weight: 600;">Actualiza tu plan</a> para agregar más productos.
             </div>
         <?php endif; ?>
+
+        <!-- ── SECCIÓN EN VIVO ──────────────────────────────────────── -->
+        <div class="section" id="live-section" style="border: 2px solid <?= $liveData['is_live'] ? '#ef4444' : '#e2e8f0' ?>; transition: border-color .3s;">
+            <div class="section-header">
+                <h2>
+                    <?php if ($liveData['is_live']): ?>
+                        <span style="display:inline-flex;align-items:center;gap:8px;">
+                            <span style="width:12px;height:12px;background:#ef4444;border-radius:50%;display:inline-block;animation:live-pulse 1.2s infinite;"></span>
+                            EN VIVO ahora
+                        </span>
+                    <?php else: ?>
+                        <i class="fas fa-broadcast-tower"></i> Transmisión en Vivo
+                    <?php endif; ?>
+                </h2>
+                <?php if ($liveData['is_live']): ?>
+                    <form method="POST" style="display:inline;">
+                        <input type="hidden" name="action" value="toggle_live">
+                        <input type="hidden" name="go_live" value="0">
+                        <button type="submit" style="background:#ef4444;color:white;border:none;padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;">
+                            <i class="fas fa-stop-circle"></i> Terminar Live
+                        </button>
+                    </form>
+                <?php endif; ?>
+            </div>
+
+            <style>
+            @keyframes live-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+            .live-toggle-card { background: #fafafa; border-radius: 12px; padding: 20px; }
+            .live-field { margin-bottom: 14px; }
+            .live-field label { display:block; font-weight:600; margin-bottom:6px; color:#555; font-size:.9rem; }
+            .live-field input { width:100%; padding:10px 14px; border:2px solid #e0e0e0; border-radius:8px; font-size:.95rem; box-sizing:border-box; }
+            .live-field input:focus { border-color:#667eea; outline:none; }
+            .btn-go-live { background:linear-gradient(135deg,#ef4444,#dc2626); color:white; border:none; padding:12px 28px; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer; display:inline-flex;align-items:center;gap:8px; transition:all .2s; }
+            .btn-go-live:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(239,68,68,.4); }
+            </style>
+
+            <?php if ($liveData['is_live']): ?>
+                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:14px;">
+                    <span style="font-size:2rem;">🔴</span>
+                    <div>
+                        <strong style="color:#dc2626;font-size:1.05rem;"><?= htmlspecialchars($liveData['live_title'] ?? 'EN VIVO') ?></strong><br>
+                        <?php if ($liveData['live_link']): ?>
+                            <a href="<?= htmlspecialchars($liveData['live_link']) ?>" target="_blank" style="color:#667eea;font-size:.88rem;">
+                                <i class="fas fa-external-link-alt"></i> <?= htmlspecialchars($liveData['live_link']) ?>
+                            </a>
+                        <?php endif; ?>
+                        <div style="color:#888;font-size:.82rem;margin-top:4px;">Tu puesto aparece primero en el mercadito con el badge EN VIVO.</div>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="live-toggle-card">
+                    <p style="color:#666;margin:0 0 16px;font-size:.93rem;">
+                        <i class="fas fa-info-circle" style="color:#667eea;"></i>
+                        Inicia tu transmisión en YouTube, Instagram o donde prefieras, pega el link aquí y activa el modo EN VIVO. Tu puesto aparecerá <strong>primero en el mercadito</strong> con un badge rojo pulsante.
+                    </p>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="toggle_live">
+                        <input type="hidden" name="go_live" value="1">
+                        <div class="live-field">
+                            <label><i class="fas fa-tag"></i> Título del live (ej: "Feria de Navidad 🎄")</label>
+                            <input type="text" name="live_title" placeholder="Nueva colección de verano..." maxlength="80">
+                        </div>
+                        <div class="live-field">
+                            <label><i class="fab fa-youtube"></i> Link del live (YouTube, Instagram, etc.)</label>
+                            <input type="url" name="live_link" placeholder="https://youtube.com/live/...">
+                        </div>
+                        <button type="submit" class="btn-go-live">
+                            <span style="width:10px;height:10px;background:white;border-radius:50%;display:inline-block;"></span>
+                            Iniciar EN VIVO
+                        </button>
+                    </form>
+                </div>
+            <?php endif; ?>
+        </div>
+        <!-- ── FIN EN VIVO ────────────────────────────────────────────── -->
 
         <div class="section">
             <div class="section-header">
