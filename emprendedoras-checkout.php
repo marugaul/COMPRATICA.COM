@@ -523,6 +523,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
 <?php include __DIR__ . '/includes/footer.php'; ?>
 
 <script>
+document.querySelectorAll('#hamburger-menu a').forEach(function(a) {
+    if (a.getAttribute('href') === 'cart' || a.getAttribute('href') === '/cart') {
+        a.setAttribute('href', '/emprendedoras-carrito.php');
+    }
+});
+
 function switchTab(sid, tab) {
     document.querySelectorAll('#panel-' + sid + ' .pay-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('#panel-' + sid + ' .pay-panel').forEach(p => p.classList.remove('active'));
