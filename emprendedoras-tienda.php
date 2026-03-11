@@ -91,21 +91,36 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
     <style>
         /* Toldo de la tienda */
         .store-awning {
-            height: 110px;
+            height: 90px;
             background: repeating-linear-gradient(
-                90deg,
-                #667eea 0px, #667eea 40px,
-                #764ba2 40px, #764ba2 80px
+                -45deg,
+                #667eea 0px,  #667eea 28px,
+                #764ba2 28px, #764ba2 56px
             );
             position: relative;
+            overflow: visible;
         }
+        /* Banda roja en la base */
+        .store-awning::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 7px;
+            background: #dc2626;
+        }
+        /* Flecos triangulares (picos) colgando */
         .store-awning::after {
             content: '';
             position: absolute;
-            bottom: -16px; left: 0; right: 0;
-            height: 22px;
-            background: radial-gradient(circle at 50% 0%, transparent 12px, #f9f9f9 12px);
-            background-size: 30px 22px;
+            bottom: -18px; left: 0; right: 0;
+            height: 18px;
+            background:
+                linear-gradient(135deg, #dc2626 50%, transparent 50%),
+                linear-gradient(225deg, #dc2626 50%, transparent 50%);
+            background-size: 18px 18px;
+            background-repeat: repeat-x;
+            background-position: 0 0, 9px 0;
+            z-index: 1;
         }
 
         .store-header {
@@ -191,9 +206,9 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
         .empty-state { text-align: center; padding: 60px 20px; }
         .empty-state i { font-size: 4rem; color: #ddd; display: block; margin-bottom: 16px; }
 
-        /* FAB */
+        /* FAB carrito — encima del chat */
         .emp-cart-fab {
-            position: fixed; bottom: 28px; right: 28px; z-index: 999;
+            position: fixed; bottom: 102px; right: 28px; z-index: 9001;
             background: linear-gradient(135deg,#667eea,#764ba2);
             color: white; width: 62px; height: 62px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
@@ -271,7 +286,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
            CHAT EN VIVO — widget flotante
         ═══════════════════════════════════════════════════════ */
         #chat-fab {
-            position: fixed; bottom: 24px; right: 24px; z-index: 9000;
+            position: fixed; bottom: 28px; right: 28px; z-index: 9000;
             display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
         }
         #chat-toggle-btn {
@@ -576,25 +591,48 @@ fetch('/api/emp-cart.php?action=get', {credentials:'same-origin'})
     </div>
 
     <?php elseif (!$visitorUid): ?>
-    <!-- No logueado: mostrar aviso -->
+    <!-- No logueado: panel con link a login -->
     <div id="chat-panel" style="display:none;">
         <div class="chat-header">
-            <span class="chat-header-title"><i class="fas fa-comments"></i> Chat con la emprendedora</span>
-            <button class="chat-header-close" onclick="closeChat()"><i class="fas fa-times"></i></button>
+            <span class="chat-header-title">
+                <i class="fas fa-comments"></i>
+                Chat con <?= htmlspecialchars(explode(' ', $seller['name'])[0]) ?>
+            </span>
+            <button class="chat-header-close" onclick="closeChatGuest()"><i class="fas fa-times"></i></button>
         </div>
-        <div id="chat-status-bar" style="padding:20px;text-align:center;">
+        <div style="padding:22px;text-align:center;">
             <i class="fas fa-lock" style="font-size:2rem;color:#9ca3af;display:block;margin-bottom:10px;"></i>
-            <strong>Inicia sesión para chatear</strong><br>
-            <a href="emprendedoras-login.php" style="color:#667eea;font-weight:700;margin-top:8px;display:inline-block;">
-                <i class="fas fa-sign-in-alt"></i> Iniciar sesión
-            </a>
+            <strong>Inicia sesión para chatear con<br><?= htmlspecialchars($seller['name']) ?></strong>
+            <div style="margin-top:14px;">
+                <a href="emprendedoras-login.php" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:700;">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar sesión
+                </a>
+            </div>
         </div>
     </div>
     <?php endif; ?>
 
     <!-- Botón flotante principal -->
     <?php if ($isTheSeller): ?>
-    <!-- El vendedor ve su panel en el dashboard -->
+    <!-- El vendedor ve su panel en el dashboard, no botón aquí -->
+    <?php elseif (!$visitorUid): ?>
+    <!-- No logueado: botón con etiqueta -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <button id="chat-toggle-btn" class="disabled-chat"
+                title="Inicia sesión para chatear"
+                onclick="toggleGuestChat()"
+                style="width:58px;height:58px;border-radius:50%;border:none;cursor:pointer;
+                       background:#d1d5db;color:#6b7280;font-size:1.4rem;
+                       display:flex;align-items:center;justify-content:center;
+                       box-shadow:0 4px 10px rgba(0,0,0,.1);">
+            <i class="fas fa-comment-dots"></i>
+        </button>
+        <span id="chat-guest-label" style="background:#1f2937;color:white;border-radius:8px;
+              padding:5px 10px;font-size:0.72rem;text-align:center;max-width:130px;
+              line-height:1.3;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.2);">
+            Logueate para chatear<br>con <?= htmlspecialchars(explode(' ', $seller['name'])[0]) ?>
+        </span>
+    </div>
     <?php else: ?>
     <button id="chat-toggle-btn" class="disabled-chat"
             title="Chat con la emprendedora"
@@ -787,6 +825,25 @@ function escHtml(s) {
 }
 })();
 </script>
-<?php endif; /* sellerHasPaidPlan && is_live */ ?>
+<?php endif; /* sellerHasPaidPlan && is_live (bloque JS usuario logueado) */ ?>
+
+<?php if ($sellerHasPaidPlan && $seller['is_live'] && !$visitorUid && !$isTheSeller): ?>
+<script>
+function toggleGuestChat() {
+    const p = document.getElementById('chat-panel');
+    const l = document.getElementById('chat-guest-label');
+    if (!p) return;
+    const open = p.style.display === 'flex';
+    p.style.display = open ? 'none' : 'flex';
+    if (l) l.style.display = open ? '' : 'none';
+}
+function closeChatGuest() {
+    const p = document.getElementById('chat-panel');
+    const l = document.getElementById('chat-guest-label');
+    if (p) p.style.display = 'none';
+    if (l) l.style.display = '';
+}
+</script>
+<?php endif; ?>
 </body>
 </html>
