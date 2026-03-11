@@ -11,6 +11,7 @@ session_start();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/logger.php';
+require_once __DIR__ . '/includes/chat_helpers.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
@@ -47,7 +48,12 @@ if (!$subscription) {
     exit;
 }
 
-$isPending = $subscription['status'] === 'pending';
+$isPending   = $subscription['status'] === 'pending';
+$isPaidPlan  = !$isPending && ($subscription['price_monthly'] ?? 0) > 0;
+// Fallback: consultar directamente por si el join no trajo price_monthly
+if (!isset($subscription['price_monthly'])) {
+    $isPaidPlan = hasPaidPlan($pdo, $userId);
+}
 
 // Obtener estadísticas de productos
 $stmt = $pdo->prepare("
@@ -422,6 +428,24 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         <?php endif; ?>
 
         <!-- ── SECCIÓN EN VIVO ──────────────────────────────────────── -->
+        <?php if (!$isPaidPlan): ?>
+        <div class="section" id="live-section" style="border: 2px solid #e2e8f0; opacity:.6; pointer-events:none;">
+            <div class="section-header">
+                <h2><i class="fas fa-broadcast-tower"></i> Transmisión en Vivo</h2>
+                <span style="background:#f3f4f6;color:#6b7280;padding:6px 14px;border-radius:8px;font-size:.85rem;font-weight:600;">
+                    <i class="fas fa-lock"></i> Solo planes de pago
+                </span>
+            </div>
+            <div style="background:#fafafa;border-radius:12px;padding:20px;text-align:center;color:#9ca3af;">
+                <i class="fas fa-video-slash" style="font-size:2.5rem;margin-bottom:12px;display:block;"></i>
+                Activa un <strong>Plan Emprendedora</strong> o <strong>Plan Premium</strong> para usar el Live.
+                <br><br>
+                <a href="emprendedoras-planes.php" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:10px 22px;border-radius:10px;text-decoration:none;font-weight:700;display:inline-block;">
+                    <i class="fas fa-arrow-up"></i> Ver Planes
+                </a>
+            </div>
+        </div>
+        <?php else: ?>
         <div class="section" id="live-section" style="border: 2px solid <?= $liveData['is_live'] ? '#ef4444' : '#e2e8f0' ?>; transition: border-color .3s;">
             <div class="section-header">
                 <h2>
@@ -494,7 +518,138 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                 </div>
             <?php endif; ?>
         </div>
+        </div><!-- /.section live-section (plan pago) -->
+        <?php endif; /* isPaidPlan */ ?>
         <!-- ── FIN EN VIVO ────────────────────────────────────────────── -->
+
+        <?php if ($isPaidPlan && $liveData['is_live']): ?>
+        <!-- ── PANEL DE CHAT EN VIVO (vendedora) ─────────────────────── -->
+        <div class="section" id="chat-seller-section">
+            <div class="section-header">
+                <h2>
+                    <span style="display:inline-flex;align-items:center;gap:8px;">
+                        <i class="fas fa-comments" style="color:#667eea;"></i>
+                        Chat en Vivo
+                        <span id="seller-chat-new-badge" style="display:none;background:#ef4444;color:white;border-radius:20px;padding:2px 8px;font-size:.75rem;font-weight:800;"></span>
+                    </span>
+                </h2>
+                <span style="color:#10b981;font-size:.85rem;font-weight:600;">
+                    <i class="fas fa-circle" style="font-size:.6rem;"></i> Actualiza cada 3s
+                </span>
+            </div>
+
+            <style>
+            .seller-chat-wrap { display:grid; grid-template-columns:1fr 340px; gap:20px; }
+            @media(max-width:800px){ .seller-chat-wrap { grid-template-columns:1fr; } }
+            #seller-chat-log {
+                background:#f8f9ff; border-radius:12px; padding:14px;
+                height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;
+                border:1px solid #e5e7eb;
+            }
+            .schat-msg { max-width:90%; }
+            .schat-msg.from-client { align-self:flex-start; }
+            .schat-msg.from-seller { align-self:flex-end; }
+            .schat-bubble {
+                padding:9px 13px; border-radius:12px; font-size:.88rem; word-break:break-word;
+                line-height:1.45;
+            }
+            .schat-msg.from-client .schat-bubble {
+                background:white; color:#1f2937; box-shadow:0 1px 4px rgba(0,0,0,.08);
+                border-bottom-left-radius:4px;
+            }
+            .schat-msg.from-seller .schat-bubble {
+                background:#667eea; color:white; border-bottom-right-radius:4px;
+            }
+            .schat-msg.private .schat-bubble {
+                background:#f0fdf4; color:#166534; border:1px dashed #86efac;
+            }
+            .schat-meta { font-size:.72rem; color:#9ca3af; margin-top:3px; padding:0 4px; }
+            .schat-meta.right { text-align:right; }
+            .schat-actions { display:flex; gap:6px; margin-top:4px; flex-wrap:wrap; }
+            .schat-actions button {
+                font-size:.72rem; padding:3px 9px; border-radius:6px;
+                border:none; cursor:pointer; font-weight:600; transition:all .15s;
+            }
+            .btn-reply-pub { background:#dbeafe; color:#1d4ed8; }
+            .btn-reply-priv { background:#d1fae5; color:#065f46; }
+            .btn-ban { background:#fee2e2; color:#991b1b; }
+            .btn-unban { background:#fef3c7; color:#92400e; }
+            #seller-reply-area { background:#f9fafb; border-radius:12px; padding:16px; border:1px solid #e5e7eb; }
+            #seller-reply-area h4 { margin:0 0 10px; font-size:.9rem; color:#374151; }
+            #seller-reply-mode { font-size:.82rem; color:#059669; font-weight:600; margin-bottom:8px; min-height:20px; }
+            #seller-reply-input {
+                width:100%; box-sizing:border-box; border:2px solid #e5e7eb; border-radius:10px;
+                padding:10px 12px; font-size:.9rem; resize:none; font-family:inherit;
+                min-height:80px;
+            }
+            #seller-reply-input:focus { border-color:#667eea; outline:none; }
+            .seller-reply-btns { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+            .seller-reply-btns button {
+                padding:9px 18px; border-radius:10px; border:none; cursor:pointer;
+                font-weight:700; font-size:.88rem; transition:all .2s;
+            }
+            #btn-broadcast { background:linear-gradient(135deg,#667eea,#764ba2); color:white; }
+            #btn-send-pub  { background:#2563eb; color:white; }
+            #btn-send-priv { background:#059669; color:white; }
+            #btn-cancel-reply { background:#f3f4f6; color:#374151; }
+            .banned-users-list { margin-top:14px; }
+            .banned-users-list h5 { font-size:.82rem; color:#6b7280; margin:0 0 8px; }
+            .banned-chip {
+                display:inline-flex; align-items:center; gap:6px; background:#fef2f2;
+                border:1px solid #fecaca; color:#991b1b; border-radius:20px;
+                padding:3px 10px; font-size:.78rem; margin:3px;
+            }
+            .banned-chip button { background:none;border:none;cursor:pointer;color:#dc2626;padding:0;font-size:.9rem; }
+            </style>
+
+            <div class="seller-chat-wrap">
+                <!-- Columna 1: historial -->
+                <div>
+                    <div id="seller-chat-log">
+                        <div style="text-align:center;color:#9ca3af;font-size:.85rem;padding:20px;" id="seller-chat-empty">
+                            <i class="fas fa-comment-slash" style="font-size:1.8rem;display:block;margin-bottom:8px;color:#d1d5db;"></i>
+                            Esperando preguntas de tus clientes...
+                        </div>
+                    </div>
+                </div>
+                <!-- Columna 2: respuesta + baneados -->
+                <div>
+                    <div id="seller-reply-area">
+                        <h4><i class="fas fa-paper-plane"></i> Enviar mensaje</h4>
+                        <div id="seller-reply-mode">Transmisión a todos los clientes</div>
+                        <textarea id="seller-reply-input" maxlength="500"
+                            placeholder="Escribe tu mensaje..." rows="3"></textarea>
+                        <div class="seller-reply-btns">
+                            <button id="btn-broadcast" onclick="sellerSend(1,null)">
+                                <i class="fas fa-bullhorn"></i> A todos
+                            </button>
+                            <button id="btn-send-pub" style="display:none" onclick="sellerSendReply(1)">
+                                <i class="fas fa-globe"></i> En público
+                            </button>
+                            <button id="btn-send-priv" style="display:none" onclick="sellerSendReply(0)">
+                                <i class="fas fa-lock"></i> Privado
+                            </button>
+                            <button id="btn-cancel-reply" style="display:none" onclick="cancelReply()">
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="banned-users-list" id="banned-list-wrap" style="display:none;">
+                        <h5><i class="fas fa-ban"></i> Usuarios baneados</h5>
+                        <div id="banned-chips"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ── FIN PANEL CHAT (vendedora) ───────────────────────────── -->
+        <?php elseif ($isPaidPlan && !$liveData['is_live']): ?>
+        <div class="section" style="background:#f8f9ff;border:2px dashed #c7d2fe;">
+            <div style="text-align:center;padding:16px;color:#6b7280;">
+                <i class="fas fa-comments" style="font-size:2rem;color:#a5b4fc;display:block;margin-bottom:8px;"></i>
+                <strong>Chat en Vivo disponible</strong> — Inicia tu Live para activar el chat con tus clientes.
+            </div>
+        </div>
+        <?php endif; ?>
 
         <div class="section">
             <div class="section-header">
@@ -617,6 +772,159 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             }
         }
     </script>
+
+    <?php if ($isPaidPlan && $liveData['is_live']): ?>
+    <script>
+    (function(){
+    const SELLER_ID = <?= (int)$userId ?>;
+    let lastId     = 0;
+    let replyToUid = null;
+    let bansMap    = {};  // uid → name
+
+    const log      = document.getElementById('seller-chat-log');
+    const empty    = document.getElementById('seller-chat-empty');
+    const replyInp = document.getElementById('seller-reply-input');
+    const replyMode= document.getElementById('seller-reply-mode');
+    const newBadge = document.getElementById('seller-chat-new-badge');
+    const bannedWrap= document.getElementById('banned-list-wrap');
+    const bannedChips= document.getElementById('banned-chips');
+    const btnBcast = document.getElementById('btn-broadcast');
+    const btnPub   = document.getElementById('btn-send-pub');
+    const btnPriv  = document.getElementById('btn-send-priv');
+    const btnCancel= document.getElementById('btn-cancel-reply');
+    let newCount   = 0;
+
+    function poll() {
+        fetch('/api/chat-poll.php?seller_id=' + SELLER_ID + '&last_id=' + lastId, {credentials:'same-origin'})
+        .then(r => r.json())
+        .then(data => {
+            if (data.messages && data.messages.length) {
+                if (empty) empty.style.display = 'none';
+                data.messages.forEach(appendMsg);
+                lastId = data.messages[data.messages.length-1].id;
+                newCount += data.messages.filter(m=>m.sender_type==='client').length;
+                if (newCount > 0 && newBadge) {
+                    newBadge.style.display='inline';
+                    newBadge.textContent = newCount + ' nuevo' + (newCount>1?'s':'');
+                }
+            }
+            if (data.bans) {
+                bansMap = {};
+                Object.entries(data.bans).forEach(([uid,name])=>{ bansMap[uid]=name; });
+                renderBans();
+            }
+        })
+        .catch(()=>{});
+    }
+
+    function appendMsg(m) {
+        const isFromSeller = (m.sender_type === 'seller');
+        const isPrivate    = (m.is_public == 0);
+        const wrap = document.createElement('div');
+        wrap.className = 'schat-msg ' + (isFromSeller ? 'from-seller' : 'from-client') + (isPrivate?' private':'');
+        wrap.dataset.uid = m.sender_id;
+        wrap.dataset.name= m.sender_name;
+
+        let actHtml = '';
+        if (!isFromSeller) {
+            const bannedLabel = bansMap[m.sender_id] ? ' (baneado)' : '';
+            actHtml = `<div class="schat-actions">
+                <button class="btn-reply-pub" onclick="prepReply(${m.sender_id}, '${escJs(m.sender_name)}')">
+                    <i class="fas fa-globe"></i> Resp. público</button>
+                <button class="btn-reply-priv" onclick="prepReply(${m.sender_id}, '${escJs(m.sender_name)}', true)">
+                    <i class="fas fa-lock"></i> Resp. privado</button>
+                ${bansMap[m.sender_id]
+                    ? `<button class="btn-unban" onclick="banUser(${m.sender_id},'unban')"><i class="fas fa-unlock"></i> Desbanear</button>`
+                    : `<button class="btn-ban" onclick="banUser(${m.sender_id},'ban')"><i class="fas fa-ban"></i> Banear</button>`
+                }
+            </div>`;
+        }
+
+        wrap.innerHTML = (isPrivate ? '<div style="font-size:.7rem;color:#059669;font-weight:600;margin-bottom:3px;"><i class="fas fa-lock"></i> Privado</div>' : '') +
+            (!isFromSeller ? `<div class="schat-meta">${escHtml(m.sender_name)}</div>` : '') +
+            `<div class="schat-bubble">${escHtml(m.message)}</div>` +
+            `<div class="schat-meta${isFromSeller?' right':''}">${m.time||''}</div>` +
+            actHtml;
+
+        if (log) { log.appendChild(wrap); log.scrollTop = log.scrollHeight; }
+    }
+
+    window.prepReply = function(uid, name, priv) {
+        replyToUid = uid;
+        if (replyMode) replyMode.innerHTML = priv
+            ? `<i class="fas fa-lock"></i> Respuesta privada a <strong>${escHtml(name)}</strong>`
+            : `<i class="fas fa-globe"></i> Respuesta pública a <strong>${escHtml(name)}</strong>`;
+        if (btnBcast) btnBcast.style.display = 'none';
+        if (btnPub)   btnPub.style.display   = priv ? 'none' : 'inline-flex';
+        if (btnPriv)  btnPriv.style.display  = priv ? 'inline-flex' : 'none';
+        if (btnCancel)btnCancel.style.display= 'inline-flex';
+        if (replyInp) replyInp.focus();
+    };
+
+    window.cancelReply = function() {
+        replyToUid = null;
+        if (replyMode) replyMode.textContent = 'Transmisión a todos los clientes';
+        if (btnBcast) btnBcast.style.display = 'inline-flex';
+        if (btnPub)   btnPub.style.display   = 'none';
+        if (btnPriv)  btnPriv.style.display  = 'none';
+        if (btnCancel)btnCancel.style.display= 'none';
+    };
+
+    window.sellerSend = function(isPublic, privateTo) {
+        const txt = replyInp ? replyInp.value.trim() : '';
+        if (!txt) return;
+        const body = `seller_id=${SELLER_ID}&message=${encodeURIComponent(txt)}&is_public=${isPublic}` +
+            (privateTo ? `&private_to=${privateTo}` : '');
+        fetch('/api/chat-send.php', {
+            method:'POST', credentials:'same-origin',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.ok) { replyInp.value=''; cancelReply(); poll(); }
+            else alert(d.msg || 'Error al enviar');
+        })
+        .catch(()=>alert('Error de conexión'));
+    };
+
+    window.sellerSendReply = function(isPublic) {
+        sellerSend(isPublic, isPublic ? null : replyToUid);
+    };
+
+    window.banUser = function(uid, action) {
+        fetch('/api/chat-ban.php', {
+            method:'POST', credentials:'same-origin',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:`banned_user_id=${uid}&action=${action}`
+        })
+        .then(r => r.json())
+        .then(d => { if (d.ok) poll(); })
+        .catch(()=>{});
+    };
+
+    function renderBans() {
+        const uids = Object.keys(bansMap);
+        if (!bannedWrap) return;
+        if (!uids.length) { bannedWrap.style.display='none'; return; }
+        bannedWrap.style.display='block';
+        if (!bannedChips) return;
+        bannedChips.innerHTML = uids.map(uid =>
+            `<span class="banned-chip">${escHtml(bansMap[uid])}
+             <button onclick="banUser(${uid},'unban')" title="Desbanear"><i class="fas fa-times"></i></button>
+             </span>`
+        ).join('');
+    }
+
+    function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function escJs(s){ return String(s).replace(/'/g,"\\'"); }
+
+    // Iniciar polling
+    poll();
+    setInterval(poll, 3000);
+    })();
+    </script>
+    <?php endif; ?>
 
     <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>

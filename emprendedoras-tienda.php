@@ -4,6 +4,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/live_embed.php';
+require_once __DIR__ . '/includes/chat_helpers.php';
 
 $isLoggedIn = isset($_SESSION['uid']) && $_SESSION['uid'] > 0;
 $userName   = $_SESSION['name'] ?? 'Usuario';
@@ -32,6 +33,13 @@ $stSeller = $pdo->prepare("
 $stSeller->execute([$sid]);
 $seller = $stSeller->fetch(PDO::FETCH_ASSOC);
 if (!$seller) { header('Location: emprendedoras-catalogo.php'); exit; }
+
+// ¿La vendedora tiene plan de pago? (controla live embed y chat)
+$sellerHasPaidPlan = hasPaidPlan($pdo, $sid);
+
+// Usuario visitante
+$visitorUid  = (int)($_SESSION['uid'] ?? 0);
+$isTheSeller = ($visitorUid === $sid);
 
 // Categorías del vendedor
 $categories = $pdo->prepare("
@@ -258,6 +266,96 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
             font-weight: 700; padding: 8px 16px; border-radius: 10px;
             text-decoration: none; color: white; white-space: nowrap; font-size: 0.85rem;
         }
+
+        /* ═══════════════════════════════════════════════════════
+           CHAT EN VIVO — widget flotante
+        ═══════════════════════════════════════════════════════ */
+        #chat-fab {
+            position: fixed; bottom: 24px; right: 24px; z-index: 9000;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+        }
+        #chat-toggle-btn {
+            width: 58px; height: 58px; border-radius: 50%;
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            color: white; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; box-shadow: 0 6px 20px rgba(102,126,234,.5);
+            transition: all .25s; position: relative;
+        }
+        #chat-toggle-btn:hover { transform: scale(1.08); }
+        #chat-toggle-btn.disabled-chat {
+            background: #d1d5db; box-shadow: 0 4px 10px rgba(0,0,0,.1); cursor: default;
+        }
+        #chat-unread-badge {
+            position: absolute; top: -4px; right: -4px;
+            background: #ef4444; color: white; border-radius: 50%;
+            width: 20px; height: 20px; font-size: 0.7rem; font-weight: 800;
+            display: none; align-items: center; justify-content: center;
+        }
+        #chat-activate-tip {
+            background: #1f2937; color: white; border-radius: 10px;
+            padding: 8px 14px; font-size: 0.82rem; white-space: nowrap;
+            box-shadow: 0 4px 14px rgba(0,0,0,.25); max-width: 220px; text-align: center;
+        }
+        /* Panel principal del chat */
+        #chat-panel {
+            width: 340px; max-height: 480px;
+            background: white; border-radius: 18px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.2);
+            display: none; flex-direction: column; overflow: hidden;
+        }
+        #chat-panel.open { display: flex; }
+        @media (max-width: 400px) { #chat-panel { width: calc(100vw - 16px); } }
+        .chat-header {
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            color: white; padding: 12px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .chat-header-title { font-weight: 700; font-size: .95rem; display: flex; align-items: center; gap: 8px; }
+        .chat-header-close { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 2px 6px; }
+        #chat-messages {
+            flex: 1; overflow-y: auto; padding: 12px;
+            display: flex; flex-direction: column; gap: 8px;
+            min-height: 180px; max-height: 280px;
+            background: #f8f9ff;
+        }
+        .chat-msg { max-width: 80%; }
+        .chat-msg.mine { align-self: flex-end; }
+        .chat-msg.theirs { align-self: flex-start; }
+        .chat-msg.seller-msg { align-self: flex-start; }
+        .chat-bubble {
+            padding: 8px 12px; border-radius: 12px;
+            font-size: 0.85rem; line-height: 1.4; word-break: break-word;
+        }
+        .chat-msg.mine   .chat-bubble { background: #667eea; color: white; border-bottom-right-radius: 4px; }
+        .chat-msg.theirs .chat-bubble { background: white; color: #1f2937; box-shadow: 0 1px 4px rgba(0,0,0,.08); border-bottom-left-radius: 4px; }
+        .chat-msg.seller-msg .chat-bubble { background: #fef3c7; color: #92400e; border-bottom-left-radius: 4px; }
+        .chat-msg.private-msg .chat-bubble { background: #f0fdf4; color: #166534; border: 1px dashed #86efac; }
+        .chat-meta { font-size: 0.72rem; color: #9ca3af; margin-top: 3px; padding: 0 4px; }
+        .chat-meta.right { text-align: right; }
+        .chat-private-label { font-size: 0.7rem; color: #059669; font-weight: 600; }
+        #chat-input-area {
+            padding: 10px 12px; border-top: 1px solid #e5e7eb;
+            display: flex; gap: 8px; align-items: flex-end; background: white;
+        }
+        #chat-input {
+            flex: 1; border: 2px solid #e5e7eb; border-radius: 10px;
+            padding: 8px 12px; font-size: 0.88rem; resize: none;
+            max-height: 80px; font-family: inherit; line-height: 1.4;
+        }
+        #chat-input:focus { border-color: #667eea; outline: none; }
+        #chat-send-btn {
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            color: white; border: none; border-radius: 10px;
+            padding: 9px 14px; cursor: pointer; font-size: 1rem;
+            transition: all .2s; flex-shrink: 0;
+        }
+        #chat-send-btn:hover { transform: scale(1.05); }
+        #chat-send-btn:disabled { opacity: .5; cursor: default; transform: none; }
+        #chat-status-bar {
+            padding: 10px 14px; font-size: 0.82rem; text-align: center; color: #6b7280;
+        }
+        .chat-empty { text-align: center; color: #9ca3af; font-size: .85rem; padding: 20px 10px; }
     </style>
 </head>
 <body>
@@ -285,7 +383,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
     </div>
 </div>
 
-<?php if ($seller['is_live'] && !empty($seller['live_link'])): ?>
+<?php if ($seller['is_live'] && !empty($seller['live_link']) && $sellerHasPaidPlan): ?>
 <?php $lv = parseLiveUrl($seller['live_link']); ?>
 <div class="store-live-section">
     <?php if ($lv['embedUrl']): ?>
@@ -436,5 +534,259 @@ fetch('/api/emp-cart.php?action=get', {credentials:'same-origin'})
     .then(d => { if (d.ok) updateFab(d.count); })
     .catch(() => {});
 </script>
+
+<?php if ($sellerHasPaidPlan && $seller['is_live']): ?>
+<!-- ══════════════════════════════════════════════════════════════════════
+     CHAT EN VIVO — Widget flotante para el cliente
+     El widget del carrito (emp-cart-fab) está bottom:24px/right:90px aprox.
+     Este FAB del chat va a bottom:24px/right:24px (izquierda del carrito).
+══════════════════════════════════════════════════════════════════════ -->
+<div id="chat-fab">
+
+    <?php if ($visitorUid && !$isTheSeller): ?>
+    <!-- Estado inicial: tip para activar -->
+    <div id="chat-activate-tip" style="display:none;">
+        <i class="fas fa-comment-dots"></i> ¿Quieres hacer preguntas a la emprendedora?<br>
+        <strong style="color:#a78bfa;">Clic para activar el chat</strong>
+    </div>
+
+    <!-- Panel de chat (oculto inicialmente) -->
+    <div id="chat-panel">
+        <div class="chat-header">
+            <span class="chat-header-title">
+                <i class="fas fa-comments"></i>
+                Chat con <?= htmlspecialchars(explode(' ', $seller['name'])[0]) ?>
+            </span>
+            <button class="chat-header-close" onclick="closeChat()" title="Cerrar"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="chat-messages">
+            <div class="chat-empty" id="chat-empty-msg">
+                <i class="fas fa-comment-slash" style="font-size:1.8rem;color:#d1d5db;display:block;margin-bottom:8px;"></i>
+                Aún no hay mensajes. ¡Sé el primero en preguntar!
+            </div>
+        </div>
+        <div id="chat-status-bar" style="display:none;"></div>
+        <div id="chat-input-area">
+            <textarea id="chat-input" rows="1" maxlength="500"
+                placeholder="Escribe tu pregunta..." onkeydown="chatKeydown(event)"></textarea>
+            <button id="chat-send-btn" onclick="sendChatMsg()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <?php elseif (!$visitorUid): ?>
+    <!-- No logueado: mostrar aviso -->
+    <div id="chat-panel" style="display:none;">
+        <div class="chat-header">
+            <span class="chat-header-title"><i class="fas fa-comments"></i> Chat con la emprendedora</span>
+            <button class="chat-header-close" onclick="closeChat()"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="chat-status-bar" style="padding:20px;text-align:center;">
+            <i class="fas fa-lock" style="font-size:2rem;color:#9ca3af;display:block;margin-bottom:10px;"></i>
+            <strong>Inicia sesión para chatear</strong><br>
+            <a href="emprendedoras-login.php" style="color:#667eea;font-weight:700;margin-top:8px;display:inline-block;">
+                <i class="fas fa-sign-in-alt"></i> Iniciar sesión
+            </a>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Botón flotante principal -->
+    <?php if ($isTheSeller): ?>
+    <!-- El vendedor ve su panel en el dashboard -->
+    <?php else: ?>
+    <button id="chat-toggle-btn" class="disabled-chat"
+            title="Chat con la emprendedora"
+            onclick="onChatBtnClick()"
+            data-activated="0">
+        <i class="fas fa-comment-dots"></i>
+        <span id="chat-unread-badge"></span>
+    </button>
+    <?php endif; ?>
+
+</div>
+
+<script>
+(function(){
+const SELLER_ID   = <?= (int)$sid ?>;
+const VISITOR_UID = <?= $visitorUid ?>;
+let activated  = false;
+let pollTimer  = null;
+let lastId     = 0;
+let unread     = 0;
+let isBanned   = false;
+let tipShown   = false;
+
+const fab      = document.getElementById('chat-fab');
+const btn      = document.getElementById('chat-toggle-btn');
+const panel    = document.getElementById('chat-panel');
+const msgs     = document.getElementById('chat-messages');
+const emptyMsg = document.getElementById('chat-empty-msg');
+const statusBar= document.getElementById('chat-status-bar');
+const input    = document.getElementById('chat-input');
+const badge    = document.getElementById('chat-unread-badge');
+const tip      = document.getElementById('chat-activate-tip');
+
+// Mostrar tip después de 3 segundos
+<?php if ($visitorUid && !$isTheSeller): ?>
+setTimeout(function(){
+    if (!activated && tip) { tip.style.display = 'block'; tipShown = true; }
+}, 3000);
+<?php endif; ?>
+
+window.onChatBtnClick = function() {
+    if (!activated) {
+        // Primera vez: activar
+        if (tip) tip.style.display = 'none';
+        activated = true;
+        btn.classList.remove('disabled-chat');
+        btn.dataset.activated = '1';
+        openChat();
+    } else {
+        // Ya activado: toggle
+        if (panel && panel.classList.contains('open')) {
+            closeChat();
+        } else {
+            openChat();
+        }
+    }
+};
+
+window.openChat = function() {
+    if (!panel) return;
+    panel.classList.add('open');
+    btn.innerHTML = '<i class="fas fa-times"></i>';
+    unread = 0;
+    if (badge) badge.style.display = 'none';
+    if (!pollTimer) startPolling();
+    if (input) setTimeout(()=>input.focus(), 200);
+};
+
+window.closeChat = function() {
+    if (!panel) return;
+    panel.classList.remove('open');
+    if (btn) btn.innerHTML = '<i class="fas fa-comment-dots"></i>' +
+        '<span id="chat-unread-badge" style="display:none"></span>';
+};
+
+function startPolling() {
+    poll();
+    pollTimer = setInterval(poll, 3000);
+}
+
+function poll() {
+    fetch('/api/chat-poll.php?seller_id=' + SELLER_ID + '&last_id=' + lastId, {credentials:'same-origin'})
+    .then(r => r.json())
+    .then(data => {
+        if (data.is_banned && !isBanned) {
+            isBanned = true;
+            showBanned();
+        }
+        if (data.messages && data.messages.length) {
+            data.messages.forEach(appendMessage);
+            lastId = data.messages[data.messages.length-1].id;
+            if (!panel.classList.contains('open')) {
+                unread += data.messages.length;
+                showBadge(unread);
+            }
+        }
+    })
+    .catch(()=>{});
+}
+
+function appendMessage(m) {
+    if (emptyMsg) emptyMsg.style.display = 'none';
+    const isMe = (m.sender_id == VISITOR_UID);
+    const isSeller = (m.sender_type === 'seller');
+    const isPrivate = (m.is_public == 0);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-msg ' +
+        (isMe ? 'mine' : (isSeller ? 'seller-msg' : 'theirs')) +
+        (isPrivate ? ' private-msg' : '');
+
+    let label = '';
+    if (isPrivate) label = '<div class="chat-private-label"><i class="fas fa-lock"></i> Mensaje privado</div>';
+    if (isSeller && !isMe) label += '<div class="chat-meta">' +
+        '<i class="fas fa-store" style="color:#d97706;"></i> Emprendedora</div>';
+
+    wrap.innerHTML = label +
+        '<div class="chat-bubble">' + escHtml(m.message) + '</div>' +
+        '<div class="chat-meta' + (isMe?' right':'') + '">' +
+            (!isMe && !isSeller ? escHtml(m.sender_name) + ' · ' : '') + (m.time||'') +
+        '</div>';
+
+    if (msgs) {
+        msgs.appendChild(wrap);
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+}
+
+function showBanned() {
+    clearInterval(pollTimer);
+    if (statusBar) {
+        statusBar.style.display = 'block';
+        statusBar.innerHTML = '<i class="fas fa-ban" style="color:#ef4444;font-size:1.5rem;display:block;margin-bottom:6px;"></i>' +
+            '<strong style="color:#dc2626;">Has sido bloqueado por esta emprendedora.</strong>';
+    }
+    if (document.getElementById('chat-input-area'))
+        document.getElementById('chat-input-area').style.display = 'none';
+}
+
+function showBadge(n) {
+    const b = document.getElementById('chat-unread-badge');
+    if (!b) return;
+    b.style.display = 'flex'; b.textContent = n > 9 ? '9+' : n;
+}
+
+window.sendChatMsg = function() {
+    if (!input || isBanned) return;
+    const txt = input.value.trim();
+    if (!txt) return;
+    const sendBtn = document.getElementById('chat-send-btn');
+    sendBtn.disabled = true;
+
+    fetch('/api/chat-send.php', {
+        method:'POST', credentials:'same-origin',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'seller_id=' + SELLER_ID + '&message=' + encodeURIComponent(txt)
+    })
+    .then(r => r.json())
+    .then(d => {
+        sendBtn.disabled = false;
+        if (d.ok) {
+            input.value = '';
+            if (statusBar) statusBar.style.display = 'none';
+            poll();
+        } else if (d.error === 'profanity') {
+            showStatus(d.msg, '#ef4444');
+        } else if (d.error === 'banned') {
+            showBanned();
+        } else {
+            showStatus(d.msg || 'Error al enviar', '#ef4444');
+        }
+    })
+    .catch(()=>{ sendBtn.disabled = false; showStatus('Error de conexión','#ef4444'); });
+};
+
+window.chatKeydown = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMsg(); }
+};
+
+function showStatus(msg, color) {
+    if (!statusBar) return;
+    statusBar.style.display = 'block';
+    statusBar.style.color = color || '#6b7280';
+    statusBar.innerHTML = msg;
+    setTimeout(()=>{ statusBar.style.display = 'none'; }, 4000);
+}
+
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+})();
+</script>
+<?php endif; /* sellerHasPaidPlan && is_live */ ?>
 </body>
 </html>
