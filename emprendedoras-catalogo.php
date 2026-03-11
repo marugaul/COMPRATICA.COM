@@ -144,12 +144,14 @@ $awningPalette = [
         }
 
         /* ── PUESTO (stall) ── */
+        .puesto-wrapper {
+            position: relative;
+            margin-top: 52px;
+        }
         .puesto {
             background: white;
             border-radius: 0 0 18px 18px;
             box-shadow: 0 6px 28px rgba(0,0,0,.1);
-            position: relative;
-            margin-top: 52px;
             overflow: hidden;
         }
 
@@ -404,8 +406,8 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
     $c        = $palette[$idx % count($palette)];
     $products = $productsBySeller[$sid] ?? [];
     ?>
-    <div class="puesto">
-        <!-- Toldo -->
+    <div class="puesto-wrapper">
+        <!-- Toldo (fuera del overflow:hidden) -->
         <div class="puesto-awning">
             <svg class="puesto-awning-stripes" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="none">
                 <defs>
@@ -417,6 +419,7 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
                 <rect width="100%" height="100%" fill="url(#awn<?= $sid ?>)"/>
             </svg>
         </div>
+        <div class="puesto">
 
         <!-- Cabecera -->
         <div class="puesto-header">
@@ -472,7 +475,8 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
                 <i class="fas fa-store"></i> Entrar al puesto
             </a>
         </div>
-    </div>
+        </div><!-- /.puesto -->
+    </div><!-- /.puesto-wrapper -->
     <?php
 }
 ?>
