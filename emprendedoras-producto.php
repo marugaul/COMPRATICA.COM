@@ -82,6 +82,7 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedoras</title>
+    <style>#cartButton{display:none!important;}</style>
     <meta name="description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 160)) ?>">
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/compratica-header.css">
