@@ -408,7 +408,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
     </div>
 </div>
 
-<?php if ($liveIsLink && $sellerHasPaidPlan): ?>
+<?php if ($liveIsLink): ?>
 <?php $lv = parseLiveUrl($seller['live_link']); ?>
 <div class="store-live-section">
     <?php if ($lv['embedUrl']): ?>
@@ -448,7 +448,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
 </div>
 <?php endif; ?>
 
-<?php if ($liveIsCam && $sellerHasPaidPlan): ?>
+<?php if ($liveIsCam): ?>
 <!-- ── Player de Cámara Live ─────────────────────────────────────────── -->
 <div class="store-live-section">
     <div class="store-live-box">
@@ -498,20 +498,37 @@ const ms = new MediaSource();
 video.src = URL.createObjectURL(ms);
 
 ms.addEventListener('sourceopen', async () => {
-    const sb = ms.addSourceBuffer(mimeType);
+    console.log('[CAM-LIVE] sourceopen, mimeType:', mimeType);
+    let sb;
+    try {
+        sb = ms.addSourceBuffer(mimeType);
+    } catch(e) {
+        console.error('[CAM-LIVE] addSourceBuffer failed:', e.message);
+        if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Codec no soportado: ' + e.message;
+        return;
+    }
+
+    sb.addEventListener('error', e => console.error('[CAM-LIVE] SourceBuffer error:', e));
+
     let nextChunk = 0;
     let ended     = false;
     let initDone  = false;
 
     async function appendChunk(idx) {
         const r = await fetch(`/api/live-cam-serve.php?session_id=${SESSION_ID}&index=${idx}`);
-        if (!r.ok) return false;
+        if (!r.ok) { console.warn('[CAM-LIVE] serve HTTP', r.status, 'idx', idx); return false; }
         const buf = await r.arrayBuffer();
-        await new Promise((res, rej) => {
-            sb.addEventListener('updateend', res, {once:true});
-            sb.addEventListener('error',     rej, {once:true});
-            sb.appendBuffer(buf);
-        });
+        console.log('[CAM-LIVE] appending chunk', idx, buf.byteLength, 'bytes');
+        try {
+            await new Promise((res, rej) => {
+                sb.addEventListener('updateend', res, {once:true});
+                sb.addEventListener('error',     rej, {once:true});
+                sb.appendBuffer(buf);
+            });
+        } catch(e) {
+            console.error('[CAM-LIVE] appendBuffer error idx', idx, e.message);
+            return false;
+        }
         return true;
     }
 
@@ -520,9 +537,9 @@ ms.addEventListener('sourceopen', async () => {
         try {
             const r = await fetch(`/api/live-cam-poll.php?session_id=${SESSION_ID}`);
             const d = await r.json();
+            console.log('[CAM-LIVE] poll:', d);
 
             if (d.ended && d.chunk_count === 0) {
-                // Sesión no encontrada o ya terminó antes de empezar
                 if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-info-circle"></i> La transmisión ha finalizado.';
                 return;
             }
@@ -534,7 +551,7 @@ ms.addEventListener('sourceopen', async () => {
                 const ok = await appendChunk(0);
                 if (ok) { initDone = true; nextChunk = 1; }
                 if (bufferMsg) bufferMsg.style.display = 'none';
-                video.play().catch(()=>{});
+                video.play().catch(e => console.warn('[CAM-LIVE] play():', e.message));
             }
 
             // Cargar chunks nuevos disponibles (max 3 por ciclo)
@@ -550,7 +567,7 @@ ms.addEventListener('sourceopen', async () => {
                 if (ms.readyState === 'open') ms.endOfStream();
                 return;
             }
-        } catch(e) { /* red error, reintentar */ }
+        } catch(e) { console.error('[CAM-LIVE] poll error:', e.message); }
         setTimeout(poll, 2000);
     }
 
