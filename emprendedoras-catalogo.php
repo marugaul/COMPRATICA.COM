@@ -90,6 +90,10 @@ $awningPalette = [
     <link rel="stylesheet" href="assets/css/compratica-header.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* ── HERO — anular bandera de main.css ── */
+        .hero::before,
+        .hero::after { content: none !important; display: none !important; }
+
         /* ── HERO ── */
         .hero {
             background: #ffffff;
