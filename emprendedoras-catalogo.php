@@ -21,6 +21,7 @@ try {
     if (!in_array('live_title',     $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_title TEXT");
     if (!in_array('live_link',      $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_link TEXT");
     if (!in_array('live_started_at',$cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_started_at TEXT");
+    if (!in_array('live_type',      $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_type TEXT DEFAULT 'link'");
 } catch (Throwable $_e) {}
 
 // Buscar vendedores con productos activos
@@ -29,6 +30,7 @@ $sellersSql  = "
     SELECT u.id AS seller_id, u.name AS seller_name,
            COALESCE(u.is_live, 0) AS is_live,
            u.live_title, u.live_link,
+           COALESCE(u.live_type,'link') AS live_type,
            COUNT(p.id) AS product_count,
            SUM(p.sales_count) AS total_sales
     FROM entrepreneur_products p
@@ -461,6 +463,8 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
     $isLive   = (int)$seller['is_live'];
     $liveTitle= htmlspecialchars($seller['live_title'] ?? '');
     $liveLink = htmlspecialchars($seller['live_link'] ?? '#');
+    $liveType = $seller['live_type'] ?? 'link';
+    $isCamLive = ($liveType === 'camera');
     $pCount   = (int)$seller['product_count'];
     $c        = $palette[$idx % count($palette)];
     $products = $productsBySeller[$sid] ?? [];
@@ -488,24 +492,33 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
                 <div class="puesto-meta"><?= $pCount ?> producto<?= $pCount !== 1 ? 's' : '' ?></div>
             </div>
             <?php if ($isLive): ?>
-                <?php $lv = parseLiveUrl($liveLink); ?>
-                <?php if ($lv['embedUrl']): ?>
-                    <button class="live-badge" onclick="toggleLive(<?= $sid ?>)" type="button">
+                <?php if ($isCamLive): ?>
+                    <a href="emprendedoras-tienda.php?id=<?= $sid ?>" class="live-badge"
+                       style="background:linear-gradient(135deg,#ef4444,#b91c1c);">
                         <span class="live-dot"></span>
-                        <?= $liveTitle ?: 'EN VIVO' ?>
-                    </button>
-                <?php else: ?>
-                    <a href="<?= $liveLink ?>" target="_blank" class="live-badge"
-                       style="background:<?= $lv['color'] ?>">
-                        <span class="live-dot"></span>
+                        <i class="fas fa-video" style="font-size:.7rem;"></i>
                         <?= $liveTitle ?: 'EN VIVO' ?>
                     </a>
+                <?php else: ?>
+                    <?php $lv = parseLiveUrl($liveLink); ?>
+                    <?php if ($lv['embedUrl']): ?>
+                        <button class="live-badge" onclick="toggleLive(<?= $sid ?>)" type="button">
+                            <span class="live-dot"></span>
+                            <?= $liveTitle ?: 'EN VIVO' ?>
+                        </button>
+                    <?php else: ?>
+                        <a href="<?= $liveLink ?>" target="_blank" class="live-badge"
+                           style="background:<?= $lv['color'] ?>">
+                            <span class="live-dot"></span>
+                            <?= $liveTitle ?: 'EN VIVO' ?>
+                        </a>
+                    <?php endif; ?>
                 <?php endif; ?>
             <?php endif; ?>
         </div>
 
-        <!-- Panel live incrustado (YouTube / Facebook) -->
-        <?php if ($isLive): ?>
+        <!-- Panel live incrustado (YouTube / Facebook) — solo para links, no cámara -->
+        <?php if ($isLive && !$isCamLive): ?>
             <?php $lv = parseLiveUrl($liveLink); ?>
             <?php if ($lv['embedUrl']): ?>
             <div class="live-panel" id="live-<?= $sid ?>">

@@ -58,8 +58,9 @@ $newCount = max((int)$session['chunk_count'], $index + 1);
 $pdo->prepare("UPDATE live_cam_sessions SET chunk_count=? WHERE id=?")
     ->execute([$newCount, $sessionId]);
 
-if ($index === 0) {
-    logError('live-cam.log', 'CHUNK 0 (init segment) saved OK', ['session_id'=>$sessionId,'size'=>$_FILES['chunk']['size']]);
+if ($index < 3 || $index % 20 === 0) {
+    // Log primeros chunks y luego cada 20 para no llenar el log
+    logError('live-cam.log', "CHUNK $index saved OK", ['session_id'=>$sessionId,'size'=>$_FILES['chunk']['size'],'total'=>$newCount]);
 }
 
 echo json_encode(['ok' => true, 'index' => $index, 'count' => $newCount]);
