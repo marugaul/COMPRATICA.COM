@@ -1078,7 +1078,10 @@ window.previewCamera = async function() {
     try {
         camStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
         const video = document.getElementById('cam-preview');
-        if (video) { video.srcObject = camStream; }
+        if (video) {
+            video.srcObject = camStream;
+            video.play().catch(()=>{});
+        }
         if (wrap) wrap.style.display = 'block';
         if (btn)  btn.style.display  = 'none';
         if (btnStart) btnStart.disabled = false;
@@ -1144,7 +1147,23 @@ window.startCamLive = async function() {
     startTimer();
     if (btnStart) btnStart.style.display = 'none';
     if (btnPrev)  btnPrev.style.display  = 'none';
-    if (status) status.innerHTML = '<i class="fas fa-circle" style="color:#ef4444;animation:live-pulse 1s infinite;"></i> Transmitiendo…';
+
+    // Asegurar que el preview sigue visible y reproduciendo
+    const previewVid = document.getElementById('cam-preview');
+    const previewWrap = document.getElementById('cam-preview-wrap');
+    if (previewWrap) previewWrap.style.display = 'block';
+    if (previewVid) previewVid.play().catch(()=>{});
+
+    // Mostrar botón de parar y badge "EN VIVO" dinámicamente
+    const camControls = document.getElementById('cam-controls');
+    if (camControls) {
+        camControls.innerHTML = `
+            <button id="btn-stop-cam" onclick="stopCamLive()"
+                    style="background:#ef4444;color:white;border:none;padding:11px 22px;border-radius:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;">
+                <i class="fas fa-stop-circle"></i> Terminar Transmisión
+            </button>`;
+    }
+    if (status) status.innerHTML = '<span style="color:#ef4444;font-weight:700;"><i class="fas fa-circle" style="animation:live-pulse 1s infinite;"></i> EN VIVO — Los clientes te están viendo en tu tienda.</span>';
 };
 
 async function sendChunk(event) {
@@ -1209,7 +1228,7 @@ if (IS_CAM_LIVE && SELLER_SESSION_ID) {
         sessionId = SELLER_SESSION_ID;
         const vid  = document.getElementById('cam-preview');
         const wrap = document.getElementById('cam-preview-wrap');
-        if (vid) vid.srcObject = stream;
+        if (vid) { vid.srcObject = stream; vid.play().catch(()=>{}); }
         if (wrap) wrap.style.display = 'block';
 
         const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']

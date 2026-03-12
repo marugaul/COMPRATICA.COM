@@ -39,7 +39,7 @@ if ($uid === $sellerId) {
     // El vendedor ve todo
     $stmt = $pdo->prepare("
         SELECT id, sender_id, sender_name, sender_type, message, is_public, private_to,
-               strftime('%H:%i', created_at) AS time
+               strftime('%H:%M', created_at) AS time
         FROM live_chat_messages
         WHERE seller_id = ? AND id > ?
         ORDER BY id ASC
@@ -50,7 +50,7 @@ if ($uid === $sellerId) {
     // Cliente autenticado: ve mensajes públicos + sus propios + privados a él
     $stmt = $pdo->prepare("
         SELECT id, sender_id, sender_name, sender_type, message, is_public, private_to,
-               strftime('%H:%i', created_at) AS time
+               strftime('%H:%M', created_at) AS time
         FROM live_chat_messages
         WHERE seller_id = ? AND id > ?
           AND (is_public = 1 OR sender_id = ? OR private_to = ?)
@@ -61,7 +61,7 @@ if ($uid === $sellerId) {
 } else {
     $stmt = $pdo->prepare("
         SELECT id, sender_id, sender_name, sender_type, message, is_public, private_to,
-               strftime('%H:%i', created_at) AS time
+               strftime('%H:%M', created_at) AS time
         FROM live_chat_messages
         WHERE seller_id = ? AND id > ? AND is_public = 1
         ORDER BY id ASC
