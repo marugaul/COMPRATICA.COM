@@ -206,9 +206,9 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
         .empty-state { text-align: center; padding: 60px 20px; }
         .empty-state i { font-size: 4rem; color: #ddd; display: block; margin-bottom: 16px; }
 
-        /* FAB carrito — encima del chat */
+        /* FAB carrito — encima del chat, con separación clara */
         .emp-cart-fab {
-            position: fixed; bottom: 102px; right: 28px; z-index: 9001;
+            position: fixed; bottom: 110px; right: 28px; z-index: 9001;
             background: linear-gradient(135deg,#667eea,#764ba2);
             color: white; width: 62px; height: 62px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
@@ -604,7 +604,7 @@ fetch('/api/emp-cart.php?action=get', {credentials:'same-origin'})
             <i class="fas fa-lock" style="font-size:2rem;color:#9ca3af;display:block;margin-bottom:10px;"></i>
             <strong>Inicia sesión para chatear con<br><?= htmlspecialchars($seller['name']) ?></strong>
             <div style="margin-top:14px;">
-                <a href="emprendedoras-login.php" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:700;">
+                <a href="/login" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:700;">
                     <i class="fas fa-sign-in-alt"></i> Iniciar sesión
                 </a>
             </div>
