@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/live_embed.php';
 require_once __DIR__ . '/includes/chat_helpers.php';
+require_once __DIR__ . '/includes/live_cam.php';
 
 $isLoggedIn = isset($_SESSION['uid']) && $_SESSION['uid'] > 0;
 $userName   = $_SESSION['name'] ?? 'Usuario';
@@ -21,10 +22,12 @@ $pdo = db();
 // Datos del vendedor
 $stSeller = $pdo->prepare("
     SELECT u.id, u.name, u.email,
-           COALESCE(u.is_live,0)    AS is_live,
+           COALESCE(u.is_live,0)         AS is_live,
            u.live_title, u.live_link,
-           COUNT(p.id)              AS product_count,
-           SUM(p.sales_count)       AS total_sales
+           COALESCE(u.live_type,'link')  AS live_type,
+           u.live_session_id,
+           COUNT(p.id)                   AS product_count,
+           SUM(p.sales_count)            AS total_sales
     FROM users u
     LEFT JOIN entrepreneur_products p ON p.user_id = u.id AND p.is_active = 1
     WHERE u.id = ?
@@ -34,8 +37,15 @@ $stSeller->execute([$sid]);
 $seller = $stSeller->fetch(PDO::FETCH_ASSOC);
 if (!$seller) { header('Location: emprendedoras-catalogo.php'); exit; }
 
+// Inicializar tablas de cámara (también añade columnas si es necesario)
+initLiveCamTables($pdo);
+
 // ¿La vendedora tiene plan de pago? (controla live embed y chat)
 $sellerHasPaidPlan = hasPaidPlan($pdo, $sid);
+
+// Tipo de live
+$liveIsCam  = ($seller['is_live'] && ($seller['live_type'] ?? 'link') === 'camera');
+$liveIsLink = ($seller['is_live'] && ($seller['live_type'] ?? 'link') !== 'camera' && !empty($seller['live_link']));
 
 // Usuario visitante
 $visitorUid  = (int)($_SESSION['uid'] ?? 0);
@@ -398,7 +408,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
     </div>
 </div>
 
-<?php if ($seller['is_live'] && !empty($seller['live_link']) && $sellerHasPaidPlan): ?>
+<?php if ($liveIsLink && $sellerHasPaidPlan): ?>
 <?php $lv = parseLiveUrl($seller['live_link']); ?>
 <div class="store-live-section">
     <?php if ($lv['embedUrl']): ?>
@@ -437,6 +447,118 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
     <?php endif; ?>
 </div>
 <?php endif; ?>
+
+<?php if ($liveIsCam && $sellerHasPaidPlan): ?>
+<!-- ── Player de Cámara Live ─────────────────────────────────────────── -->
+<div class="store-live-section">
+    <div class="store-live-box">
+        <div class="store-live-box-header" style="background:linear-gradient(135deg,#374151,#111827);">
+            <span>
+                <i class="fas fa-video"></i>
+                <?= htmlspecialchars($seller['live_title'] ?: 'En Vivo con Cámara') ?>
+            </span>
+            <span style="font-size:.78rem;opacity:.85;">
+                <i class="fas fa-circle" style="color:#ef4444;animation:pulse-dot 1.2s infinite;"></i> EN VIVO
+            </span>
+        </div>
+        <!-- Video con MediaSource API -->
+        <div class="store-live-iframe-wrap" style="background:#111;">
+            <video id="cam-live-player" controls autoplay playsinline
+                   style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;">
+            </video>
+            <div id="cam-buffering" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);color:white;font-size:.9rem;gap:10px;">
+                <i class="fas fa-spinner fa-spin"></i> Conectando con la vendedora…
+            </div>
+        </div>
+        <div class="store-live-footer">
+            <span style="color:#9ca3af;font-size:.8rem;">
+                <i class="fas fa-video" style="color:#10b981;"></i>
+                Transmisión en directo desde la cámara de la vendedora
+            </span>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+const SESSION_ID  = <?= json_encode($seller['live_session_id'] ?? '') ?>;
+const video       = document.getElementById('cam-live-player');
+const bufferMsg   = document.getElementById('cam-buffering');
+
+if (!SESSION_ID || !video || !window.MediaSource) {
+    if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Tu navegador no soporta este reproductor. Actualiza Chrome o Edge.';
+    return;
+}
+
+// Codec preferido (debe coincidir con el del vendedor)
+const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
+    .find(t => MediaSource.isTypeSupported(t)) || 'video/webm';
+
+const ms = new MediaSource();
+video.src = URL.createObjectURL(ms);
+
+ms.addEventListener('sourceopen', async () => {
+    const sb = ms.addSourceBuffer(mimeType);
+    let nextChunk = 0;
+    let ended     = false;
+    let initDone  = false;
+
+    async function appendChunk(idx) {
+        const r = await fetch(`/api/live-cam-serve.php?session_id=${SESSION_ID}&index=${idx}`);
+        if (!r.ok) return false;
+        const buf = await r.arrayBuffer();
+        await new Promise((res, rej) => {
+            sb.addEventListener('updateend', res, {once:true});
+            sb.addEventListener('error',     rej, {once:true});
+            sb.appendBuffer(buf);
+        });
+        return true;
+    }
+
+    async function poll() {
+        if (ended) return;
+        try {
+            const r = await fetch(`/api/live-cam-poll.php?session_id=${SESSION_ID}`);
+            const d = await r.json();
+
+            if (d.ended && d.chunk_count === 0) {
+                // Sesión no encontrada o ya terminó antes de empezar
+                if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-info-circle"></i> La transmisión ha finalizado.';
+                return;
+            }
+
+            const available = d.chunk_count || 0;
+
+            if (!initDone && available > 0) {
+                // Cargar chunk 0 (init segment con cabeceras del codec)
+                const ok = await appendChunk(0);
+                if (ok) { initDone = true; nextChunk = 1; }
+                if (bufferMsg) bufferMsg.style.display = 'none';
+                video.play().catch(()=>{});
+            }
+
+            // Cargar chunks nuevos disponibles (max 3 por ciclo)
+            let loaded = 0;
+            while (nextChunk < available && loaded < 3) {
+                const ok = await appendChunk(nextChunk);
+                if (ok) { nextChunk++; loaded++; }
+                else break;
+            }
+
+            if (d.ended) {
+                ended = true;
+                if (ms.readyState === 'open') ms.endOfStream();
+                return;
+            }
+        } catch(e) { /* red error, reintentar */ }
+        setTimeout(poll, 2000);
+    }
+
+    poll();
+});
+})();
+</script>
+<?php endif; /* liveIsCam */ ?>
 
 <!-- Filtros -->
 <div class="store-filters">
