@@ -1196,6 +1196,13 @@ function startTimer() {
 
 // ── Si ya estaba en cámara live (recarga de página) ───────────────────────
 if (IS_CAM_LIVE && SELLER_SESSION_ID) {
+    // Obtener chunk_count actual para continuar desde donde se quedó
+    fetch('/api/live-cam-poll.php?session_id=' + encodeURIComponent(SELLER_SESSION_ID))
+        .then(r => r.json())
+        .then(d => {
+            chunkIndex = d.chunk_count || 0;
+        }).catch(() => {});
+
     // Re-conectar cámara para el preview del vendedor
     navigator.mediaDevices.getUserMedia({video:true, audio:true}).then(stream => {
         camStream = stream;
