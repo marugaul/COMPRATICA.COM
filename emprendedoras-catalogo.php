@@ -92,24 +92,26 @@ $awningPalette = [
     <style>
         /* ── HERO ── */
         .hero {
-            background: linear-gradient(135deg, #fff5f5 0%, #ffe4e1 50%, #fff0e6 100%);
-            padding: 56px 20px 90px;
+            background: #ffffff;
+            padding: 48px 20px 80px;
             text-align: center;
-            border-bottom: 4px solid #ff6b9d;
+            border-bottom: 1px solid #f0f0f0;
             position: relative;
-            overflow: hidden;
         }
-        .hero h1 { font-size: 2.6rem; font-weight: 800; color: #333; margin-bottom: 12px; }
-        .hero p  { font-size: 1.15rem; color: #666; max-width: 640px; margin: 0 auto 24px; }
+        .hero h1 {
+            font-size: 2.4rem; font-weight: 800; color: #1a1a2e; margin-bottom: 10px;
+        }
+        .hero h1 span { color: #667eea; }
+        .hero p  { font-size: 1.05rem; color: #6b7280; max-width: 540px; margin: 0 auto 24px; }
         .hero-cta {
-            display: inline-block;
-            background: linear-gradient(135deg, #ff6b9d, #ec4899);
-            color: white; padding: 14px 40px; border-radius: 50px;
-            font-weight: 700; text-decoration: none;
-            box-shadow: 0 4px 16px rgba(255,107,157,.35);
+            display: inline-flex; align-items: center; gap: 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; padding: 13px 32px; border-radius: 50px;
+            font-weight: 700; text-decoration: none; font-size: .95rem;
+            box-shadow: 0 4px 16px rgba(102,126,234,.35);
             transition: all .3s;
         }
-        .hero-cta:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(255,107,157,.55); }
+        .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(102,126,234,.45); }
 
         /* ── SEARCH ── */
         .search-wrap {
@@ -377,7 +379,7 @@ $awningPalette = [
 <?php include __DIR__ . '/includes/header.php'; ?>
 
 <div class="hero">
-    <h1>🏪 Mercadito <span style="color:#ff6b9d;">Emprendedoras</span></h1>
+    <h1>🏪 Mercadito <span>Emprendedoras</span></h1>
     <p>Camina por cada puesto, conoce a las emprendedoras y compra directo a ellas.</p>
     <?php if ($isLoggedIn): ?>
         <a href="emprendedoras-dashboard.php" class="hero-cta"><i class="fas fa-store"></i> Mi Tienda</a>
