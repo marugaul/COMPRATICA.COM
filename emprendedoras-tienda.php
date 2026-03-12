@@ -462,13 +462,20 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
             </span>
         </div>
         <!-- Video con MediaSource API -->
-        <div class="store-live-iframe-wrap" style="background:#111;">
-            <video id="cam-live-player" controls autoplay playsinline
+        <div class="store-live-iframe-wrap" style="background:#111;position:relative;">
+            <video id="cam-live-player" controls autoplay playsinline muted
                    style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;">
             </video>
-            <div id="cam-buffering" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);color:white;font-size:.9rem;gap:10px;">
-                <i class="fas fa-spinner fa-spin"></i> Conectando con la vendedora…
+            <!-- Overlay de estado (buffering / error) -->
+            <div id="cam-buffering" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.75);color:white;font-size:.9rem;gap:12px;text-align:center;padding:20px;">
+                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i>
+                <span>Conectando con la vendedora…</span>
             </div>
+            <!-- Botón unmute (aparece cuando el video ya está reproduciendo) -->
+            <button id="cam-unmute-btn" onclick="camUnmute()" title="Activar sonido"
+                    style="display:none;position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,.7);color:white;border:none;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:.85rem;z-index:10;">
+                <i class="fas fa-volume-mute"></i> Activar sonido
+            </button>
         </div>
         <div class="store-live-footer">
             <span style="color:#9ca3af;font-size:.8rem;">
@@ -504,12 +511,13 @@ ms.addEventListener('sourceopen', async () => {
         sb = ms.addSourceBuffer(mimeType);
     } catch(e) {
         console.error('[CAM-LIVE] addSourceBuffer failed:', e.message);
-        if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Codec no soportado: ' + e.message;
+        if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-exclamation-circle" style="font-size:1.5rem;color:#ef4444;"></i><span>Codec no soportado: ' + e.message + '</span>';
         return;
     }
 
     sb.addEventListener('error', e => console.error('[CAM-LIVE] SourceBuffer error:', e));
 
+    const unmuteBtn = document.getElementById('cam-unmute-btn');
     let nextChunk = 0;
     let ended     = false;
     let initDone  = false;
@@ -520,6 +528,8 @@ ms.addEventListener('sourceopen', async () => {
         const buf = await r.arrayBuffer();
         console.log('[CAM-LIVE] appending chunk', idx, buf.byteLength, 'bytes');
         try {
+            // Esperar a que el buffer no esté actualizando
+            if (sb.updating) await new Promise(r => sb.addEventListener('updateend', r, {once:true}));
             await new Promise((res, rej) => {
                 sb.addEventListener('updateend', res, {once:true});
                 sb.addEventListener('error',     rej, {once:true});
@@ -540,18 +550,23 @@ ms.addEventListener('sourceopen', async () => {
             console.log('[CAM-LIVE] poll:', d);
 
             if (d.ended && d.chunk_count === 0) {
-                if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-info-circle"></i> La transmisión ha finalizado.';
+                if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-info-circle" style="font-size:1.5rem;"></i><span>La transmisión ha finalizado.</span>';
                 return;
             }
 
             const available = d.chunk_count || 0;
 
             if (!initDone && available > 0) {
-                // Cargar chunk 0 (init segment con cabeceras del codec)
+                // Cargar chunk 0 (init segment + primer frame)
                 const ok = await appendChunk(0);
-                if (ok) { initDone = true; nextChunk = 1; }
-                if (bufferMsg) bufferMsg.style.display = 'none';
-                video.play().catch(e => console.warn('[CAM-LIVE] play():', e.message));
+                if (ok) {
+                    initDone = true;
+                    nextChunk = 1;
+                    if (bufferMsg) bufferMsg.style.display = 'none';
+                    if (unmuteBtn) unmuteBtn.style.display = 'block';
+                    // Video tiene muted para sortear política de autoplay
+                    video.play().catch(e => console.warn('[CAM-LIVE] play():', e.message));
+                }
             }
 
             // Cargar chunks nuevos disponibles (max 3 por ciclo)
@@ -573,6 +588,13 @@ ms.addEventListener('sourceopen', async () => {
 
     poll();
 });
+
+window.camUnmute = function() {
+    video.muted = false;
+    const btn = document.getElementById('cam-unmute-btn');
+    if (btn) btn.style.display = 'none';
+    video.play().catch(()=>{});
+};
 })();
 </script>
 <?php endif; /* liveIsCam */ ?>
