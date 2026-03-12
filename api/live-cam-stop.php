@@ -5,17 +5,22 @@ if (is_dir($__sessPath) && is_writable($__sessPath)) ini_set('session.save_path'
 session_start();
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/live_cam.php';
+require_once __DIR__ . '/../includes/logger.php';
 header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); echo json_encode(['error'=>'method']); exit; }
 
 $uid = (int)($_SESSION['uid'] ?? 0);
-if (!$uid) { echo json_encode(['error' => 'not_logged_in']); exit; }
+if (!$uid) {
+    logError('live-cam.log', 'STOP blocked: not logged in');
+    echo json_encode(['error' => 'not_logged_in']); exit;
+}
 
 $pdo = db();
 initLiveCamTables($pdo);
 
 $sessionId = preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST['session_id'] ?? '');
+logError('live-cam.log', 'STOP request', ['uid'=>$uid,'session_id'=>$sessionId]);
 
 if ($sessionId) {
     $pdo->prepare("UPDATE live_cam_sessions SET status='ended', ended_at=datetime('now') WHERE id=? AND seller_id=?")
@@ -27,4 +32,5 @@ $pdo->prepare("UPDATE users SET is_live=0, live_type='link', live_session_id=NUL
                live_title=NULL, live_link=NULL, live_started_at=NULL WHERE id=?")
     ->execute([$uid]);
 
+logError('live-cam.log', 'STOP success', ['uid'=>$uid]);
 echo json_encode(['ok' => true]);
