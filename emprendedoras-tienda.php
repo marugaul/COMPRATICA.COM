@@ -492,17 +492,40 @@ const SESSION_ID  = <?= json_encode($seller['live_session_id'] ?? '') ?>;
 const video       = document.getElementById('cam-live-player');
 const bufferMsg   = document.getElementById('cam-buffering');
 
-if (!SESSION_ID || !video || !window.MediaSource) {
-    if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Tu navegador no soporta este reproductor. Actualiza Chrome o Edge.';
+if (!SESSION_ID || !video) {
+    if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-info-circle" style="font-size:1.5rem;"></i><span>No hay transmisión activa en este momento.</span>';
+    return;
+}
+
+// Soporte: Chrome/Edge/Firefox usan MediaSource; iOS 17+ usa ManagedMediaSource
+const MSClass = window.ManagedMediaSource || window.MediaSource;
+
+if (!MSClass) {
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isIOS) {
+        if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-exclamation-triangle" style="font-size:1.5rem;color:#f59e0b;"></i><span>El live en cámara no está disponible en iOS. Actualiza a iOS 17 o superior, o abre esta página desde una computadora con Chrome.</span>';
+    } else {
+        if (bufferMsg) bufferMsg.innerHTML = '<i class="fas fa-exclamation-circle" style="font-size:1.5rem;color:#ef4444;"></i><span>Tu navegador no soporta este reproductor. Usa Chrome o Edge.</span>';
+    }
     return;
 }
 
 // Codec preferido (debe coincidir con el del vendedor)
 const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
-    .find(t => MediaSource.isTypeSupported(t)) || 'video/webm';
+    .find(t => MSClass.isTypeSupported(t)) || 'video/webm';
 
-const ms = new MediaSource();
+// ManagedMediaSource (iOS 17+) requiere que el video tenga disableRemotePlayback
+if (window.ManagedMediaSource && !window.MediaSource) {
+    video.disableRemotePlayback = true;
+}
+
+const ms = new MSClass();
 video.src = URL.createObjectURL(ms);
+
+// ManagedMediaSource (iOS) requiere startstreaming para abrir el source
+if (ms.addEventListener && window.ManagedMediaSource && !window.MediaSource) {
+    ms.addEventListener('startstreaming', () => { video.play().catch(()=>{}); });
+}
 
 ms.addEventListener('sourceopen', async () => {
     console.log('[CAM-LIVE] sourceopen, mimeType:', mimeType);
