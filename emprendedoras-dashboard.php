@@ -585,12 +585,12 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                         <input type="hidden" name="action" value="toggle_live">
                         <input type="hidden" name="go_live" value="1">
                         <div class="live-field">
-                            <label><i class="fas fa-tag"></i> Título del live</label>
-                            <input type="text" name="live_title" placeholder='Ej: "Nueva colección de verano 🌸"' maxlength="80">
+                            <label for="live_title_input"><i class="fas fa-tag"></i> Título del live</label>
+                            <input type="text" id="live_title_input" name="live_title" placeholder='Ej: "Nueva colección de verano 🌸"' maxlength="80">
                         </div>
                         <div class="live-field">
-                            <label><i class="fab fa-youtube"></i> Link del live (YouTube, Facebook, Instagram, TikTok)</label>
-                            <input type="url" name="live_link" placeholder="https://youtube.com/live/...">
+                            <label for="live_link_input"><i class="fab fa-youtube"></i> Link del live (YouTube, Facebook, Instagram, TikTok)</label>
+                            <input type="url" id="live_link_input" name="live_link" placeholder="https://youtube.com/live/...">
                         </div>
                         <button type="submit" class="btn-go-live">
                             <span style="width:10px;height:10px;background:white;border-radius:50%;display:inline-block;"></span>
@@ -604,7 +604,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             <div id="form-cam" style="display:none;">
                 <div class="live-toggle-card" style="background:#f0fdf4;">
                     <div class="live-field">
-                        <label><i class="fas fa-tag"></i> Título del live</label>
+                        <label for="cam-title-input"><i class="fas fa-tag"></i> Título del live</label>
                         <input type="text" id="cam-title-input" placeholder='Ej: "Mostrando nueva colección 📦"' maxlength="80"
                                style="width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:.95rem;box-sizing:border-box;">
                     </div>
@@ -1079,10 +1079,12 @@ window.previewCamera = async function() {
         camStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
         const video = document.getElementById('cam-preview');
         if (video) {
+            // Mostrar el contenedor ANTES de asignar srcObject y play()
+            // — algunos browsers (Firefox, Safari) no renderizan si el elemento está oculto
+            if (wrap) wrap.style.display = 'block';
             video.srcObject = camStream;
-            video.play().catch(()=>{});
+            try { await video.play(); } catch(pe) { /* muted → autoplay siempre permitido */ }
         }
-        if (wrap) wrap.style.display = 'block';
         if (btn)  btn.style.display  = 'none';
         if (btnStart) btnStart.disabled = false;
         if (status) status.innerHTML = '<i class="fas fa-check-circle" style="color:#10b981;"></i> Cámara lista. Pulsa "Iniciar EN VIVO con Cámara".';
