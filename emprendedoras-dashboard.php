@@ -1108,14 +1108,25 @@ window.startCamLive = async function() {
     if (btnStart) btnStart.disabled = true;
     if (status) status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando sesión…';
 
-    const res  = await fetch('/api/live-cam-start.php', {
-        method:'POST', credentials:'same-origin',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:'title='+encodeURIComponent(title)
-    });
-    const data = await res.json();
+    let data;
+    try {
+        const res = await fetch('/api/live-cam-start.php', {
+            method:'POST', credentials:'same-origin',
+            headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:'title='+encodeURIComponent(title)
+        });
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error('HTTP ' + res.status + ': ' + text.substring(0, 200));
+        }
+        data = await res.json();
+    } catch(e) {
+        if (status) status.innerHTML = '<span style="color:#ef4444;"><i class="fas fa-exclamation-circle"></i> Error: ' + e.message + '</span>';
+        if (btnStart) btnStart.disabled = false;
+        return;
+    }
     if (!data.ok) {
-        if (status) status.innerHTML = '<span style="color:#ef4444;">Error al iniciar: ' + (data.error||'?') + '</span>';
+        if (status) status.innerHTML = '<span style="color:#ef4444;"><i class="fas fa-exclamation-circle"></i> ' + (data.msg || data.error || 'Error desconocido') + '</span>';
         if (btnStart) btnStart.disabled = false;
         return;
     }
