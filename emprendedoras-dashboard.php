@@ -12,6 +12,7 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/logger.php';
 require_once __DIR__ . '/includes/chat_helpers.php';
+require_once __DIR__ . '/includes/live_cam.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
@@ -118,13 +119,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
+// Inicializar tablas de cámara live (también agrega columnas si no existen)
+initLiveCamTables($pdo);
+
 // Cargar datos de live actuales
 try {
-    $liveData = $pdo->prepare("SELECT COALESCE(is_live,0) AS is_live, live_title, live_link FROM users WHERE id=?");
+    $liveData = $pdo->prepare("SELECT COALESCE(is_live,0) AS is_live, live_title, live_link,
+                                      COALESCE(live_type,'link') AS live_type, live_session_id
+                               FROM users WHERE id=?");
     $liveData->execute([$userId]);
     $liveData = $liveData->fetch(PDO::FETCH_ASSOC);
 } catch (Throwable $_e) {
-    $liveData = ['is_live' => 0, 'live_title' => '', 'live_link' => ''];
+    $liveData = ['is_live' => 0, 'live_title' => '', 'live_link' => '', 'live_type' => 'link', 'live_session_id' => ''];
 }
 
 // Verificar límite de productos
@@ -480,43 +486,148 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             .btn-go-live:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(239,68,68,.4); }
             </style>
 
-            <?php if ($liveData['is_live']): ?>
-                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:14px;">
-                    <span style="font-size:2rem;">🔴</span>
-                    <div>
-                        <strong style="color:#dc2626;font-size:1.05rem;"><?= htmlspecialchars($liveData['live_title'] ?? 'EN VIVO') ?></strong><br>
-                        <?php if ($liveData['live_link']): ?>
-                            <a href="<?= htmlspecialchars($liveData['live_link']) ?>" target="_blank" style="color:#667eea;font-size:.88rem;">
-                                <i class="fas fa-external-link-alt"></i> <?= htmlspecialchars($liveData['live_link']) ?>
-                            </a>
-                        <?php endif; ?>
-                        <div style="color:#888;font-size:.82rem;margin-top:4px;">Tu puesto aparece primero en el mercadito con el badge EN VIVO.</div>
+            <style>
+            .live-mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+            @media(max-width:600px){ .live-mode-grid { grid-template-columns:1fr; } }
+            .live-mode-card {
+                border:2px solid #e2e8f0; border-radius:14px; padding:20px;
+                cursor:pointer; transition:all .2s; text-align:center; background:#fafafa;
+            }
+            .live-mode-card:hover { border-color:#667eea; background:#f5f3ff; }
+            .live-mode-card.selected { border-color:#667eea; background:#f5f3ff; box-shadow:0 0 0 3px rgba(102,126,234,.15); }
+            .live-mode-card i { font-size:2.2rem; display:block; margin-bottom:10px; }
+            .live-mode-card h4 { margin:0 0 6px; font-size:1rem; color:#1f2937; }
+            .live-mode-card p { margin:0; font-size:.82rem; color:#6b7280; line-height:1.4; }
+            #cam-preview-wrap {
+                position:relative; background:#000; border-radius:12px; overflow:hidden;
+                margin-bottom:14px; aspect-ratio:16/9; max-width:480px;
+            }
+            #cam-preview { width:100%; height:100%; object-fit:cover; display:block; transform:scaleX(-1); }
+            .cam-live-badge {
+                position:absolute; top:10px; left:10px;
+                background:rgba(220,38,38,.9); color:white; border-radius:20px;
+                padding:3px 10px; font-size:.78rem; font-weight:700;
+                display:flex; align-items:center; gap:5px;
+            }
+            .cam-live-badge .dot { width:8px;height:8px;background:white;border-radius:50%;animation:live-pulse 1s infinite; }
+            #cam-timer { position:absolute; top:10px; right:10px; background:rgba(0,0,0,.6);
+                color:white; border-radius:8px; padding:3px 9px; font-size:.8rem; font-family:monospace; }
+            </style>
+
+            <?php if ($liveData['is_live'] && $liveData['live_type'] === 'camera'): ?>
+            <!-- ── CÁMARA: en vivo ── -->
+            <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
+                <div style="flex:1;min-width:260px;">
+                    <div id="cam-preview-wrap">
+                        <video id="cam-preview" autoplay muted playsinline></video>
+                        <div class="cam-live-badge"><span class="dot"></span> EN VIVO</div>
+                        <div id="cam-timer">00:00</div>
                     </div>
-                </div>
-            <?php else: ?>
-                <div class="live-toggle-card">
-                    <p style="color:#666;margin:0 0 16px;font-size:.93rem;">
-                        <i class="fas fa-info-circle" style="color:#667eea;"></i>
-                        Inicia tu transmisión en YouTube, Instagram o donde prefieras, pega el link aquí y activa el modo EN VIVO. Tu puesto aparecerá <strong>primero en el mercadito</strong> con un badge rojo pulsante.
+                    <p style="color:#888;font-size:.82rem;margin:6px 0;">
+                        Tu cámara está transmitiendo en directo en tu tienda.
                     </p>
+                </div>
+                <div>
+                    <strong style="color:#dc2626;font-size:1rem;display:block;margin-bottom:8px;">
+                        <i class="fas fa-circle" style="animation:live-pulse 1s infinite;"></i>
+                        <?= htmlspecialchars($liveData['live_title'] ?? 'En Vivo') ?>
+                    </strong>
+                    <button id="btn-stop-cam" onclick="stopCamLive()"
+                            style="background:#ef4444;color:white;border:none;padding:11px 22px;border-radius:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-stop-circle"></i> Terminar Transmisión
+                    </button>
+                    <p style="color:#9ca3af;font-size:.78rem;margin-top:8px;">
+                        <i class="fas fa-info-circle"></i> Al terminar, los clientes dejarán de verte.
+                    </p>
+                </div>
+            </div>
+
+            <?php elseif ($liveData['is_live'] && $liveData['live_type'] !== 'camera'): ?>
+            <!-- ── LINK EXTERNO: en vivo ── -->
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:14px;">
+                <span style="font-size:2rem;">🔴</span>
+                <div>
+                    <strong style="color:#dc2626;font-size:1.05rem;"><?= htmlspecialchars($liveData['live_title'] ?? 'EN VIVO') ?></strong><br>
+                    <?php if ($liveData['live_link']): ?>
+                        <a href="<?= htmlspecialchars($liveData['live_link']) ?>" target="_blank" style="color:#667eea;font-size:.88rem;">
+                            <i class="fas fa-external-link-alt"></i> <?= htmlspecialchars($liveData['live_link']) ?>
+                        </a>
+                    <?php endif; ?>
+                    <div style="color:#888;font-size:.82rem;margin-top:4px;">Tu puesto aparece primero en el mercadito con el badge EN VIVO.</div>
+                </div>
+            </div>
+
+            <?php else: ?>
+            <!-- ── No live: elegir modo ── -->
+            <p style="color:#666;margin:0 0 14px;font-size:.9rem;">
+                <i class="fas fa-info-circle" style="color:#667eea;"></i>
+                Elige cómo quieres transmitir en vivo:
+            </p>
+
+            <!-- Selector de modo -->
+            <div class="live-mode-grid">
+                <div class="live-mode-card selected" id="card-link" onclick="selectLiveMode('link')">
+                    <i class="fas fa-link" style="color:#667eea;"></i>
+                    <h4>Link Externo</h4>
+                    <p>YouTube, Facebook, Instagram, TikTok — pega tu link de stream</p>
+                </div>
+                <div class="live-mode-card" id="card-cam" onclick="selectLiveMode('cam')">
+                    <i class="fas fa-video" style="color:#10b981;"></i>
+                    <h4>Mi Cámara</h4>
+                    <p>Transmite directo desde tu cámara web sin salir de la página</p>
+                </div>
+            </div>
+
+            <!-- Formulario modo LINK -->
+            <div id="form-link">
+                <div class="live-toggle-card">
                     <form method="POST">
                         <input type="hidden" name="action" value="toggle_live">
                         <input type="hidden" name="go_live" value="1">
                         <div class="live-field">
-                            <label><i class="fas fa-tag"></i> Título del live (ej: "Feria de Navidad 🎄")</label>
-                            <input type="text" name="live_title" placeholder="Nueva colección de verano..." maxlength="80">
+                            <label><i class="fas fa-tag"></i> Título del live</label>
+                            <input type="text" name="live_title" placeholder='Ej: "Nueva colección de verano 🌸"' maxlength="80">
                         </div>
                         <div class="live-field">
-                            <label><i class="fab fa-youtube"></i> Link del live (YouTube, Instagram, etc.)</label>
+                            <label><i class="fab fa-youtube"></i> Link del live (YouTube, Facebook, Instagram, TikTok)</label>
                             <input type="url" name="live_link" placeholder="https://youtube.com/live/...">
                         </div>
                         <button type="submit" class="btn-go-live">
                             <span style="width:10px;height:10px;background:white;border-radius:50%;display:inline-block;"></span>
-                            Iniciar EN VIVO
+                            Iniciar EN VIVO con Link
                         </button>
                     </form>
                 </div>
-            <?php endif; ?>
+            </div>
+
+            <!-- Panel modo CÁMARA -->
+            <div id="form-cam" style="display:none;">
+                <div class="live-toggle-card" style="background:#f0fdf4;">
+                    <div class="live-field">
+                        <label><i class="fas fa-tag"></i> Título del live</label>
+                        <input type="text" id="cam-title-input" placeholder='Ej: "Mostrando nueva colección 📦"' maxlength="80"
+                               style="width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:.95rem;box-sizing:border-box;">
+                    </div>
+                    <div id="cam-preview-wrap" style="display:none;">
+                        <video id="cam-preview" autoplay muted playsinline></video>
+                        <div class="cam-live-badge"><span class="dot"></span> EN VIVO</div>
+                        <div id="cam-timer">00:00</div>
+                    </div>
+                    <div id="cam-controls" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
+                        <button id="btn-preview-cam" onclick="previewCamera()"
+                                style="background:#374151;color:white;border:none;padding:11px 20px;border-radius:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+                            <i class="fas fa-camera"></i> Probar cámara
+                        </button>
+                        <button id="btn-start-cam" onclick="startCamLive()" disabled
+                                class="btn-go-live" style="background:linear-gradient(135deg,#10b981,#059669);">
+                            <span style="width:10px;height:10px;background:white;border-radius:50%;display:inline-block;"></span>
+                            Iniciar EN VIVO con Cámara
+                        </button>
+                    </div>
+                    <p id="cam-status-msg" style="color:#6b7280;font-size:.82rem;margin:8px 0 0;"></p>
+                </div>
+            </div>
+            <?php endif; /* is_live modes */?>
         </div>
         </div><!-- /.section live-section (plan pago) -->
         <?php endif; /* isPaidPlan */ ?>
@@ -927,5 +1038,171 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
     <?php endif; ?>
 
     <?php include __DIR__ . '/includes/footer.php'; ?>
+
+<!-- ── JS CÁMARA LIVE (dashboard vendedora) ──────────────────────────── -->
+<script>
+(function(){
+// ── Selector de modo ─────────────────────────────────────────────────────
+window.selectLiveMode = function(mode) {
+    const cLink = document.getElementById('card-link');
+    const cCam  = document.getElementById('card-cam');
+    const fLink = document.getElementById('form-link');
+    const fCam  = document.getElementById('form-cam');
+    if (!cLink) return;
+    if (mode === 'link') {
+        cLink.classList.add('selected');   cCam.classList.remove('selected');
+        fLink.style.display = 'block';     fCam.style.display = 'none';
+        stopCameraPreview();
+    } else {
+        cCam.classList.add('selected');    cLink.classList.remove('selected');
+        fLink.style.display = 'none';      fCam.style.display = 'block';
+    }
+};
+
+// ── Variables de estado ───────────────────────────────────────────────────
+let camStream    = null;
+let mediaRec     = null;
+let sessionId    = null;
+let chunkIndex   = 0;
+let timerInterval = null;
+let timerSeconds  = 0;
+const SELLER_SESSION_ID = <?= json_encode($liveData['live_session_id'] ?? '') ?>;
+const IS_CAM_LIVE       = <?= json_encode($liveData['is_live'] && $liveData['live_type'] === 'camera') ?>;
+
+// ── Previsualizar cámara ─────────────────────────────────────────────────
+window.previewCamera = async function() {
+    const btn    = document.getElementById('btn-preview-cam');
+    const btnStart = document.getElementById('btn-start-cam');
+    const wrap   = document.getElementById('cam-preview-wrap');
+    const status = document.getElementById('cam-status-msg');
+    try {
+        camStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
+        const video = document.getElementById('cam-preview');
+        if (video) { video.srcObject = camStream; }
+        if (wrap) wrap.style.display = 'block';
+        if (btn)  btn.style.display  = 'none';
+        if (btnStart) btnStart.disabled = false;
+        if (status) status.innerHTML = '<i class="fas fa-check-circle" style="color:#10b981;"></i> Cámara lista. Pulsa "Iniciar EN VIVO con Cámara".';
+    } catch(e) {
+        if (status) status.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444;"></i> No se pudo acceder a la cámara: ' + e.message;
+    }
+};
+
+function stopCameraPreview() {
+    if (camStream) { camStream.getTracks().forEach(t=>t.stop()); camStream = null; }
+    const wrap = document.getElementById('cam-preview-wrap');
+    if (wrap) wrap.style.display = 'none';
+    const btnPrev = document.getElementById('btn-preview-cam');
+    const btnStart = document.getElementById('btn-start-cam');
+    if (btnPrev) btnPrev.style.display = 'inline-flex';
+    if (btnStart) btnStart.disabled = true;
+}
+
+// ── Iniciar cámara live ───────────────────────────────────────────────────
+window.startCamLive = async function() {
+    if (!camStream) { alert('Primero prueba la cámara.'); return; }
+    const title  = (document.getElementById('cam-title-input')?.value.trim()) || 'En Vivo con Cámara';
+    const status = document.getElementById('cam-status-msg');
+    const btnStart = document.getElementById('btn-start-cam');
+    const btnPrev  = document.getElementById('btn-preview-cam');
+    if (btnStart) btnStart.disabled = true;
+    if (status) status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando sesión…';
+
+    const res  = await fetch('/api/live-cam-start.php', {
+        method:'POST', credentials:'same-origin',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'title='+encodeURIComponent(title)
+    });
+    const data = await res.json();
+    if (!data.ok) {
+        if (status) status.innerHTML = '<span style="color:#ef4444;">Error al iniciar: ' + (data.error||'?') + '</span>';
+        if (btnStart) btnStart.disabled = false;
+        return;
+    }
+    sessionId  = data.session_id;
+    chunkIndex = 0;
+
+    // Elegir codec disponible
+    const mimeType = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
+        .find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
+
+    mediaRec = new MediaRecorder(camStream, {mimeType, videoBitsPerSecond: 800000});
+    mediaRec.ondataavailable = sendChunk;
+    mediaRec.start(2000); // chunk cada 2 segundos
+
+    startTimer();
+    if (btnStart) btnStart.style.display = 'none';
+    if (btnPrev)  btnPrev.style.display  = 'none';
+    if (status) status.innerHTML = '<i class="fas fa-circle" style="color:#ef4444;animation:live-pulse 1s infinite;"></i> Transmitiendo…';
+};
+
+async function sendChunk(event) {
+    if (!event.data || event.data.size === 0) return;
+    const form = new FormData();
+    form.append('session_id', sessionId);
+    form.append('index',      chunkIndex);
+    form.append('chunk',      event.data, 'chunk.webm');
+    chunkIndex++;
+    try {
+        await fetch('/api/live-cam-chunk.php', {method:'POST', credentials:'same-origin', body: form});
+    } catch(e) { /* silently ignore transient upload errors */ }
+}
+
+// ── Detener transmisión ───────────────────────────────────────────────────
+window.stopCamLive = async function() {
+    if (!confirm('¿Terminar la transmisión en vivo?')) return;
+    const btn = document.getElementById('btn-stop-cam');
+    if (btn) btn.disabled = true;
+
+    // Detener MediaRecorder y cámara
+    if (mediaRec && mediaRec.state !== 'inactive') {
+        mediaRec.stop();
+        await new Promise(r => setTimeout(r, 2200)); // esperar último chunk
+    }
+    if (camStream) camStream.getTracks().forEach(t => t.stop());
+    clearInterval(timerInterval);
+
+    await fetch('/api/live-cam-stop.php', {
+        method:'POST', credentials:'same-origin',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'session_id='+encodeURIComponent(sessionId||SELLER_SESSION_ID)
+    });
+
+    location.reload();
+};
+
+// ── Temporizador ──────────────────────────────────────────────────────────
+function startTimer() {
+    timerSeconds = 0;
+    timerInterval = setInterval(() => {
+        timerSeconds++;
+        const m = String(Math.floor(timerSeconds/60)).padStart(2,'0');
+        const s = String(timerSeconds%60).padStart(2,'0');
+        const el = document.getElementById('cam-timer');
+        if (el) el.textContent = m+':'+s;
+    }, 1000);
+}
+
+// ── Si ya estaba en cámara live (recarga de página) ───────────────────────
+if (IS_CAM_LIVE && SELLER_SESSION_ID) {
+    // Re-conectar cámara para el preview del vendedor
+    navigator.mediaDevices.getUserMedia({video:true, audio:true}).then(stream => {
+        camStream = stream;
+        sessionId = SELLER_SESSION_ID;
+        const vid  = document.getElementById('cam-preview');
+        const wrap = document.getElementById('cam-preview-wrap');
+        if (vid) vid.srcObject = stream;
+        if (wrap) wrap.style.display = 'block';
+
+        const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
+            .find(t=>MediaRecorder.isTypeSupported(t))||'video/webm';
+        mediaRec = new MediaRecorder(stream, {mimeType, videoBitsPerSecond:800000});
+        mediaRec.ondataavailable = sendChunk;
+        mediaRec.start(2000);
+        startTimer();
+    }).catch(()=>{});
+}
+})();
+</script>
 </body>
 </html>
