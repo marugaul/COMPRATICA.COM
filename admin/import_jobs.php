@@ -40,18 +40,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$botCheck) {
             $msg = ['err', '<i class="fas fa-exclamation-triangle"></i> El usuario bot no existe. Visita la portada de la app una vez para inicializarlo.'];
         } else {
-            set_time_limit(300); // 5 minutos máximo para importar
+            set_time_limit(300);
 
-            // Simular argv para que el script lea el source correctamente
             $argv = ['import_jobs.php'];
             if ($source !== 'all') $argv[] = '--source=' . $source;
 
-            file_put_contents($logFile,
-                '[' . date('Y-m-d H:i:s') . '] [ADMIN] === Importación iniciada inline. source=' . $source . " ===\n",
-                FILE_APPEND | LOCK_EX);
+            $logLine = fn(string $m) => file_put_contents($logFile,
+                '[' . date('Y-m-d H:i:s') . '] ' . $m . "\n", FILE_APPEND | LOCK_EX);
 
-            // Ejecutar el script en el mismo proceso PHP (funciona aunque exec esté deshabilitado)
-            include dirname(__DIR__) . '/scripts/import_jobs.php';
+            $logLine('[ADMIN] === Importación iniciada inline. source=' . $source . ' ===');
+            $logLine('[ADMIN] PHP=' . phpversion() . ' | SAPI=' . PHP_SAPI . ' | cURL=' . (function_exists('curl_init') ? 'sí' : 'no'));
+
+            // Capturar cualquier output y errores PHP del script incluido
+            ob_start();
+            $prevError = set_error_handler(function($errno, $errstr, $errfile, $errline) use ($logLine) {
+                $logLine('[PHP-ERROR] ' . $errstr . ' en ' . $errfile . ':' . $errline);
+                return false;
+            });
+            try {
+                include dirname(__DIR__) . '/scripts/import_jobs.php';
+                $logLine('[ADMIN] === Include completado ===');
+            } catch (\Throwable $e) {
+                $logLine('[FATAL] ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
+            }
+            set_error_handler($prevError);
+            $capturedOutput = ob_get_clean();
+            if (trim($capturedOutput) !== '') {
+                $logLine('[OUTPUT] ' . str_replace("\n", ' | ', trim($capturedOutput)));
+            }
 
             $msg = ['ok',
                 '<i class="fas fa-check-circle"></i> <strong>Importación completada.</strong> '

@@ -1334,8 +1334,8 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
   <?php else: ?>
     <div class="categories-grid">
       <?php foreach ($servicios as $service): ?>
-        <div class="category-card" onclick="window.location.href='publicacion-detalle.php?id=<?php echo $service['id']; ?>'" style="cursor: pointer;">
-          <?php if ($service['is_featured']): ?>
+        <div class="category-card" onclick="window.location.href='publicacion-detalle.php?id=<?php echo $service['id'] ?? ''; ?>'" style="cursor: pointer;">
+          <?php if ($service['is_featured'] ?? false): ?>
             <div style="margin-bottom: 1rem;">
               <span class="badge" style="background: var(--warning); color: var(--white);">
                 <i class="fas fa-star"></i>
@@ -1344,9 +1344,9 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
             </div>
           <?php endif; ?>
 
-          <?php if ($service['image_1']): ?>
+          <?php if ($service['image_1'] ?? null): ?>
             <div style="width: 100%; height: 200px; margin-bottom: 1.5rem; border-radius: var(--radius); overflow: hidden;">
-              <img src="<?php echo htmlspecialchars($service['image_1']); ?>" alt="<?php echo htmlspecialchars($service['title']); ?>" style="width: 100%; height: 100%; object-fit: cover;">
+              <img src="<?php echo htmlspecialchars($service['image_1'] ?? ''); ?>" alt="<?php echo htmlspecialchars($service['title'] ?? ''); ?>" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
           <?php else: ?>
             <div class="category-icon">
@@ -1354,11 +1354,12 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
             </div>
           <?php endif; ?>
 
-          <h3 class="category-title"><?php echo htmlspecialchars($service['title']); ?></h3>
+          <h3 class="category-title"><?php echo htmlspecialchars($service['title'] ?? ''); ?></h3>
 
+          <?php $desc = $service['description'] ?? ''; ?>
           <p class="category-description">
-            <?php echo nl2br(htmlspecialchars(substr($service['description'], 0, 150))); ?>
-            <?php if (strlen($service['description']) > 150) echo '...'; ?>
+            <?php echo nl2br(htmlspecialchars(substr($desc, 0, 150))); ?>
+            <?php if (strlen($desc) > 150) echo '...'; ?>
           </p>
 
           <div class="category-footer">
