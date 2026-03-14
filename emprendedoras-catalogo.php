@@ -322,8 +322,12 @@ $awningPalette = [
             font-size: 0.95rem; font-weight: 700; color: #888;
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 768px) {
             .puestos-grid { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 2.2rem; }
+        }
+
+        @media (max-width: 480px) {
             .hero h1 { font-size: 1.9rem; }
             .puesto-products { grid-template-columns: repeat(2, 1fr); }
         }

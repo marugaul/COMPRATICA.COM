@@ -285,6 +285,84 @@ foreach ($listings as $listing) {
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .header {
+        padding: 1rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .header h1 {
+        font-size: 1.1rem;
+      }
+
+      .user-info {
+        gap: 0.5rem;
+        font-size: 0.85rem;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .stat-card {
+        padding: 1rem;
+      }
+
+      .stat-card h3 {
+        font-size: 1.5rem;
+      }
+
+      .listing-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .listing-actions {
+        width: 100%;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .listing-actions .btn {
+        flex: 1;
+        justify-content: center;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+      }
+
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .listing-meta {
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .btn {
+        font-size: 0.85rem;
+        padding: 0.6rem 1rem;
+      }
+    }
   </style>
 </head>
 <body>

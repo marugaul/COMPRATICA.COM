@@ -1,6 +1,7 @@
 <?php
 // aqu�� se supone que ya existen $cantidadProductos y $isLoggedIn
 ?>
+<link rel="stylesheet" href="/assets/css/responsive.css">
 <header class="header">
   <a href="/" class="logo">
     <span class="flag emoji">🇨🇷</span>
