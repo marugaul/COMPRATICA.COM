@@ -364,6 +364,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
         }
         .all-done i { font-size: 4rem; color: #00b09b; margin-bottom: 16px; display: block; }
         .all-done h2 { color: #065f46; margin-bottom: 10px; }
+
+        /* RESPONSIVE */
+        @media (max-width: 640px) {
+            .page-wrap { padding: 0 12px 40px; margin-top: 20px; }
+            .checkout-card { padding: 16px !important; }
+            .form-cols-2 { display: block !important; }
+            .form-cols-2 > div { margin-bottom: 12px; }
+        }
     </style>
 </head>
 <body>
@@ -493,7 +501,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
                     <input type="hidden" name="action" value="sinpe_upload">
                     <input type="hidden" name="seller_id" value="<?= $sid ?>">
 
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-cols-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                         <div class="form-row">
                             <label>Tu nombre</label>
                             <input type="text" name="buyer_name" value="<?= htmlspecialchars($buyerName) ?>" placeholder="Nombre completo" required>

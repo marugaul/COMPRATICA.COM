@@ -70,6 +70,22 @@ foreach ($listings as $l) {
     .alert { padding: 1rem 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; }
     .alert.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .alert.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+    @media (max-width: 768px) {
+      .header { padding: 1rem; flex-wrap: wrap; gap: 0.75rem; }
+      .header h1 { font-size: 1.1rem; }
+      .container { padding: 1rem; }
+      .listing-card { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .listing-card > div:last-child { width: 100%; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+      .listing-card .btn { flex: 1; text-align: center; font-size: 0.85rem; padding: 0.5rem 0.75rem; }
+      .section-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .stat-card h3 { font-size: 1.5rem; }
+      .btn { font-size: 0.85rem; padding: 0.6rem 1rem; }
+    }
   </style>
 </head>
 <body>
