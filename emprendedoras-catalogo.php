@@ -148,14 +148,16 @@ $awningPalette = [
 
         .puestos-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(340px, 440px));
             gap: 56px 36px;
+            justify-content: center;
         }
 
         /* ── PUESTO (stall) ── */
         .puesto-wrapper {
             position: relative;
             margin-top: 52px;
+            width: 100%;
         }
         .puesto {
             background: white;
@@ -325,7 +327,7 @@ $awningPalette = [
 
         @media (max-width: 768px) {
             .puestos-grid {
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(280px, 420px));
                 gap: 40px 16px;
             }
             .hero h1 { font-size: 2.2rem; }
@@ -341,7 +343,7 @@ $awningPalette = [
             .hero h1 { font-size: 1.9rem; }
             .puesto-products { grid-template-columns: repeat(2, 1fr); }
             .puestos-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: minmax(0, 440px);
                 gap: 36px 0;
             }
             .live-section-header h2 { font-size: 1.2rem; gap: 6px; }
