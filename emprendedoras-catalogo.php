@@ -523,20 +523,20 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
                        style="background:linear-gradient(135deg,#ef4444,#b91c1c);">
                         <span class="live-dot"></span>
                         <i class="fas fa-video" style="font-size:.7rem;"></i>
-                        <?= $liveTitle ?: 'EN VIVO' ?>
+                        EN VIVO
                     </a>
                 <?php else: ?>
                     <?php $lv = parseLiveUrl($liveLink); ?>
                     <?php if ($lv['embedUrl']): ?>
                         <button class="live-badge" onclick="toggleLive(<?= $sid ?>)" type="button">
                             <span class="live-dot"></span>
-                            <?= $liveTitle ?: 'EN VIVO' ?>
+                            EN VIVO
                         </button>
                     <?php else: ?>
                         <a href="<?= $liveLink ?>" target="_blank" class="live-badge"
                            style="background:<?= $lv['color'] ?>">
                             <span class="live-dot"></span>
-                            <?= $liveTitle ?: 'EN VIVO' ?>
+                            EN VIVO
                         </a>
                     <?php endif; ?>
                 <?php endif; ?>
