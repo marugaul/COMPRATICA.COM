@@ -3,14 +3,10 @@
  * admin/import_jobs.php
  * Panel de administración para importación automática de empleos.
  */
-session_start();
+require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
 
-// Auth básica de admin (misma que usa el resto de admin/)
-if (!isset($_SESSION['admin_logged_in'])) {
-    header('Location: login.php');
-    exit;
-}
+require_login();
 
 $pdo = db();
 
