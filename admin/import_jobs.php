@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'run_import') {
         $source  = in_array($_POST['source'] ?? '', ['indeed', 'remote', 'all'])
-                   ? $_POST['source'] : 'indeed';
+                   ? $_POST['source'] : 'remote';
         $srcArg  = $source === 'all' ? '' : '--source=' . $source;
         $script  = dirname(__DIR__) . '/scripts/import_jobs.php';
         $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
@@ -39,15 +39,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $logDir = dirname($logFile);
         if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
 
-        // Ejecutar en background para no bloquear la página (el script tarda varios minutos)
-        $cmd = 'nohup php ' . escapeshellarg($script) . ' ' . $srcArg
-             . ' >> ' . escapeshellarg($logFile) . ' 2>&1 &';
-        exec($cmd);
+        // Log de inicio inmediato para confirmar que se ejecutó
+        $startLine = '[' . date('Y-m-d H:i:s') . '] [ADMIN] Importación iniciada desde panel. source=' . $source . ' | PHP=' . phpversion() . ' | user=' . get_current_user() . "\n";
+        file_put_contents($logFile, $startLine, FILE_APPEND | LOCK_EX);
+
+        // Intentar background con nohup, si falla intentar proc_open
+        $ran = false;
+        if (function_exists('exec')) {
+            $cmd = 'nohup php ' . escapeshellarg($script) . ' ' . $srcArg
+                 . ' >> ' . escapeshellarg($logFile) . ' 2>&1 &';
+            exec($cmd, $out, $ret);
+            $ran = true;
+            file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] [ADMIN] exec() nohup lanzado. ret=' . $ret . "\n", FILE_APPEND | LOCK_EX);
+        }
+
+        if (!$ran && function_exists('proc_open')) {
+            $desc = [['pipe','r'],['file',$logFile,'a'],['file',$logFile,'a']];
+            $p = proc_open('php ' . escapeshellarg($script) . ' ' . $srcArg, $desc, $pipes);
+            if (is_resource($p)) { proc_close($p); $ran = true; }
+            file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] [ADMIN] proc_open lanzado.' . "\n", FILE_APPEND | LOCK_EX);
+        }
+
+        if (!$ran) {
+            file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] [ADMIN] ERROR: exec y proc_open deshabilitados en este servidor.' . "\n", FILE_APPEND | LOCK_EX);
+        }
 
         $msg = ['ok',
-            '<i class="fas fa-rocket"></i> <strong>Importación iniciada en segundo plano.</strong><br>'
-            . 'Puede tardar 2-5 minutos. Revisa el log al final de esta página para ver el progreso.<br>'
-            . '<small style="color:#166534;">Comando: <code>php scripts/import_jobs.php ' . htmlspecialchars($srcArg) . '</code></small>'
+            '<i class="fas fa-rocket"></i> <strong>Importación iniciada.</strong> '
+            . 'El log de abajo se actualiza cada 5 segundos — verás el progreso en tiempo real.'
         ];
     }
 
