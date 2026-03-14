@@ -58,7 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 return false;
             });
             try {
+                ob_start();
                 include dirname(__DIR__) . '/scripts/import_jobs.php';
+                ob_end_clean();
                 $logLine('[ADMIN] === Include completado ===');
             } catch (\Throwable $e) {
                 $logLine('[FATAL] ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
@@ -197,29 +199,35 @@ tr:last-child td { border-bottom:none; }
 <!-- EJECUTAR IMPORTACIÓN MANUAL -->
 <div class="card">
     <h2><i class="fas fa-play-circle" style="color:#10b981;"></i> Ejecutar Importación</h2>
-    <form method="POST">
-        <input type="hidden" name="action" value="run_import">
-        <div class="grid-2" style="align-items:end;">
-            <div>
-                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:.88rem;">Fuente</label>
-                <select name="source">
-                    <option value="remote">Empleos Remotos (Arbeitnow, Remotive, Jobicy)</option>
-                    <option value="all">Todas las fuentes</option>
-                    <option value="indeed" disabled>Indeed CR (bloqueado por Cloudflare)</option>
-                </select>
-            </div>
-            <div>
-                <button type="submit" class="btn btn-green" style="width:100%;justify-content:center;">
-                    <i class="fas fa-download"></i> Importar ahora
-                </button>
-            </div>
+    <div class="grid-2" style="align-items:end;">
+        <div>
+            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:.88rem;">Fuente</label>
+            <select id="import-source">
+                <option value="remote">Empleos Remotos (Arbeitnow, Remotive, Jobicy)</option>
+                <option value="all">Todas las fuentes</option>
+                <option value="indeed" disabled>Indeed CR (bloqueado por Cloudflare)</option>
+            </select>
         </div>
-    </form>
+        <div>
+            <button id="import-btn" onclick="startImport()" class="btn btn-green" style="width:100%;justify-content:center;">
+                <i class="fas fa-download" id="import-icon"></i> Importar ahora
+            </button>
+        </div>
+    </div>
     <p style="margin:14px 0 0;font-size:.82rem;color:#9ca3af;">
         <i class="fas fa-info-circle"></i>
-        La importación puede tardar 1-3 minutos según la cantidad de fuentes. Los empleos duplicados se omiten automáticamente.
-        Cada empleo importado expira a los 30 días.
+        La importación puede tardar 1-3 minutos. Verás el progreso en tiempo real aquí abajo.
     </p>
+</div>
+
+<!-- PANEL DE PROGRESO EN TIEMPO REAL -->
+<div id="import-progress" class="card" style="display:none;">
+    <h2 style="justify-content:space-between;align-items:center;">
+        <span><i class="fas fa-terminal" style="color:#10b981;"></i> Progreso de importación</span>
+        <span id="import-status" style="font-size:.85rem;font-weight:600;"></span>
+    </h2>
+    <pre id="import-live-log" class="cron-box" style="min-height:180px;max-height:480px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;margin:0;font-size:.8rem;line-height:1.6;"></pre>
+    <div id="import-summary" style="display:none;margin-top:14px;display:none;gap:12px;flex-wrap:wrap;"></div>
 </div>
 
 <!-- EMPLEOS IMPORTADOS POR FUENTE -->
@@ -397,17 +405,78 @@ function refreshLog() {
         })
         .catch(() => icon.classList.remove('fa-spin'));
 }
-// Scroll automático al log si viene de un POST de importación
-<?php if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') === 'run_import'): ?>
-document.getElementById('log-box')?.scrollIntoView({behavior:'smooth', block:'start'});
-<?php endif; ?>
-// Auto-refresh cada 5s si el log no muestra TOTAL todavía
-(function autoRefresh() {
-    const box = document.getElementById('log-box');
-    if (box && !box.textContent.includes('=== TOTAL')) {
-        setTimeout(() => { refreshLog(); autoRefresh(); }, 5000);
+
+// ── Importación en tiempo real ────────────────────────────────────────────────
+async function startImport() {
+    const source  = document.getElementById('import-source').value;
+    const panel   = document.getElementById('import-progress');
+    const logEl   = document.getElementById('import-live-log');
+    const statusEl= document.getElementById('import-status');
+    const btn     = document.getElementById('import-btn');
+    const icon    = document.getElementById('import-icon');
+
+    panel.style.display = 'block';
+    logEl.textContent   = '';
+    statusEl.innerHTML  = '<span style="color:#f59e0b"><i class="fas fa-circle-notch fa-spin"></i> Importando…</span>';
+    btn.disabled = true;
+    icon.className = 'fas fa-circle-notch fa-spin';
+    panel.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+    const fd = new FormData();
+    fd.append('source', source);
+
+    let hasError = false;
+    let inserted = 0, skipped = 0, errors = 0;
+
+    try {
+        const response = await fetch('import_runner.php', {method: 'POST', body: fd});
+
+        if (!response.body) {
+            // Fallback: no streaming (servidor sin soporte)
+            const text = await response.text();
+            logEl.textContent = text;
+            hasError = text.includes('[ERROR]') || text.includes('[FATAL]');
+        } else {
+            const reader  = response.body.getReader();
+            const decoder = new TextDecoder();
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, {stream: true});
+                logEl.textContent += chunk;
+                logEl.scrollTop    = logEl.scrollHeight;
+                if (chunk.includes('[ERROR]') || chunk.includes('[FATAL]') || chunk.includes('[PHP-WARN]')) hasError = true;
+                // Extraer totales de la línea === TOTAL ===
+                const m = chunk.match(/\+(\d+) insertados.*?(\d+) duplicados.*?(\d+) errores/);
+                if (m) { inserted += +m[1]; skipped += +m[2]; errors += +m[3]; }
+            }
+        }
+
+        // Resumen final
+        const summaryHtml = `
+            <span class="badge badge-green" style="font-size:.88rem;padding:5px 12px;">+${inserted} nuevos</span>
+            <span class="badge badge-gray"  style="font-size:.88rem;padding:5px 12px;">${skipped} duplicados</span>
+            ${errors > 0 ? `<span class="badge badge-yellow" style="font-size:.88rem;padding:5px 12px;">${errors} errores</span>` : ''}
+        `;
+        const summary = document.getElementById('import-summary');
+        summary.innerHTML = summaryHtml;
+        summary.style.display = 'flex';
+
+        statusEl.innerHTML = hasError
+            ? '<span style="color:#f59e0b"><i class="fas fa-exclamation-triangle"></i> Completado con advertencias</span>'
+            : '<span style="color:#10b981"><i class="fas fa-check-circle"></i> ¡Importación completada!</span>';
+
+        // Refrescar historial después de 3s
+        setTimeout(refreshLog, 3000);
+
+    } catch(e) {
+        logEl.textContent += '\n[ERROR-JS] ' + e.message;
+        statusEl.innerHTML = '<span style="color:#ef4444"><i class="fas fa-times-circle"></i> Error de conexión</span>';
     }
-})();
+
+    btn.disabled = false;
+    icon.className = 'fas fa-download';
+}
 </script>
 </body>
 </html>
