@@ -5,6 +5,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
   @session_start();
 }
 
+// Admin nunca debe cachearse — ni browser ni proxies/CDN
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
+
 /**
  * Redirige siempre a la pantalla de login si el admin no está autenticado.
  * Usa la misma sesión y rutas definidas en config.php.

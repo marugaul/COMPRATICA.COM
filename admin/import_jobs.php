@@ -209,7 +209,7 @@ tr:last-child td { border-bottom:none; }
             </select>
         </div>
         <div>
-            <button id="import-btn" onclick="startImport()" class="btn btn-green" style="width:100%;justify-content:center;">
+            <button type="button" id="import-btn" onclick="startImport()" class="btn btn-green" style="width:100%;justify-content:center;">
                 <i class="fas fa-download" id="import-icon"></i> Importar ahora
             </button>
         </div>
@@ -429,7 +429,7 @@ async function startImport() {
     let inserted = 0, skipped = 0, errors = 0;
 
     try {
-        const response = await fetch('import_runner.php', {method: 'POST', body: fd});
+        const response = await fetch('/admin/import_runner.php', {method: 'POST', body: fd});
 
         if (!response.body) {
             // Fallback: no streaming (servidor sin soporte)
