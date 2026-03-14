@@ -657,6 +657,10 @@ $stats = [
       <i class="fas fa-user-tie"></i>
       <span>EMPLEOS</span>
     </a>
+    <a class="nav-btn" href="import_jobs.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(79,70,229,0.7); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 700; transition: all 0.3s ease; border: 2px solid rgba(165,180,252,0.8);" onmouseover="this.style.background='rgba(79,70,229,0.9)';" onmouseout="this.style.background='rgba(79,70,229,0.7)';">
+      <i class="fas fa-robot"></i>
+      <span>IMPORTAR EMPLEOS</span>
+    </a>
     <a class="nav-btn" href="../tools/sql_exec.php" target="_blank" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
       <i class="fas fa-database"></i>
       <span>SQL Tools</span>
@@ -1016,12 +1020,7 @@ $stats = [
         <div style="font-family:monospace;font-size:.8rem;color:#6b7280;margin-bottom:4px;"><?= htmlspecialchars($src['import_source']) ?></div>
         <div style="font-size:1.3rem;font-weight:800;color:#4f46e5;"><?= (int)$src['active'] ?></div>
         <div style="font-size:.78rem;color:#9ca3af;"><?= (int)$src['total'] ?> total · último: <?= substr($src['last_import'],0,10) ?></div>
-        <form method="POST" style="margin-top:8px;" onsubmit="return confirm('¿Eliminar todos los empleos de esta fuente?')">
-          <input type="hidden" name="action" value="run_import_jobs">
-          <input type="hidden" name="job_source" value="delete_source_<?= htmlspecialchars($src['import_source']) ?>">
-          <!-- Usamos link directo al panel dedicado -->
-        </form>
-        <a href="import_jobs.php" style="font-size:.78rem;color:#4f46e5;text-decoration:none;">
+        <a href="import_jobs.php" style="font-size:.78rem;color:#4f46e5;text-decoration:none;display:block;margin-top:8px;">
           <i class="fas fa-external-link-alt"></i> Gestionar
         </a>
       </div>
