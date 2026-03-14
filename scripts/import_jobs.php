@@ -129,8 +129,8 @@ if ($scriptArg === '' || $scriptArg === 'remote') {
 
 function log_msg(string $msg): void {
     $line = '[' . date('Y-m-d H:i:s') . '] ' . $msg . "\n";
-    if (IS_CLI) echo $line;
-    // También escribir en log de archivo
+    echo $line;
+    if (function_exists('ob_get_level') && ob_get_level() === 0) flush();
     $logFile = __DIR__ . '/../logs/import_jobs.log';
     $logDir  = dirname($logFile);
     if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
