@@ -97,21 +97,11 @@ $indeedQueries = [
 
 $sources = [];
 
-// Indeed Costa Rica — activo por defecto o con --source=indeed
-if ($scriptArg === '' || $scriptArg === 'indeed') {
-    foreach ($indeedQueries as $query => $category) {
-        $sources[] = [
-            'name'     => 'indeed_cr',
-            'label'    => 'Indeed CR — ' . $query,
-            'type'     => 'indeed_rss',
-            'url'      => 'https://cr.indeed.com/jobs?q=' . urlencode($query) . '&l=Costa+Rica&rss=1',
-            'category' => $category,
-        ];
-    }
-}
+// Indeed Costa Rica — DESHABILITADO: devuelve 403 (Cloudflare)
+// if ($scriptArg === '' || $scriptArg === 'indeed') { ... }
 
-// Empleos remotos internacionales — SOLO con --source=remote
-if ($scriptArg === 'remote') {
+// Empleos remotos internacionales — activo por defecto o con --source=remote
+if ($scriptArg === '' || $scriptArg === 'remote') {
     $sources[] = [
         'name'     => 'arbeitnow',
         'label'    => 'Arbeitnow — Remote Jobs',
@@ -148,14 +138,31 @@ function log_msg(string $msg): void {
 }
 
 function fetch_url(string $url, bool $json = false): string|false {
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (compatible; CompraTicaBot/1.0; +https://compratica.com)',
+            CURLOPT_HTTPHEADER     => [
+                'Accept: ' . ($json ? 'application/json' : 'application/rss+xml, application/xml, text/xml'),
+            ],
+        ]);
+        $result = curl_exec($ch);
+        $err    = curl_error($ch);
+        curl_close($ch);
+        if ($err) { log_msg("  cURL error: $err"); return false; }
+        return $result ?: false;
+    }
+    // Fallback file_get_contents
     $ctx = stream_context_create([
         'http' => [
             'method'  => 'GET',
             'timeout' => 20,
-            'header'  => implode("\r\n", [
-                'User-Agent: Mozilla/5.0 (compatible; CompraTicaBot/1.0; +https://compratica.com)',
-                'Accept: ' . ($json ? 'application/json' : 'application/rss+xml, application/xml, text/xml'),
-            ]),
+            'header'  => 'User-Agent: Mozilla/5.0 (compatible; CompraTicaBot/1.0; +https://compratica.com)',
         ],
         'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
     ]);
