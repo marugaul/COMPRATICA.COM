@@ -31,43 +31,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'run_import') {
         $source  = in_array($_POST['source'] ?? '', ['indeed', 'remote', 'all'])
                    ? $_POST['source'] : 'remote';
-        $srcArg  = $source === 'all' ? '' : '--source=' . $source;
-        $script  = dirname(__DIR__) . '/scripts/import_jobs.php';
         $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
-
-        // Crear directorio de logs si no existe
-        $logDir = dirname($logFile);
+        $logDir  = dirname($logFile);
         if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
 
-        // Log de inicio inmediato para confirmar que se ejecutó
-        $startLine = '[' . date('Y-m-d H:i:s') . '] [ADMIN] Importación iniciada desde panel. source=' . $source . ' | PHP=' . phpversion() . ' | user=' . get_current_user() . "\n";
-        file_put_contents($logFile, $startLine, FILE_APPEND | LOCK_EX);
+        // Verificar bot antes de ejecutar
+        $botCheck = $pdo->query("SELECT id FROM users WHERE email='bot@compratica.com' LIMIT 1")->fetchColumn();
+        if (!$botCheck) {
+            $msg = ['err', '<i class="fas fa-exclamation-triangle"></i> El usuario bot no existe. Visita la portada de la app una vez para inicializarlo.'];
+        } else {
+            set_time_limit(300); // 5 minutos máximo para importar
 
-        // Intentar background con nohup, si falla intentar proc_open
-        $ran = false;
-        if (function_exists('exec')) {
-            $cmd = 'nohup php ' . escapeshellarg($script) . ' ' . $srcArg
-                 . ' >> ' . escapeshellarg($logFile) . ' 2>&1 &';
-            exec($cmd, $out, $ret);
-            $ran = true;
-            file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] [ADMIN] exec() nohup lanzado. ret=' . $ret . "\n", FILE_APPEND | LOCK_EX);
+            // Simular argv para que el script lea el source correctamente
+            $argv = ['import_jobs.php'];
+            if ($source !== 'all') $argv[] = '--source=' . $source;
+
+            file_put_contents($logFile,
+                '[' . date('Y-m-d H:i:s') . '] [ADMIN] === Importación iniciada inline. source=' . $source . " ===\n",
+                FILE_APPEND | LOCK_EX);
+
+            // Ejecutar el script en el mismo proceso PHP (funciona aunque exec esté deshabilitado)
+            include dirname(__DIR__) . '/scripts/import_jobs.php';
+
+            $msg = ['ok',
+                '<i class="fas fa-check-circle"></i> <strong>Importación completada.</strong> '
+                . 'Ver el log de abajo para el resultado detallado.'
+            ];
         }
-
-        if (!$ran && function_exists('proc_open')) {
-            $desc = [['pipe','r'],['file',$logFile,'a'],['file',$logFile,'a']];
-            $p = proc_open('php ' . escapeshellarg($script) . ' ' . $srcArg, $desc, $pipes);
-            if (is_resource($p)) { proc_close($p); $ran = true; }
-            file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] [ADMIN] proc_open lanzado.' . "\n", FILE_APPEND | LOCK_EX);
-        }
-
-        if (!$ran) {
-            file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] [ADMIN] ERROR: exec y proc_open deshabilitados en este servidor.' . "\n", FILE_APPEND | LOCK_EX);
-        }
-
-        $msg = ['ok',
-            '<i class="fas fa-rocket"></i> <strong>Importación iniciada.</strong> '
-            . 'El log de abajo se actualiza cada 5 segundos — verás el progreso en tiempo real.'
-        ];
     }
 
     if ($action === 'delete_imported') {
@@ -391,7 +381,11 @@ function refreshLog() {
         })
         .catch(() => icon.classList.remove('fa-spin'));
 }
-// Auto-refresh cada 5s si hay una importación reciente en el log (últimas 2 líneas no tienen "TOTAL")
+// Scroll automático al log si viene de un POST de importación
+<?php if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') === 'run_import'): ?>
+document.getElementById('log-box')?.scrollIntoView({behavior:'smooth', block:'start'});
+<?php endif; ?>
+// Auto-refresh cada 5s si el log no muestra TOTAL todavía
 (function autoRefresh() {
     const box = document.getElementById('log-box');
     if (box && !box.textContent.includes('=== TOTAL')) {
