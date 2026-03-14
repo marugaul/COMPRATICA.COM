@@ -57,6 +57,29 @@ if (!function_exists('h')) {
 $msg = '';
 $action = $_POST['action'] ?? null;
 
+/* ── Empleos Automáticos: importar desde Indeed CR ─────────────────────── */
+if ($action === 'run_import_jobs') {
+    require_once __DIR__ . '/../includes/shipping_emprendedoras.php'; // solo para autoload db
+    $source  = in_array($_POST['job_source'] ?? '', ['indeed', 'remote']) ? $_POST['job_source'] : 'indeed';
+    $script  = escapeshellarg(dirname(__DIR__) . '/scripts/import_jobs.php');
+    $srcArg  = '--source=' . escapeshellarg($source);
+    $importOutput = trim((string)shell_exec("php {$script} {$srcArg} 2>&1")) ?: 'Sin salida';
+    $msg     = "✅ Importación ejecutada.\n" . $importOutput;
+}
+
+// Datos para la sección de Empleos Automáticos
+$importLogs = [];
+$importBySource = [];
+try {
+    // Intentar cargar tabla — se crea al cargar db()
+    $importLogs = $pdo->query("SELECT * FROM job_import_log ORDER BY started_at DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
+    $importBySource = $pdo->query("
+        SELECT import_source, COUNT(*) as total, SUM(is_active) as active, MAX(created_at) as last_import
+        FROM job_listings WHERE import_source IS NOT NULL
+        GROUP BY import_source ORDER BY last_import DESC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $_e) { /* tabla aún no existe */ }
+
 /* ----------------------- Configuración ----------------------- */
 if ($action === 'save_settings') {
     $rate = (float)($_POST['exchange_rate'] ?? 540.00);
@@ -941,6 +964,119 @@ $stats = [
       </table>
     </div>
   </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SECCIÓN: EMPLEOS AUTOMÁTICOS
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="section" id="empleos-automaticos" style="border:2px solid #e0e7ff;">
+    <h3 class="section-title" style="color:#4f46e5;">
+      <i class="fas fa-robot" style="color:#4f46e5;"></i> Empleos Automáticos
+      <span style="font-size:.78rem;font-weight:400;color:#6b7280;margin-left:10px;">
+        Importación desde Indeed Costa Rica — empleos reales, sin costo
+      </span>
+    </h3>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px;">
+      <!-- Ejecutar importación -->
+      <div style="background:#f5f3ff;border:1px solid #c7d2fe;border-radius:12px;padding:18px;">
+        <p style="margin:0 0 12px;font-weight:700;color:#4f46e5;"><i class="fas fa-download"></i> Importar ahora</p>
+        <form method="POST" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <input type="hidden" name="action" value="run_import_jobs">
+          <select name="job_source" style="padding:8px 12px;border:2px solid #c7d2fe;border-radius:8px;font-size:.88rem;flex:1;min-width:180px;">
+            <option value="indeed">Indeed Costa Rica (empleos locales)</option>
+            <option value="remote">Empleos Remotos Internacionales</option>
+          </select>
+          <button type="submit" style="background:#4f46e5;color:white;border:none;padding:9px 18px;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap;">
+            <i class="fas fa-play"></i> Ejecutar
+          </button>
+        </form>
+        <p style="margin:10px 0 0;font-size:.78rem;color:#6b7280;">
+          <i class="fas fa-info-circle"></i> Importa empleos reales de Indeed CR por RSS (sin API key). Los duplicados se omiten. Cada empleo expira en 30 días.
+        </p>
+      </div>
+
+      <!-- Cron Job -->
+      <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:12px;padding:18px;">
+        <p style="margin:0 0 10px;font-weight:700;color:#374151;"><i class="fas fa-clock" style="color:#f59e0b;"></i> Cron automático (cPanel)</p>
+        <code style="background:#1e293b;color:#e2e8f0;display:block;padding:10px 12px;border-radius:8px;font-size:.75rem;word-break:break-all;line-height:1.6;">
+          0 6 * * * php <?= dirname(dirname(__DIR__)) ?>/scripts/import_jobs.php --source=indeed
+        </code>
+        <p style="margin:8px 0 0;font-size:.78rem;color:#6b7280;">
+          Pega este comando en <em>cPanel → Cron Jobs → Custom</em> para importar diariamente a las 6am.
+        </p>
+      </div>
+    </div>
+
+    <!-- Estadísticas por fuente -->
+    <?php if (!empty($importBySource)): ?>
+    <p style="margin:0 0 10px;font-weight:700;font-size:.9rem;color:#374151;">Empleos importados por fuente:</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+      <?php foreach ($importBySource as $src): ?>
+      <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:12px 16px;min-width:180px;">
+        <div style="font-family:monospace;font-size:.8rem;color:#6b7280;margin-bottom:4px;"><?= htmlspecialchars($src['import_source']) ?></div>
+        <div style="font-size:1.3rem;font-weight:800;color:#4f46e5;"><?= (int)$src['active'] ?></div>
+        <div style="font-size:.78rem;color:#9ca3af;"><?= (int)$src['total'] ?> total · último: <?= substr($src['last_import'],0,10) ?></div>
+        <form method="POST" style="margin-top:8px;" onsubmit="return confirm('¿Eliminar todos los empleos de esta fuente?')">
+          <input type="hidden" name="action" value="run_import_jobs">
+          <input type="hidden" name="job_source" value="delete_source_<?= htmlspecialchars($src['import_source']) ?>">
+          <!-- Usamos link directo al panel dedicado -->
+        </form>
+        <a href="import_jobs.php" style="font-size:.78rem;color:#4f46e5;text-decoration:none;">
+          <i class="fas fa-external-link-alt"></i> Gestionar
+        </a>
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Últimas importaciones -->
+    <?php if (!empty($importLogs)): ?>
+    <p style="margin:0 0 8px;font-weight:700;font-size:.9rem;color:#374151;">Últimas importaciones:</p>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:8px 10px;text-align:left;color:#6b7280;">Fuente</th>
+            <th style="padding:8px 10px;color:#6b7280;">Fecha</th>
+            <th style="padding:8px 10px;color:#6b7280;">Nuevos</th>
+            <th style="padding:8px 10px;color:#6b7280;">Dupl.</th>
+            <th style="padding:8px 10px;color:#6b7280;">Errores</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach (array_slice($importLogs, 0, 10) as $log): ?>
+          <tr style="border-bottom:1px solid #f0f0f0;">
+            <td style="padding:7px 10px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= htmlspecialchars($log['source']) ?>">
+              <?= htmlspecialchars(substr($log['source'], 0, 50)) ?>
+            </td>
+            <td style="padding:7px 10px;color:#6b7280;white-space:nowrap;"><?= substr($log['started_at'], 0, 16) ?></td>
+            <td style="padding:7px 10px;">
+              <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-weight:700;">+<?= (int)$log['inserted'] ?></span>
+            </td>
+            <td style="padding:7px 10px;color:#9ca3af;"><?= (int)$log['skipped'] ?></td>
+            <td style="padding:7px 10px;">
+              <?php if ($log['errors'] > 0): ?>
+              <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;"><?= (int)$log['errors'] ?></span>
+              <?php else: ?>
+              <span style="color:#d1d5db;">—</span>
+              <?php endif; ?>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+    <a href="import_jobs.php" style="display:inline-block;margin-top:10px;color:#4f46e5;font-size:.85rem;font-weight:600;text-decoration:none;">
+      <i class="fas fa-arrow-right"></i> Ver panel completo de importación
+    </a>
+    <?php else: ?>
+    <p style="color:#9ca3af;font-size:.88rem;margin:0;">
+      Aún no se ha ejecutado ninguna importación. Haz clic en <strong>Ejecutar</strong> para importar los primeros empleos.
+    </p>
+    <?php endif; ?>
+  </div>
+  <!-- FIN EMPLEOS AUTOMÁTICOS -->
+
 </div>
 
 <script>
