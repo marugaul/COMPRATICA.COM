@@ -178,9 +178,9 @@ tr:last-child td { border-bottom:none; }
             <div>
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:.88rem;">Fuente</label>
                 <select name="source">
-                    <option value="indeed">Indeed Costa Rica (recomendado)</option>
-                    <option value="remote">Empleos Remotos Internacionales</option>
+                    <option value="remote">Empleos Remotos (Arbeitnow, Remotive, Jobicy)</option>
                     <option value="all">Todas las fuentes</option>
+                    <option value="indeed" disabled>Indeed CR (bloqueado por Cloudflare)</option>
                 </select>
             </div>
             <div>
