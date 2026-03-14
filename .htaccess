@@ -71,11 +71,27 @@ Options -Indexes
   ExpiresByType text/css "access plus 7 days"
   ExpiresByType application/javascript "access plus 7 days"
   ExpiresDefault "access plus 1 day"
+  # PHP genera contenido dinámico — nunca cachear
+  ExpiresByType application/x-httpd-php "access plus 0 seconds"
+  ExpiresByType text/html "access plus 0 seconds"
 </IfModule>
+
+# No cachear archivos PHP dinámicos
+<FilesMatch "\.php$">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-store, no-cache, must-revalidate"
+    Header set Pragma "no-cache"
+  </IfModule>
+</FilesMatch>
 
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
   AddOutputFilterByType DEFLATE application/javascript application/json
+  # No comprimir el endpoint de streaming (rompe el chunked transfer)
+  <FilesMatch "import_runner\.php$">
+    SetEnv no-gzip 1
+    SetEnv dont-vary 1
+  </FilesMatch>
 </IfModule>
 
 # Cabeceras de seguridad
