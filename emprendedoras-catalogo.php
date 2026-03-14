@@ -208,6 +208,10 @@ $awningPalette = [
             background: #ef4444; color: white;
             padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;
             text-decoration: none; white-space: nowrap;
+            max-width: 120px; overflow: hidden; text-overflow: ellipsis;
+        }
+        @media (max-width: 480px) {
+            .live-badge { max-width: 80px; font-size: 0.7rem; padding: 3px 7px; }
         }
         .live-dot {
             width: 8px; height: 8px; background: white; border-radius: 50%;
