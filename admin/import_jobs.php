@@ -10,7 +10,7 @@ require_login();
 
 // AJAX: devolver las últimas líneas del log
 if (($_GET['ajax'] ?? '') === 'log') {
-    $logFile = dirname(dirname(__DIR__)) . '/logs/import_jobs.log';
+    $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
     if (file_exists($logFile)) {
         $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         echo implode("\n", array_slice($lines, -60));
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    ? $_POST['source'] : 'remote';
         $srcArg  = $source === 'all' ? '' : '--source=' . $source;
         $script  = dirname(__DIR__) . '/scripts/import_jobs.php';
-        $logFile = dirname(dirname(__DIR__)) . '/logs/import_jobs.log';
+        $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
 
         // Crear directorio de logs si no existe
         $logDir = dirname($logFile);
@@ -313,7 +313,7 @@ tr:last-child td { border-bottom:none; }
     </h2>
     <div id="log-box" class="cron-box" style="min-height:120px;max-height:340px;overflow-y:auto;font-size:.8rem;line-height:1.5;">
         <?php
-        $logFile = dirname(dirname(__DIR__)) . '/logs/import_jobs.log';
+        $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
         if (file_exists($logFile)) {
             $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
             $last  = array_slice($lines, -60);
