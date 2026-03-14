@@ -204,14 +204,11 @@ $awningPalette = [
 
         /* Live badge */
         .live-badge {
-            display: inline-flex; align-items: center; gap: 5px;
+            display: inline-flex; align-items: center; gap: 4px;
             background: #ef4444; color: white;
-            padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;
-            text-decoration: none; white-space: nowrap;
-            max-width: 120px; overflow: hidden; text-overflow: ellipsis;
-        }
-        @media (max-width: 480px) {
-            .live-badge { max-width: 80px; font-size: 0.7rem; padding: 3px 7px; }
+            padding: 3px 7px; border-radius: 5px; font-size: 0.68rem; font-weight: 800;
+            text-decoration: none; white-space: nowrap; letter-spacing: .5px;
+            border: none; cursor: pointer; flex-shrink: 0;
         }
         .live-dot {
             width: 8px; height: 8px; background: white; border-radius: 50%;
@@ -521,22 +518,17 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
                 <?php if ($isCamLive): ?>
                     <a href="emprendedoras-tienda.php?id=<?= $sid ?>" class="live-badge"
                        style="background:linear-gradient(135deg,#ef4444,#b91c1c);">
-                        <span class="live-dot"></span>
-                        <i class="fas fa-video" style="font-size:.7rem;"></i>
-                        <?= $liveTitle ?: 'EN VIVO' ?>
+                        EN VIVO
                     </a>
                 <?php else: ?>
                     <?php $lv = parseLiveUrl($liveLink); ?>
                     <?php if ($lv['embedUrl']): ?>
                         <button class="live-badge" onclick="toggleLive(<?= $sid ?>)" type="button">
-                            <span class="live-dot"></span>
-                            <?= $liveTitle ?: 'EN VIVO' ?>
+                            EN VIVO
                         </button>
                     <?php else: ?>
-                        <a href="<?= $liveLink ?>" target="_blank" class="live-badge"
-                           style="background:<?= $lv['color'] ?>">
-                            <span class="live-dot"></span>
-                            <?= $liveTitle ?: 'EN VIVO' ?>
+                        <a href="<?= $liveLink ?>" target="_blank" class="live-badge">
+                            EN VIVO
                         </a>
                     <?php endif; ?>
                 <?php endif; ?>
