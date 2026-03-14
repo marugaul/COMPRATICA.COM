@@ -208,6 +208,10 @@ $awningPalette = [
             background: #ef4444; color: white;
             padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;
             text-decoration: none; white-space: nowrap;
+            max-width: 120px; overflow: hidden; text-overflow: ellipsis;
+        }
+        @media (max-width: 480px) {
+            .live-badge { max-width: 80px; font-size: 0.7rem; padding: 3px 7px; }
         }
         .live-dot {
             width: 8px; height: 8px; background: white; border-radius: 50%;
@@ -323,13 +327,31 @@ $awningPalette = [
         }
 
         @media (max-width: 768px) {
-            .puestos-grid { grid-template-columns: 1fr; }
+            .puestos-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 40px 16px;
+            }
             .hero h1 { font-size: 2.2rem; }
+            .live-section-header h2 { font-size: 1.4rem; }
+            .live-section-header { margin-bottom: 24px; }
+            .puesto-wrapper { margin-top: 36px; }
+            .puesto-awning { height: 44px; top: -44px; }
+            /* Limitar altura del iframe en vivo en móvil */
+            .live-iframe-wrap { max-height: 200px; overflow: hidden; }
         }
 
         @media (max-width: 480px) {
             .hero h1 { font-size: 1.9rem; }
             .puesto-products { grid-template-columns: repeat(2, 1fr); }
+            .puestos-grid {
+                grid-template-columns: 1fr;
+                gap: 36px 0;
+            }
+            .live-section-header h2 { font-size: 1.2rem; gap: 6px; }
+            .live-iframe-wrap { max-height: 180px; }
+            .puesto-header { padding: 10px 12px; }
+            .puesto-footer { padding: 10px 12px; }
+            .puesto-wrapper { margin-top: 32px; }
         }
 
         /* ── Panel de live incrustado ── */
