@@ -8,6 +8,18 @@ require_once __DIR__ . '/../includes/db.php';
 
 require_login();
 
+// AJAX: devolver las últimas líneas del log
+if (($_GET['ajax'] ?? '') === 'log') {
+    $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
+    if (file_exists($logFile)) {
+        $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        echo implode("\n", array_slice($lines, -60));
+    } else {
+        echo '(log vacío)';
+    }
+    exit;
+}
+
 $pdo = db();
 
 $msg = '';
@@ -17,13 +29,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'run_import') {
-        $source   = in_array($_POST['source'] ?? '', ['indeed', 'remote', 'all'])
-                    ? $_POST['source'] : 'indeed';
-        $srcArg   = $source === 'all' ? '' : '--source=' . $source;
-        $script   = escapeshellarg(dirname(__DIR__) . '/scripts/import_jobs.php');
-        $cmd      = "php {$script} {$srcArg} 2>&1";
-        $output   = shell_exec($cmd) ?? 'Sin salida';
-        $msg      = ['ok', '<pre style="white-space:pre-wrap;margin:0;">' . htmlspecialchars($output) . '</pre>'];
+        $source  = in_array($_POST['source'] ?? '', ['indeed', 'remote', 'all'])
+                   ? $_POST['source'] : 'indeed';
+        $srcArg  = $source === 'all' ? '' : '--source=' . $source;
+        $script  = dirname(__DIR__) . '/scripts/import_jobs.php';
+        $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
+
+        // Crear directorio de logs si no existe
+        $logDir = dirname($logFile);
+        if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+
+        // Ejecutar en background para no bloquear la página (el script tarda varios minutos)
+        $cmd = 'nohup php ' . escapeshellarg($script) . ' ' . $srcArg
+             . ' >> ' . escapeshellarg($logFile) . ' 2>&1 &';
+        exec($cmd);
+
+        $msg = ['ok',
+            '<i class="fas fa-rocket"></i> <strong>Importación iniciada en segundo plano.</strong><br>'
+            . 'Puede tardar 2-5 minutos. Revisa el log al final de esta página para ver el progreso.<br>'
+            . '<small style="color:#166534;">Comando: <code>php scripts/import_jobs.php ' . htmlspecialchars($srcArg) . '</code></small>'
+        ];
     }
 
     if ($action === 'delete_imported') {
@@ -259,6 +284,31 @@ tr:last-child td { border-bottom:none; }
 </div>
 <?php endif; ?>
 
+<!-- LOG DE ARCHIVO EN TIEMPO REAL -->
+<div class="card">
+    <h2 style="justify-content:space-between;">
+        <span><i class="fas fa-terminal" style="color:#1e293b;"></i> Log en tiempo real</span>
+        <button onclick="refreshLog()" class="btn btn-gray" style="font-size:.8rem;padding:5px 12px;">
+            <i class="fas fa-sync-alt" id="refresh-icon"></i> Actualizar
+        </button>
+    </h2>
+    <div id="log-box" class="cron-box" style="min-height:120px;max-height:340px;overflow-y:auto;font-size:.8rem;line-height:1.5;">
+        <?php
+        $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
+        if (file_exists($logFile)) {
+            $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $last  = array_slice($lines, -60);
+            echo htmlspecialchars(implode("\n", $last));
+        } else {
+            echo '(aún no hay log — inicia una importación primero)';
+        }
+        ?>
+    </div>
+    <p style="margin:8px 0 0;font-size:.78rem;color:#6b7280;">
+        Últimas 60 líneas de <code>logs/import_jobs.log</code>
+    </p>
+</div>
+
 <!-- CONFIGURACIÓN CRON -->
 <div class="card">
     <h2><i class="fas fa-clock" style="color:#f59e0b;"></i> Configurar Cron Job (cPanel)</h2>
@@ -307,5 +357,28 @@ tr:last-child td { border-bottom:none; }
 </div>
 
 </div><!-- /container -->
+
+<script>
+function refreshLog() {
+    const icon = document.getElementById('refresh-icon');
+    const box  = document.getElementById('log-box');
+    icon.classList.add('fa-spin');
+    fetch('?ajax=log')
+        .then(r => r.text())
+        .then(t => {
+            box.textContent = t;
+            box.scrollTop   = box.scrollHeight;
+            icon.classList.remove('fa-spin');
+        })
+        .catch(() => icon.classList.remove('fa-spin'));
+}
+// Auto-refresh cada 5s si hay una importación reciente en el log (últimas 2 líneas no tienen "TOTAL")
+(function autoRefresh() {
+    const box = document.getElementById('log-box');
+    if (box && !box.textContent.includes('=== TOTAL')) {
+        setTimeout(() => { refreshLog(); autoRefresh(); }, 5000);
+    }
+})();
+</script>
 </body>
 </html>

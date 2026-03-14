@@ -413,7 +413,7 @@ foreach ($sources as $src) {
         ->execute([$ins, $skip, $logId]);
 
     // Pausa cortés entre requests
-    sleep(2);
+    sleep(1);
 }
 
 log_msg("=== TOTAL: +{$totalInserted} insertados | {$totalSkipped} duplicados | {$totalErrors} errores ===");
