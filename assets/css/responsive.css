@@ -1,0 +1,74 @@
+/* =====================================================
+   responsive.css — Fixes globales para todos los dispositivos
+   Incluido vía includes/header.php
+   Breakpoints: 1024px (tablet), 768px (móvil), 480px (móvil pequeño)
+   ===================================================== */
+
+/* ---- CARRITO (emprendedoras-carrito.php) ---- */
+@media (max-width: 600px) {
+  .cart-item {
+    grid-template-columns: 60px 1fr !important;
+  }
+  .cart-item img {
+    width: 60px !important;
+    height: 60px !important;
+  }
+  .qty-control,
+  .remove-btn {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+/* ---- CHECKOUT (emprendedoras-checkout.php) ---- */
+@media (max-width: 640px) {
+  /* El form usa inline grid 1fr 1fr — override con !important */
+  div[style*="grid-template-columns:1fr 1fr"],
+  div[style*="grid-template-columns: 1fr 1fr"] {
+    display: block !important;
+  }
+  div[style*="grid-template-columns:1fr 1fr"] > div,
+  div[style*="grid-template-columns: 1fr 1fr"] > div {
+    margin-bottom: 12px;
+  }
+
+  .checkout-card {
+    padding: 16px !important;
+  }
+}
+
+/* ---- CATÁLOGO EMPRENDEDORAS ---- */
+@media (max-width: 480px) {
+  .catalog-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---- TARJETAS / CONTENEDORES GENERALES ---- */
+@media (max-width: 768px) {
+  .container,
+  .page-container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Tablas que desbordan en móvil */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ---- IMÁGENES ---- */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ---- TEXTOS GRANDES EN MÓVIL ---- */
+@media (max-width: 480px) {
+  h1 { font-size: clamp(1.4rem, 5vw, 2.5rem); }
+  h2 { font-size: clamp(1.2rem, 4vw, 2rem); }
+  h3 { font-size: clamp(1rem, 3.5vw, 1.5rem); }
+}

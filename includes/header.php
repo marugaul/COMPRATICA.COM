@@ -1,8 +1,9 @@
 <?php
 // aqu�� se supone que ya existen $cantidadProductos y $isLoggedIn
 ?>
+<link rel="stylesheet" href="/assets/css/responsive.css">
 <header class="header">
-  <a href="index" class="logo">
+  <a href="/" class="logo">
     <span class="flag emoji">🇨🇷</span>
     <div class="text">
       <span class="main">CompraTica</span>
@@ -57,24 +58,24 @@
 
   <div class="menu-body">
     <?php if ($isLoggedIn): ?>
-      <a href="my_orders" class="menu-item">
+      <a href="/my_orders" class="menu-item">
         <i class="fas fa-box"></i>
         <span>Mis Órdenes</span>
       </a>
-      <a href="cart" class="menu-item">
+      <a href="/cart" class="menu-item">
         <i class="fas fa-shopping-cart"></i>
         <span>Mi Carrito</span>
       </a>
       <div class="menu-divider"></div>
     <?php else: ?>
-      <a href="login" class="menu-item primary">
+      <a href="/login" class="menu-item primary">
         <i class="fas fa-sign-in-alt"></i>
         <span>Iniciar Sesión</span>
       </a>
       <div class="menu-divider"></div>
     <?php endif; ?>
 
-    <a href="index" class="menu-item">
+    <a href="/" class="menu-item">
       <i class="fas fa-home"></i>
       <span>Inicio</span>
     </a>
@@ -84,12 +85,12 @@
       <span>Empleos y Servicios</span>
     </a>
 
-    <a href="venta-garaje" class="menu-item">
+    <a href="/venta-garaje" class="menu-item">
       <i class="fas fa-tags"></i>
       <span>Venta de Garaje</span>
     </a>
 
-    <a href="bienes-raices" class="menu-item">
+    <a href="/bienes-raices" class="menu-item">
       <i class="fas fa-home"></i>
       <span>Bienes Raíces</span>
     </a>
@@ -99,29 +100,24 @@
       <span>Emprendedores - Muy Pronto</span>
     </div>
 
-    <a href="emprendedoras-catalogo.php" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <a href="/emprendedoras-catalogo" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
       <i class="fas fa-crown"></i>
       <span>✨ Emprendedoras</span>
     </a>
 
     <div class="menu-divider"></div>
 
-    <a href="select-publication-type.php" class="menu-item">
+    <a href="/select-publication-type" class="menu-item">
       <i class="fas fa-bullhorn"></i>
       <span>Publicar mi venta</span>
     </a>
 
-    <a href="select-publication-type.php" class="menu-item highlight">
-      <i class="fas fa-building"></i>
-      <span>Publicar Propiedad</span>
-    </a>
-
-    <a href="affiliate/login.php" class="menu-item">
+    <a href="/affiliate/login.php" class="menu-item">
       <i class="fas fa-tags"></i>
       <span>Portal Venta Garaje</span>
     </a>
 
-    <a href="/servicios" class="menu-item">
+    <a href="/services/login.php" class="menu-item">
       <i class="fas fa-concierge-bell"></i>
       <span>Portal Servicios</span>
     </a>
@@ -136,14 +132,19 @@
       <span>Portal Bienes Raíces</span>
     </a>
 
-    <a href="admin/login.php" class="menu-item">
+    <a href="/emprendedoras-dashboard" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+      <i class="fas fa-crown"></i>
+      <span>Portal Emprendedoras</span>
+    </a>
+
+    <a href="/admin/login.php" class="menu-item">
       <i class="fas fa-user-shield"></i>
       <span>Administrador</span>
     </a>
 
     <?php if ($isLoggedIn): ?>
       <div class="menu-divider"></div>
-      <a href="logout" class="menu-item danger">
+      <a href="/logout" class="menu-item danger">
         <i class="fas fa-sign-out-alt"></i>
         <span>Cerrar Sesión</span>
       </a>

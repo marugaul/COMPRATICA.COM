@@ -244,6 +244,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 20px;
             border-radius: 2px;
         }
+        .btn-cache {
+            width: 100%;
+            padding: 10px;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1.5px dashed #94a3b8;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+        }
+        .btn-cache:hover {
+            background: #e2e8f0;
+            border-color: #64748b;
+            color: #1e293b;
+        }
     </style>
 </head>
 <body>
@@ -268,6 +286,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
+        <button type="button" class="btn-cache" onclick="clearCache()">🗑️ Limpiar caché del navegador</button>
+
         <form method="POST" autocomplete="off">
             <div class="form-group">
                 <label for="username">👤 Usuario</label>
@@ -286,5 +306,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="../index.php">← Volver al sitio</a>
         </div>
     </div>
+<script>
+async function clearCache() {
+    const btn = document.querySelector('.btn-cache');
+    btn.textContent = '⏳ Limpiando…';
+    btn.disabled = true;
+    try {
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        // Forzar recarga sin caché de la página actual
+        location.reload(true);
+    } catch(e) {
+        btn.textContent = '✓ Listo — recarga con Ctrl+Shift+R';
+        btn.disabled = false;
+    }
+}
+</script>
 </body>
 </html>

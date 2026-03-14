@@ -49,6 +49,11 @@ if (!defined('PAYPAL_API_URL')) {
     define('PAYPAL_API_URL', PAYPAL_MODE === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
 }
 
+// Stripe API Configuration
+// NOTA: Las credenciales se configuran en config.local.php (archivo seguro no versionado)
+if (!defined('STRIPE_PUBLIC_KEY')) define('STRIPE_PUBLIC_KEY', ''); // pk_live_... o pk_test_...
+if (!defined('STRIPE_SECRET_KEY')) define('STRIPE_SECRET_KEY', ''); // sk_live_... o sk_test_...
+
 // =========================
 // Sesión (UNIFICADA - Compatible con todo el sitio)
 // =========================

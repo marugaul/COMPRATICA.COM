@@ -108,10 +108,10 @@ try {
             u.company_name,
             u.company_logo
         FROM job_listings jl
-        INNER JOIN users u ON u.id = jl.employer_id
+        LEFT JOIN users u ON u.id = jl.employer_id
         WHERE jl.listing_type = 'job'
           AND jl.is_active = 1
-          AND u.status = 'active'
+          AND (u.status = 'active' OR jl.import_source IS NOT NULL)
         ORDER BY jl.is_featured DESC, jl.created_at DESC
     ");
     $empleos = $stmt->fetchAll(PDO::FETCH_ASSOC);

@@ -265,7 +265,7 @@ logDebug("RENDERING_PAGE");
   <button class="menu-close" id="menu-close" aria-label="Cerrar menú">
     <i class="fas fa-times"></i>
   </button>
-  
+
   <div class="menu-header">
     <?php if ($isLoggedIn): ?>
       <div class="menu-user">
@@ -289,7 +289,7 @@ logDebug("RENDERING_PAGE");
       </div>
     <?php endif; ?>
   </div>
-  
+
   <div class="menu-body">
     <?php if ($isLoggedIn): ?>
       <a href="my_orders" class="menu-item">
@@ -308,20 +308,20 @@ logDebug("RENDERING_PAGE");
       </a>
       <div class="menu-divider"></div>
     <?php endif; ?>
-    
+
     <a href="index" class="menu-item">
       <i class="fas fa-home"></i>
       <span>Inicio</span>
-    </a>
-    
-    <a href="venta-garaje" class="menu-item">
-      <i class="fas fa-tags"></i>
-      <span>Venta de Garaje</span>
     </a>
 
     <a href="/servicios" class="menu-item">
       <i class="fas fa-concierge-bell"></i>
       <span>Empleos y Servicios</span>
+    </a>
+
+    <a href="venta-garaje" class="menu-item">
+      <i class="fas fa-tags"></i>
+      <span>Venta de Garaje</span>
     </a>
 
     <a href="bienes-raices" class="menu-item">
@@ -334,28 +334,36 @@ logDebug("RENDERING_PAGE");
       <span>Emprendedores - Muy Pronto</span>
     </div>
 
-    <a href="emprendedoras-dashboard.php" class="menu-item">
+    <a href="emprendedoras-catalogo.php" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
       <i class="fas fa-crown"></i>
-      <span>Dashboard Emprendedoras</span>
+      <span>✨ Emprendedoras</span>
     </a>
-    
+
     <div class="menu-divider"></div>
 
-    <a href="select-publication-type.php" class="menu-item primary" style="background: linear-gradient(135deg, #002b7f, #ce1126); color: white; font-weight: 600;">
+    <a href="select-publication-type.php" class="menu-item">
       <i class="fas fa-bullhorn"></i>
-      <span>Publicar Ahora</span>
+      <span>Publicar mi venta</span>
     </a>
 
-    <div class="menu-divider"></div>
+    <a href="select-publication-type.php" class="menu-item highlight">
+      <i class="fas fa-building"></i>
+      <span>Publicar Propiedad</span>
+    </a>
 
     <a href="affiliate/login.php" class="menu-item">
       <i class="fas fa-tags"></i>
       <span>Portal Venta Garaje</span>
     </a>
 
+    <a href="/servicios" class="menu-item">
+      <i class="fas fa-concierge-bell"></i>
+      <span>Portal Servicios</span>
+    </a>
+
     <a href="/jobs/login.php" class="menu-item">
       <i class="fas fa-briefcase"></i>
-      <span>Portal Empleos y Servicios</span>
+      <span>Portal Empleos</span>
     </a>
 
     <a href="/real-estate/login.php" class="menu-item">
@@ -363,11 +371,16 @@ logDebug("RENDERING_PAGE");
       <span>Portal Bienes Raíces</span>
     </a>
 
+    <a href="emprendedoras-dashboard" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+      <i class="fas fa-crown"></i>
+      <span>Portal Emprendedoras</span>
+    </a>
+
     <a href="admin/login.php" class="menu-item">
       <i class="fas fa-user-shield"></i>
       <span>Administrador</span>
     </a>
-    
+
     <?php if ($isLoggedIn): ?>
       <div class="menu-divider"></div>
       <a href="logout" class="menu-item danger">
@@ -456,7 +469,7 @@ logDebug("RENDERING_PAGE");
     </div>
 
     <!-- EMPRENDEDORAS -->
-    <a href="emprendedoras.php" class="category-card category-emprendedoras">
+    <a href="emprendedoras-catalogo.php" class="category-card category-emprendedoras">
       <div class="category-content">
         <div class="category-icon">
           <i class="fas fa-crown"></i>
@@ -563,7 +576,7 @@ logDebug("RENDERING_PAGE");
       <a href="venta-garaje">Venta de Garaje</a>
       <a href="bienes-raices">Bienes Raíces</a>
       <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
-      <a href="emprendedoras.php">Emprendedoras</a>
+      <a href="emprendedoras-catalogo.php">Emprendedoras</a>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>

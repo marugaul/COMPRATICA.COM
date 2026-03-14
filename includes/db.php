@@ -397,6 +397,14 @@ function db() {
                 // Crear índices si no existen
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_pricing_plan ON job_listings(pricing_plan_id)");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_payment_status ON job_listings(payment_status)");
+
+                // Columnas para importación automática
+                if(empty($haveJ['import_source'])) {
+                    $pdo->exec("ALTER TABLE job_listings ADD COLUMN import_source TEXT DEFAULT NULL");
+                }
+                if(empty($haveJ['source_url'])) {
+                    $pdo->exec("ALTER TABLE job_listings ADD COLUMN source_url TEXT DEFAULT NULL");
+                }
             }
 
             if(!in_array('job_categories', $tables)){
@@ -484,6 +492,222 @@ function db() {
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_user_sessions_session_id ON user_sessions(session_id)");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_user_sessions_revoked ON user_sessions(revoked)");
+            }
+
+            // ============================================================
+            // TABLAS DE EMPRENDEDORAS
+            // ============================================================
+            if(!in_array('entrepreneur_plans', $tables)){
+                $pdo->exec("
+                    CREATE TABLE entrepreneur_plans (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        description TEXT,
+                        price_monthly REAL NOT NULL DEFAULT 0,
+                        price_annual REAL NOT NULL DEFAULT 0,
+                        max_products INTEGER NOT NULL DEFAULT 5,
+                        commission_rate REAL NOT NULL DEFAULT 0,
+                        features TEXT,
+                        is_active INTEGER NOT NULL DEFAULT 1,
+                        display_order INTEGER NOT NULL DEFAULT 0,
+                        created_at TEXT DEFAULT (datetime('now'))
+                    )
+                ");
+
+                // Plan gratuito por defecto
+                $pdo->exec("
+                    INSERT INTO entrepreneur_plans (name, description, price_monthly, price_annual, max_products, commission_rate, features, is_active, display_order)
+                    VALUES (
+                        'Plan Gratuito',
+                        'Ideal para comenzar a vender en CompraTica',
+                        0, 0, 5, 0,
+                        '[\"Hasta 5 productos\",\"Perfil de emprendedora\",\"Soporte básico\"]',
+                        1, 1
+                    )
+                ");
+                $pdo->exec("
+                    INSERT INTO entrepreneur_plans (name, description, price_monthly, price_annual, max_products, commission_rate, features, is_active, display_order)
+                    VALUES (
+                        'Plan Emprendedora',
+                        'Para emprendedoras que quieren crecer',
+                        9900, 99000, 50, 0,
+                        '[\"Hasta 50 productos\",\"Estadísticas avanzadas\",\"Soporte prioritario\",\"Sin comisiones\"]',
+                        1, 2
+                    )
+                ");
+                $pdo->exec("
+                    INSERT INTO entrepreneur_plans (name, description, price_monthly, price_annual, max_products, commission_rate, features, is_active, display_order)
+                    VALUES (
+                        'Plan Premium',
+                        'Para negocios en pleno crecimiento',
+                        19900, 199000, 0, 0,
+                        '[\"Productos ilimitados\",\"Estadísticas avanzadas\",\"Soporte VIP\",\"Sin comisiones\",\"Destacado en catálogo\"]',
+                        1, 3
+                    )
+                ");
+            }
+
+            if(!in_array('entrepreneur_subscriptions', $tables)){
+                $pdo->exec("
+                    CREATE TABLE entrepreneur_subscriptions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL,
+                        plan_id INTEGER NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','active','cancelled','expired')),
+                        payment_method TEXT,
+                        payment_date TEXT,
+                        start_date TEXT,
+                        end_date TEXT,
+                        auto_renew INTEGER NOT NULL DEFAULT 0,
+                        created_at TEXT DEFAULT (datetime('now')),
+                        updated_at TEXT DEFAULT (datetime('now')),
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                        FOREIGN KEY (plan_id) REFERENCES entrepreneur_plans(id)
+                    )
+                ");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_ent_subs_user ON entrepreneur_subscriptions(user_id)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_ent_subs_status ON entrepreneur_subscriptions(status)");
+            }
+
+            if(!in_array('entrepreneur_categories', $tables)){
+                $pdo->exec("
+                    CREATE TABLE entrepreneur_categories (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        icon TEXT,
+                        display_order INTEGER DEFAULT 0,
+                        is_active INTEGER DEFAULT 1
+                    )
+                ");
+                $cats = [
+                    ['Ropa y Moda','fa-tshirt',1],['Accesorios','fa-gem',2],['Belleza y Cuidado','fa-spa',3],
+                    ['Artesanías','fa-paint-brush',4],['Alimentos y Bebidas','fa-utensils',5],
+                    ['Hogar y Decoración','fa-home',6],['Bebé y Niños','fa-baby',7],
+                    ['Salud y Bienestar','fa-heartbeat',8],['Tecnología','fa-laptop',9],['Otros','fa-box',10]
+                ];
+                $s = $pdo->prepare("INSERT INTO entrepreneur_categories (name,icon,display_order) VALUES(?,?,?)");
+                foreach($cats as $c) $s->execute($c);
+            }
+
+            if(!in_array('entrepreneur_products', $tables)){
+                $pdo->exec("
+                    CREATE TABLE entrepreneur_products (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL,
+                        category_id INTEGER,
+                        name TEXT NOT NULL,
+                        description TEXT,
+                        price REAL NOT NULL DEFAULT 0,
+                        currency TEXT NOT NULL DEFAULT 'CRC',
+                        stock INTEGER DEFAULT 0,
+                        sku TEXT,
+                        image_1 TEXT,
+                        image_2 TEXT,
+                        image_3 TEXT,
+                        image_4 TEXT,
+                        image_5 TEXT,
+                        whatsapp_number TEXT,
+                        weight_kg REAL,
+                        size_cm_length REAL,
+                        size_cm_width REAL,
+                        size_cm_height REAL,
+                        accepts_sinpe INTEGER DEFAULT 0,
+                        accepts_paypal INTEGER DEFAULT 0,
+                        sinpe_phone TEXT,
+                        paypal_email TEXT,
+                        featured INTEGER DEFAULT 0,
+                        shipping_available INTEGER DEFAULT 0,
+                        pickup_available INTEGER DEFAULT 0,
+                        pickup_location TEXT,
+                        is_active INTEGER NOT NULL DEFAULT 1,
+                        views_count INTEGER NOT NULL DEFAULT 0,
+                        sales_count INTEGER NOT NULL DEFAULT 0,
+                        created_at TEXT DEFAULT (datetime('now')),
+                        updated_at TEXT DEFAULT (datetime('now')),
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                        FOREIGN KEY (category_id) REFERENCES entrepreneur_categories(id)
+                    )
+                ");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_ent_prod_user ON entrepreneur_products(user_id)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_ent_prod_active ON entrepreneur_products(is_active)");
+            } else {
+                // Migrar columnas faltantes en tablas existentes
+                $colsEP = $pdo->query("PRAGMA table_info(entrepreneur_products)")->fetchAll(PDO::FETCH_ASSOC);
+                $haveEP = [];
+                foreach ($colsEP as $c) $haveEP[strtolower($c['name'])] = true;
+
+                if(empty($haveEP['sku']))               $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN sku TEXT");
+                if(empty($haveEP['currency']))           $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN currency TEXT NOT NULL DEFAULT 'CRC'");
+                if(empty($haveEP['image_4']))            $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN image_4 TEXT");
+                if(empty($haveEP['image_5']))            $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN image_5 TEXT");
+                if(empty($haveEP['weight_kg']))          $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN weight_kg REAL");
+                if(empty($haveEP['size_cm_length']))     $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN size_cm_length REAL");
+                if(empty($haveEP['size_cm_width']))      $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN size_cm_width REAL");
+                if(empty($haveEP['size_cm_height']))     $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN size_cm_height REAL");
+                if(empty($haveEP['accepts_sinpe']))      $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN accepts_sinpe INTEGER DEFAULT 0");
+                if(empty($haveEP['accepts_paypal']))     $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN accepts_paypal INTEGER DEFAULT 0");
+                if(empty($haveEP['sinpe_phone']))        $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN sinpe_phone TEXT");
+                if(empty($haveEP['paypal_email']))       $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN paypal_email TEXT");
+                if(empty($haveEP['featured']))           $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN featured INTEGER DEFAULT 0");
+                if(empty($haveEP['shipping_available'])) $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN shipping_available INTEGER DEFAULT 0");
+                if(empty($haveEP['pickup_available']))   $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN pickup_available INTEGER DEFAULT 0");
+                if(empty($haveEP['pickup_location']))    $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN pickup_location TEXT");
+            }
+
+            if(!in_array('entrepreneur_orders', $tables)){
+                $pdo->exec("
+                    CREATE TABLE entrepreneur_orders (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        product_id INTEGER NOT NULL,
+                        seller_user_id INTEGER NOT NULL,
+                        buyer_name TEXT,
+                        buyer_email TEXT,
+                        buyer_phone TEXT,
+                        quantity INTEGER NOT NULL DEFAULT 1,
+                        total_price REAL NOT NULL DEFAULT 0,
+                        status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','confirmed','completed','cancelled')),
+                        notes TEXT,
+                        created_at TEXT DEFAULT (datetime('now')),
+                        updated_at TEXT DEFAULT (datetime('now')),
+                        FOREIGN KEY (product_id) REFERENCES entrepreneur_products(id),
+                        FOREIGN KEY (seller_user_id) REFERENCES users(id)
+                    )
+                ");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_ent_orders_seller ON entrepreneur_orders(seller_user_id)");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_ent_orders_status ON entrepreneur_orders(status)");
+            }
+
+            // ── Tabla de log de importaciones ──────────────────────────────
+            if(!in_array('job_import_log', $tables)){
+                $pdo->exec("
+                    CREATE TABLE job_import_log (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        source TEXT NOT NULL,
+                        started_at TEXT DEFAULT (datetime('now')),
+                        finished_at TEXT,
+                        inserted INTEGER DEFAULT 0,
+                        skipped  INTEGER DEFAULT 0,
+                        errors   INTEGER DEFAULT 0,
+                        message  TEXT
+                    )
+                ");
+            }
+
+            // ── Crear usuario-bot para importaciones si no existe ───────────
+            $botEmail = 'bot@compratica.com';
+            $hasBot = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+            $hasBot->execute([$botEmail]);
+            if (!$hasBot->fetchColumn()) {
+                $pdo->prepare("
+                    INSERT INTO users (name, email, password_hash, company_name, company_description, is_active, created_at)
+                    VALUES (?, ?, ?, ?, ?, 1, datetime('now'))
+                ")->execute([
+                    'CompraTica Empleos',
+                    $botEmail,
+                    password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT),
+                    'CompraTica Empleos',
+                    'Empleos importados automáticamente de diversas fuentes.',
+                ]);
             }
         }
     }

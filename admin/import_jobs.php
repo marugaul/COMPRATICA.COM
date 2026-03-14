@@ -1,520 +1,482 @@
 <?php
 /**
- * Página de Administración: Importación de Empleos
- *
- * Muestra el log de importación y permite ejecutar manualmente la importación
+ * admin/import_jobs.php
+ * Panel de administración para importación automática de empleos.
  */
-
+require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../includes/config.php';
 
-// Solo permitir acceso a administradores (agregar validación de sesión si es necesario)
-// session_start();
-// if (!isset($_SESSION['admin_logged_in'])) {
-//     header('Location: login.php');
-//     exit;
-// }
+require_login();
+
+// AJAX: devolver las últimas líneas del log
+if (($_GET['ajax'] ?? '') === 'log') {
+    $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
+    if (file_exists($logFile)) {
+        $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        echo implode("\n", array_slice($lines, -60));
+    } else {
+        echo '(log vacío)';
+    }
+    exit;
+}
 
 $pdo = db();
 
-// Obtener ruta del log
-$logFile = __DIR__ . '/../logs/import_jobs.log';
-$scriptFile = __DIR__ . '/../scripts/import_jobs.php';
+$msg = '';
 
-// Variables para mensajes
-$message = '';
-$messageType = '';
-
-// Procesar acciones
+// ── Acciones POST ────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['action'])) {
-        switch ($_POST['action']) {
-            case 'run_import':
-                // Ejecutar importación manualmente
-                $output = [];
-                $returnVar = 0;
-                exec("php " . escapeshellarg($scriptFile) . " 2>&1", $output, $returnVar);
+    $action = $_POST['action'] ?? '';
 
-                if ($returnVar === 0) {
-                    $message = "Importación ejecutada exitosamente";
-                    $messageType = "success";
-                } else {
-                    $message = "Error al ejecutar la importación. Código: $returnVar";
-                    $messageType = "error";
-                }
-                break;
+    if ($action === 'run_import') {
+        $source  = in_array($_POST['source'] ?? '', ['indeed', 'remote', 'all'])
+                   ? $_POST['source'] : 'remote';
+        $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
+        $logDir  = dirname($logFile);
+        if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
 
-            case 'clear_log':
-                // Limpiar log
-                if (file_exists($logFile)) {
-                    file_put_contents($logFile, '');
-                    $message = "Log limpiado exitosamente";
-                    $messageType = "success";
-                } else {
-                    $message = "El archivo de log no existe";
-                    $messageType = "warning";
-                }
-                break;
+        // Verificar bot antes de ejecutar
+        $botCheck = $pdo->query("SELECT id FROM users WHERE email='bot@compratica.com' LIMIT 1")->fetchColumn();
+        if (!$botCheck) {
+            $msg = ['err', '<i class="fas fa-exclamation-triangle"></i> El usuario bot no existe. Visita la portada de la app una vez para inicializarlo.'];
+        } else {
+            set_time_limit(300);
+
+            $argv = ['import_jobs.php'];
+            if ($source !== 'all') $argv[] = '--source=' . $source;
+
+            $logLine = fn(string $m) => file_put_contents($logFile,
+                '[' . date('Y-m-d H:i:s') . '] ' . $m . "\n", FILE_APPEND | LOCK_EX);
+
+            $logLine('[ADMIN] === Importación iniciada inline. source=' . $source . ' ===');
+            $logLine('[ADMIN] PHP=' . phpversion() . ' | SAPI=' . PHP_SAPI . ' | cURL=' . (function_exists('curl_init') ? 'sí' : 'no'));
+
+            // Capturar cualquier output y errores PHP del script incluido
+            ob_start();
+            $prevError = set_error_handler(function($errno, $errstr, $errfile, $errline) use ($logLine) {
+                $logLine('[PHP-ERROR] ' . $errstr . ' en ' . $errfile . ':' . $errline);
+                return false;
+            });
+            try {
+                ob_start();
+                include dirname(__DIR__) . '/scripts/import_jobs.php';
+                ob_end_clean();
+                $logLine('[ADMIN] === Include completado ===');
+            } catch (\Throwable $e) {
+                $logLine('[FATAL] ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
+            }
+            set_error_handler($prevError);
+            $capturedOutput = ob_get_clean();
+            if (trim($capturedOutput) !== '') {
+                $logLine('[OUTPUT] ' . str_replace("\n", ' | ', trim($capturedOutput)));
+            }
+
+            $msg = ['ok',
+                '<i class="fas fa-check-circle"></i> <strong>Importación completada.</strong> '
+                . 'Ver el log de abajo para el resultado detallado.'
+            ];
         }
+    }
+
+    if ($action === 'delete_imported') {
+        $source = trim($_POST['source_name'] ?? '');
+        if ($source) {
+            $n = $pdo->prepare("DELETE FROM job_listings WHERE import_source = ?");
+            $n->execute([$source]);
+            $msg = ['ok', "Se eliminaron {$n->rowCount()} empleos importados de «{$source}»."];
+        }
+    }
+
+    if ($action === 'toggle_imported') {
+        $active = (int)($_POST['active'] ?? 1);
+        $source = trim($_POST['source_name'] ?? '');
+        $pdo->prepare("UPDATE job_listings SET is_active=? WHERE import_source=?")
+            ->execute([$active, $source]);
+        $msg = ['ok', 'Estado actualizado.'];
+    }
+
+    if ($action === 'expire_old') {
+        $n = $pdo->exec("UPDATE job_listings SET is_active=0 WHERE import_source IS NOT NULL AND end_date < date('now') AND is_active=1");
+        $msg = ['ok', "Se marcaron {$n} empleos expirados como inactivos."];
     }
 }
 
-// Leer el log (últimas 500 líneas)
-$logContent = '';
-$logLines = [];
-if (file_exists($logFile)) {
-    $logContent = file_get_contents($logFile);
-    $allLines = explode("\n", $logContent);
-    $logLines = array_slice($allLines, -500); // Últimas 500 líneas
-    $logContent = implode("\n", $logLines);
-} else {
-    $logContent = "El archivo de log no existe aún.\nSe creará cuando se ejecute la primera importación.";
-}
+// ── Datos para mostrar ───────────────────────────────────────────────────────
+$logs = $pdo->query("
+    SELECT * FROM job_import_log
+    ORDER BY started_at DESC
+    LIMIT 100
+")->fetchAll(PDO::FETCH_ASSOC);
 
-// Obtener estadísticas de empleos importados
-$statsQuery = $pdo->query("
-    SELECT
-        COUNT(*) as total_jobs,
-        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_jobs,
-        SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactive_jobs,
-        SUM(CASE WHEN employer_id = (SELECT id FROM jobs_employers WHERE email = 'importador@compratica.com' LIMIT 1) THEN 1 ELSE 0 END) as imported_jobs
+$bySource = $pdo->query("
+    SELECT import_source,
+           COUNT(*) as total,
+           SUM(is_active) as active,
+           MAX(created_at) as last_import
     FROM job_listings
-");
-$stats = $statsQuery->fetch(PDO::FETCH_ASSOC);
+    WHERE import_source IS NOT NULL
+    GROUP BY import_source
+    ORDER BY last_import DESC
+")->fetchAll(PDO::FETCH_ASSOC);
 
-// Obtener últimos empleos importados
-$recentJobsQuery = $pdo->query("
-    SELECT
-        jl.id, jl.title, jl.category, jl.location,
-        jl.is_active, jl.created_at, je.company_name
-    FROM job_listings jl
-    LEFT JOIN jobs_employers je ON jl.employer_id = je.id
-    WHERE je.email = 'importador@compratica.com'
-    ORDER BY jl.created_at DESC
-    LIMIT 20
-");
-$recentJobs = $recentJobsQuery->fetchAll(PDO::FETCH_ASSOC);
-
-// Verificar si el archivo de script existe
-$scriptExists = file_exists($scriptFile);
-$scriptExecutable = $scriptExists && is_executable($scriptFile);
-
-// Información del cron
-$cronInfo = "0 6,18 * * * php " . $scriptFile . " >> " . $logFile . " 2>&1";
+$botUser = $pdo->query("SELECT id, name, email FROM users WHERE email='bot@compratica.com' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Importación de Empleos - Admin</title>
-    <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
-    <style>
-        :root {
-            --primary: #2c3e50;
-            --primary-light: #34495e;
-            --success: #27ae60;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --info: #3498db;
-            --gray-100: #f8f9fa;
-            --gray-200: #e9ecef;
-            --gray-300: #dee2e6;
-            --gray-600: #6c757d;
-            --gray-800: #343a40;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--gray-100);
-            color: var(--gray-800);
-        }
-
-        .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            color: white;
-            padding: 1.5rem 2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .header h1 {
-            font-size: 1.75rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 2rem auto;
-            padding: 0 2rem;
-        }
-
-        .alert {
-            padding: 1rem 1.25rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-weight: 500;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .card-header {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 1rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid var(--gray-200);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .stat-box {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            text-align: center;
-        }
-
-        .stat-box h3 {
-            font-size: 2.5rem;
-            color: var(--primary);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-box p {
-            color: var(--gray-600);
-            font-size: 0.95rem;
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.3s ease;
-            font-size: 0.95rem;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-light);
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #229954;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #c0392b;
-        }
-
-        .btn-secondary {
-            background: var(--gray-300);
-            color: var(--gray-800);
-        }
-
-        .btn-secondary:hover {
-            background: var(--gray-600);
-            color: white;
-        }
-
-        .log-container {
-            background: #1e1e1e;
-            color: #d4d4d4;
-            padding: 1.5rem;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.875rem;
-            overflow-x: auto;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-
-        .log-container pre {
-            margin: 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        .info-box {
-            background: #e8f4f8;
-            border-left: 4px solid var(--info);
-            padding: 1rem;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-        }
-
-        .info-box code {
-            background: rgba(0,0,0,0.1);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-family: monospace;
-        }
-
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .status-ok {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        table th {
-            background: var(--gray-100);
-            padding: 0.75rem;
-            text-align: left;
-            font-weight: 600;
-            color: var(--gray-800);
-            border-bottom: 2px solid var(--gray-300);
-        }
-
-        table td {
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--gray-200);
-        }
-
-        table tbody tr:hover {
-            background: var(--gray-100);
-        }
-
-        .actions {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Importación de Empleos | Admin CompraTica</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: system-ui, sans-serif; background: #f4f6fa; margin: 0; color: #1f2937; }
+.topbar { background: linear-gradient(135deg,#1e3a5f,#2d5a8e); color: white; padding: 14px 28px;
+           display:flex; align-items:center; gap:14px; }
+.topbar h1 { margin:0; font-size:1.2rem; }
+.topbar a { color:rgba(255,255,255,.75); text-decoration:none; font-size:.88rem; }
+.topbar a:hover { color:white; }
+.container { max-width: 1100px; margin: 32px auto; padding: 0 20px; }
+.card { background:white; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.07); padding:24px; margin-bottom:24px; }
+.card h2 { margin:0 0 18px; font-size:1.05rem; color:#374151; display:flex; align-items:center; gap:8px; }
+.alert { border-radius:10px; padding:14px 18px; margin-bottom:18px; font-size:.9rem; }
+.alert.ok   { background:#f0fdf4; border:1px solid #86efac; color:#166534; }
+.alert.err  { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:700px){ .grid-2{ grid-template-columns:1fr; } }
+.btn { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:8px;
+       font-weight:700; font-size:.88rem; cursor:pointer; border:none; text-decoration:none; }
+.btn-primary { background:#2563eb; color:white; }
+.btn-green   { background:#10b981; color:white; }
+.btn-red     { background:#ef4444; color:white; }
+.btn-gray    { background:#e5e7eb; color:#374151; }
+.btn:hover   { opacity:.88; }
+select, input[type=text] {
+    padding:9px 13px; border:2px solid #e5e7eb; border-radius:8px; font-size:.9rem;
+    width:100%; box-sizing:border-box;
+}
+select:focus, input:focus { border-color:#2563eb; outline:none; }
+table { width:100%; border-collapse:collapse; font-size:.85rem; }
+th { background:#f1f5f9; padding:9px 12px; text-align:left; color:#6b7280; font-weight:700; }
+td { padding:9px 12px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+.badge { display:inline-block; padding:2px 9px; border-radius:20px; font-size:.78rem; font-weight:700; }
+.badge-green  { background:#dcfce7; color:#166534; }
+.badge-gray   { background:#f1f5f9; color:#6b7280; }
+.badge-yellow { background:#fef3c7; color:#92400e; }
+.source-tag { font-family:monospace; background:#f1f5f9; padding:2px 7px; border-radius:5px; font-size:.82rem; }
+.cron-box { background:#1e293b; color:#e2e8f0; border-radius:10px; padding:16px 18px; font-family:monospace; font-size:.88rem; overflow-x:auto; }
+</style>
 </head>
 <body>
-    <div class="header">
-        <h1>
-            <i class="fas fa-file-import"></i>
-            Importación de Empleos
-        </h1>
-    </div>
+<div class="topbar">
+    <a href="dashboard.php"><i class="fas fa-arrow-left"></i> Admin</a>
+    <h1><i class="fas fa-robot"></i> Importación Automática de Empleos</h1>
+</div>
 
-    <div class="container">
-        <?php if ($message): ?>
-            <div class="alert alert-<?php echo $messageType; ?>">
-                <i class="fas fa-<?php echo $messageType === 'success' ? 'check-circle' : ($messageType === 'error' ? 'times-circle' : 'exclamation-triangle'); ?>"></i>
-                <?php echo htmlspecialchars($message); ?>
-            </div>
-        <?php endif; ?>
+<div class="container">
 
-        <!-- Estadísticas -->
-        <div class="stats-grid">
-            <div class="stat-box">
-                <h3><?php echo $stats['total_jobs']; ?></h3>
-                <p><i class="fas fa-briefcase"></i> Total Empleos</p>
-            </div>
-            <div class="stat-box">
-                <h3><?php echo $stats['active_jobs']; ?></h3>
-                <p><i class="fas fa-check-circle"></i> Empleos Activos</p>
-            </div>
-            <div class="stat-box">
-                <h3><?php echo $stats['imported_jobs']; ?></h3>
-                <p><i class="fas fa-download"></i> Importados</p>
-            </div>
-            <div class="stat-box">
-                <h3><?php echo $stats['inactive_jobs']; ?></h3>
-                <p><i class="fas fa-times-circle"></i> Inactivos</p>
-            </div>
+<?php if ($msg): ?>
+<div class="alert <?= $msg[0] ?>">
+    <?= is_array($msg) ? $msg[1] : htmlspecialchars($msg[1]) ?>
+</div>
+<?php endif; ?>
+
+<!-- INFO DEL BOT -->
+<div class="card">
+    <h2><i class="fas fa-user-robot" style="color:#2563eb;"></i> Usuario Bot</h2>
+    <?php if ($botUser): ?>
+    <p style="margin:0;color:#6b7280;font-size:.9rem;">
+        Los empleos importados se publican bajo el usuario <strong><?= htmlspecialchars($botUser['name']) ?></strong>
+        (ID: <?= $botUser['id'] ?>, email: <code><?= htmlspecialchars($botUser['email']) ?></code>).
+        Los compradores ven el nombre de la empresa de cada oferta individual.
+    </p>
+    <?php else: ?>
+    <p style="color:#ef4444;">El usuario bot no existe aún. Se creará automáticamente en la próxima carga de la app.</p>
+    <?php endif; ?>
+</div>
+
+<!-- EJECUTAR IMPORTACIÓN MANUAL -->
+<div class="card">
+    <h2><i class="fas fa-play-circle" style="color:#10b981;"></i> Ejecutar Importación</h2>
+    <div class="grid-2" style="align-items:end;">
+        <div>
+            <label style="display:block;margin-bottom:6px;font-weight:600;font-size:.88rem;">Fuente</label>
+            <select id="import-source">
+                <option value="remote">Empleos Remotos (Arbeitnow, Remotive, Jobicy)</option>
+                <option value="all">Todas las fuentes</option>
+                <option value="indeed" disabled>Indeed CR (bloqueado por Cloudflare)</option>
+            </select>
         </div>
-
-        <!-- Información del Sistema -->
-        <div class="card">
-            <div class="card-header">
-                <span><i class="fas fa-info-circle"></i> Estado del Sistema</span>
-            </div>
-
-            <div class="info-box">
-                <strong><i class="fas fa-clock"></i> Configuración del Cron:</strong><br>
-                <code><?php echo htmlspecialchars($cronInfo); ?></code><br>
-                <small>Se ejecuta todos los días a las 6:00 AM y 6:00 PM</small>
-            </div>
-
-            <p>
-                <strong>Script de importación:</strong>
-                <?php if ($scriptExists): ?>
-                    <span class="status-badge status-ok"><i class="fas fa-check"></i> Existe</span>
-                <?php else: ?>
-                    <span class="status-badge status-error"><i class="fas fa-times"></i> No encontrado</span>
-                <?php endif; ?>
-                <code><?php echo htmlspecialchars($scriptFile); ?></code>
-            </p>
-
-            <p>
-                <strong>Archivo de log:</strong>
-                <?php if (file_exists($logFile)): ?>
-                    <span class="status-badge status-ok"><i class="fas fa-check"></i> Existe</span>
-                <?php else: ?>
-                    <span class="status-badge status-error"><i class="fas fa-times"></i> No existe</span>
-                <?php endif; ?>
-                <code><?php echo htmlspecialchars($logFile); ?></code>
-            </p>
-        </div>
-
-        <!-- Acciones -->
-        <div class="card">
-            <div class="card-header">
-                <span><i class="fas fa-cog"></i> Acciones</span>
-            </div>
-
-            <div class="actions">
-                <form method="POST" style="display: inline;">
-                    <input type="hidden" name="action" value="run_import">
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-play"></i>
-                        Ejecutar Importación Ahora
-                    </button>
-                </form>
-
-                <form method="POST" style="display: inline;" onsubmit="return confirm('¿Estás seguro de limpiar el log?');">
-                    <input type="hidden" name="action" value="clear_log">
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash"></i>
-                        Limpiar Log
-                    </button>
-                </form>
-
-                <a href="dashboard_ext.php" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i>
-                    Volver al Dashboard
-                </a>
-            </div>
-        </div>
-
-        <!-- Últimos Empleos Importados -->
-        <?php if (count($recentJobs) > 0): ?>
-        <div class="card">
-            <div class="card-header">
-                <span><i class="fas fa-list"></i> Últimos Empleos Importados (20)</span>
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Título</th>
-                        <th>Categoría</th>
-                        <th>Ubicación</th>
-                        <th>Estado</th>
-                        <th>Fecha Creación</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($recentJobs as $job): ?>
-                    <tr>
-                        <td><strong>#<?php echo $job['id']; ?></strong></td>
-                        <td><?php echo htmlspecialchars($job['title']); ?></td>
-                        <td><?php echo htmlspecialchars($job['category']); ?></td>
-                        <td><?php echo htmlspecialchars($job['location']); ?></td>
-                        <td>
-                            <?php if ($job['is_active']): ?>
-                                <span class="status-badge status-ok">Activo</span>
-                            <?php else: ?>
-                                <span class="status-badge status-error">Inactivo</span>
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo date('d/m/Y H:i', strtotime($job['created_at'])); ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-        <?php endif; ?>
-
-        <!-- Log de Importación -->
-        <div class="card">
-            <div class="card-header">
-                <span><i class="fas fa-file-alt"></i> Log de Importación (Últimas 500 líneas)</span>
-                <a href="javascript:location.reload();" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
-                    <i class="fas fa-sync"></i> Recargar
-                </a>
-            </div>
-
-            <div class="log-container">
-                <pre><?php echo htmlspecialchars($logContent); ?></pre>
-            </div>
+        <div>
+            <button type="button" id="import-btn" onclick="startImport()" class="btn btn-green" style="width:100%;justify-content:center;">
+                <i class="fas fa-download" id="import-icon"></i> Importar ahora
+            </button>
         </div>
     </div>
+    <p style="margin:14px 0 0;font-size:.82rem;color:#9ca3af;">
+        <i class="fas fa-info-circle"></i>
+        La importación puede tardar 1-3 minutos. Verás el progreso en tiempo real aquí abajo.
+    </p>
+</div>
+
+<!-- PANEL DE PROGRESO EN TIEMPO REAL -->
+<div id="import-progress" class="card" style="display:none;">
+    <h2 style="justify-content:space-between;align-items:center;">
+        <span><i class="fas fa-terminal" style="color:#10b981;"></i> Progreso de importación</span>
+        <span id="import-status" style="font-size:.85rem;font-weight:600;"></span>
+    </h2>
+    <pre id="import-live-log" class="cron-box" style="min-height:180px;max-height:480px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;margin:0;font-size:.8rem;line-height:1.6;"></pre>
+    <div id="import-summary" style="display:none;margin-top:14px;display:none;gap:12px;flex-wrap:wrap;"></div>
+</div>
+
+<!-- EMPLEOS IMPORTADOS POR FUENTE -->
+<?php if ($bySource): ?>
+<div class="card">
+    <h2><i class="fas fa-database" style="color:#667eea;"></i> Empleos importados por fuente</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Fuente</th>
+                <th>Total</th>
+                <th>Activos</th>
+                <th>Última importación</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($bySource as $row): ?>
+        <tr>
+            <td><span class="source-tag"><?= htmlspecialchars($row['import_source']) ?></span></td>
+            <td><?= (int)$row['total'] ?></td>
+            <td>
+                <span class="badge badge-<?= $row['active'] > 0 ? 'green' : 'gray' ?>">
+                    <?= (int)$row['active'] ?> activos
+                </span>
+            </td>
+            <td style="color:#6b7280;"><?= substr($row['last_import'], 0, 16) ?></td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                <form method="POST" style="margin:0;">
+                    <input type="hidden" name="action" value="toggle_imported">
+                    <input type="hidden" name="source_name" value="<?= htmlspecialchars($row['import_source']) ?>">
+                    <input type="hidden" name="active" value="<?= $row['active'] > 0 ? 0 : 1 ?>">
+                    <button type="submit" class="btn btn-gray" style="padding:5px 10px;font-size:.78rem;">
+                        <i class="fas fa-<?= $row['active'] > 0 ? 'eye-slash' : 'eye' ?>"></i>
+                        <?= $row['active'] > 0 ? 'Ocultar' : 'Mostrar' ?>
+                    </button>
+                </form>
+                <form method="POST" onsubmit="return confirm('¿Eliminar todos de «<?= htmlspecialchars($row['import_source']) ?>»?')" style="margin:0;">
+                    <input type="hidden" name="action" value="delete_imported">
+                    <input type="hidden" name="source_name" value="<?= htmlspecialchars($row['import_source']) ?>">
+                    <button type="submit" class="btn btn-red" style="padding:5px 10px;font-size:.78rem;">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
+                </form>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    <form method="POST" style="margin-top:14px;">
+        <input type="hidden" name="action" value="expire_old">
+        <button type="submit" class="btn btn-gray">
+            <i class="fas fa-clock"></i> Marcar expirados como inactivos
+        </button>
+    </form>
+</div>
+<?php endif; ?>
+
+<!-- LOG DE IMPORTACIONES -->
+<?php if ($logs): ?>
+<div class="card">
+    <h2><i class="fas fa-list-alt" style="color:#6b7280;"></i> Historial de importaciones</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Fuente</th>
+                <th>Inicio</th>
+                <th>Nuevos</th>
+                <th>Duplicados</th>
+                <th>Errores</th>
+                <th>Mensaje</th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($logs as $log): ?>
+        <tr>
+            <td style="max-width:220px;word-break:break-all;"><?= htmlspecialchars($log['source']) ?></td>
+            <td style="color:#6b7280;white-space:nowrap;"><?= substr($log['started_at'], 0, 16) ?></td>
+            <td><span class="badge badge-green">+<?= (int)$log['inserted'] ?></span></td>
+            <td><span class="badge badge-gray"><?= (int)$log['skipped'] ?></span></td>
+            <td><span class="badge <?= $log['errors'] > 0 ? 'badge-yellow' : 'badge-gray' ?>"><?= (int)$log['errors'] ?></span></td>
+            <td style="color:#9ca3af;font-size:.8rem;"><?= htmlspecialchars(substr($log['message'] ?? '', 0, 80)) ?></td>
+        </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
+
+<!-- LOG DE ARCHIVO EN TIEMPO REAL -->
+<div class="card">
+    <h2 style="justify-content:space-between;">
+        <span><i class="fas fa-terminal" style="color:#1e293b;"></i> Log en tiempo real</span>
+        <button onclick="refreshLog()" class="btn btn-gray" style="font-size:.8rem;padding:5px 12px;">
+            <i class="fas fa-sync-alt" id="refresh-icon"></i> Actualizar
+        </button>
+    </h2>
+    <div id="log-box" class="cron-box" style="min-height:120px;max-height:340px;overflow-y:auto;font-size:.8rem;line-height:1.5;">
+        <?php
+        $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
+        if (file_exists($logFile)) {
+            $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $last  = array_slice($lines, -60);
+            echo htmlspecialchars(implode("\n", $last));
+        } else {
+            echo '(aún no hay log — inicia una importación primero)';
+        }
+        ?>
+    </div>
+    <p style="margin:8px 0 0;font-size:.78rem;color:#6b7280;">
+        Últimas 60 líneas de <code>logs/import_jobs.log</code>
+    </p>
+</div>
+
+<!-- CONFIGURACIÓN CRON -->
+<div class="card">
+    <h2><i class="fas fa-clock" style="color:#f59e0b;"></i> Configurar Cron Job (cPanel)</h2>
+    <p style="color:#6b7280;font-size:.9rem;margin:0 0 14px;">
+        Para importar empleos automáticamente cada día, crea un Cron Job en cPanel con el siguiente comando:
+    </p>
+
+    <p style="font-weight:700;font-size:.88rem;margin:0 0 6px;">Cada día a las 6 AM:</p>
+    <div class="cron-box">0 6 * * *  php <?= dirname(dirname(__DIR__)) ?>/scripts/import_jobs.php &gt;&gt; <?= dirname(dirname(__DIR__)) ?>/logs/import_jobs.log 2&gt;&amp;1</div>
+
+    <p style="font-weight:700;font-size:.88rem;margin:14px 0 6px;">Cada 12 horas (más empleos frescos):</p>
+    <div class="cron-box">0 6,18 * * *  php <?= dirname(dirname(__DIR__)) ?>/scripts/import_jobs.php &gt;&gt; <?= dirname(dirname(__DIR__)) ?>/logs/import_jobs.log 2&gt;&amp;1</div>
+
+    <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px 16px;margin-top:16px;font-size:.85rem;color:#92400e;">
+        <i class="fas fa-lightbulb"></i>
+        <strong>Nota:</strong> En cPanel → <em>Cron Jobs</em>, elige "Custom" e ingresa el comando anterior.
+        Reemplaza la ruta si tu servidor usa una ruta diferente. El archivo de log se crea automáticamente en <code>logs/import_jobs.log</code>.
+    </div>
+</div>
+
+<!-- CÓMO FUNCIONA -->
+<div class="card">
+    <h2><i class="fas fa-question-circle" style="color:#667eea;"></i> ¿Cómo funciona?</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+        <div style="text-align:center;padding:16px;background:#f8f9ff;border-radius:12px;">
+            <i class="fas fa-rss" style="font-size:2rem;color:#f59e0b;display:block;margin-bottom:8px;"></i>
+            <strong>Indeed CR RSS</strong>
+            <p style="font-size:.82rem;color:#6b7280;margin:6px 0 0;">Descarga empleos del RSS gratuito de Indeed Costa Rica por categoría. Sin API key.</p>
+        </div>
+        <div style="text-align:center;padding:16px;background:#f8f9ff;border-radius:12px;">
+            <i class="fas fa-robot" style="font-size:2rem;color:#2563eb;display:block;margin-bottom:8px;"></i>
+            <strong>Usuario Bot</strong>
+            <p style="font-size:.82rem;color:#6b7280;margin:6px 0 0;">Se postean bajo el usuario «CompraTica Empleos» creado automáticamente.</p>
+        </div>
+        <div style="text-align:center;padding:16px;background:#f8f9ff;border-radius:12px;">
+            <i class="fas fa-clone" style="font-size:2rem;color:#10b981;display:block;margin-bottom:8px;"></i>
+            <strong>Sin duplicados</strong>
+            <p style="font-size:.82rem;color:#6b7280;margin:6px 0 0;">Cada empleo tiene URL única. Si ya existe, se omite.</p>
+        </div>
+        <div style="text-align:center;padding:16px;background:#f8f9ff;border-radius:12px;">
+            <i class="fas fa-calendar-times" style="font-size:2rem;color:#ef4444;display:block;margin-bottom:8px;"></i>
+            <strong>Expiración automática</strong>
+            <p style="font-size:.82rem;color:#6b7280;margin:6px 0 0;">Los empleos importados se desactivan a los 30 días automáticamente.</p>
+        </div>
+    </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+function refreshLog() {
+    const icon = document.getElementById('refresh-icon');
+    const box  = document.getElementById('log-box');
+    icon.classList.add('fa-spin');
+    fetch('?ajax=log')
+        .then(r => r.text())
+        .then(t => {
+            box.textContent = t;
+            box.scrollTop   = box.scrollHeight;
+            icon.classList.remove('fa-spin');
+        })
+        .catch(() => icon.classList.remove('fa-spin'));
+}
+
+// ── Importación en tiempo real ────────────────────────────────────────────────
+async function startImport() {
+    const source  = document.getElementById('import-source').value;
+    const panel   = document.getElementById('import-progress');
+    const logEl   = document.getElementById('import-live-log');
+    const statusEl= document.getElementById('import-status');
+    const btn     = document.getElementById('import-btn');
+    const icon    = document.getElementById('import-icon');
+
+    panel.style.display = 'block';
+    logEl.textContent   = '';
+    statusEl.innerHTML  = '<span style="color:#f59e0b"><i class="fas fa-circle-notch fa-spin"></i> Importando…</span>';
+    btn.disabled = true;
+    icon.className = 'fas fa-circle-notch fa-spin';
+    panel.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+    const fd = new FormData();
+    fd.append('source', source);
+
+    let hasError = false;
+    let inserted = 0, skipped = 0, errors = 0;
+
+    try {
+        const response = await fetch('/admin/import_runner.php', {method: 'POST', body: fd});
+
+        if (!response.body) {
+            // Fallback: no streaming (servidor sin soporte)
+            const text = await response.text();
+            logEl.textContent = text;
+            hasError = text.includes('[ERROR]') || text.includes('[FATAL]');
+        } else {
+            const reader  = response.body.getReader();
+            const decoder = new TextDecoder();
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, {stream: true});
+                logEl.textContent += chunk;
+                logEl.scrollTop    = logEl.scrollHeight;
+                if (chunk.includes('[ERROR]') || chunk.includes('[FATAL]') || chunk.includes('[PHP-WARN]')) hasError = true;
+                // Extraer totales de la línea === TOTAL ===
+                const m = chunk.match(/\+(\d+) insertados.*?(\d+) duplicados.*?(\d+) errores/);
+                if (m) { inserted += +m[1]; skipped += +m[2]; errors += +m[3]; }
+            }
+        }
+
+        // Resumen final
+        const summaryHtml = `
+            <span class="badge badge-green" style="font-size:.88rem;padding:5px 12px;">+${inserted} nuevos</span>
+            <span class="badge badge-gray"  style="font-size:.88rem;padding:5px 12px;">${skipped} duplicados</span>
+            ${errors > 0 ? `<span class="badge badge-yellow" style="font-size:.88rem;padding:5px 12px;">${errors} errores</span>` : ''}
+        `;
+        const summary = document.getElementById('import-summary');
+        summary.innerHTML = summaryHtml;
+        summary.style.display = 'flex';
+
+        statusEl.innerHTML = hasError
+            ? '<span style="color:#f59e0b"><i class="fas fa-exclamation-triangle"></i> Completado con advertencias</span>'
+            : '<span style="color:#10b981"><i class="fas fa-check-circle"></i> ¡Importación completada!</span>';
+
+        // Refrescar historial después de 3s
+        setTimeout(refreshLog, 3000);
+
+    } catch(e) {
+        logEl.textContent += '\n[ERROR-JS] ' + e.message;
+        statusEl.innerHTML = '<span style="color:#ef4444"><i class="fas fa-times-circle"></i> Error de conexión</span>';
+    }
+
+    btn.disabled = false;
+    icon.className = 'fas fa-download';
+}
+</script>
 </body>
 </html>

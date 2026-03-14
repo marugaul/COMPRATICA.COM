@@ -2,6 +2,11 @@
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+$__sessPath = __DIR__ . '/sessions';
+if (!is_dir($__sessPath)) @mkdir($__sessPath, 0755, true);
+if (is_dir($__sessPath) && is_writable($__sessPath)) {
+    ini_set('session.save_path', $__sessPath);
+}
 session_start();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
@@ -87,17 +92,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Debes proporcionar un correo de PayPal';
     } else {
         try {
-            // Manejar subida de imágenes (simplificado - en producción usar upload real)
             $images = [];
+            $uploadDir = __DIR__ . '/uploads/emprendedoras/';
+            if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+                throw new Exception('No se pudo crear el directorio de imágenes. Contacta al administrador.');
+            }
+            $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
             for ($i = 1; $i <= 5; $i++) {
                 if (isset($_FILES["image_$i"]) && $_FILES["image_$i"]['error'] === UPLOAD_ERR_OK) {
-                    $uploadDir = __DIR__ . '/uploads/emprendedoras/';
-                    if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-
-                    $ext = pathinfo($_FILES["image_$i"]['name'], PATHINFO_EXTENSION);
-                    $filename = 'product_' . $userId . '_' . time() . '_' . $i . '.' . $ext;
+                    $ext = strtolower(pathinfo($_FILES["image_$i"]['name'], PATHINFO_EXTENSION));
+                    if (!in_array($ext, $allowedExts)) continue;
+                    $filename = 'product_' . $userId . '_' . time() . '_' . $i . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
                     $destination = $uploadDir . $filename;
-
                     if (move_uploaded_file($_FILES["image_$i"]['tmp_name'], $destination)) {
                         $images[$i] = '/uploads/emprendedoras/' . $filename;
                     }
@@ -371,7 +377,7 @@ $isLoggedIn = true;
                         <label class="image-upload-box">
                             <i class="fas fa-camera"></i>
                             <div>Imagen <?php echo $i; ?></div>
-                            <input type="file" name="image_<?php echo $i; ?>" accept="image/*" capture="camera">
+                            <input type="file" name="image_<?php echo $i; ?>" accept="image/*">
                         </label>
                     <?php endfor; ?>
                 </div>
