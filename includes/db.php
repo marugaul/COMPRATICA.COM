@@ -397,6 +397,14 @@ function db() {
                 // Crear índices si no existen
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_pricing_plan ON job_listings(pricing_plan_id)");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_payment_status ON job_listings(payment_status)");
+
+                // Columnas para importación automática
+                if(empty($haveJ['import_source'])) {
+                    $pdo->exec("ALTER TABLE job_listings ADD COLUMN import_source TEXT DEFAULT NULL");
+                }
+                if(empty($haveJ['source_url'])) {
+                    $pdo->exec("ALTER TABLE job_listings ADD COLUMN source_url TEXT DEFAULT NULL");
+                }
             }
 
             if(!in_array('job_categories', $tables)){
@@ -667,6 +675,39 @@ function db() {
                 ");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_ent_orders_seller ON entrepreneur_orders(seller_user_id)");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_ent_orders_status ON entrepreneur_orders(status)");
+            }
+
+            // ── Tabla de log de importaciones ──────────────────────────────
+            if(!in_array('job_import_log', $tables)){
+                $pdo->exec("
+                    CREATE TABLE job_import_log (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        source TEXT NOT NULL,
+                        started_at TEXT DEFAULT (datetime('now')),
+                        finished_at TEXT,
+                        inserted INTEGER DEFAULT 0,
+                        skipped  INTEGER DEFAULT 0,
+                        errors   INTEGER DEFAULT 0,
+                        message  TEXT
+                    )
+                ");
+            }
+
+            // ── Crear usuario-bot para importaciones si no existe ───────────
+            $botEmail = 'bot@compratica.com';
+            $hasBot = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+            $hasBot->execute([$botEmail]);
+            if (!$hasBot->fetchColumn()) {
+                $pdo->prepare("
+                    INSERT INTO users (name, email, password_hash, company_name, company_description, is_active, created_at)
+                    VALUES (?, ?, ?, ?, ?, 1, datetime('now'))
+                ")->execute([
+                    'CompraTica Empleos',
+                    $botEmail,
+                    password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT),
+                    'CompraTica Empleos',
+                    'Empleos importados automáticamente de diversas fuentes.',
+                ]);
             }
         }
     }

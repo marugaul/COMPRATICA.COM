@@ -40,7 +40,19 @@ foreach ($cartItems as $item) {
     $groups[$sid]['items'][]   = $item;
     $groups[$sid]['subtotal'] += $item['qty'] * $item['price'];
 }
-$grandTotal = array_sum(array_column($groups, 'subtotal'));
+
+// Incluir costo de envío por vendedor (guardado en sesión por el carrito)
+$shippingChoices = $_SESSION['emp_shipping'] ?? [];
+foreach ($groups as $sid => &$g) {
+    $ch = $shippingChoices[$sid] ?? null;
+    $g['shipping_method'] = $ch['method']     ?? '';
+    $g['shipping_zone']   = $ch['zone_name']  ?? '';
+    $g['shipping_cost']   = (int)($ch['zone_price'] ?? 0);
+    $g['shipping_address']= $ch['address']    ?? '';
+    $g['total'] = $g['subtotal'] + $g['shipping_cost'];
+}
+unset($g);
+$grandTotal = array_sum(array_column($groups, 'total'));
 
 // ─── Manejo POST: upload comprobante SINPE ────────────────────────────────────
 $successMessages = [];
@@ -111,6 +123,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
                     $productLines .= "<tr><td style='padding:6px 12px;border-bottom:1px solid #f0f0f0;'>{$it['name']}</td><td style='padding:6px 12px;border-bottom:1px solid #f0f0f0;text-align:center;'>{$it['qty']}</td><td style='padding:6px 12px;border-bottom:1px solid #f0f0f0;text-align:right;'>₡" . number_format($it['price'] * $it['qty'], 0) . "</td></tr>";
                 }
                 $subtotalFmt = '₡' . number_format($group['subtotal'], 0);
+                $totalFmt    = '₡' . number_format($group['total'], 0);
+                $shipMethod  = $group['shipping_method'] ?? '';
+                $shipLabel   = match($shipMethod) {
+                    'pickup'  => 'Retiro en local',
+                    'free'    => 'Envío gratis',
+                    'express' => 'Envío express' . ($group['shipping_zone'] ? ' — '.$group['shipping_zone'] : ''),
+                    default   => ''
+                };
+                $shipLine = $shipMethod ? "
+                    <tr style='background:#fffbeb;'>
+                        <td colspan='2' style='padding:8px 12px;color:#92400e;'>
+                            🚚 " . htmlspecialchars($shipLabel) . ($group['shipping_address'] ? ' · ' . htmlspecialchars($group['shipping_address']) : '') . "
+                        </td>
+                        <td style='padding:8px 12px;text-align:right;color:#92400e;font-weight:700;'>
+                            " . ($group['shipping_cost'] > 0 ? '₡' . number_format($group['shipping_cost'], 0) : 'Gratis') . "
+                        </td>
+                    </tr>" : '';
 
                 // ── Email a la EMPRENDEDORA ──────────────────────────────────
                 if (filter_var($group['seller_email'], FILTER_VALIDATE_EMAIL)) {
@@ -125,7 +154,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
                             <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
                                 <tr style='background:#f5f5f5;'><th style='padding:8px 12px;text-align:left;'>Producto</th><th style='padding:8px 12px;'>Cantidad</th><th style='padding:8px 12px;text-align:right;'>Total</th></tr>
                                 {$productLines}
-                                <tr><td colspan='2' style='padding:8px 12px;font-weight:bold;text-align:right;'>TOTAL A COBRAR</td><td style='padding:8px 12px;font-weight:bold;text-align:right;color:#667eea;'>{$subtotalFmt}</td></tr>
+                                {$shipLine}
+                                <tr><td colspan='2' style='padding:8px 12px;font-weight:bold;text-align:right;'>TOTAL A COBRAR</td><td style='padding:8px 12px;font-weight:bold;text-align:right;color:#667eea;'>{$totalFmt}</td></tr>
                             </table>
                             <div style='background:#f0f7ff;padding:16px;border-radius:10px;margin:16px 0;'>
                                 <strong>📋 Datos del comprador:</strong><br>
@@ -367,8 +397,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
                 <h2><?= htmlspecialchars($group['seller_name']) ?></h2>
                 <div style="font-size:0.85rem;opacity:0.9;">Emprendedora verificada ✓</div>
             </div>
-            <div class="subtotal-badge">₡<?= number_format($group['subtotal'], 0) ?></div>
+            <div class="subtotal-badge">₡<?= number_format($group['total'], 0) ?></div>
         </div>
+
+        <?php if (!empty($group['shipping_method'])): ?>
+        <div style="padding:10px 24px;background:#f8f9ff;border-bottom:1px solid #e5e7eb;font-size:.88rem;color:#6b7280;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+            <span>
+                <i class="fas fa-<?= $group['shipping_method']==='pickup'?'store':($group['shipping_method']==='free'?'gift':'shipping-fast') ?>"
+                   style="color:<?= $group['shipping_method']==='express'?'#f59e0b':'#667eea' ?>;"></i>
+                <?php
+                    echo match($group['shipping_method']) {
+                        'pickup'  => 'Retiro en local',
+                        'free'    => 'Envío gratis',
+                        'express' => 'Envío express' . ($group['shipping_zone'] ? ' — '.$group['shipping_zone'] : ''),
+                        default   => ''
+                    };
+                ?>
+            </span>
+            <?php if (!empty($group['shipping_address'])): ?>
+            <span><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($group['shipping_address']) ?></span>
+            <?php endif; ?>
+            <?php if ($group['shipping_cost'] > 0): ?>
+            <span style="color:#f59e0b;font-weight:700;"><i class="fas fa-truck"></i> ₡<?= number_format($group['shipping_cost'], 0) ?></span>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
 
         <!-- Items -->
         <div class="items-list">
@@ -420,10 +473,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
             <div class="sinpe-number-box">
                 <div class="label"><i class="fas fa-mobile-alt"></i> Número SINPE Móvil de <?= htmlspecialchars($group['seller_name']) ?></div>
                 <div class="phone"><?= htmlspecialchars($group['sinpe_phone']) ?></div>
-                <div style="color:#555;font-size:0.85rem;margin-top:6px;">Monto a transferir: <strong>₡<?= number_format($group['subtotal'], 0) ?></strong></div>
+                <div style="color:#555;font-size:0.85rem;margin-top:6px;">Monto a transferir: <strong>₡<?= number_format($group['total'], 0) ?></strong>
+                    <?php if ($group['shipping_cost'] > 0): ?>
+                    <span style="color:#f59e0b;font-size:.8rem;"> (incluye ₡<?= number_format($group['shipping_cost'],0) ?> de envío)</span>
+                    <?php endif; ?>
+                </div>
                 <?php
                 $waPhone = preg_replace('/\D/', '', $group['sinpe_phone']);
-                $waMsg   = urlencode('Hola ' . $group['seller_name'] . ', te acabo de hacer una transferencia SINPE de ₡' . number_format($group['subtotal'], 0) . ' por mi pedido en CompraTica.');
+                $waMsg   = urlencode('Hola ' . $group['seller_name'] . ', te acabo de hacer una transferencia SINPE de ₡' . number_format($group['total'], 0) . ' por mi pedido en CompraTica.');
                 ?>
                 <a href="https://wa.me/506<?= $waPhone ?>?text=<?= $waMsg ?>" target="_blank" rel="noopener" class="btn-whatsapp">
                     <i class="fab fa-whatsapp"></i> Avisar por WhatsApp
@@ -476,7 +533,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
         <!-- Panel PayPal -->
         <?php if ($hasPaypal): ?>
         <?php
-            $ppAmount = number_format($group['subtotal'] / 650, 2, '.', '');
+            $ppAmount = number_format($group['total'] / 650, 2, '.', '');
             $ppEmail  = $group['paypal_email'];
             $ppItems  = implode(', ', array_map(fn($i) => $i['name'], $group['items']));
         ?>
@@ -484,7 +541,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
             <div class="paypal-panel">
                 <p class="paypal-desc">
                     Serás redirigido a PayPal para pagar <strong>US$<?= $ppAmount ?></strong>
-                    (≈ ₡<?= number_format($group['subtotal'], 0) ?>).
+                    (≈ ₡<?= number_format($group['total'], 0) ?>).
                 </p>
                 <a href="https://www.paypal.com/paypalme/<?= urlencode($ppEmail) ?>/<?= $ppAmount ?>USD"
                    target="_blank" rel="noopener" class="btn-paypal">

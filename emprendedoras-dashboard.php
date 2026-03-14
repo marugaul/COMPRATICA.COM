@@ -13,6 +13,7 @@ require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/logger.php';
 require_once __DIR__ . '/includes/chat_helpers.php';
 require_once __DIR__ . '/includes/live_cam.php';
+require_once __DIR__ . '/includes/shipping_emprendedoras.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
@@ -100,6 +101,32 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
 }
 $isLoggedIn = true;
 
+// ── Manejar guardado de opciones de envío ────────────────────────────────
+$shippingMsg = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_shipping') {
+    $zones = [];
+    $zoneNames  = $_POST['zone_name']  ?? [];
+    $zonePrices = $_POST['zone_price'] ?? [];
+    foreach ($zoneNames as $i => $name) {
+        $name  = trim($name);
+        $price = (int)($zonePrices[$i] ?? 0);
+        if ($name !== '' && $price >= 0) {
+            $zones[] = ['name' => $name, 'price' => $price];
+        }
+    }
+    saveShippingConfig($pdo, $userId, [
+        'enable_free_shipping' => isset($_POST['enable_free_shipping']) ? 1 : 0,
+        'enable_pickup'        => isset($_POST['enable_pickup'])        ? 1 : 0,
+        'enable_express'       => isset($_POST['enable_express'])       ? 1 : 0,
+        'free_shipping_min'    => (int)($_POST['free_shipping_min'] ?? 0),
+        'pickup_instructions'  => trim($_POST['pickup_instructions'] ?? ''),
+        'express_zones'        => $zones,
+    ]);
+    $shippingMsg = ['ok', '✅ Opciones de envío guardadas correctamente.'];
+    header('Location: emprendedoras-dashboard.php#shipping-section');
+    exit;
+}
+
 // ── Manejar toggle EN VIVO ────────────────────────────────────────────────
 $liveMsg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'toggle_live') {
@@ -132,6 +159,9 @@ try {
 } catch (Throwable $_e) {
     $liveData = ['is_live' => 0, 'live_title' => '', 'live_link' => '', 'live_type' => 'link', 'live_session_id' => ''];
 }
+
+// Cargar config de envío del vendedor
+$shippingConfig = getShippingConfig($pdo, $userId);
 
 // Verificar límite de productos
 $canAddProducts = true;
@@ -762,6 +792,162 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         </div>
         <?php endif; ?>
 
+        <!-- ── SECCIÓN ENVÍO Y ENTREGA ─────────────────────────────────── -->
+        <div class="section" id="shipping-section">
+            <div class="section-header">
+                <h2><i class="fas fa-truck"></i> Envío y Entrega</h2>
+            </div>
+            <?php if (!empty($shippingMsg)): ?>
+            <div style="background:<?= $shippingMsg[0]==='ok' ? '#f0fdf4' : '#fef2f2' ?>;border:1px solid <?= $shippingMsg[0]==='ok' ? '#86efac' : '#fecaca' ?>;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:<?= $shippingMsg[0]==='ok' ? '#166534' : '#991b1b' ?>;">
+                <?= htmlspecialchars($shippingMsg[1]) ?>
+            </div>
+            <?php endif; ?>
+
+            <p style="color:#6b7280;font-size:.9rem;margin:0 0 18px;">
+                <i class="fas fa-info-circle" style="color:#667eea;"></i>
+                Activa los métodos de entrega que ofreces. Los clientes los verán en el carrito.
+            </p>
+
+            <form method="POST" id="shipping-form">
+                <input type="hidden" name="action" value="save_shipping">
+
+                <style>
+                .ship-method-card {
+                    border: 2px solid #e5e7eb; border-radius: 14px; padding: 18px 20px;
+                    margin-bottom: 14px; transition: border-color .2s, background .2s;
+                }
+                .ship-method-card.active { border-color: #667eea; background: #f5f3ff; }
+                .ship-method-header {
+                    display: flex; align-items: center; gap: 12px; cursor: pointer;
+                }
+                .ship-method-header label { cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1rem; margin: 0; }
+                .ship-method-body { margin-top: 14px; padding-top: 14px; border-top: 1px solid #e5e7eb; }
+                .ship-field { margin-bottom: 12px; }
+                .ship-field label { display:block; font-size:.85rem; font-weight:600; color:#555; margin-bottom:4px; }
+                .ship-field input, .ship-field textarea {
+                    width:100%; padding:9px 13px; border:2px solid #e0e0e0; border-radius:8px;
+                    font-size:.92rem; box-sizing:border-box;
+                }
+                .ship-field input:focus, .ship-field textarea:focus { border-color:#667eea; outline:none; }
+                .zone-row { display:grid; grid-template-columns:1fr 160px 36px; gap:8px; align-items:center; margin-bottom:8px; }
+                .zone-row input { margin:0; }
+                .btn-add-zone {
+                    background: #f0f4ff; color: #667eea; border: 2px dashed #c7d2fe;
+                    border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: .88rem;
+                    font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
+                    transition: background .2s;
+                }
+                .btn-add-zone:hover { background: #e0e7ff; }
+                .btn-remove-zone { background:none; border:none; color:#ef4444; cursor:pointer; font-size:1.1rem; padding:2px; line-height:1; }
+                </style>
+
+                <!-- RETIRO EN LOCAL -->
+                <div class="ship-method-card <?= $shippingConfig['enable_pickup'] ? 'active' : '' ?>" id="card-pickup">
+                    <div class="ship-method-header">
+                        <input type="checkbox" name="enable_pickup" id="chk-pickup" value="1"
+                               <?= $shippingConfig['enable_pickup'] ? 'checked' : '' ?>
+                               onchange="toggleCard('pickup')"
+                               style="width:18px;height:18px;accent-color:#667eea;cursor:pointer;">
+                        <label for="chk-pickup">
+                            <i class="fas fa-store" style="color:#667eea;font-size:1.2rem;"></i>
+                            Retiro en local
+                            <span style="font-size:.8rem;color:#6b7280;font-weight:400;"> — El cliente recoge en tu dirección (sin costo)</span>
+                        </label>
+                    </div>
+                    <div class="ship-method-body" id="body-pickup" style="<?= !$shippingConfig['enable_pickup'] ? 'display:none;' : '' ?>">
+                        <div class="ship-field">
+                            <label for="pickup_instructions"><i class="fas fa-map-marker-alt"></i> Instrucciones / dirección de retiro</label>
+                            <textarea name="pickup_instructions" id="pickup_instructions" rows="2"
+                                      placeholder="Ej: Av. Central, San José. Disponible lunes a sábado 9am–6pm."
+                                      style="resize:vertical;"><?= htmlspecialchars($shippingConfig['pickup_instructions']) ?></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ENVÍO GRATIS -->
+                <div class="ship-method-card <?= $shippingConfig['enable_free_shipping'] ? 'active' : '' ?>" id="card-free">
+                    <div class="ship-method-header">
+                        <input type="checkbox" name="enable_free_shipping" id="chk-free" value="1"
+                               <?= $shippingConfig['enable_free_shipping'] ? 'checked' : '' ?>
+                               onchange="toggleCard('free')"
+                               style="width:18px;height:18px;accent-color:#10b981;cursor:pointer;">
+                        <label for="chk-free">
+                            <i class="fas fa-gift" style="color:#10b981;font-size:1.2rem;"></i>
+                            Envío gratis
+                            <span style="font-size:.8rem;color:#6b7280;font-weight:400;"> — Tú absorbes el costo de envío</span>
+                        </label>
+                    </div>
+                    <div class="ship-method-body" id="body-free" style="<?= !$shippingConfig['enable_free_shipping'] ? 'display:none;' : '' ?>">
+                        <div class="ship-field">
+                            <label for="free_shipping_min"><i class="fas fa-coins"></i> Monto mínimo de compra para aplicar (₡0 = siempre gratis)</label>
+                            <input type="number" name="free_shipping_min" id="free_shipping_min"
+                                   min="0" step="500"
+                                   value="<?= (int)$shippingConfig['free_shipping_min'] ?>"
+                                   placeholder="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ENVÍO EXPRESS -->
+                <div class="ship-method-card <?= $shippingConfig['enable_express'] ? 'active' : '' ?>" id="card-express">
+                    <div class="ship-method-header">
+                        <input type="checkbox" name="enable_express" id="chk-express" value="1"
+                               <?= $shippingConfig['enable_express'] ? 'checked' : '' ?>
+                               onchange="toggleCard('express')"
+                               style="width:18px;height:18px;accent-color:#f59e0b;cursor:pointer;">
+                        <label for="chk-express">
+                            <i class="fas fa-shipping-fast" style="color:#f59e0b;font-size:1.2rem;"></i>
+                            Envío express
+                            <span style="font-size:.8rem;color:#6b7280;font-weight:400;"> — Con costo por zona que pagas el cliente</span>
+                        </label>
+                    </div>
+                    <div class="ship-method-body" id="body-express" style="<?= !$shippingConfig['enable_express'] ? 'display:none;' : '' ?>">
+                        <p style="color:#6b7280;font-size:.85rem;margin:0 0 12px;">
+                            Define las zonas de entrega y sus precios. El cliente elegirá su zona al hacer el pedido.
+                        </p>
+                        <div style="display:grid;grid-template-columns:1fr 160px 36px;gap:8px;margin-bottom:6px;">
+                            <span style="font-size:.8rem;font-weight:700;color:#9ca3af;">Zona / Descripción</span>
+                            <span style="font-size:.8rem;font-weight:700;color:#9ca3af;">Precio (₡)</span>
+                            <span></span>
+                        </div>
+                        <div id="zones-list">
+                        <?php if (!empty($shippingConfig['express_zones'])): ?>
+                            <?php foreach ($shippingConfig['express_zones'] as $zi => $zone): ?>
+                            <div class="zone-row">
+                                <input type="text" name="zone_name[]" value="<?= htmlspecialchars($zone['name']) ?>"
+                                       placeholder="Ej: Gran Área Metropolitana">
+                                <input type="number" name="zone_price[]" value="<?= (int)$zone['price'] ?>"
+                                       min="0" step="100" placeholder="2000">
+                                <button type="button" class="btn-remove-zone" onclick="removeZone(this)" title="Eliminar zona">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="zone-row">
+                                <input type="text" name="zone_name[]" value="Gran Área Metropolitana (GAM)"
+                                       placeholder="Ej: Gran Área Metropolitana">
+                                <input type="number" name="zone_price[]" value="2000"
+                                       min="0" step="100" placeholder="2000">
+                                <button type="button" class="btn-remove-zone" onclick="removeZone(this)" title="Eliminar zona">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                            </div>
+                        <?php endif; ?>
+                        </div>
+                        <button type="button" class="btn-add-zone" onclick="addZone()">
+                            <i class="fas fa-plus"></i> Agregar zona
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:.95rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;margin-top:6px;">
+                    <i class="fas fa-save"></i> Guardar opciones de envío
+                </button>
+            </form>
+        </div>
+        <!-- ── FIN ENVÍO Y ENTREGA ─────────────────────────────────────── -->
+
         <div class="section">
             <div class="section-header">
                 <h2><i class="fas fa-box"></i> Mis Productos</h2>
@@ -1242,6 +1428,42 @@ if (IS_CAM_LIVE && SELLER_SESSION_ID) {
     }).catch(()=>{});
 }
 })();
+</script>
+
+<script>
+// ── Shipping section JS ──────────────────────────────────────────────────────
+function toggleCard(type) {
+    const chk  = document.getElementById('chk-'   + type);
+    const card = document.getElementById('card-'  + type);
+    const body = document.getElementById('body-'  + type);
+    if (!chk || !card || !body) return;
+    if (chk.checked) {
+        card.classList.add('active');
+        body.style.display = 'block';
+    } else {
+        card.classList.remove('active');
+        body.style.display = 'none';
+    }
+}
+
+function addZone() {
+    const list = document.getElementById('zones-list');
+    const row  = document.createElement('div');
+    row.className = 'zone-row';
+    row.innerHTML = `
+        <input type="text"   name="zone_name[]"  placeholder="Ej: Provincia o ciudad">
+        <input type="number" name="zone_price[]" min="0" step="100" placeholder="2000">
+        <button type="button" class="btn-remove-zone" onclick="removeZone(this)" title="Eliminar zona">
+            <i class="fas fa-times-circle"></i>
+        </button>`;
+    list.appendChild(row);
+    row.querySelector('input').focus();
+}
+
+function removeZone(btn) {
+    const row = btn.closest('.zone-row');
+    if (row) row.remove();
+}
 </script>
 </body>
 </html>
