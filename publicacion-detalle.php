@@ -73,6 +73,85 @@ if ($id <= 0) {
     exit;
 }
 
+/**
+ * Formatea una descripción de empleo de manera profesional
+ * Detecta secciones, listas, y formatea con HTML limpio
+ */
+function formatJobDescription($text) {
+    // Decodificar entidades HTML
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    // Limpiar espacios excesivos
+    $text = preg_replace('/\s+/', ' ', $text);
+    $text = trim($text);
+
+    // Detectar secciones comunes (Job Description, Responsibilities, etc.)
+    $sections = [
+        'Job Description Summary' => '<h3><i class="fas fa-file-alt"></i> Resumen</h3>',
+        'Job Description' => '<h3><i class="fas fa-briefcase"></i> Descripción del Puesto</h3>',
+        'Roles and Responsibilities' => '<h3><i class="fas fa-tasks"></i> Roles y Responsabilidades</h3>',
+        'Responsibilities' => '<h3><i class="fas fa-clipboard-list"></i> Responsabilidades</h3>',
+        'Requirements' => '<h3><i class="fas fa-check-circle"></i> Requisitos</h3>',
+        'Qualifications' => '<h3><i class="fas fa-graduation-cap"></i> Calificaciones</h3>',
+        'Skills' => '<h3><i class="fas fa-star"></i> Habilidades</h3>',
+        'Benefits' => '<h3><i class="fas fa-gift"></i> Beneficios</h3>',
+        'About' => '<h3><i class="fas fa-info-circle"></i> Acerca de</h3>',
+        'Essential Responsibilities' => '<h3><i class="fas fa-exclamation-circle"></i> Responsabilidades Esenciales</h3>',
+        'Additional Information' => '<h3><i class="fas fa-info"></i> Información Adicional</h3>',
+    ];
+
+    foreach ($sections as $section => $html) {
+        $text = preg_replace('/\b' . preg_quote($section, '/') . '\b/i', "\n\n" . $html . "\n", $text);
+    }
+
+    // Dividir en párrafos por puntos seguidos o secciones
+    $paragraphs = preg_split('/\.(?=\s+[A-Z]|\s*\n)|\n{2,}/', $text);
+
+    $formatted = '';
+    foreach ($paragraphs as $para) {
+        $para = trim($para);
+        if (empty($para)) continue;
+
+        // Si es un título HTML, agregar directamente
+        if (strpos($para, '<h3>') !== false) {
+            $formatted .= $para;
+            continue;
+        }
+
+        // Detectar listas (líneas que parecen items)
+        $lines = explode('.', $para);
+        $isList = false;
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+
+            // Si la línea empieza con verbo de acción o parece un item de lista
+            if (preg_match('/^(Act|Manage|Responsible|Perform|Follow|Keep|Offer|Own|Maintain|Develop|Ensure|Support|Lead|Execute|Deliver|Collaborate)/i', $line)) {
+                if (!$isList) {
+                    $formatted .= '<ul class="professional-list">';
+                    $isList = true;
+                }
+                $formatted .= '<li><i class="fas fa-check-circle"></i> ' . htmlspecialchars($line) . '.</li>';
+            } else {
+                if ($isList) {
+                    $formatted .= '</ul>';
+                    $isList = false;
+                }
+                if (strlen($line) > 10) {
+                    $formatted .= '<p>' . htmlspecialchars($line) . '.</p>';
+                }
+            }
+        }
+
+        if ($isList) {
+            $formatted .= '</ul>';
+        }
+    }
+
+    return $formatted;
+}
+
 // Obtener publicación
 $pdo = db();
 $publicacion = null;
@@ -293,6 +372,89 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
 
     .detail-body {
       padding: 2rem;
+    }
+
+    /* Descripción formateada profesionalmente */
+    .formatted-description {
+      line-height: 1.8;
+      color: var(--gray-800);
+    }
+
+    .formatted-description h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 2rem 0 1rem 0;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .formatted-description h3 i {
+      font-size: 1.1rem;
+    }
+
+    .formatted-description p {
+      margin-bottom: 1rem;
+      text-align: justify;
+    }
+
+    .formatted-description ul.professional-list {
+      list-style: none;
+      padding: 0;
+      margin: 1rem 0 1.5rem 0;
+    }
+
+    .formatted-description ul.professional-list li {
+      padding: 0.75rem 0;
+      padding-left: 2rem;
+      position: relative;
+      border-bottom: 1px solid var(--gray-100);
+      transition: var(--transition);
+    }
+
+    .formatted-description ul.professional-list li:hover {
+      background: var(--gray-50);
+      padding-left: 2.25rem;
+    }
+
+    .formatted-description ul.professional-list li:last-child {
+      border-bottom: none;
+    }
+
+    .formatted-description ul.professional-list li i {
+      position: absolute;
+      left: 0;
+      top: 0.85rem;
+      color: var(--accent);
+      font-size: 0.9rem;
+    }
+
+    .btn-translate-detail {
+      padding: 0.625rem 1.25rem;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .btn-translate-detail:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-translate-detail.translating {
+      opacity: 0.6;
+      pointer-events: none;
     }
 
     .detail-section {
@@ -586,11 +748,21 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
     <div class="detail-body">
       <?php if ($publicacion['description']): ?>
         <div class="detail-section">
-          <h2>
-            <i class="fas fa-align-left"></i>
-            Descripción
-          </h2>
-          <p><?php echo nl2br(htmlspecialchars($publicacion['description'])); ?></p>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0;">
+              <i class="fas fa-align-left"></i>
+              Descripción
+            </h2>
+            <?php if ($publicacion['import_source']): ?>
+              <button class="btn-translate-detail" onclick="translateDescription()">
+                <i class="fas fa-language"></i>
+                <span id="translate-text">Traducir a Español</span>
+              </button>
+            <?php endif; ?>
+          </div>
+          <div id="job-description" class="formatted-description">
+            <?php echo formatJobDescription($publicacion['description']); ?>
+          </div>
         </div>
       <?php endif; ?>
 
@@ -702,6 +874,112 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
     </div>
   </div>
 </div>
+
+<script>
+// Traducción de la descripción completa
+let isTranslated = false;
+let originalDescription = '';
+
+async function translateDescription() {
+  const button = document.querySelector('.btn-translate-detail');
+  const textSpan = document.getElementById('translate-text');
+  const descDiv = document.getElementById('job-description');
+
+  if (!button || !descDiv) return;
+
+  // Si ya está traducido, volver al original
+  if (isTranslated) {
+    descDiv.innerHTML = originalDescription;
+    textSpan.textContent = 'Traducir a Español';
+    isTranslated = false;
+    return;
+  }
+
+  // Guardar original
+  originalDescription = descDiv.innerHTML;
+
+  // Mostrar estado de carga
+  button.classList.add('translating');
+  textSpan.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Traduciendo...';
+
+  try {
+    // Obtener todo el texto de la descripción
+    const textContent = descDiv.textContent || descDiv.innerText;
+
+    // Traducir en chunks de 5000 caracteres (límite de Google Translate)
+    const chunkSize = 5000;
+    const chunks = [];
+    for (let i = 0; i < textContent.length; i += chunkSize) {
+      chunks.push(textContent.substring(i, i + chunkSize));
+    }
+
+    let translatedText = '';
+    for (const chunk of chunks) {
+      const res = await fetch('/api/translate.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `text=${encodeURIComponent(chunk)}&from=en&to=es`
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      translatedText += data.translated || chunk;
+    }
+
+    // Reemplazar el texto manteniendo la estructura HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = originalDescription;
+
+    // Reemplazar solo el texto, manteniendo los tags HTML
+    const walker = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null, false);
+    const textNodes = [];
+    while (walker.nextNode()) {
+      textNodes.push(walker.currentNode);
+    }
+
+    // Dividir el texto traducido proporcionalmente
+    let translated = translatedText;
+    textNodes.forEach(node => {
+      const originalLength = node.textContent.trim().length;
+      if (originalLength > 0) {
+        const portion = translated.substring(0, Math.min(originalLength * 1.5, translated.length));
+        node.textContent = portion;
+        translated = translated.substring(portion.length).trim();
+      }
+    });
+
+    descDiv.innerHTML = tempDiv.innerHTML;
+
+    // Cambiar botón
+    textSpan.textContent = 'Ver Original';
+    button.classList.remove('translating');
+    isTranslated = true;
+
+  } catch (error) {
+    console.error('Error traduciendo:', error);
+    alert('Error al traducir. Por favor intenta de nuevo.');
+    button.classList.remove('translating');
+    textSpan.textContent = 'Traducir a Español';
+  }
+}
+
+// Animación para los iconos de check en las listas
+document.addEventListener('DOMContentLoaded', function() {
+  const listItems = document.querySelectorAll('.professional-list li');
+  listItems.forEach((item, index) => {
+    item.style.opacity = '0';
+    item.style.transform = 'translateX(-20px)';
+    setTimeout(() => {
+      item.style.transition = 'all 0.3s ease';
+      item.style.opacity = '1';
+      item.style.transform = 'translateX(0)';
+    }, index * 50);
+  });
+});
+</script>
 
 </body>
 </html>
