@@ -38,21 +38,7 @@ define('ADMIN_DASHBOARD_PATH', '/admin/dashboard.php');
 define('SINPE_PHONE', '88902814');
 define('PAYPAL_EMAIL', 'marco.ulate@crv-soft.com');
 
-// PayPal API Configuration
-// NOTA: Las credenciales se configuran en config.local.php (archivo seguro no versionado)
-if (!defined('PAYPAL_MODE')) define('PAYPAL_MODE', 'sandbox'); // 'sandbox' para pruebas, 'live' para producción
-if (!defined('PAYPAL_CLIENT_ID')) define('PAYPAL_CLIENT_ID', ''); // Se define en config.local.php
-if (!defined('PAYPAL_SECRET')) define('PAYPAL_SECRET', ''); // Se define en config.local.php
-
-// URLs de API de PayPal (se configuran automáticamente según PAYPAL_MODE)
-if (!defined('PAYPAL_API_URL')) {
-    define('PAYPAL_API_URL', PAYPAL_MODE === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
-}
-
-// Stripe API Configuration
-// NOTA: Las credenciales se configuran en config.local.php (archivo seguro no versionado)
-if (!defined('STRIPE_PUBLIC_KEY')) define('STRIPE_PUBLIC_KEY', ''); // pk_live_... o pk_test_...
-if (!defined('STRIPE_SECRET_KEY')) define('STRIPE_SECRET_KEY', ''); // sk_live_... o sk_test_...
+// PayPal y Stripe: Se configuran después de cargar config.local.php
 
 // =========================
 // Sesión (UNIFICADA - Compatible con todo el sitio)
@@ -157,6 +143,20 @@ if (!defined('GOOGLE_CLIENT_ID')) define('GOOGLE_CLIENT_ID', '');
 if (!defined('GOOGLE_CLIENT_SECRET')) define('GOOGLE_CLIENT_SECRET', '');
 if (!defined('FACEBOOK_APP_ID')) define('FACEBOOK_APP_ID', '');
 if (!defined('FACEBOOK_APP_SECRET')) define('FACEBOOK_APP_SECRET', '');
+
+// PayPal API Configuration
+if (!defined('PAYPAL_MODE')) define('PAYPAL_MODE', 'sandbox'); // 'sandbox' para pruebas, 'live' para producción
+if (!defined('PAYPAL_CLIENT_ID')) define('PAYPAL_CLIENT_ID', '');
+if (!defined('PAYPAL_SECRET')) define('PAYPAL_SECRET', '');
+
+// URLs de API de PayPal (se configuran automáticamente según PAYPAL_MODE)
+if (!defined('PAYPAL_API_URL')) {
+    define('PAYPAL_API_URL', PAYPAL_MODE === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
+}
+
+// Stripe API Configuration
+if (!defined('STRIPE_PUBLIC_KEY')) define('STRIPE_PUBLIC_KEY', '');
+if (!defined('STRIPE_SECRET_KEY')) define('STRIPE_SECRET_KEY', '');
 
 // =========================
 // Sightengine API (Moderación de Imágenes)
