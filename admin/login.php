@@ -76,18 +76,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($okUser && $okPass) {
         debugLog('LOGIN EXITOSO - CONFIGURANDO SESION');
 
-        // Login exitoso - NO regenerar ID para evitar problemas de cookie
+        // Login exitoso - Configurar sesión
         $_SESSION['is_admin'] = true;
         $_SESSION['admin_user'] = ADMIN_USER;
+        $_SESSION['login_time'] = time();
+        $_SESSION['login_ip'] = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 
         debugLog('SESION CONFIGURADA', [
             'is_admin' => $_SESSION['is_admin'],
             'admin_user' => $_SESSION['admin_user'],
-            'session_id' => session_id()
+            'session_id' => session_id(),
+            'session_name' => session_name()
         ]);
 
-        // Guardar sesión antes de redirigir
-        session_write_close();
+        // IMPORTANTE: Forzar escritura de la sesión inmediatamente
+        // pero NO cerrar la sesión con session_write_close()
+        session_commit(); // Esto guarda pero mantiene la sesión activa
+
+        // Pequeña pausa para asegurar que la cookie se envíe
+        usleep(100000); // 100ms
 
         // Redirigir
         $redirect = $_GET['redirect'] ?? 'dashboard.php';
@@ -96,7 +103,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $redirect = 'dashboard.php';
         }
 
-        debugLog('REDIRIGIENDO A', ['redirect' => $redirect]);
+        debugLog('REDIRIGIENDO A', [
+            'redirect' => $redirect,
+            'cookie_will_be_sent' => headers_sent() ? 'NO (headers ya enviados)' : 'SI'
+        ]);
 
         header('Location: ' . $redirect);
         exit;
