@@ -896,11 +896,11 @@ $categories = $pdo->query("SELECT DISTINCT category FROM job_listings WHERE cate
           <?php endif; ?>
 
           <div class="job-content">
-            <h3 class="job-title"><?php echo htmlspecialchars($job['title']); ?></h3>
+            <h3 class="job-title"><?php echo htmlspecialchars(html_entity_decode($job['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?></h3>
 
             <div class="job-company">
               <i class="fas fa-building"></i>
-              <?php echo htmlspecialchars($job['company_name'] ?? 'Empresa'); ?>
+              <?php echo htmlspecialchars(html_entity_decode($job['company_name'] ?? 'Empresa', ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?>
             </div>
 
             <div class="job-meta">
@@ -957,7 +957,7 @@ $categories = $pdo->query("SELECT DISTINCT category FROM job_listings WHERE cate
 
             <?php if ($job['description']): ?>
               <div class="job-description">
-                <?php echo nl2br(htmlspecialchars($job['description'])); ?>
+                <?php echo nl2br(htmlspecialchars(html_entity_decode($job['description'], ENT_QUOTES | ENT_HTML5, 'UTF-8'))); ?>
               </div>
             <?php endif; ?>
 
