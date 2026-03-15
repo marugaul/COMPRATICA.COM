@@ -160,36 +160,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $scriptPath = dirname(__DIR__) . '/scripts/import_bac_jobs.php';
             admin_debug_log("Script path: $scriptPath");
 
+            $logLine = fn(string $m) => file_put_contents($logFile,
+                '[' . date('Y-m-d H:i:s') . '] ' . $m . "\n", FILE_APPEND | LOCK_EX);
+
+            $logLine('[ADMIN] === Importación BAC iniciada inline ===');
+
+            // Capturar cualquier output y errores PHP del script incluido
+            ob_start();
+            $prevError = set_error_handler(function($errno, $errstr, $errfile, $errline) use ($logLine) {
+                $logLine('[PHP-ERROR] ' . $errstr . ' en ' . $errfile . ':' . $errline);
+                return false;
+            });
             try {
-                // Ejecutar el script BAC y capturar output
-                $output = [];
-                $returnVar = 0;
-                admin_debug_log("Ejecutando: php $scriptPath 2>&1");
-                exec("php {$scriptPath} 2>&1", $output, $returnVar);
-
-                admin_debug_log("Return code: $returnVar");
-                admin_debug_log("Output lines: " . count($output));
-                foreach ($output as $i => $line) {
-                    admin_debug_log("OUT[$i]: $line");
-                }
-
-                if ($returnVar !== 0) {
-                    admin_debug_log("ERROR: Script BAC falló con código $returnVar");
-                    $msg = ['err',
-                        '<i class="fas fa-exclamation-triangle"></i> <strong>Error en importación BAC.</strong> '
-                        . 'Código: ' . $returnVar . '. Ver /logs/admin_import_debug.log'
-                    ];
-                } else {
-                    admin_debug_log("Script BAC completado exitosamente");
-                    $msg = ['ok',
-                        '<i class="fas fa-check-circle"></i> <strong>Importación BAC completada.</strong> '
-                        . 'Ver el log de abajo para el resultado.'
-                    ];
-                }
+                ob_start();
+                include $scriptPath;
+                ob_end_clean();
+                $logLine('[ADMIN] === Include completado ===');
+                admin_debug_log("Script BAC completado exitosamente");
+                $msg = ['ok',
+                    '<i class="fas fa-check-circle"></i> <strong>Importación BAC completada.</strong> '
+                    . 'Ver el log de abajo para el resultado.'
+                ];
             } catch (Throwable $e) {
+                $logLine('[FATAL] ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
                 admin_debug_log("EXCEPTION en run_bac_import: " . $e->getMessage());
                 admin_debug_log("Trace: " . $e->getTraceAsString());
                 $msg = ['err', '<i class="fas fa-times-circle"></i> Error: ' . $e->getMessage()];
+            }
+            set_error_handler($prevError);
+            $capturedOutput = ob_get_clean();
+            if (trim($capturedOutput) !== '') {
+                $logLine('[OUTPUT] ' . str_replace("\n", ' | ', trim($capturedOutput)));
             }
         }
     }
@@ -223,36 +224,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $scriptPath = dirname(__DIR__) . '/scripts/import_telegram_jobs.php';
                 admin_debug_log("Script path: $scriptPath");
 
+                $logLine = fn(string $m) => file_put_contents($logFile,
+                    '[' . date('Y-m-d H:i:s') . '] ' . $m . "\n", FILE_APPEND | LOCK_EX);
+
+                $logLine('[ADMIN] === Importación Telegram iniciada inline ===');
+
+                // Capturar cualquier output y errores PHP del script incluido
+                ob_start();
+                $prevError = set_error_handler(function($errno, $errstr, $errfile, $errline) use ($logLine) {
+                    $logLine('[PHP-ERROR] ' . $errstr . ' en ' . $errfile . ':' . $errline);
+                    return false;
+                });
                 try {
-                    // Ejecutar el script de Telegram y capturar output
-                    $output = [];
-                    $returnVar = 0;
-                    admin_debug_log("Ejecutando: php $scriptPath 2>&1");
-                    exec("php {$scriptPath} 2>&1", $output, $returnVar);
-
-                    admin_debug_log("Return code: $returnVar");
-                    admin_debug_log("Output lines: " . count($output));
-                    foreach ($output as $i => $line) {
-                        admin_debug_log("OUT[$i]: $line");
-                    }
-
-                    if ($returnVar !== 0) {
-                        admin_debug_log("ERROR: Script Telegram falló con código $returnVar");
-                        $msg = ['err',
-                            '<i class="fas fa-exclamation-triangle"></i> <strong>Error en importación Telegram.</strong> '
-                            . 'Código: ' . $returnVar . '. Ver /logs/admin_import_debug.log'
-                        ];
-                    } else {
-                        admin_debug_log("Script Telegram completado exitosamente");
-                        $msg = ['ok',
-                            '<i class="fas fa-check-circle"></i> <strong>Importación Telegram completada.</strong> '
-                            . 'Ver el log de abajo para el resultado.'
-                        ];
-                    }
+                    ob_start();
+                    include $scriptPath;
+                    ob_end_clean();
+                    $logLine('[ADMIN] === Include completado ===');
+                    admin_debug_log("Script Telegram completado exitosamente");
+                    $msg = ['ok',
+                        '<i class="fas fa-check-circle"></i> <strong>Importación Telegram completada.</strong> '
+                        . 'Ver el log de abajo para el resultado.'
+                    ];
                 } catch (Throwable $e) {
+                    $logLine('[FATAL] ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
                     admin_debug_log("EXCEPTION en run_telegram_import: " . $e->getMessage());
                     admin_debug_log("Trace: " . $e->getTraceAsString());
                     $msg = ['err', '<i class="fas fa-times-circle"></i> Error: ' . $e->getMessage()];
+                }
+                set_error_handler($prevError);
+                $capturedOutput = ob_get_clean();
+                if (trim($capturedOutput) !== '') {
+                    $logLine('[OUTPUT] ' . str_replace("\n", ' | ', trim($capturedOutput)));
                 }
             }
         }
