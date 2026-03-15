@@ -211,43 +211,72 @@ function insert_job(PDO $pdo, int $botId, array $job): string {
     $now      = date('Y-m-d H:i:s');
     $end_date = date('Y-m-d', strtotime('+30 days'));
 
-    $pdo->prepare("
-        INSERT INTO job_listings (
-            employer_id, listing_type, title, description, category,
-            job_type, location, province, remote_allowed,
-            contact_name, contact_email, application_url,
-            is_active, is_featured, payment_status,
-            start_date, end_date,
-            import_source, source_url,
-            created_at, updated_at
-        ) VALUES (
-            ?, 'job', ?, ?, ?,
-            ?, ?, ?, ?,
-            ?, ?, ?,
-            1, 0, 'free',
-            datetime('now'), ?,
-            ?, ?,
-            ?, ?
-        )
-    ")->execute([
-        $botId,
-        truncate($job['title'], 200),
-        $job['description'] ?: 'Consultar en la fuente original.',
-        $job['category'],
-        $job['job_type'] ?? 'full-time',
-        truncate($job['location'] ?? '', 200),
-        $job['province'] ?? '',
-        $job['remote'] ? 1 : 0,
-        truncate($job['company'] ?? '', 200),
-        $job['email'] ?? '',
-        $job['url'] ?? '',
-        $end_date,
-        $job['source'],
-        $job['source_url'],
-        $now,
-        $now,
-    ]);
-    return 'inserted';
+    // Retry logic para errores de SQLite (disk I/O, database locked, etc)
+    $maxRetries = 3;
+    $attempt = 0;
+    $lastError = null;
+
+    while ($attempt < $maxRetries) {
+        try {
+            $pdo->prepare("
+                INSERT INTO job_listings (
+                    employer_id, listing_type, title, description, category,
+                    job_type, location, province, remote_allowed,
+                    contact_name, contact_email, application_url,
+                    is_active, is_featured, payment_status,
+                    start_date, end_date,
+                    import_source, source_url,
+                    created_at, updated_at
+                ) VALUES (
+                    ?, 'job', ?, ?, ?,
+                    ?, ?, ?, ?,
+                    ?, ?, ?,
+                    1, 0, 'free',
+                    datetime('now'), ?,
+                    ?, ?,
+                    ?, ?
+                )
+            ")->execute([
+                $botId,
+                truncate($job['title'], 200),
+                $job['description'] ?: 'Consultar en la fuente original.',
+                $job['category'],
+                $job['job_type'] ?? 'full-time',
+                truncate($job['location'] ?? '', 200),
+                $job['province'] ?? '',
+                $job['remote'] ? 1 : 0,
+                truncate($job['company'] ?? '', 200),
+                $job['email'] ?? '',
+                $job['url'] ?? '',
+                $end_date,
+                $job['source'],
+                $job['source_url'],
+                $now,
+                $now,
+            ]);
+            return 'inserted';
+        } catch (PDOException $e) {
+            $lastError = $e;
+            $errorMsg = $e->getMessage();
+
+            // Si es error de disco o DB bloqueada, reintentar
+            if (stripos($errorMsg, 'disk I/O') !== false ||
+                stripos($errorMsg, 'database is locked') !== false ||
+                stripos($errorMsg, 'SQLITE_BUSY') !== false) {
+                $attempt++;
+                if ($attempt < $maxRetries) {
+                    usleep(100000 * $attempt); // 100ms, 200ms, 300ms
+                    continue;
+                }
+            }
+            // Otro error, lanzar inmediatamente
+            throw $e;
+        }
+    }
+
+    // Si llegamos aquí, fallaron todos los reintentos
+    if ($lastError) throw $lastError;
+    return 'error';
 }
 
 // ── Parsers ──────────────────────────────────────────────────────────────────
@@ -405,14 +434,40 @@ foreach ($sources as $src) {
     };
 
     $ins = 0; $skip = 0;
+
+    // Usar transacciones para mejorar performance y reducir locks
+    $pdo->beginTransaction();
+    $batchCount = 0;
+
     foreach ($jobs as $job) {
         if (DRY_RUN) {
             log_msg("  [DRY] " . $job['title'] . ' — ' . $job['company']);
             continue;
         }
-        $result = insert_job($pdo, $botId, $job);
-        if ($result === 'inserted') { $ins++;  $totalInserted++; }
-        else                        { $skip++; $totalSkipped++;  }
+
+        try {
+            $result = insert_job($pdo, $botId, $job);
+            if ($result === 'inserted') { $ins++;  $totalInserted++; }
+            else                        { $skip++; $totalSkipped++;  }
+
+            $batchCount++;
+
+            // Commit cada 25 empleos para evitar transacciones muy largas
+            if ($batchCount >= 25) {
+                $pdo->commit();
+                usleep(50000); // 50ms de pausa
+                $pdo->beginTransaction();
+                $batchCount = 0;
+            }
+        } catch (Exception $e) {
+            log_msg("  ERROR insertando: " . $e->getMessage());
+            $totalErrors++;
+        }
+    }
+
+    // Commit final
+    if ($pdo->inTransaction()) {
+        $pdo->commit();
     }
 
     log_msg("  {$src['label']}: +{$ins} nuevos, {$skip} duplicados");
