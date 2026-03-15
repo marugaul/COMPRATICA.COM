@@ -1230,7 +1230,7 @@ async function translateDescription() {
       const res = await fetch('/api/translate.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `text=${encodeURIComponent(chunk)}&from=en&to=es`
+        body: `text=${encodeURIComponent(chunk)}&from=auto&to=es`
       });
       const data = await res.json();
 

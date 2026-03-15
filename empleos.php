@@ -1331,21 +1331,21 @@ async function translateJob(jobId, button) {
   button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Traduciendo...';
 
   try {
-    // Traducir título
+    // Traducir título (detección automática de idioma)
     const titleRes = await fetch('/api/translate.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: `text=${encodeURIComponent(original.title)}&from=en&to=es`
+      body: `text=${encodeURIComponent(original.title)}&from=auto&to=es`
     });
     const titleData = await titleRes.json();
 
-    // Traducir descripción si existe
+    // Traducir descripción si existe (detección automática de idioma)
     let descData = null;
     if (original.description) {
       const descRes = await fetch('/api/translate.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `text=${encodeURIComponent(original.description)}&from=en&to=es`
+        body: `text=${encodeURIComponent(original.description)}&from=auto&to=es`
       });
       descData = await descRes.json();
     }
