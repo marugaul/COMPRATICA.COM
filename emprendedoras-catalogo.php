@@ -156,53 +156,89 @@ $awningPalette = [
         /* ── PUESTO (stall) ── */
         .puesto-wrapper {
             position: relative;
-            margin-top: 52px;
+            margin-top: 70px;
             width: 100%;
         }
         .puesto {
-            background: white;
+            background: linear-gradient(to bottom, #f5f1e8 0%, #ede8dc 100%);
             border-radius: 0 0 18px 18px;
-            box-shadow: 0 6px 28px rgba(0,0,0,.1);
+            box-shadow:
+                0 8px 32px rgba(0,0,0,.15),
+                0 2px 8px rgba(0,0,0,.1),
+                inset 0 1px 0 rgba(255,255,255,.5);
             overflow: hidden;
+            border: 8px solid #d4a574;
+            border-top: none;
+            position: relative;
+        }
+        /* Textura de madera en los bordes */
+        .puesto::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                repeating-linear-gradient(90deg,
+                    transparent, transparent 2px,
+                    rgba(180, 140, 100, 0.03) 2px, rgba(180, 140, 100, 0.03) 4px);
+            pointer-events: none;
+            z-index: 1;
         }
 
-        /* Toldo */
+        /* Toldo más grande y prominente */
         .puesto-awning {
             position: absolute;
-            top: -52px; left: 0; right: 0;
-            height: 60px;
-            border-radius: 14px 14px 0 0;
+            top: -70px; left: -8px; right: -8px;
+            height: 78px;
+            border-radius: 16px 16px 0 0;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,.2);
+            box-shadow:
+                0 6px 20px rgba(0,0,0,.3),
+                0 3px 10px rgba(0,0,0,.2),
+                inset 0 -3px 8px rgba(0,0,0,.15);
+            border: 3px solid rgba(0,0,0,.1);
+            border-bottom: none;
         }
         .puesto-awning-stripes {
             width: 100%; height: 100%;
         }
-        /* Borda ondulada del toldo */
+        /* Borda ondulada del toldo más pronunciada */
         .puesto-awning::after {
             content: '';
             position: absolute;
-            bottom: -10px; left: 0; right: 0;
-            height: 14px;
-            background: radial-gradient(circle at 50% 0%, transparent 10px, white 10px);
-            background-size: 22px 14px;
+            bottom: -12px; left: 0; right: 0;
+            height: 16px;
+            background: radial-gradient(circle at 50% 0%, transparent 11px, #f5f1e8 11px);
+            background-size: 24px 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,.15);
         }
 
         /* Cabecera del puesto */
         .puesto-header {
-            padding: 14px 18px 12px;
+            padding: 16px 20px 14px;
             display: flex; align-items: center; gap: 12px;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 2px solid rgba(180, 140, 100, 0.2);
+            background: linear-gradient(to bottom, rgba(255,255,255,0.5) 0%, transparent 100%);
+            position: relative;
+            z-index: 2;
         }
         .puesto-avatar {
-            width: 44px; height: 44px; border-radius: 50%;
+            width: 48px; height: 48px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem; font-weight: 800; color: white;
+            font-size: 1.4rem; font-weight: 800; color: white;
             flex-shrink: 0;
+            box-shadow: 0 3px 8px rgba(0,0,0,.15);
+            border: 3px solid rgba(255,255,255,.4);
         }
         .puesto-info { flex: 1; min-width: 0; }
-        .puesto-name { font-weight: 800; font-size: 1.05rem; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .puesto-meta { font-size: 0.8rem; color: #888; margin-top: 2px; }
+        .puesto-name {
+            font-weight: 800; font-size: 1.1rem; color: #2c2416;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            text-shadow: 0 1px 2px rgba(255,255,255,.8);
+        }
+        .puesto-meta {
+            font-size: 0.85rem; color: #6b5d4f; margin-top: 2px;
+            font-weight: 600;
+        }
 
         /* Live badge */
         .live-badge {
@@ -225,28 +261,39 @@ $awningPalette = [
         .puesto-products {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1px;
-            background: #f0f0f0;
+            gap: 2px;
+            background: linear-gradient(to bottom, #d4a574 0%, #c09560 100%);
+            padding: 2px;
+            position: relative;
+            z-index: 2;
         }
         .puesto-product-cell {
-            background: white; position: relative; aspect-ratio: 1;
-            overflow: hidden; cursor: pointer; text-decoration: none; display: block;
+            background: white;
+            position: relative;
+            aspect-ratio: 1;
+            overflow: hidden;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            box-shadow: inset 0 0 0 1px rgba(212, 165, 116, 0.15);
         }
         .puesto-product-cell img {
-            width: 100%; height: 100%; object-fit: contain; background: #f8f8f8;
+            width: 100%; height: 100%;
+            object-fit: contain;
+            background: linear-gradient(135deg, #fafaf8 0%, #f5f3f0 100%);
             transition: transform .35s;
         }
         .puesto-product-cell:hover img { transform: scale(1.08); }
         .puesto-product-overlay {
             position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,.72) 0%, transparent 55%);
+            background: linear-gradient(to top, rgba(44, 36, 22, 0.85) 0%, transparent 60%);
             opacity: 0; transition: opacity .25s;
             display: flex; flex-direction: column; justify-content: flex-end;
             padding: 10px;
         }
         .puesto-product-cell:hover .puesto-product-overlay { opacity: 1; }
-        .ppo-name  { color: white; font-size: 0.78rem; font-weight: 700; line-height: 1.2; }
-        .ppo-price { color: #fbbf24; font-size: 0.82rem; font-weight: 800; margin-top: 2px; }
+        .ppo-name  { color: white; font-size: 0.8rem; font-weight: 700; line-height: 1.2; }
+        .ppo-price { color: #fbbf24; font-size: 0.85rem; font-weight: 800; margin-top: 2px; }
         .ppo-add   {
             margin-top: 6px; background: white; color: #667eea;
             border: none; border-radius: 6px; padding: 4px 8px;
@@ -264,11 +311,19 @@ $awningPalette = [
 
         /* Footer del puesto */
         .puesto-footer {
-            padding: 14px 18px;
+            padding: 16px 20px;
             display: flex; align-items: center; justify-content: space-between;
             gap: 10px;
+            background: linear-gradient(to top, rgba(180, 140, 100, 0.08) 0%, transparent 100%);
+            border-top: 2px solid rgba(180, 140, 100, 0.15);
+            position: relative;
+            z-index: 2;
         }
-        .puesto-count { font-size: 0.82rem; color: #888; }
+        .puesto-count {
+            font-size: 0.85rem;
+            color: #6b5d4f;
+            font-weight: 600;
+        }
         .btn-entrar {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white; text-decoration: none;
