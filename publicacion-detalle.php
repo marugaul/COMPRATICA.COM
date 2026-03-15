@@ -612,26 +612,129 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
     }
 
     @media (max-width: 768px) {
+      .header {
+        padding: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .logo .flag {
+        font-size: 1.5rem;
+      }
+
+      .logo .text .main {
+        font-size: 1.25rem;
+      }
+
+      .logo .text .sub {
+        font-size: 0.75rem;
+      }
+
+      .back-button {
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+      }
+
       .container {
         padding: 1rem;
+        max-width: 100%;
+      }
+
+      .detail-card {
+        padding: 1.5rem;
       }
 
       .detail-title {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
+        line-height: 1.3;
       }
 
       .detail-meta {
         flex-direction: column;
         gap: 0.75rem;
+        font-size: 0.875rem;
+      }
+
+      .detail-description {
+        font-size: 0.9375rem;
+        padding: 1rem;
       }
 
       .contact-buttons {
         flex-direction: column;
+        gap: 0.75rem;
       }
 
       .btn-contact {
         width: 100%;
         justify-content: center;
+        padding: 0.875rem;
+      }
+
+      .translate-btn {
+        width: 100%;
+        padding: 0.875rem;
+      }
+
+      .professional-list li {
+        font-size: 0.9375rem;
+        padding: 0.625rem 0;
+      }
+
+      h3 {
+        font-size: 1.125rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header {
+        padding: 0.75rem;
+      }
+
+      .logo .flag {
+        font-size: 1.25rem;
+      }
+
+      .logo .text .main {
+        font-size: 1.125rem;
+      }
+
+      .back-button {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.8125rem;
+      }
+
+      .container {
+        padding: 0.75rem;
+      }
+
+      .detail-card {
+        padding: 1rem;
+      }
+
+      .detail-title {
+        font-size: 1.25rem;
+      }
+
+      .detail-meta {
+        font-size: 0.8125rem;
+      }
+
+      .detail-description {
+        font-size: 0.875rem;
+        padding: 0.875rem;
+      }
+
+      .btn-contact, .translate-btn {
+        padding: 0.75rem;
+        font-size: 0.9375rem;
+      }
+
+      .professional-list li {
+        font-size: 0.875rem;
+      }
+
+      h3 {
+        font-size: 1rem;
       }
     }
   </style>

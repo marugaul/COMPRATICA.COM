@@ -756,45 +756,166 @@ if (empty($categories)) {
         padding: 1rem 1.25rem;
       }
 
+      .logo .text .main {
+        font-size: 1.25rem;
+      }
+
+      .logo .text .sub {
+        font-size: 0.6rem;
+      }
+
       .main-wrapper {
-        padding: 1.75rem 1.25rem;
+        padding: 1.5rem 1rem;
       }
 
       .hero-section {
-        padding: 2.5rem 1.5rem;
+        padding: 2rem 1.5rem;
+      }
+
+      .hero-title {
+        font-size: 2rem;
+      }
+
+      .hero-description {
+        font-size: 1rem;
+      }
+
+      .hero-stats {
+        gap: 1.5rem;
+      }
+
+      .stat-number {
+        font-size: 2rem;
+      }
+
+      .stat-label {
+        font-size: 0.85rem;
+      }
+
+      .filters-section {
+        padding: 1.5rem 1rem;
       }
 
       .filters-grid {
         grid-template-columns: 1fr;
+        gap: 1rem;
       }
 
       .filter-actions {
-        flex-direction: column;
+        grid-column: 1;
+        flex-direction: row;
+        gap: 0.5rem;
       }
 
       .btn-filter {
-        width: 100%;
+        flex: 1;
+        font-size: 0.85rem;
+        padding: 0.625rem 1rem;
+      }
+
+      .section-title {
+        font-size: 1.75rem;
+      }
+
+      .section-subtitle {
+        font-size: 1rem;
       }
 
       .job-card {
         flex-direction: column;
-        padding: 1.5rem;
+        padding: 1.25rem;
+        gap: 1rem;
+      }
+
+      .job-card:hover {
+        transform: translateY(-2px);
       }
 
       .job-logo {
-        width: 60px;
-        height: 60px;
+        width: 50px;
+        height: 50px;
+      }
+
+      .job-title {
+        font-size: 1.125rem;
+      }
+
+      .job-company {
+        font-size: 0.9rem;
       }
 
       .job-meta {
         flex-direction: column;
         gap: 0.5rem;
+        font-size: 0.85rem;
+      }
+
+      .job-description {
+        font-size: 0.9rem;
       }
 
       .job-footer {
         flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch;
+      }
+
+      .job-footer > div:first-child {
+        width: 100%;
+      }
+
+      .job-footer > div:last-child {
+        width: 100%;
+        flex-direction: column;
+      }
+
+      .btn-translate,
+      .btn-apply {
+        width: 100%;
+        justify-content: center;
+        font-size: 0.9rem;
+        padding: 0.625rem 1rem;
+      }
+
+      .badge {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.75rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .logo .flag {
+        font-size: 1.5rem;
+      }
+
+      .logo .text .main {
+        font-size: 1.125rem;
+      }
+
+      .hero-title {
+        font-size: 1.75rem;
+      }
+
+      .hero-stats {
+        flex-direction: column;
         gap: 1rem;
-        align-items: flex-start;
+      }
+
+      .stat-item {
+        width: 100%;
+        text-align: center;
+      }
+
+      .filters-section {
+        padding: 1rem;
+      }
+
+      .job-card {
+        padding: 1rem;
+      }
+
+      .job-title {
+        font-size: 1rem;
       }
     }
   </style>
