@@ -2,12 +2,54 @@
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+// ══════════════════════════════════════════════════════════════════════════
+// LOGGING PARA DEBUG - Registra todos los errores en /logs/dashboard_debug.log
+// ══════════════════════════════════════════════════════════════════════════
+$LOG_FILE = __DIR__ . '/logs/dashboard_debug.log';
+if (!is_dir(__DIR__ . '/logs')) @mkdir(__DIR__ . '/logs', 0777, true);
+
+function debug_log($msg) {
+    global $LOG_FILE;
+    $timestamp = date('Y-m-d H:i:s');
+    $line = "[{$timestamp}] {$msg}\n";
+    @file_put_contents($LOG_FILE, $line, FILE_APPEND | LOCK_EX);
+}
+
+// Capturar todos los errores
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    debug_log("PHP ERROR [$errno]: $errstr en $errfile:$errline");
+    return false; // Propagar el error
+});
+
+// Capturar excepciones no manejadas
+set_exception_handler(function($e) {
+    debug_log("EXCEPTION: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
+    debug_log("Stack trace: " . $e->getTraceAsString());
+    http_response_code(500);
+    echo "Error 500 - Ver /logs/dashboard_debug.log para detalles";
+    exit;
+});
+
+// Capturar errores fatales
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        debug_log("FATAL ERROR: {$error['message']} en {$error['file']}:{$error['line']}");
+    }
+});
+
+debug_log("========== INICIO DE PETICIÓN ==========");
+debug_log("REQUEST_METHOD: " . ($_SERVER['REQUEST_METHOD'] ?? 'N/A'));
+debug_log("REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
+// ══════════════════════════════════════════════════════════════════════════
+
 $__sessPath = __DIR__ . '/sessions';
 if (!is_dir($__sessPath)) @mkdir($__sessPath, 0755, true);
 if (is_dir($__sessPath) && is_writable($__sessPath)) {
     ini_set('session.save_path', $__sessPath);
 }
 session_start();
+debug_log("Sesión iniciada - UID: " . ($_SESSION['uid'] ?? 'no set'));
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/logger.php';
@@ -104,27 +146,45 @@ $isLoggedIn = true;
 // ── Manejar guardado de opciones de envío ────────────────────────────────
 $shippingMsg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_shipping') {
-    $zones = [];
-    $zoneNames  = $_POST['zone_name']  ?? [];
-    $zonePrices = $_POST['zone_price'] ?? [];
-    foreach ($zoneNames as $i => $name) {
-        $name  = trim($name);
-        $price = (int)($zonePrices[$i] ?? 0);
-        if ($name !== '' && $price >= 0) {
-            $zones[] = ['name' => $name, 'price' => $price];
+    debug_log("POST save_shipping recibido");
+    debug_log("POST data: " . json_encode($_POST));
+
+    try {
+        $zones = [];
+        $zoneNames  = $_POST['zone_name']  ?? [];
+        $zonePrices = $_POST['zone_price'] ?? [];
+        foreach ($zoneNames as $i => $name) {
+            $name  = trim($name);
+            $price = (int)($zonePrices[$i] ?? 0);
+            if ($name !== '' && $price >= 0) {
+                $zones[] = ['name' => $name, 'price' => $price];
+            }
         }
+        debug_log("Zonas procesadas: " . count($zones));
+
+        $configData = [
+            'enable_free_shipping' => isset($_POST['enable_free_shipping']) ? 1 : 0,
+            'enable_pickup'        => isset($_POST['enable_pickup'])        ? 1 : 0,
+            'enable_express'       => isset($_POST['enable_express'])       ? 1 : 0,
+            'free_shipping_min'    => (int)($_POST['free_shipping_min'] ?? 0),
+            'pickup_instructions'  => trim($_POST['pickup_instructions'] ?? ''),
+            'express_zones'        => $zones,
+        ];
+        debug_log("Config a guardar: " . json_encode($configData));
+
+        saveShippingConfig($pdo, $userId, $configData);
+        debug_log("saveShippingConfig ejecutado OK");
+
+        $shippingMsg = ['ok', '✅ Opciones de envío guardadas correctamente.'];
+        debug_log("Redirigiendo a #shipping-section");
+        header('Location: emprendedoras-dashboard.php#shipping-section');
+        exit;
+
+    } catch (Throwable $e) {
+        debug_log("ERROR en save_shipping: " . $e->getMessage());
+        debug_log("Trace: " . $e->getTraceAsString());
+        $shippingMsg = ['error', '❌ Error al guardar: ' . $e->getMessage()];
     }
-    saveShippingConfig($pdo, $userId, [
-        'enable_free_shipping' => isset($_POST['enable_free_shipping']) ? 1 : 0,
-        'enable_pickup'        => isset($_POST['enable_pickup'])        ? 1 : 0,
-        'enable_express'       => isset($_POST['enable_express'])       ? 1 : 0,
-        'free_shipping_min'    => (int)($_POST['free_shipping_min'] ?? 0),
-        'pickup_instructions'  => trim($_POST['pickup_instructions'] ?? ''),
-        'express_zones'        => $zones,
-    ]);
-    $shippingMsg = ['ok', '✅ Opciones de envío guardadas correctamente.'];
-    header('Location: emprendedoras-dashboard.php#shipping-section');
-    exit;
 }
 
 // ── Manejar toggle EN VIVO ────────────────────────────────────────────────
