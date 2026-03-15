@@ -177,8 +177,8 @@ $params = [];
 $baseQuery = "
     SELECT
         jl.*,
-        COALESCE(jl.company_name, u.company_name, u.name) as company_name,
-        COALESCE(jl.company_logo, u.company_logo) as company_logo
+        u.company_name,
+        u.company_logo
     FROM job_listings jl
     LEFT JOIN users u ON u.id = jl.employer_id
     WHERE jl.listing_type = 'job'
@@ -255,17 +255,16 @@ try {
 // Obtener datos únicos para los filtros
 $locations = $pdo->query("SELECT DISTINCT location FROM job_listings WHERE location IS NOT NULL AND location != '' AND is_active = 1 ORDER BY location")->fetchAll(PDO::FETCH_COLUMN);
 
-// Obtener empresas únicas (priorizando company_name de job_listings)
+// Obtener empresas únicas (de usuarios empleadores)
 $companiesQuery = "
-    SELECT DISTINCT COALESCE(jl.company_name, u.company_name, u.name) as company_name
+    SELECT DISTINCT u.company_name
     FROM job_listings jl
     LEFT JOIN users u ON u.id = jl.employer_id
     WHERE jl.listing_type = 'job'
     AND jl.is_active = 1
-    AND COALESCE(jl.company_name, u.company_name, u.name) IS NOT NULL
-    AND COALESCE(jl.company_name, u.company_name, u.name) != ''
-    AND COALESCE(jl.company_name, u.company_name, u.name) != 'CompraTica Empleos'
-    ORDER BY company_name
+    AND u.company_name IS NOT NULL
+    AND u.company_name != ''
+    ORDER BY u.company_name
 ";
 $companies = $pdo->query($companiesQuery)->fetchAll(PDO::FETCH_COLUMN);
 

@@ -410,20 +410,22 @@ function importJobs($jobs) {
                 continue;
             }
 
-            // Insertar (guardando company_name en su propio campo)
+            // Preparar descripción con info de la empresa
+            $fullDescription = "**Empresa:** " . $job['company'] . "\n\n" . $job['description'];
+
+            // Insertar
             $stmt = $pdo->prepare("
                 INSERT INTO job_listings (
                     employer_id, title, description, category, location,
                     job_type, listing_type, is_active,
-                    import_source, source_url, application_url, start_date,
-                    company_name
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    import_source, source_url, application_url, start_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $stmt->execute([
                 $botId,
                 $job['title'],
-                $job['description'],
+                $fullDescription,
                 $job['category'],
                 $job['location'],
                 $job['job_type'],
@@ -432,8 +434,7 @@ function importJobs($jobs) {
                 'Telegram_' . $job['external_id'],
                 $job['source_url'],
                 $job['application_url'],
-                $job['publish_date'] ?? null,
-                $job['company'] ?? null
+                $job['publish_date'] ?? null
             ]);
 
             $inserted++;
