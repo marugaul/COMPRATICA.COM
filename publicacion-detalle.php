@@ -104,8 +104,39 @@ function makeUrlsClickable($text) {
 }
 
 /**
+ * Extrae URLs de aplicación de un texto
+ * Retorna array con 'url' y 'text' (texto sin el URL)
+ */
+function extractApplicationUrl($text) {
+    $url = null;
+    $cleanText = $text;
+
+    // Buscar URLs completos (incluyendo parámetros, hash, etc.)
+    // El patrón captura hasta encontrar un espacio, salto de línea, o fin de cadena
+    if (preg_match('/(https?:\/\/[^\s]+)/i', $text, $matches)) {
+        $url = $matches[1];
+
+        // Limpiar posibles puntos o comas al final del URL
+        $url = rtrim($url, '.,;:!?)');
+
+        // Remover el URL del texto
+        $cleanText = str_replace($matches[1], '', $cleanText);
+
+        // Limpiar espacios múltiples resultantes
+        $cleanText = preg_replace('/\s+/', ' ', $cleanText);
+        $cleanText = trim($cleanText);
+    }
+
+    return [
+        'url' => $url,
+        'text' => $cleanText
+    ];
+}
+
+/**
  * Formatea una descripción de empleo de manera profesional
  * Detecta secciones, listas, y formatea con HTML limpio
+ * NO convierte URLs en enlaces (se manejan por separado)
  */
 function formatJobDescription($text) {
     // Decodificar entidades HTML
@@ -162,18 +193,16 @@ function formatJobDescription($text) {
                     $formatted .= '<ul class="professional-list">';
                     $isList = true;
                 }
-                // Hacer URLs clickeables en las listas
-                $line = makeUrlsClickable(htmlspecialchars($line));
-                $formatted .= '<li><i class="fas fa-check-circle"></i> ' . $line . '.</li>';
+                // NO hacer URLs clickeables (ya fueron removidos)
+                $formatted .= '<li><i class="fas fa-check-circle"></i> ' . htmlspecialchars($line) . '.</li>';
             } else {
                 if ($isList) {
                     $formatted .= '</ul>';
                     $isList = false;
                 }
                 if (strlen($line) > 10) {
-                    // Hacer URLs clickeables en párrafos
-                    $line = makeUrlsClickable(htmlspecialchars($line));
-                    $formatted .= '<p>' . $line . '.</p>';
+                    // NO hacer URLs clickeables (ya fueron removidos)
+                    $formatted .= '<p>' . htmlspecialchars($line) . '.</p>';
                 }
             }
         }
@@ -222,6 +251,19 @@ if (!$publicacion) {
     header('Location: index.php');
     exit;
 }
+
+// Extraer URL de aplicación de la descripción si existe
+$extractedData = extractApplicationUrl($publicacion['description']);
+$extractedUrl = $extractedData['url'];
+$cleanDescription = $extractedData['text'];
+
+// Si encontramos un URL en la descripción y no hay application_url, usarlo
+if ($extractedUrl && empty($publicacion['application_url'])) {
+    $publicacion['application_url'] = $extractedUrl;
+}
+
+// Usar la descripción limpia (sin URL) para mostrar
+$publicacion['description'] = $cleanDescription;
 
 $isJob = $publicacion['listing_type'] === 'job';
 $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
