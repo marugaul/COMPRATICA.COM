@@ -17,30 +17,110 @@ if (empty($text)) {
 }
 
 /**
+ * Divide texto largo en chunks respetando límites de caracteres
+ * Intenta cortar por oraciones o palabras, no en medio de palabras
+ */
+function splitTextIntoChunks($text, $maxLength = 450) {
+    // Si el texto es corto, devolverlo directamente
+    if (mb_strlen($text) <= $maxLength) {
+        return [$text];
+    }
+
+    $chunks = [];
+    $remainingText = $text;
+
+    while (mb_strlen($remainingText) > 0) {
+        if (mb_strlen($remainingText) <= $maxLength) {
+            $chunks[] = $remainingText;
+            break;
+        }
+
+        // Intentar cortar en un punto/salto de línea
+        $cutPoint = $maxLength;
+        $substr = mb_substr($remainingText, 0, $maxLength + 50); // Un poco más para buscar
+
+        // Buscar el último punto, nueva línea o espacio
+        $lastPeriod = mb_strrpos($substr, '.');
+        $lastNewline = mb_strrpos($substr, "\n");
+        $lastSpace = mb_strrpos($substr, ' ');
+
+        // Usar el más cercano a maxLength pero no excederlo
+        if ($lastPeriod !== false && $lastPeriod <= $maxLength) {
+            $cutPoint = $lastPeriod + 1;
+        } elseif ($lastNewline !== false && $lastNewline <= $maxLength) {
+            $cutPoint = $lastNewline + 1;
+        } elseif ($lastSpace !== false && $lastSpace <= $maxLength) {
+            $cutPoint = $lastSpace + 1;
+        }
+
+        $chunks[] = mb_substr($remainingText, 0, $cutPoint);
+        $remainingText = mb_substr($remainingText, $cutPoint);
+    }
+
+    return $chunks;
+}
+
+/**
  * Traducir usando múltiples servicios con fallback
- * Intenta primero MyMemory, luego Google Translate
+ * Divide textos largos en chunks automáticamente
  */
 function translateText($text, $from, $to) {
-    // Intentar MyMemory Translation API (mejor calidad, 1000 chars por request)
-    $translated = translateWithMyMemory($text, $from, $to);
-    if ($translated !== false) {
-        return ['translated' => $translated, 'original' => $text];
+    // Dividir texto en chunks si es muy largo
+    $chunks = splitTextIntoChunks($text, 450); // 450 chars por chunk (límite MyMemory es 500)
+
+    $translatedChunks = [];
+    $useGoogle = false;
+
+    foreach ($chunks as $chunk) {
+        // Intentar MyMemory primero
+        if (!$useGoogle) {
+            $translated = translateWithMyMemory($chunk, $from, $to);
+            if ($translated !== false) {
+                $translatedChunks[] = $translated;
+                continue;
+            } else {
+                // Si MyMemory falla, cambiar a Google para los chunks restantes
+                $useGoogle = true;
+            }
+        }
+
+        // Fallback: Google Translate
+        if ($useGoogle) {
+            $translated = translateWithGoogle($chunk, $from, $to);
+            if ($translated !== false) {
+                $translatedChunks[] = $translated;
+            } else {
+                // Si ambos fallan, devolver el chunk original
+                $translatedChunks[] = $chunk;
+            }
+        }
+
+        // Pequeña pausa para no saturar las APIs
+        usleep(100000); // 100ms entre chunks
     }
 
-    // Fallback: Google Translate
-    $translated = translateWithGoogle($text, $from, $to);
-    if ($translated !== false) {
-        return ['translated' => $translated, 'original' => $text];
+    if (empty($translatedChunks)) {
+        return ['error' => 'Translation failed for all chunks'];
     }
 
-    return ['error' => 'All translation services failed'];
+    $finalTranslation = implode(' ', $translatedChunks);
+    return [
+        'translated' => $finalTranslation,
+        'original' => $text,
+        'chunks_count' => count($chunks)
+    ];
 }
 
 /**
  * MyMemory Translation API (mejor calidad)
- * Límite: 1000 caracteres por request, 10000 palabras/día
+ * Límite: 500 caracteres por request, 10000 palabras/día
  */
 function translateWithMyMemory($text, $from, $to) {
+    // Verificar longitud
+    if (mb_strlen($text) > 500) {
+        return false; // Demasiado largo, se debe dividir antes
+    }
+
     $url = "https://api.mymemory.translated.net/get?q=" . urlencode($text)
            . "&langpair=" . urlencode($from) . "|" . urlencode($to);
 
@@ -53,13 +133,23 @@ function translateWithMyMemory($text, $from, $to) {
     curl_setopt($ch, CURLOPT_USERAGENT, 'CompraTica/1.0');
 
     $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    if (!$response) return false;
+    if (!$response || $httpCode !== 200) return false;
 
     $result = json_decode($response, true);
+
+    // Verificar si hay error de límite
     if (isset($result['responseData']['translatedText'])) {
-        return $result['responseData']['translatedText'];
+        $translated = $result['responseData']['translatedText'];
+
+        // Si el API devuelve el mismo error, intentar con Google
+        if (stripos($translated, 'QUERY LENGTH LIMIT EXCEEDED') !== false) {
+            return false;
+        }
+
+        return $translated;
     }
 
     return false;
