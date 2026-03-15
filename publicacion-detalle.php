@@ -970,10 +970,30 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
       <div class="contact-section">
         <h2>
           <i class="fas fa-envelope"></i>
-          ¿Te interesa? Contactá directamente
+          <?php echo $isJob ? '¿Te interesa? Aplicá ahora' : '¿Te interesa? Contactá directamente'; ?>
         </h2>
 
         <div class="contact-buttons">
+          <?php if ($isJob): ?>
+            <?php
+            // Para empleos, botón principal de "Aplicar"
+            if ($publicacion['application_url']) {
+              // Si hay URL de aplicación externa
+              $applyUrl = htmlspecialchars($publicacion['application_url']);
+              $applyTarget = '_blank';
+            } else {
+              // Si no hay URL, usar email para aplicar
+              $applyEmail = $publicacion['contact_email'] ?? $publicacion['provider_email'];
+              $applyUrl = 'mailto:' . htmlspecialchars($applyEmail) . '?subject=Aplicación: ' . urlencode($publicacion['title']) . '&body=' . urlencode("Estimados,\n\nMe interesa aplicar para el puesto de " . $publicacion['title'] . ".\n\nAdjunto mi información de contacto para coordinar una entrevista.\n\nSaludos.");
+              $applyTarget = '_self';
+            }
+            ?>
+            <a href="<?php echo $applyUrl; ?>" target="<?php echo $applyTarget; ?>" class="btn-contact" style="background: var(--accent); color: var(--white); font-size: 1.1rem; padding: 1.25rem 2.5rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+              <i class="fas fa-paper-plane"></i>
+              Aplicar Ahora
+            </a>
+          <?php endif; ?>
+
           <?php if ($publicacion['contact_whatsapp'] ?? $publicacion['provider_phone']): ?>
             <?php
             $whatsapp = $publicacion['contact_whatsapp'] ?? $publicacion['provider_phone'];
@@ -989,7 +1009,7 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
           <?php if ($publicacion['contact_email'] ?? $publicacion['provider_email']): ?>
             <a href="mailto:<?php echo htmlspecialchars($publicacion['contact_email'] ?? $publicacion['provider_email']); ?>?subject=Consulta: <?php echo urlencode($publicacion['title']); ?>" class="btn-contact email">
               <i class="fas fa-envelope"></i>
-              Email
+              <?php echo $isJob ? 'Consultar' : 'Email'; ?>
             </a>
           <?php endif; ?>
 
@@ -997,13 +1017,6 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
             <a href="tel:<?php echo htmlspecialchars($publicacion['contact_phone']); ?>" class="btn-contact">
               <i class="fas fa-phone"></i>
               <?php echo htmlspecialchars($publicacion['contact_phone']); ?>
-            </a>
-          <?php endif; ?>
-
-          <?php if ($publicacion['application_url']): ?>
-            <a href="<?php echo htmlspecialchars($publicacion['application_url']); ?>" target="_blank" class="btn-contact">
-              <i class="fas fa-external-link-alt"></i>
-              Aplicar Aquí
             </a>
           <?php endif; ?>
         </div>
