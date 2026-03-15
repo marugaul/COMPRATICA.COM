@@ -89,14 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'session_name' => session_name()
         ]);
 
-        // IMPORTANTE: Forzar escritura de la sesión inmediatamente
-        // pero NO cerrar la sesión con session_write_close()
-        session_commit(); // Esto guarda pero mantiene la sesión activa
-
-        // Pequeña pausa para asegurar que la cookie se envíe
-        usleep(100000); // 100ms
-
-        // Redirigir
+        // Redirigir (la sesión se guarda automáticamente al finalizar el script)
         $redirect = $_GET['redirect'] ?? 'dashboard.php';
         // Sanitizar redirect para evitar open redirect
         if (strpos($redirect, 'http') === 0 || strpos($redirect, '//') === 0) {

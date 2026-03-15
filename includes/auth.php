@@ -15,16 +15,20 @@ function auth_debug_log($msg, $data = []) {
     @file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
 }
 
-// Asegurar que la sesión esté activa
+// NOTA: NO iniciamos sesión aquí porque config.php ya lo hace.
+// Si intentamos iniciar la sesión nuevamente, podemos perder las variables de sesión.
+
+// Verificar que la sesión esté activa (config.php debería haberla iniciado)
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    auth_debug_log('Iniciando sesión en auth.php', [
+    auth_debug_log('ERROR: Sesión no activa - config.php no fue cargado', [
         'session_status' => session_status(),
         'cookies' => array_keys($_COOKIE)
     ]);
-    @session_start();
+    // En este caso, cargar config.php para iniciar la sesión correctamente
+    require_once __DIR__ . '/config.php';
 }
 
-// Verificar estado de la sesión después de iniciarla
+// Verificar estado de la sesión
 auth_debug_log('Sesión verificada', [
     'session_id' => session_id(),
     'is_admin' => $_SESSION['is_admin'] ?? 'NO DEFINIDO',

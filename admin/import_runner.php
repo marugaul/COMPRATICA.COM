@@ -4,6 +4,7 @@
  * Endpoint de streaming para importación de empleos en tiempo real.
  * Llamado vía fetch() desde import_jobs.php — devuelve texto plano línea a línea.
  */
+require_once __DIR__ . '/../includes/config.php';  // Cargar config primero para iniciar sesión
 require_once __DIR__ . '/../includes/auth.php';
 require_login();
 
