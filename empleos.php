@@ -81,6 +81,26 @@ if (!headers_sent()) {
 }
 ini_set('default_charset', 'UTF-8');
 
+/**
+ * Decodifica TODAS las entidades HTML (nombradas y numéricas)
+ */
+function decodeAllEntities($text) {
+    // Decodificar entidades nombradas y numéricas
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    // Decodificar entidades numéricas que quedaron (&#8211;, &#8217;, etc.)
+    $text = preg_replace_callback('/&#(\d+);/', function($matches) {
+        return mb_chr((int)$matches[1], 'UTF-8');
+    }, $text);
+
+    // Decodificar entidades hexadecimales (&#x2013;, etc.)
+    $text = preg_replace_callback('/&#x([0-9a-f]+);/i', function($matches) {
+        return mb_chr(hexdec($matches[1]), 'UTF-8');
+    }, $text);
+
+    return $text;
+}
+
 // CSRF por cookie
 $token = $_COOKIE['vg_csrf'] ?? bin2hex(random_bytes(32));
 $isHttps = $__isHttps;
@@ -931,11 +951,11 @@ if (empty($categories)) {
           <?php endif; ?>
 
           <div class="job-content">
-            <h3 class="job-title"><?php echo htmlspecialchars(html_entity_decode($job['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?></h3>
+            <h3 class="job-title"><?php echo htmlspecialchars(decodeAllEntities($job['title'])); ?></h3>
 
             <div class="job-company">
               <i class="fas fa-building"></i>
-              <?php echo htmlspecialchars(html_entity_decode($job['company_name'] ?? 'Empresa', ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?>
+              <?php echo htmlspecialchars(decodeAllEntities($job['company_name'] ?? 'Empresa')); ?>
             </div>
 
             <div class="job-meta">
@@ -992,7 +1012,7 @@ if (empty($categories)) {
 
             <?php if ($job['description']): ?>
               <div class="job-description">
-                <?php echo nl2br(htmlspecialchars(html_entity_decode($job['description'], ENT_QUOTES | ENT_HTML5, 'UTF-8'))); ?>
+                <?php echo nl2br(htmlspecialchars(decodeAllEntities($job['description']))); ?>
               </div>
             <?php endif; ?>
 

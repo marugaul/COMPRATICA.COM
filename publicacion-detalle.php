@@ -74,12 +74,32 @@ if ($id <= 0) {
 }
 
 /**
+ * Decodifica TODAS las entidades HTML (nombradas y numéricas)
+ */
+function decodeAllEntities($text) {
+    // Decodificar entidades nombradas y numéricas
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    // Decodificar entidades numéricas que quedaron (&#8211;, &#8217;, etc.)
+    $text = preg_replace_callback('/&#(\d+);/', function($matches) {
+        return mb_chr((int)$matches[1], 'UTF-8');
+    }, $text);
+
+    // Decodificar entidades hexadecimales (&#x2013;, etc.)
+    $text = preg_replace_callback('/&#x([0-9a-f]+);/i', function($matches) {
+        return mb_chr(hexdec($matches[1]), 'UTF-8');
+    }, $text);
+
+    return $text;
+}
+
+/**
  * Formatea una descripción de empleo de manera profesional
  * Detecta secciones, listas, y formatea con HTML limpio
  */
 function formatJobDescription($text) {
     // Decodificar entidades HTML
-    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = decodeAllEntities($text);
 
     // Limpiar espacios excesivos
     $text = preg_replace('/\s+/', ' ', $text);
@@ -644,7 +664,7 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
         </div>
       <?php endif; ?>
 
-      <h1 class="detail-title"><?php echo htmlspecialchars(html_entity_decode($publicacion['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?></h1>
+      <h1 class="detail-title"><?php echo htmlspecialchars(decodeAllEntities($publicacion['title'])); ?></h1>
 
       <div class="detail-company">
         <?php if ($publicacion['company_logo']): ?>
@@ -656,7 +676,7 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
         <?php endif; ?>
 
         <div class="company-info">
-          <h3><?php echo htmlspecialchars(html_entity_decode($publicacion['company_name'] ?? $publicacion['provider_name'] ?? 'Empresa', ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?></h3>
+          <h3><?php echo htmlspecialchars(decodeAllEntities($publicacion['company_name'] ?? $publicacion['provider_name'] ?? 'Empresa')); ?></h3>
           <?php if ($publicacion['provider_website']): ?>
             <p><a href="<?php echo htmlspecialchars($publicacion['provider_website']); ?>" target="_blank" style="color: var(--primary);">
               <i class="fas fa-globe"></i> <?php echo htmlspecialchars($publicacion['provider_website']); ?>
