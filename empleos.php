@@ -1067,6 +1067,7 @@ if (empty($categories)) {
       <p class="hero-description">
         Encuentra tu próximo empleo en las mejores empresas. Ofertas remotas, presenciales e híbridas
         en tecnología, administración, ventas, salud y mucho más.
+        <br><strong>🔄 Actualizado 2 veces al día</strong> con las últimas oportunidades.
       </p>
 
       <div class="hero-stats">
