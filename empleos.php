@@ -172,7 +172,42 @@ try {
 
 // Obtener datos únicos para los filtros
 $locations = $pdo->query("SELECT DISTINCT location FROM job_listings WHERE location IS NOT NULL AND location != '' AND is_active = 1 ORDER BY location")->fetchAll(PDO::FETCH_COLUMN);
-$categories = $pdo->query("SELECT DISTINCT category FROM job_listings WHERE category IS NOT NULL AND category != '' AND is_active = 1 ORDER BY category")->fetchAll(PDO::FETCH_COLUMN);
+
+// Obtener TODAS las categorías de empleos (incluso si no tienen empleos activos)
+// Esto muestra el catálogo completo para que el usuario pueda explorar
+$categoriesQuery = "
+    SELECT DISTINCT name
+    FROM job_categories
+    WHERE name LIKE 'EMP:%'
+    AND active = 1
+
+    UNION
+
+    SELECT DISTINCT category
+    FROM job_listings
+    WHERE category IS NOT NULL
+    AND category != ''
+    AND is_active = 1
+
+    ORDER BY name
+";
+$categories = $pdo->query($categoriesQuery)->fetchAll(PDO::FETCH_COLUMN);
+
+// Si no hay categorías, usar lista predefinida
+if (empty($categories)) {
+    $categories = [
+        'EMP:Technology',
+        'EMP:Administration',
+        'EMP:Sales',
+        'EMP:Health',
+        'EMP:Education',
+        'EMP:Construction',
+        'EMP:Hospitality',
+        'EMP:Transport',
+        'EMP:Customer Service',
+        'EMP:Legal'
+    ];
+}
 ?>
 <!doctype html>
 <html lang="es">
