@@ -61,10 +61,56 @@ function splitTextIntoChunks($text, $maxLength = 450) {
 }
 
 /**
+ * Detectar idioma del texto usando Google Translate
+ */
+function detectLanguage($text) {
+    // Tomar solo una muestra del texto para detección (primeros 200 caracteres)
+    $sample = mb_substr($text, 0, 200);
+
+    $url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=es&dt=t&q=" . urlencode($sample);
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    if (!$response) return 'en'; // Default a inglés si falla
+
+    $result = json_decode($response, true);
+
+    // El idioma detectado está en result[2]
+    if (isset($result[2])) {
+        return $result[2];
+    }
+
+    return 'en'; // Default a inglés
+}
+
+/**
  * Traducir usando múltiples servicios con fallback
  * Divide textos largos en chunks automáticamente
  */
 function translateText($text, $from, $to) {
+    // Si from es 'auto', detectar el idioma primero
+    if ($from === 'auto') {
+        $from = detectLanguage($text);
+        // Si el idioma detectado es el mismo que el destino, no traducir
+        if ($from === $to) {
+            return [
+                'translated' => $text,
+                'original' => $text,
+                'detected_language' => $from,
+                'no_translation_needed' => true
+            ];
+        }
+    }
+
     // Dividir texto en chunks si es muy largo
     $chunks = splitTextIntoChunks($text, 450); // 450 chars por chunk (límite MyMemory es 500)
 
@@ -107,6 +153,7 @@ function translateText($text, $from, $to) {
     return [
         'translated' => $finalTranslation,
         'original' => $text,
+        'detected_language' => $from,
         'chunks_count' => count($chunks)
     ];
 }
