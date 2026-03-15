@@ -245,34 +245,36 @@ function importJobs($jobs) {
 
     foreach ($jobs as $job) {
         try {
-            // Verificar si ya existe (por título + compañía)
+            // Verificar si ya existe (por título + fuente)
             $stmt = $pdo->prepare("
                 SELECT id FROM job_listings
-                WHERE title = ? AND company_name = ?
+                WHERE title = ? AND import_source = ?
                 LIMIT 1
             ");
-            $stmt->execute([$job['title'], $job['company']]);
+            $stmt->execute([$job['title'], 'BAC_Talento360']);
 
             if ($stmt->fetch()) {
                 $skipped++;
                 continue;
             }
 
+            // Preparar descripción con info de la empresa
+            $fullDescription = "**Empresa:** " . $job['company'] . "\n\n" . $job['description'];
+
             // Insertar nuevo empleo
             $stmt = $pdo->prepare("
                 INSERT INTO job_listings (
-                    user_id, title, description, category, location,
-                    company_name, listing_type, is_active, import_source, source_url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    employer_id, title, description, category, location,
+                    listing_type, is_active, import_source, source_url
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $stmt->execute([
                 $botId,
                 $job['title'],
-                $job['description'],
+                $fullDescription,
                 'EMP:Finance', // BAC es banco, categoría Finance por defecto
                 $job['location'],
-                $job['company'],
                 'job',
                 1,
                 'BAC_Talento360',

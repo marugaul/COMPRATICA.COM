@@ -140,44 +140,40 @@ function getChannelMessages($channelUsername) {
 function parseChannelHTML($html, $channelUsername) {
     $messages = [];
 
-    // Buscar todos los mensajes (divs con class="tgme_widget_message")
-    if (preg_match_all('/<div class="tgme_widget_message.*?" data-post="([^"]+)".*?>(.*?)<\/div>\s*<\/div>\s*<\/div>/s', $html, $matches, PREG_SET_ORDER)) {
+    // Buscar todos los divs de texto de mensajes
+    if (preg_match_all('/<div class="tgme_widget_message_text[^"]*"[^>]*>(.*?)<\/div>/s', $html, $textMatches, PREG_SET_ORDER)) {
 
-        foreach ($matches as $match) {
-            $messageId = $match[1]; // channel/messageId
-            $messageHTML = $match[2];
+        foreach ($textMatches as $idx => $match) {
+            $messageHTML = $match[0];
+            $text = $match[1];
 
-            // Extraer texto del mensaje
-            if (preg_match('/<div class="tgme_widget_message_text[^"]*"[^>]*>(.*?)<\/div>/s', $messageHTML, $textMatch)) {
-                $text = strip_tags($textMatch[1]);
-                $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                $text = trim($text);
+            // Limpiar HTML: convertir <br/> a saltos de línea, quitar tags
+            $text = str_replace(['<br/>', '<br>', '<br />'], "\n", $text);
+            $text = strip_tags($text);
+            $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $text = trim($text);
 
-                // Extraer link si existe
-                $link = null;
-                if (preg_match('/<a[^>]+href="([^"]+)"[^>]*>/i', $messageHTML, $linkMatch)) {
-                    $link = $linkMatch[1];
-                    // Limpiar links de Telegram redirect
-                    if (strpos($link, 't.me/') !== false) {
-                        // Es un link interno, buscar el link externo
-                        if (preg_match('/href="(https?:\/\/(?!t\.me)[^"]+)"/i', $messageHTML, $externalLink)) {
-                            $link = $externalLink[1];
-                        }
-                    }
-                }
-
-                // Solo procesar si parece un empleo (tiene emoji 🧑‍💼 o keywords)
-                if (strpos($text, '🧑‍💼') !== false ||
-                    preg_match('/\b(developer|engineer|designer|analyst|manager)\b/i', $text)) {
-
-                    $messages[] = [
-                        'id' => $messageId,
-                        'text' => $text,
-                        'link' => $link,
-                        'channel' => $channelUsername,
-                    ];
-                }
+            // Solo procesar si tiene el emoji de empleo o palabras clave
+            if (strpos($text, '🧑‍💼') === false &&
+                !preg_match('/\b(Empresa:|engineer|developer|designer|analyst|manager|ingeniero|desarrollador)\b/i', $text)) {
+                continue;
             }
+
+            // Extraer link del mensaje
+            $link = null;
+            if (preg_match('/<a[^>]+href="(https?:\/\/(?!t\.me)[^"]+)"[^>]*>/i', $messageHTML, $linkMatch)) {
+                $link = $linkMatch[1];
+            }
+
+            // Generar un ID único para este mensaje
+            $messageId = $channelUsername . '/' . md5($text);
+
+            $messages[] = [
+                'id' => $messageId,
+                'text' => $text,
+                'link' => $link,
+                'channel' => $channelUsername,
+            ];
         }
     }
 
@@ -190,8 +186,10 @@ function parseChannelHTML($html, $channelUsername) {
  *
  * Formato esperado:
  * 🧑‍💼 | [Título del puesto]
- * [Empresa]
- * [Ubicación]
+ *
+ * Empresa: [Nombre]
+ * Ubicación: [Lugar] (Tipo)
+ *
  * [Link opcional]
  */
 function parseJobMessage($message) {
@@ -211,28 +209,42 @@ function parseJobMessage($message) {
         return null;
     }
 
-    // Segunda línea: empresa
-    $company = $lines[1] ?? 'No especificada';
-
-    // Tercera línea: ubicación
-    $location = $lines[2] ?? 'Costa Rica';
-
-    // Resto: descripción
-    $description = '';
-    if (count($lines) > 3) {
-        $description = implode("\n", array_slice($lines, 3));
+    // Buscar "Empresa:" en cualquier línea
+    $company = 'No especificada';
+    foreach ($lines as $line) {
+        if (preg_match('/^Empresa:\s*(.+)$/i', $line, $match)) {
+            $company = trim($match[1]);
+            break;
+        }
     }
+
+    // Buscar "Ubicación:" en cualquier línea
+    $location = 'Costa Rica';
+    $jobType = 'onsite';
+    foreach ($lines as $line) {
+        if (preg_match('/^Ubicación:\s*(.+)$/i', $line, $match)) {
+            $location = trim($match[1]);
+
+            // Extraer tipo de trabajo del paréntesis
+            if (preg_match('/\((Remote|On-site|Hybrid|Remoto|Presencial|Híbrido)\)/i', $location, $typeMatch)) {
+                $type = strtolower($typeMatch[1]);
+                if (in_array($type, ['remote', 'remoto'])) {
+                    $jobType = 'remote';
+                } elseif (in_array($type, ['hybrid', 'híbrido'])) {
+                    $jobType = 'hybrid';
+                }
+                // Limpiar el tipo del location
+                $location = trim(str_replace($typeMatch[0], '', $location));
+            }
+            break;
+        }
+    }
+
+    // Descripción: todo el texto completo
+    $description = $text;
 
     // Categoría basada en palabras clave del título
     $category = categorizeJob($title);
-
-    // Determinar tipo de trabajo (remoto/híbrido/presencial)
-    $jobType = 'onsite';
-    if (preg_match('/remote|remoto|virtual/i', $location)) {
-        $jobType = 'remote';
-    } elseif (preg_match('/hybrid|híbrido/i', $location)) {
-        $jobType = 'hybrid';
-    }
 
     return [
         'title' => $title,
@@ -328,22 +340,24 @@ function importJobs($jobs) {
                 continue;
             }
 
+            // Preparar descripción con info de la empresa
+            $fullDescription = "**Empresa:** " . $job['company'] . "\n\n" . $job['description'];
+
             // Insertar
             $stmt = $pdo->prepare("
                 INSERT INTO job_listings (
-                    user_id, title, description, category, location,
-                    company_name, job_type, listing_type, is_active,
+                    employer_id, title, description, category, location,
+                    job_type, listing_type, is_active,
                     import_source, source_url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $stmt->execute([
                 $botId,
                 $job['title'],
-                $job['description'],
+                $fullDescription,
                 $job['category'],
                 $job['location'],
-                $job['company'],
                 $job['job_type'],
                 'job',
                 1,
