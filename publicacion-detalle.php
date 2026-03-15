@@ -644,7 +644,7 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
         </div>
       <?php endif; ?>
 
-      <h1 class="detail-title"><?php echo htmlspecialchars($publicacion['title']); ?></h1>
+      <h1 class="detail-title"><?php echo htmlspecialchars(html_entity_decode($publicacion['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?></h1>
 
       <div class="detail-company">
         <?php if ($publicacion['company_logo']): ?>
@@ -656,7 +656,7 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
         <?php endif; ?>
 
         <div class="company-info">
-          <h3><?php echo htmlspecialchars($publicacion['company_name'] ?? $publicacion['provider_name'] ?? 'Empresa'); ?></h3>
+          <h3><?php echo htmlspecialchars(html_entity_decode($publicacion['company_name'] ?? $publicacion['provider_name'] ?? 'Empresa', ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?></h3>
           <?php if ($publicacion['provider_website']): ?>
             <p><a href="<?php echo htmlspecialchars($publicacion['provider_website']); ?>" target="_blank" style="color: var(--primary);">
               <i class="fas fa-globe"></i> <?php echo htmlspecialchars($publicacion['provider_website']); ?>

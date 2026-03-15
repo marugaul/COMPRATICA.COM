@@ -17,10 +17,58 @@ if (empty($text)) {
 }
 
 /**
- * Traducir usando Google Translate (método gratuito)
- * Usa la API no oficial de Google Translate
+ * Traducir usando múltiples servicios con fallback
+ * Intenta primero MyMemory, luego Google Translate
  */
 function translateText($text, $from, $to) {
+    // Intentar MyMemory Translation API (mejor calidad, 1000 chars por request)
+    $translated = translateWithMyMemory($text, $from, $to);
+    if ($translated !== false) {
+        return ['translated' => $translated, 'original' => $text];
+    }
+
+    // Fallback: Google Translate
+    $translated = translateWithGoogle($text, $from, $to);
+    if ($translated !== false) {
+        return ['translated' => $translated, 'original' => $text];
+    }
+
+    return ['error' => 'All translation services failed'];
+}
+
+/**
+ * MyMemory Translation API (mejor calidad)
+ * Límite: 1000 caracteres por request, 10000 palabras/día
+ */
+function translateWithMyMemory($text, $from, $to) {
+    $url = "https://api.mymemory.translated.net/get?q=" . urlencode($text)
+           . "&langpair=" . urlencode($from) . "|" . urlencode($to);
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'CompraTica/1.0');
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    if (!$response) return false;
+
+    $result = json_decode($response, true);
+    if (isset($result['responseData']['translatedText'])) {
+        return $result['responseData']['translatedText'];
+    }
+
+    return false;
+}
+
+/**
+ * Google Translate (fallback)
+ */
+function translateWithGoogle($text, $from, $to) {
     $url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl="
            . urlencode($from) . "&tl=" . urlencode($to) . "&dt=t&q=" . urlencode($text);
 
@@ -29,22 +77,16 @@ function translateText($text, $from, $to) {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
     $response = curl_exec($ch);
-    $error = curl_error($ch);
     curl_close($ch);
 
-    if ($error) {
-        return ['error' => 'Translation failed: ' . $error];
-    }
+    if (!$response) return false;
 
     $result = json_decode($response, true);
-
-    if (!$result || !isset($result[0])) {
-        return ['error' => 'Invalid response from translation service'];
-    }
+    if (!$result || !isset($result[0])) return false;
 
     $translated = '';
     foreach ($result[0] as $chunk) {
@@ -53,7 +95,7 @@ function translateText($text, $from, $to) {
         }
     }
 
-    return ['translated' => $translated, 'original' => $text];
+    return $translated;
 }
 
 $result = translateText($text, $from, $to);
