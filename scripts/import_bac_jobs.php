@@ -52,78 +52,126 @@ function fetchBACJobs() {
 
 /**
  * Método 1: Intentar acceder a la API de Talento360
+ * Actualizado para usar el endpoint correcto
  */
 function tryAPIMethod() {
     log_msg("Método 1: Intentando acceso a API de Talento360...");
 
-    // Posibles endpoints de la API
-    $endpoints = [
-        '/ux/ats/careersite/4/requisitions?country=cr',
-        '/api/rec-job-search/external?country=cr',
-        '/ats/careersite/4/jobs?country=cr&lang=es-MX',
-    ];
+    // Primero necesitamos obtener el token de la página principal
+    $token = getSessionToken();
 
-    foreach ($endpoints as $endpoint) {
-        $url = BAC_BASE_URL . $endpoint;
-        log_msg("  Probando: {$url}");
+    if (!$token) {
+        log_msg("  ✗ No se pudo obtener token de sesión");
+        return [];
+    }
 
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            CURLOPT_HTTPHEADER => [
-                'Accept: application/json',
-                'Accept-Language: es-MX,es;q=0.9',
-                'Referer: ' . BAC_BASE_URL . '/ux/ats/careersite/4/home?c=talento360',
-            ],
-        ]);
+    // Endpoint real de la API con el token
+    $url = BAC_BASE_URL . '/rec-job-search/external';
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
+    log_msg("  Probando: {$url}");
 
-        if ($error) {
-            log_msg("  ✗ Error CURL: {$error}");
-            continue;
-        }
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode([
+            'careerSiteId' => 4,
+            'careerSitePageId' => 4,
+            'pageNumber' => 1,
+            'pageSize' => 100,
+            'cultureName' => 'es-MX',
+            'includePrivate' => false,
+            'filters' => [
+                'locations' => [
+                    ['country' => 'CR']
+                ]
+            ]
+        ]),
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        CURLOPT_HTTPHEADER => [
+            'Accept: application/json',
+            'Content-Type: application/json',
+            'Accept-Language: es-MX,es;q=0.9',
+            'Authorization: Bearer ' . $token,
+            'Referer: ' . BAC_BASE_URL . '/ux/ats/careersite/4/home?c=talento360',
+        ],
+    ]);
 
-        log_msg("  HTTP {$httpCode}");
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
 
-        if ($httpCode == 200 && !empty($response)) {
-            // Intentar parsear como JSON
-            $data = json_decode($response, true);
+    if ($error) {
+        log_msg("  ✗ Error CURL: {$error}");
+        return [];
+    }
 
-            if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
-                log_msg("  ✓ Respuesta JSON válida recibida");
+    log_msg("  HTTP {$httpCode}");
 
-                // Buscar array de empleos en diferentes estructuras comunes
-                $possibleKeys = ['jobs', 'requisitions', 'data', 'results', 'items', 'postings'];
-                foreach ($possibleKeys as $key) {
-                    if (isset($data[$key]) && is_array($data[$key])) {
-                        log_msg("  ✓ Encontrados empleos en key '{$key}': " . count($data[$key]));
-                        return parseAPIJobs($data[$key]);
-                    }
+    if ($httpCode == 200 && !empty($response)) {
+        $data = json_decode($response, true);
+
+        if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+            log_msg("  ✓ Respuesta JSON válida recibida");
+
+            // Buscar array de empleos en diferentes estructuras comunes
+            $possibleKeys = ['jobs', 'requisitions', 'data', 'results', 'items', 'postings'];
+            foreach ($possibleKeys as $key) {
+                if (isset($data[$key]) && is_array($data[$key])) {
+                    log_msg("  ✓ Encontrados empleos en key '{$key}': " . count($data[$key]));
+                    return parseAPIJobs($data[$key]);
                 }
-
-                // Si el data mismo es array de empleos
-                if (isset($data[0]) && is_array($data[0])) {
-                    log_msg("  ✓ Data es array directo: " . count($data));
-                    return parseAPIJobs($data);
-                }
-
-                // Guardar respuesta para debug
-                file_put_contents(__DIR__ . '/../logs/bac_api_response.json', json_encode($data, JSON_PRETTY_PRINT));
-                log_msg("  ⚠ Estructura JSON no reconocida. Guardado en logs/bac_api_response.json");
             }
+
+            // Si el data mismo es array de empleos
+            if (isset($data[0]) && is_array($data[0])) {
+                log_msg("  ✓ Data es array directo: " . count($data));
+                return parseAPIJobs($data);
+            }
+
+            // Guardar respuesta para debug
+            file_put_contents(__DIR__ . '/../logs/bac_api_response.json', json_encode($data, JSON_PRETTY_PRINT));
+            log_msg("  ⚠ Estructura JSON no reconocida. Guardado en logs/bac_api_response.json");
         }
     }
 
     return [];
+}
+
+/**
+ * Obtener token de sesión de la página principal
+ */
+function getSessionToken() {
+    $url = BAC_BASE_URL . '/ux/ats/careersite/4/home?c=talento360';
+
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    ]);
+
+    $html = curl_exec($ch);
+    curl_close($ch);
+
+    if (empty($html)) {
+        return null;
+    }
+
+    // Buscar el token en el script
+    if (preg_match('/"token":"([^"]+)"/', $html, $matches)) {
+        return $matches[1];
+    }
+
+    return null;
 }
 
 /**
