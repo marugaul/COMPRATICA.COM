@@ -273,8 +273,29 @@ function parseJobMessage($message) {
         }
     }
 
+    // Extraer URL de aplicación de la descripción o del mensaje
+    $applicationUrl = null;
+
+    // Buscar URL en el link del mensaje (tiene prioridad)
+    if (!empty($message['link'])) {
+        $applicationUrl = $message['link'];
+    } else {
+        // Buscar URL en el texto (común: https://www.example.com/jobs/view/123456)
+        if (preg_match('/(https?:\/\/[^\s<>"\']+)/i', $text, $urlMatch)) {
+            $applicationUrl = $urlMatch[1];
+        }
+    }
+
     // Descripción: todo el texto completo
     $description = $text;
+
+    // Crear descripción limpia sin el URL (ya lo tenemos en application_url)
+    $cleanDescription = $description;
+    if ($applicationUrl) {
+        // Remover el URL de la descripción para que no se duplique
+        $cleanDescription = str_replace($applicationUrl, '', $cleanDescription);
+        $cleanDescription = trim(preg_replace('/\s+/', ' ', $cleanDescription));
+    }
 
     // Categoría basada en palabras clave del título
     $category = categorizeJob($title);
@@ -283,10 +304,11 @@ function parseJobMessage($message) {
         'title' => $title,
         'company' => $company,
         'location' => $location,
-        'description' => $description,
+        'description' => $cleanDescription,
         'category' => $category,
         'job_type' => $jobType,
-        'source_url' => $message['link'] ?? "https://t.me/{$message['channel']}",
+        'source_url' => "https://t.me/{$message['channel']}",
+        'application_url' => $applicationUrl,
         'external_id' => "TG_{$message['id']}",
     ];
 }
@@ -381,8 +403,8 @@ function importJobs($jobs) {
                 INSERT INTO job_listings (
                     employer_id, title, description, category, location,
                     job_type, listing_type, is_active,
-                    import_source, source_url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    import_source, source_url, application_url
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $stmt->execute([
@@ -395,7 +417,8 @@ function importJobs($jobs) {
                 'job',
                 1,
                 'Telegram_' . $job['external_id'],
-                $job['source_url']
+                $job['source_url'],
+                $job['application_url']
             ]);
 
             $inserted++;
