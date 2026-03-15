@@ -230,6 +230,13 @@ if ($location) {
     $params[] = '%' . $location . '%';
 }
 
+// Filtro por empresa
+$company = trim($_GET['company'] ?? '');
+if ($company) {
+    $filters[] = "u.company_name = ?";
+    $params[] = $company;
+}
+
 // Agregar filtros al query
 if (!empty($filters)) {
     $baseQuery .= " AND " . implode(" AND ", $filters);
@@ -247,6 +254,19 @@ try {
 
 // Obtener datos únicos para los filtros
 $locations = $pdo->query("SELECT DISTINCT location FROM job_listings WHERE location IS NOT NULL AND location != '' AND is_active = 1 ORDER BY location")->fetchAll(PDO::FETCH_COLUMN);
+
+// Obtener empresas únicas (de usuarios empleadores)
+$companiesQuery = "
+    SELECT DISTINCT u.company_name
+    FROM job_listings jl
+    LEFT JOIN users u ON u.id = jl.employer_id
+    WHERE jl.listing_type = 'job'
+    AND jl.is_active = 1
+    AND u.company_name IS NOT NULL
+    AND u.company_name != ''
+    ORDER BY u.company_name
+";
+$companies = $pdo->query($companiesQuery)->fetchAll(PDO::FETCH_COLUMN);
 
 // Obtener TODAS las categorías de empleos (incluso si no tienen empleos activos)
 // Esto muestra el catálogo completo para que el usuario pueda explorar
@@ -1134,6 +1154,19 @@ if (empty($categories)) {
             <?php foreach ($locations as $loc): ?>
               <option value="<?php echo htmlspecialchars($loc); ?>" <?php echo $location === $loc ? 'selected' : ''; ?>>
                 <?php echo htmlspecialchars($loc); ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <!-- Empresa -->
+        <div class="filter-item">
+          <label><i class="fas fa-building"></i> Empresa</label>
+          <select name="company">
+            <option value="">Todas</option>
+            <?php foreach ($companies as $comp): ?>
+              <option value="<?php echo htmlspecialchars($comp); ?>" <?php echo $company === $comp ? 'selected' : ''; ?>>
+                <?php echo htmlspecialchars($comp); ?>
               </option>
             <?php endforeach; ?>
           </select>
