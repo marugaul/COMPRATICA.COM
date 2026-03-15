@@ -97,27 +97,82 @@ if (PHP_VERSION_ID < 70300) {
     ]);
 }
 
-// Obtener empleos activos
+// Obtener empleos activos con filtros
 $pdo = db();
 $empleos = [];
+$filters = [];
+$params = [];
+
+// Construir query con filtros
+$baseQuery = "
+    SELECT
+        jl.*,
+        u.company_name,
+        u.company_logo
+    FROM job_listings jl
+    LEFT JOIN users u ON u.id = jl.employer_id
+    WHERE jl.listing_type = 'job'
+      AND jl.is_active = 1
+      AND (u.status = 'active' OR jl.import_source IS NOT NULL)
+";
+
+// Filtro de búsqueda por texto
+$search = trim($_GET['q'] ?? '');
+if ($search) {
+    $filters[] = "(jl.title LIKE ? OR jl.description LIKE ? OR jl.location LIKE ?)";
+    $searchParam = '%' . $search . '%';
+    $params[] = $searchParam;
+    $params[] = $searchParam;
+    $params[] = $searchParam;
+}
+
+// Filtro por tipo de empleo
+$jobType = $_GET['type'] ?? '';
+if ($jobType && in_array($jobType, ['full-time', 'part-time', 'freelance', 'contract', 'internship'])) {
+    $filters[] = "jl.job_type = ?";
+    $params[] = $jobType;
+}
+
+// Filtro por modalidad (remoto/presencial)
+$remote = $_GET['remote'] ?? '';
+if ($remote === 'yes') {
+    $filters[] = "jl.remote_allowed = 1";
+} elseif ($remote === 'no') {
+    $filters[] = "jl.remote_allowed = 0";
+}
+
+// Filtro por categoría
+$category = $_GET['category'] ?? '';
+if ($category) {
+    $filters[] = "jl.category = ?";
+    $params[] = $category;
+}
+
+// Filtro por ubicación/país
+$location = trim($_GET['location'] ?? '');
+if ($location) {
+    $filters[] = "jl.location LIKE ?";
+    $params[] = '%' . $location . '%';
+}
+
+// Agregar filtros al query
+if (!empty($filters)) {
+    $baseQuery .= " AND " . implode(" AND ", $filters);
+}
+
+$baseQuery .= " ORDER BY jl.is_featured DESC, jl.created_at DESC";
 
 try {
-    $stmt = $pdo->query("
-        SELECT
-            jl.*,
-            u.company_name,
-            u.company_logo
-        FROM job_listings jl
-        LEFT JOIN users u ON u.id = jl.employer_id
-        WHERE jl.listing_type = 'job'
-          AND jl.is_active = 1
-          AND (u.status = 'active' OR jl.import_source IS NOT NULL)
-        ORDER BY jl.is_featured DESC, jl.created_at DESC
-    ");
+    $stmt = $pdo->prepare($baseQuery);
+    $stmt->execute($params);
     $empleos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     error_log("Error loading jobs: " . $e->getMessage());
 }
+
+// Obtener datos únicos para los filtros
+$locations = $pdo->query("SELECT DISTINCT location FROM job_listings WHERE location IS NOT NULL AND location != '' AND is_active = 1 ORDER BY location")->fetchAll(PDO::FETCH_COLUMN);
+$categories = $pdo->query("SELECT DISTINCT category FROM job_listings WHERE category IS NOT NULL AND category != '' AND is_active = 1 ORDER BY category")->fetchAll(PDO::FETCH_COLUMN);
 ?>
 <!doctype html>
 <html lang="es">
@@ -511,6 +566,136 @@ try {
       color: var(--gray-300);
     }
 
+    /* Filtros */
+    .filters-section {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      align-items: end;
+    }
+
+    .filter-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .filter-item label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--gray-700);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .filter-item label i {
+      color: var(--primary);
+    }
+
+    .filter-item input,
+    .filter-item select {
+      padding: 0.75rem 1rem;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      transition: var(--transition);
+      background: var(--white);
+      color: var(--gray-900);
+    }
+
+    .filter-item input:focus,
+    .filter-item select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-filter {
+      flex: 1;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      border: none;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: var(--white);
+    }
+
+    .btn-filter:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-clear {
+      background: var(--gray-200);
+      color: var(--gray-700);
+      text-decoration: none;
+    }
+
+    .btn-clear:hover {
+      background: var(--gray-300);
+    }
+
+    /* Botón de traducción */
+    .btn-translate {
+      padding: 0.5rem 1rem;
+      background: var(--white);
+      color: var(--primary);
+      border: 2px solid var(--primary);
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .btn-translate:hover {
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    .btn-translate.translating {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .btn-translate i.fa-spin {
+      animation: fa-spin 1s linear infinite;
+    }
+
+    @keyframes fa-spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Badge de idioma */
+    .badge.language {
+      background: var(--secondary);
+      color: var(--white);
+    }
+
     @media (max-width: 768px) {
       .header {
         padding: 1rem 1.25rem;
@@ -522,6 +707,18 @@ try {
 
       .hero-section {
         padding: 2.5rem 1.5rem;
+      }
+
+      .filters-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-actions {
+        flex-direction: column;
+      }
+
+      .btn-filter {
+        width: 100%;
       }
 
       .job-card {
@@ -595,10 +792,88 @@ try {
     </div>
   </section>
 
+  <!-- Filtros -->
+  <div class="filters-section">
+    <form method="GET" action="" id="filters-form">
+      <div class="filters-grid">
+        <!-- Búsqueda -->
+        <div class="filter-item">
+          <label><i class="fas fa-search"></i> Buscar</label>
+          <input type="text" name="q" placeholder="Cargo, empresa, palabra clave..." value="<?php echo htmlspecialchars($search); ?>">
+        </div>
+
+        <!-- Tipo de empleo -->
+        <div class="filter-item">
+          <label><i class="fas fa-briefcase"></i> Tipo</label>
+          <select name="type">
+            <option value="">Todos</option>
+            <option value="full-time" <?php echo $jobType === 'full-time' ? 'selected' : ''; ?>>Tiempo Completo</option>
+            <option value="part-time" <?php echo $jobType === 'part-time' ? 'selected' : ''; ?>>Medio Tiempo</option>
+            <option value="freelance" <?php echo $jobType === 'freelance' ? 'selected' : ''; ?>>Freelance</option>
+            <option value="contract" <?php echo $jobType === 'contract' ? 'selected' : ''; ?>>Contrato</option>
+            <option value="internship" <?php echo $jobType === 'internship' ? 'selected' : ''; ?>>Pasantía</option>
+          </select>
+        </div>
+
+        <!-- Modalidad -->
+        <div class="filter-item">
+          <label><i class="fas fa-laptop-house"></i> Modalidad</label>
+          <select name="remote">
+            <option value="">Todas</option>
+            <option value="yes" <?php echo $remote === 'yes' ? 'selected' : ''; ?>>Remoto</option>
+            <option value="no" <?php echo $remote === 'no' ? 'selected' : ''; ?>>Presencial</option>
+          </select>
+        </div>
+
+        <!-- Ubicación -->
+        <div class="filter-item">
+          <label><i class="fas fa-map-marker-alt"></i> Ubicación</label>
+          <select name="location">
+            <option value="">Todas</option>
+            <?php foreach ($locations as $loc): ?>
+              <option value="<?php echo htmlspecialchars($loc); ?>" <?php echo $location === $loc ? 'selected' : ''; ?>>
+                <?php echo htmlspecialchars($loc); ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <!-- Categoría -->
+        <div class="filter-item">
+          <label><i class="fas fa-tags"></i> Categoría</label>
+          <select name="category">
+            <option value="">Todas</option>
+            <?php foreach ($categories as $cat): ?>
+              <option value="<?php echo htmlspecialchars($cat); ?>" <?php echo $category === $cat ? 'selected' : ''; ?>>
+                <?php echo htmlspecialchars(str_replace('EMP:', '', $cat)); ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <!-- Botones -->
+        <div class="filter-item filter-actions">
+          <button type="submit" class="btn-filter">
+            <i class="fas fa-filter"></i> Filtrar
+          </button>
+          <a href="empleos.php" class="btn-filter btn-clear">
+            <i class="fas fa-times"></i> Limpiar
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+
   <div class="section-header">
-    <h2 class="section-title">Ofertas de Empleo</h2>
+    <h2 class="section-title">
+      <?php echo count($empleos); ?> Empleos Encontrados
+    </h2>
     <p class="section-subtitle">
-      Encuentra el trabajo perfecto para ti
+      <?php if ($search || $jobType || $remote || $location || $category): ?>
+        Mostrando resultados filtrados
+      <?php else: ?>
+        Encuentra el trabajo perfecto para ti
+      <?php endif; ?>
     </p>
   </div>
 
@@ -621,11 +896,11 @@ try {
           <?php endif; ?>
 
           <div class="job-content">
-            <h3 class="job-title"><?php echo htmlspecialchars($job['title']); ?></h3>
+            <h3 class="job-title"><?php echo htmlspecialchars(html_entity_decode($job['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?></h3>
 
             <div class="job-company">
               <i class="fas fa-building"></i>
-              <?php echo htmlspecialchars($job['company_name'] ?? 'Empresa'); ?>
+              <?php echo htmlspecialchars(html_entity_decode($job['company_name'] ?? 'Empresa', ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?>
             </div>
 
             <div class="job-meta">
@@ -682,12 +957,12 @@ try {
 
             <?php if ($job['description']): ?>
               <div class="job-description">
-                <?php echo nl2br(htmlspecialchars($job['description'])); ?>
+                <?php echo nl2br(htmlspecialchars(html_entity_decode($job['description'], ENT_QUOTES | ENT_HTML5, 'UTF-8'))); ?>
               </div>
             <?php endif; ?>
 
             <div class="job-footer">
-              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
                 <?php if ($job['is_featured']): ?>
                   <span class="badge featured">
                     <i class="fas fa-star"></i>
@@ -697,15 +972,31 @@ try {
 
                 <?php if ($job['category']): ?>
                   <span class="badge job-type">
-                    <?php echo htmlspecialchars($job['category']); ?>
+                    <?php echo htmlspecialchars(str_replace('EMP:', '', $job['category'])); ?>
+                  </span>
+                <?php endif; ?>
+
+                <?php if ($job['import_source']): ?>
+                  <span class="badge language" title="Empleo internacional - Haz clic en Traducir">
+                    <i class="fas fa-globe"></i>
+                    <?php echo $job['remote_allowed'] ? 'Remoto Internacional' : 'Internacional'; ?>
                   </span>
                 <?php endif; ?>
               </div>
 
-              <button class="btn-apply">
-                Ver Detalles
-                <i class="fas fa-arrow-right"></i>
-              </button>
+              <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <?php if ($job['import_source']): ?>
+                  <button class="btn-translate" onclick="event.stopPropagation(); translateJob(<?php echo $job['id']; ?>, this);">
+                    <i class="fas fa-language"></i>
+                    Traducir
+                  </button>
+                <?php endif; ?>
+
+                <button class="btn-apply" onclick="event.stopPropagation(); window.location.href='publicacion-detalle.php?id=<?php echo $job['id']; ?>';">
+                  Ver Detalles
+                  <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -713,6 +1004,105 @@ try {
     </div>
   <?php endif; ?>
 </div>
+
+<script>
+// Sistema de traducción automática
+const translations = new Map();
+
+async function translateJob(jobId, button) {
+  const card = button.closest('.job-card');
+  const titleEl = card.querySelector('.job-title');
+  const descEl = card.querySelector('.job-description');
+  const companyEl = card.querySelector('.job-company');
+
+  // Si ya está traducido, volver al original
+  if (translations.has(jobId)) {
+    const original = translations.get(jobId);
+    titleEl.textContent = original.title;
+    if (descEl) descEl.textContent = original.description;
+    button.innerHTML = '<i class="fas fa-language"></i> Traducir';
+    translations.delete(jobId);
+    return;
+  }
+
+  // Guardar textos originales
+  const original = {
+    title: titleEl.textContent,
+    description: descEl ? descEl.textContent : '',
+    company: companyEl ? companyEl.textContent.trim() : ''
+  };
+
+  // Mostrar estado de carga
+  button.classList.add('translating');
+  button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Traduciendo...';
+
+  try {
+    // Traducir título
+    const titleRes = await fetch('/api/translate.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `text=${encodeURIComponent(original.title)}&from=en&to=es`
+    });
+    const titleData = await titleRes.json();
+
+    // Traducir descripción si existe
+    let descData = null;
+    if (original.description) {
+      const descRes = await fetch('/api/translate.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `text=${encodeURIComponent(original.description)}&from=en&to=es`
+      });
+      descData = await descRes.json();
+    }
+
+    // Aplicar traducciones
+    if (titleData.translated) {
+      titleEl.textContent = titleData.translated;
+    }
+    if (descData && descData.translated && descEl) {
+      descEl.textContent = descData.translated;
+    }
+
+    // Guardar para poder revertir
+    translations.set(jobId, original);
+
+    // Cambiar botón
+    button.innerHTML = '<i class="fas fa-undo"></i> Ver Original';
+    button.classList.remove('translating');
+
+  } catch (error) {
+    console.error('Error traduciendo:', error);
+    alert('Error al traducir. Por favor intenta de nuevo.');
+    button.classList.remove('translating');
+    button.innerHTML = '<i class="fas fa-language"></i> Traducir';
+  }
+}
+
+// Auto-submit de filtros al cambiar
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('filters-form');
+  if (!form) return;
+
+  const selects = form.querySelectorAll('select');
+  selects.forEach(select => {
+    select.addEventListener('change', () => {
+      form.submit();
+    });
+  });
+
+  // Enter en búsqueda
+  const searchInput = form.querySelector('input[name="q"]');
+  if (searchInput) {
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        form.submit();
+      }
+    });
+  }
+});
+</script>
 
 </body>
 </html>
