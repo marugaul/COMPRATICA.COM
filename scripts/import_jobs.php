@@ -226,7 +226,6 @@ function insert_job(PDO $pdo, int $botId, array $job): string {
                     is_active, is_featured, payment_status,
                     start_date, end_date,
                     import_source, source_url,
-                    company_name,
                     created_at, updated_at
                 ) VALUES (
                     ?, 'job', ?, ?, ?,
@@ -235,7 +234,6 @@ function insert_job(PDO $pdo, int $botId, array $job): string {
                     1, 0, 'free',
                     datetime('now'), ?,
                     ?, ?,
-                    ?,
                     ?, ?
                 )
             ")->execute([
@@ -253,7 +251,6 @@ function insert_job(PDO $pdo, int $botId, array $job): string {
                 $end_date,
                 $job['source'],
                 $job['source_url'],
-                truncate($job['company'] ?? '', 200),
                 $now,
                 $now,
             ]);
