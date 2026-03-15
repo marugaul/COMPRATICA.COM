@@ -273,10 +273,46 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><?php echo htmlspecialchars($publicacion['title']); ?> | CompraTica</title>
+  <title><?php echo htmlspecialchars($publicacion['title']); ?> en <?php echo htmlspecialchars($publicacion['company_name'] ?? 'Costa Rica'); ?> | CompraTica</title>
 
-  <meta name="description" content="<?php echo htmlspecialchars(substr($publicacion['description'], 0, 160)); ?>">
-  <meta name="robots" content="index, follow">
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="<?php echo htmlspecialchars(substr(strip_tags($publicacion['description']), 0, 160)); ?>... Aplica ahora en CompraTica 🇨🇷">
+  <meta name="keywords" content="<?php echo htmlspecialchars($publicacion['title']); ?>, empleo <?php echo htmlspecialchars($publicacion['category']); ?>, trabajo <?php echo htmlspecialchars($publicacion['location']); ?>, <?php echo htmlspecialchars($publicacion['company_name'] ?? ''); ?>">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="author" content="<?php echo htmlspecialchars($publicacion['company_name'] ?? 'CompraTica'); ?>">
+  <link rel="canonical" href="https://compratica.com/publicacion-detalle.php?id=<?php echo $id; ?>">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://compratica.com/publicacion-detalle.php?id=<?php echo $id; ?>">
+  <meta property="og:title" content="<?php echo htmlspecialchars($publicacion['title']); ?> - <?php echo htmlspecialchars($publicacion['company_name'] ?? 'CompraTica'); ?>">
+  <meta property="og:description" content="<?php echo htmlspecialchars(substr(strip_tags($publicacion['description']), 0, 200)); ?>">
+  <?php if ($publicacion['company_logo']): ?>
+  <meta property="og:image" content="<?php echo htmlspecialchars($publicacion['company_logo']); ?>">
+  <?php else: ?>
+  <meta property="og:image" content="https://compratica.com/assets/img/og-empleos.jpg">
+  <?php endif; ?>
+  <meta property="og:locale" content="es_CR">
+  <meta property="og:site_name" content="CompraTica">
+  <meta property="article:published_time" content="<?php echo date('c', strtotime($publicacion['created_at'])); ?>">
+  <meta property="article:modified_time" content="<?php echo date('c', strtotime($publicacion['updated_at'] ?? $publicacion['created_at'])); ?>">
+  <meta property="article:section" content="<?php echo htmlspecialchars($publicacion['category']); ?>">
+  <meta property="article:tag" content="<?php echo $isJob ? 'Empleo' : 'Servicio'; ?>">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://compratica.com/publicacion-detalle.php?id=<?php echo $id; ?>">
+  <meta name="twitter:title" content="<?php echo htmlspecialchars($publicacion['title']); ?>">
+  <meta name="twitter:description" content="<?php echo htmlspecialchars(substr(strip_tags($publicacion['description']), 0, 200)); ?>">
+  <?php if ($publicacion['company_logo']): ?>
+  <meta name="twitter:image" content="<?php echo htmlspecialchars($publicacion['company_logo']); ?>">
+  <?php else: ?>
+  <meta name="twitter:image" content="https://compratica.com/assets/img/og-empleos.jpg">
+  <?php endif; ?>
+
+  <!-- Geo Tags -->
+  <meta name="geo.region" content="CR">
+  <meta name="geo.placename" content="<?php echo htmlspecialchars($publicacion['location'] ?? 'Costa Rica'); ?>">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
@@ -794,6 +830,90 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
       }
     }
   </style>
+
+  <!-- Schema.org JSON-LD para JobPosting (Google for Jobs) -->
+  <?php if ($isJob): ?>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org/",
+    "@type": "JobPosting",
+    "title": "<?php echo addslashes(htmlspecialchars_decode($publicacion['title'])); ?>",
+    "description": "<?php echo addslashes(strip_tags(htmlspecialchars_decode($publicacion['description']))); ?>",
+    "identifier": {
+      "@type": "PropertyValue",
+      "name": "<?php echo htmlspecialchars($publicacion['company_name'] ?? 'CompraTica'); ?>",
+      "value": "<?php echo $id; ?>"
+    },
+    "datePosted": "<?php echo date('c', strtotime($publicacion['created_at'])); ?>",
+    <?php if ($publicacion['end_date']): ?>
+    "validThrough": "<?php echo date('c', strtotime($publicacion['end_date'])); ?>",
+    <?php endif; ?>
+    "employmentType": "<?php
+      $typeMap = [
+        'full-time' => 'FULL_TIME',
+        'part-time' => 'PART_TIME',
+        'contract' => 'CONTRACTOR',
+        'freelance' => 'CONTRACTOR',
+        'internship' => 'INTERN'
+      ];
+      echo $typeMap[$publicacion['job_type']] ?? 'FULL_TIME';
+    ?>",
+    "hiringOrganization": {
+      "@type": "Organization",
+      "name": "<?php echo addslashes(htmlspecialchars_decode($publicacion['company_name'] ?? 'CompraTica')); ?>",
+      <?php if ($publicacion['company_logo']): ?>
+      "logo": "<?php echo htmlspecialchars($publicacion['company_logo']); ?>",
+      <?php endif; ?>
+      <?php if ($publicacion['provider_website']): ?>
+      "sameAs": "<?php echo htmlspecialchars($publicacion['provider_website']); ?>",
+      <?php endif; ?>
+      "url": "https://compratica.com"
+    },
+    "jobLocation": {
+      "@type": "Place",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "<?php echo addslashes(htmlspecialchars_decode($publicacion['location'] ?? 'Costa Rica')); ?>",
+        "addressLocality": "<?php echo addslashes(htmlspecialchars_decode($publicacion['location'] ?? 'San José')); ?>",
+        "addressRegion": "<?php echo htmlspecialchars($publicacion['province'] ?? 'San José'); ?>",
+        "addressCountry": "CR"
+      }
+    },
+    <?php if ($publicacion['salary_min'] && $publicacion['salary_max']): ?>
+    "baseSalary": {
+      "@type": "MonetaryAmount",
+      "currency": "<?php echo $publicacion['salary_currency'] === 'USD' ? 'USD' : 'CRC'; ?>",
+      "value": {
+        "@type": "QuantitativeValue",
+        "minValue": <?php echo $publicacion['salary_min']; ?>,
+        "maxValue": <?php echo $publicacion['salary_max']; ?>,
+        "unitText": "<?php
+          $periodMap = [
+            'hour' => 'HOUR',
+            'day' => 'DAY',
+            'week' => 'WEEK',
+            'month' => 'MONTH',
+            'year' => 'YEAR'
+          ];
+          echo $periodMap[$publicacion['salary_period']] ?? 'MONTH';
+        ?>"
+      }
+    },
+    <?php endif; ?>
+    <?php if ($publicacion['remote_allowed']): ?>
+    "jobLocationType": "TELECOMMUTE",
+    <?php endif; ?>
+    <?php if ($publicacion['application_url']): ?>
+    "directApply": true,
+    "applicationContact": {
+      "@type": "ContactPoint",
+      "url": "<?php echo htmlspecialchars($publicacion['application_url']); ?>"
+    },
+    <?php endif; ?>
+    "url": "https://compratica.com/publicacion-detalle.php?id=<?php echo $id; ?>"
+  }
+  </script>
+  <?php endif; ?>
 </head>
 <body>
 
