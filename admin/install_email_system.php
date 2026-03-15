@@ -4,7 +4,7 @@
  * Ejecutar UNA SOLA VEZ desde el navegador
  */
 
-session_start();
+require_once __DIR__ . '/../includes/config.php';  // Cargar config primero para iniciar sesión
 require_once __DIR__ . '/../includes/auth.php';
 
 // Solo admin puede ejecutar

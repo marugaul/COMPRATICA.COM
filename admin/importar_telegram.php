@@ -2,6 +2,7 @@
 /**
  * Panel simple para importar empleos de Telegram
  */
+require_once __DIR__ . '/../includes/config.php';  // Cargar config primero para iniciar sesión
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
 
