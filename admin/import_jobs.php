@@ -569,6 +569,8 @@ async function startImport() {
     const btn     = document.getElementById('import-btn');
     const icon    = document.getElementById('import-icon');
 
+    console.log('[startImport] Iniciando importación', {source});
+
     panel.style.display = 'block';
     logEl.textContent   = '';
     statusEl.innerHTML  = '<span style="color:#f59e0b"><i class="fas fa-circle-notch fa-spin"></i> Importando…</span>';
@@ -578,12 +580,31 @@ async function startImport() {
 
     const fd = new FormData();
     fd.append('source', source);
+    console.log('[startImport] FormData creado', {source});
 
     let hasError = false;
     let inserted = 0, skipped = 0, errors = 0;
 
     try {
-        const response = await fetch('/admin/import_runner.php', {method: 'POST', body: fd});
+        console.log('[startImport] Enviando fetch a /admin/import_runner.php');
+        const response = await fetch('/admin/import_runner.php', {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin'  // Incluir cookies de sesión
+        });
+
+        console.log('[startImport] Respuesta recibida', {
+            status: response.status,
+            ok: response.ok,
+            headers: Object.fromEntries(response.headers.entries())
+        });
+
+        // Verificar si la respuesta es válida
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[startImport] Error HTTP', {status: response.status, body: errorText});
+            throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+        }
 
         if (!response.body) {
             // Fallback: no streaming (servidor sin soporte)
@@ -624,10 +645,12 @@ async function startImport() {
         setTimeout(refreshLog, 3000);
 
     } catch(e) {
-        logEl.textContent += '\n[ERROR-JS] ' + e.message;
-        statusEl.innerHTML = '<span style="color:#ef4444"><i class="fas fa-times-circle"></i> Error de conexión</span>';
+        console.error('[startImport] Error capturado', e);
+        logEl.textContent += '\n[ERROR-JS] ' + e.message + '\n' + (e.stack || '');
+        statusEl.innerHTML = '<span style="color:#ef4444"><i class="fas fa-times-circle"></i> Error: ' + e.message + '</span>';
     }
 
+    console.log('[startImport] Finalizando');
     btn.disabled = false;
     icon.className = 'fas fa-download';
 }
