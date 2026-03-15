@@ -203,12 +203,17 @@ if ($jobType && in_array($jobType, ['full-time', 'part-time', 'freelance', 'cont
     $params[] = $jobType;
 }
 
-// Filtro por modalidad (remoto/presencial)
+// Filtro por modalidad (remoto/presencial/híbrida)
 $remote = $_GET['remote'] ?? '';
 if ($remote === 'yes') {
-    $filters[] = "jl.remote_allowed = 1";
+    // Remoto: puede ser remote_allowed=1 O job_type='remote'
+    $filters[] = "(jl.remote_allowed = 1 OR jl.job_type = 'remote')";
 } elseif ($remote === 'no') {
-    $filters[] = "jl.remote_allowed = 0";
+    // Presencial: puede ser remote_allowed=0 O job_type='onsite'
+    $filters[] = "(jl.remote_allowed = 0 OR jl.job_type = 'onsite')";
+} elseif ($remote === 'hybrid') {
+    // Híbrida: solo job_type='hybrid'
+    $filters[] = "jl.job_type = 'hybrid'";
 }
 
 // Filtro por categoría
@@ -1117,6 +1122,7 @@ if (empty($categories)) {
             <option value="">Todas</option>
             <option value="yes" <?php echo $remote === 'yes' ? 'selected' : ''; ?>>Remoto</option>
             <option value="no" <?php echo $remote === 'no' ? 'selected' : ''; ?>>Presencial</option>
+            <option value="hybrid" <?php echo $remote === 'hybrid' ? 'selected' : ''; ?>>Híbrida</option>
           </select>
         </div>
 
@@ -1206,6 +1212,30 @@ if (empty($categories)) {
                 </div>
               <?php endif; ?>
 
+              <?php if ($job['start_date']): ?>
+                <div class="job-meta-item">
+                  <i class="fas fa-calendar"></i>
+                  <?php
+                  $publishDate = new DateTime($job['start_date']);
+                  $now = new DateTime();
+                  $diff = $now->diff($publishDate);
+
+                  if ($diff->days == 0) {
+                    echo 'Hoy';
+                  } elseif ($diff->days == 1) {
+                    echo 'Hace 1 día';
+                  } elseif ($diff->days < 7) {
+                    echo 'Hace ' . $diff->days . ' días';
+                  } elseif ($diff->days < 30) {
+                    $weeks = floor($diff->days / 7);
+                    echo 'Hace ' . $weeks . ($weeks == 1 ? ' semana' : ' semanas');
+                  } else {
+                    echo $publishDate->format('d/m/Y');
+                  }
+                  ?>
+                </div>
+              <?php endif; ?>
+
               <?php if ($job['job_type']): ?>
                 <div class="job-meta-item">
                   <i class="fas fa-clock"></i>
@@ -1242,10 +1272,30 @@ if (empty($categories)) {
                 </div>
               <?php endif; ?>
 
-              <?php if ($job['remote_allowed']): ?>
+              <?php
+              // Mostrar modalidad de trabajo
+              $workModality = null;
+              $workModalityIcon = 'fa-building';
+
+              if ($job['job_type'] === 'remote') {
+                $workModality = 'Remoto';
+                $workModalityIcon = 'fa-home';
+              } elseif ($job['job_type'] === 'hybrid') {
+                $workModality = 'Híbrida';
+                $workModalityIcon = 'fa-laptop-house';
+              } elseif ($job['job_type'] === 'onsite') {
+                $workModality = 'Presencial';
+                $workModalityIcon = 'fa-building';
+              } elseif ($job['remote_allowed']) {
+                $workModality = 'Remoto';
+                $workModalityIcon = 'fa-home';
+              }
+              ?>
+
+              <?php if ($workModality): ?>
                 <div class="job-meta-item">
-                  <i class="fas fa-home"></i>
-                  Remoto
+                  <i class="fas <?php echo $workModalityIcon; ?>"></i>
+                  <?php echo $workModality; ?>
                 </div>
               <?php endif; ?>
             </div>
