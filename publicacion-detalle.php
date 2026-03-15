@@ -223,8 +223,8 @@ try {
     $stmt = $pdo->prepare("
         SELECT
             jl.*,
-            u.company_name,
-            u.company_logo,
+            COALESCE(jl.company_name, u.company_name, u.name) as company_name,
+            COALESCE(jl.company_logo, u.company_logo) as company_logo,
             u.name as provider_name,
             u.email as provider_email,
             u.phone as provider_phone,

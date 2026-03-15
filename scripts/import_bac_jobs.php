@@ -307,27 +307,26 @@ function importJobs($jobs) {
                 continue;
             }
 
-            // Preparar descripción con info de la empresa
-            $fullDescription = "**Empresa:** " . $job['company'] . "\n\n" . $job['description'];
-
-            // Insertar nuevo empleo
+            // Insertar nuevo empleo (guardando company_name en su propio campo)
             $stmt = $pdo->prepare("
                 INSERT INTO job_listings (
                     employer_id, title, description, category, location,
-                    listing_type, is_active, import_source, source_url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    listing_type, is_active, import_source, source_url,
+                    company_name
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $stmt->execute([
                 $botId,
                 $job['title'],
-                $fullDescription,
+                $job['description'],
                 'EMP:Finance', // BAC es banco, categoría Finance por defecto
                 $job['location'],
                 'job',
                 1,
                 'BAC_Talento360',
-                $job['source_url']
+                $job['source_url'],
+                $job['company'] ?? 'BAC Credomatic'
             ]);
 
             $inserted++;
