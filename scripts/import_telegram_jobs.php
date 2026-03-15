@@ -153,9 +153,42 @@ function parseChannelHTML($html, $channelUsername) {
             $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $text = trim($text);
 
-            // Solo procesar si tiene el emoji de empleo o palabras clave
-            if (strpos($text, '🧑‍💼') === false &&
-                !preg_match('/\b(Empresa:|engineer|developer|designer|analyst|manager|ingeniero|desarrollador)\b/i', $text)) {
+            // Filtro más flexible para detectar empleos
+            $isJob = false;
+
+            // Palabras clave en español
+            $keywordsEs = ['empleo', 'trabajo', 'vacante', 'plaza', 'puesto', 'empresa:', 'ubicación:',
+                          'ingeniero', 'desarrollador', 'analista', 'contador', 'gerente', 'asistente',
+                          'coordinador', 'director', 'técnico', 'supervisor'];
+
+            // Palabras clave en inglés
+            $keywordsEn = ['job', 'position', 'hiring', 'vacancy', 'engineer', 'developer', 'designer',
+                          'analyst', 'manager', 'director', 'coordinator', 'specialist', 'consultant',
+                          'architect', 'administrator', 'technician'];
+
+            // Emojis comunes en empleos
+            $emojis = ['🧑‍💼', '💼', '📢', '🔎', '🔍', '👔', '💻', '🏢'];
+
+            // Verificar palabras clave
+            $textLower = mb_strtolower($text, 'UTF-8');
+            foreach (array_merge($keywordsEs, $keywordsEn) as $keyword) {
+                if (strpos($textLower, $keyword) !== false) {
+                    $isJob = true;
+                    break;
+                }
+            }
+
+            // Verificar emojis
+            if (!$isJob) {
+                foreach ($emojis as $emoji) {
+                    if (strpos($text, $emoji) !== false) {
+                        $isJob = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!$isJob) {
                 continue;
             }
 
