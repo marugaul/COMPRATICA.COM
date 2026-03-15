@@ -1048,8 +1048,8 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
             </a>
           <?php endif; ?>
 
-          <?php if ($publicacion['contact_email'] ?? $publicacion['provider_email']): ?>
-            <a href="mailto:<?php echo htmlspecialchars($publicacion['contact_email'] ?? $publicacion['provider_email']); ?>?subject=Consulta: <?php echo urlencode($publicacion['title']); ?>" class="btn-contact email">
+          <?php if ($publicacion['contact_email']): ?>
+            <a href="mailto:<?php echo htmlspecialchars($publicacion['contact_email']); ?>?subject=Consulta: <?php echo urlencode($publicacion['title']); ?>" class="btn-contact email">
               <i class="fas fa-envelope"></i>
               <?php echo $isJob ? 'Consultar' : 'Email'; ?>
             </a>
