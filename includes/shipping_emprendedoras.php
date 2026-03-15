@@ -49,26 +49,47 @@ function getShippingConfig(PDO $pdo, int $userId): array {
 function saveShippingConfig(PDO $pdo, int $userId, array $data): void {
     initShippingTable($pdo);
     $zonesJson = json_encode(array_values($data['express_zones'] ?? []), JSON_UNESCAPED_UNICODE);
-    $pdo->prepare("
-        INSERT INTO entrepreneur_shipping
-            (user_id, enable_free_shipping, enable_pickup, enable_express,
-             free_shipping_min, pickup_instructions, express_zones, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
-        ON CONFLICT(user_id) DO UPDATE SET
-            enable_free_shipping = excluded.enable_free_shipping,
-            enable_pickup        = excluded.enable_pickup,
-            enable_express       = excluded.enable_express,
-            free_shipping_min    = excluded.free_shipping_min,
-            pickup_instructions  = excluded.pickup_instructions,
-            express_zones        = excluded.express_zones,
-            updated_at           = excluded.updated_at
-    ")->execute([
-        $userId,
-        (int)($data['enable_free_shipping'] ?? 0),
-        (int)($data['enable_pickup']        ?? 0),
-        (int)($data['enable_express']       ?? 0),
-        (int)($data['free_shipping_min']    ?? 0),
-        trim($data['pickup_instructions']   ?? ''),
-        $zonesJson,
-    ]);
+
+    // Verificar si ya existe un registro para este usuario
+    $exists = $pdo->prepare("SELECT id FROM entrepreneur_shipping WHERE user_id = ? LIMIT 1");
+    $exists->execute([$userId]);
+
+    if ($exists->fetch()) {
+        // UPDATE
+        $pdo->prepare("
+            UPDATE entrepreneur_shipping SET
+                enable_free_shipping = ?,
+                enable_pickup        = ?,
+                enable_express       = ?,
+                free_shipping_min    = ?,
+                pickup_instructions  = ?,
+                express_zones        = ?,
+                updated_at           = datetime('now','localtime')
+            WHERE user_id = ?
+        ")->execute([
+            (int)($data['enable_free_shipping'] ?? 0),
+            (int)($data['enable_pickup']        ?? 0),
+            (int)($data['enable_express']       ?? 0),
+            (int)($data['free_shipping_min']    ?? 0),
+            trim($data['pickup_instructions']   ?? ''),
+            $zonesJson,
+            $userId,
+        ]);
+    } else {
+        // INSERT
+        $pdo->prepare("
+            INSERT INTO entrepreneur_shipping
+                (user_id, enable_free_shipping, enable_pickup, enable_express,
+                 free_shipping_min, pickup_instructions, express_zones, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
+        ")->execute([
+            $userId,
+            (int)($data['enable_free_shipping'] ?? 0),
+            (int)($data['enable_pickup']        ?? 0),
+            (int)($data['enable_express']       ?? 0),
+            (int)($data['free_shipping_min']    ?? 0),
+            trim($data['pickup_instructions']   ?? ''),
+            $zonesJson,
+        ]);
+    }
 }
