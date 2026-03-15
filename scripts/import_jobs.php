@@ -479,3 +479,17 @@ foreach ($sources as $src) {
 }
 
 log_msg("=== TOTAL: +{$totalInserted} insertados | {$totalSkipped} duplicados | {$totalErrors} errores ===");
+
+// Auto-categorizar empleos importados
+if ($totalInserted > 0) {
+    log_msg("Categorizando empleos importados...");
+
+    // Ejecutar categorización inline
+    $categorizeScript = __DIR__ . '/categorize_imported_jobs.php';
+    if (file_exists($categorizeScript)) {
+        ob_start();
+        include $categorizeScript;
+        $output = ob_get_clean();
+        log_msg("Categorización completada");
+    }
+}
