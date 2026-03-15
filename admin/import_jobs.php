@@ -3,11 +3,52 @@
  * admin/import_jobs.php
  * Panel de administración para importación automática de empleos.
  */
+
+// ══════════════════════════════════════════════════════════════════════════
+// LOGGING PARA DEBUG - Registra todos los errores
+// ══════════════════════════════════════════════════════════════════════════
+$ADMIN_LOG_FILE = __DIR__ . '/../logs/admin_import_debug.log';
+if (!is_dir(__DIR__ . '/../logs')) @mkdir(__DIR__ . '/../logs', 0777, true);
+
+function admin_debug_log($msg) {
+    global $ADMIN_LOG_FILE;
+    $timestamp = date('Y-m-d H:i:s');
+    $line = "[{$timestamp}] {$msg}\n";
+    @file_put_contents($ADMIN_LOG_FILE, $line, FILE_APPEND | LOCK_EX);
+}
+
+// Capturar todos los errores
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    admin_debug_log("PHP ERROR [$errno]: $errstr en $errfile:$errline");
+    return false;
+});
+
+set_exception_handler(function($e) {
+    admin_debug_log("EXCEPTION: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
+    admin_debug_log("Stack trace: " . $e->getTraceAsString());
+    http_response_code(500);
+    echo "Error 500 - Ver /logs/admin_import_debug.log para detalles";
+    exit;
+});
+
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        admin_debug_log("FATAL ERROR: {$error['message']} en {$error['file']}:{$error['line']}");
+    }
+});
+
+admin_debug_log("========== INICIO PETICIÓN ADMIN ==========");
+admin_debug_log("REQUEST_METHOD: " . ($_SERVER['REQUEST_METHOD'] ?? 'N/A'));
+admin_debug_log("REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
+// ══════════════════════════════════════════════════════════════════════════
+
 require_once __DIR__ . '/../includes/config.php';  // Cargar config primero para iniciar sesión
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/db.php';
 
 require_login();
+admin_debug_log("Login OK - Usuario: " . ($_SESSION['uid'] ?? 'N/A'));
 
 // AJAX: devolver las últimas líneas del log
 if (($_GET['ajax'] ?? '') === 'log') {
@@ -102,6 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'run_bac_import') {
+        admin_debug_log("========== ACCIÓN: run_bac_import ==========");
         $logFile = dirname(__DIR__) . '/logs/import_bac.log';
         $logDir  = dirname($logFile);
         if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
@@ -109,25 +151,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Verificar bot antes de ejecutar
         $botCheck = $pdo->query("SELECT id FROM users WHERE email='bot@compratica.com' LIMIT 1")->fetchColumn();
         if (!$botCheck) {
+            admin_debug_log("ERROR: Usuario bot no existe");
             $msg = ['err', '<i class="fas fa-exclamation-triangle"></i> El usuario bot no existe.'];
         } else {
+            admin_debug_log("Bot verificado OK, iniciando importación BAC");
             set_time_limit(300);
 
             $scriptPath = dirname(__DIR__) . '/scripts/import_bac_jobs.php';
+            admin_debug_log("Script path: $scriptPath");
 
-            // Ejecutar el script BAC
-            $output = [];
-            $returnVar = 0;
-            exec("php {$scriptPath} 2>&1", $output, $returnVar);
+            try {
+                // Ejecutar el script BAC y capturar output
+                $output = [];
+                $returnVar = 0;
+                admin_debug_log("Ejecutando: php $scriptPath 2>&1");
+                exec("php {$scriptPath} 2>&1", $output, $returnVar);
 
-            $msg = ['ok',
-                '<i class="fas fa-check-circle"></i> <strong>Importación BAC completada.</strong> '
-                . 'Ver el log de abajo para el resultado.'
-            ];
+                admin_debug_log("Return code: $returnVar");
+                admin_debug_log("Output lines: " . count($output));
+                foreach ($output as $i => $line) {
+                    admin_debug_log("OUT[$i]: $line");
+                }
+
+                if ($returnVar !== 0) {
+                    admin_debug_log("ERROR: Script BAC falló con código $returnVar");
+                    $msg = ['err',
+                        '<i class="fas fa-exclamation-triangle"></i> <strong>Error en importación BAC.</strong> '
+                        . 'Código: ' . $returnVar . '. Ver /logs/admin_import_debug.log'
+                    ];
+                } else {
+                    admin_debug_log("Script BAC completado exitosamente");
+                    $msg = ['ok',
+                        '<i class="fas fa-check-circle"></i> <strong>Importación BAC completada.</strong> '
+                        . 'Ver el log de abajo para el resultado.'
+                    ];
+                }
+            } catch (Throwable $e) {
+                admin_debug_log("EXCEPTION en run_bac_import: " . $e->getMessage());
+                admin_debug_log("Trace: " . $e->getTraceAsString());
+                $msg = ['err', '<i class="fas fa-times-circle"></i> Error: ' . $e->getMessage()];
+            }
         }
     }
 
     if ($action === 'run_telegram_import') {
+        admin_debug_log("========== ACCIÓN: run_telegram_import ==========");
         $logFile = dirname(__DIR__) . '/logs/import_telegram.log';
         $logDir  = dirname($logFile);
         if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
@@ -135,30 +203,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Verificar configuración de Telegram
         $configFile = dirname(__DIR__) . '/includes/telegram_config.php';
         if (!file_exists($configFile)) {
+            admin_debug_log("ERROR: Archivo de configuración no existe: $configFile");
             $msg = ['err',
                 '<i class="fas fa-exclamation-triangle"></i> <strong>Falta configuración.</strong> '
                 . 'Debes crear el archivo <code>includes/telegram_config.php</code> con tu bot token. '
                 . 'Ver <code>includes/telegram_config.php.example</code> para instrucciones.'
             ];
         } else {
+            admin_debug_log("Config de Telegram encontrado OK");
             // Verificar bot
             $botCheck = $pdo->query("SELECT id FROM users WHERE email='bot@compratica.com' LIMIT 1")->fetchColumn();
             if (!$botCheck) {
+                admin_debug_log("ERROR: Usuario bot no existe");
                 $msg = ['err', '<i class="fas fa-exclamation-triangle"></i> El usuario bot no existe.'];
             } else {
+                admin_debug_log("Bot verificado OK, iniciando importación Telegram");
                 set_time_limit(300);
 
                 $scriptPath = dirname(__DIR__) . '/scripts/import_telegram_jobs.php';
+                admin_debug_log("Script path: $scriptPath");
 
-                // Ejecutar el script de Telegram
-                $output = [];
-                $returnVar = 0;
-                exec("php {$scriptPath} 2>&1", $output, $returnVar);
+                try {
+                    // Ejecutar el script de Telegram y capturar output
+                    $output = [];
+                    $returnVar = 0;
+                    admin_debug_log("Ejecutando: php $scriptPath 2>&1");
+                    exec("php {$scriptPath} 2>&1", $output, $returnVar);
 
-                $msg = ['ok',
-                    '<i class="fas fa-check-circle"></i> <strong>Importación Telegram completada.</strong> '
-                    . 'Ver el log de abajo para el resultado.'
-                ];
+                    admin_debug_log("Return code: $returnVar");
+                    admin_debug_log("Output lines: " . count($output));
+                    foreach ($output as $i => $line) {
+                        admin_debug_log("OUT[$i]: $line");
+                    }
+
+                    if ($returnVar !== 0) {
+                        admin_debug_log("ERROR: Script Telegram falló con código $returnVar");
+                        $msg = ['err',
+                            '<i class="fas fa-exclamation-triangle"></i> <strong>Error en importación Telegram.</strong> '
+                            . 'Código: ' . $returnVar . '. Ver /logs/admin_import_debug.log'
+                        ];
+                    } else {
+                        admin_debug_log("Script Telegram completado exitosamente");
+                        $msg = ['ok',
+                            '<i class="fas fa-check-circle"></i> <strong>Importación Telegram completada.</strong> '
+                            . 'Ver el log de abajo para el resultado.'
+                        ];
+                    }
+                } catch (Throwable $e) {
+                    admin_debug_log("EXCEPTION en run_telegram_import: " . $e->getMessage());
+                    admin_debug_log("Trace: " . $e->getTraceAsString());
+                    $msg = ['err', '<i class="fas fa-times-circle"></i> Error: ' . $e->getMessage()];
+                }
             }
         }
     }
