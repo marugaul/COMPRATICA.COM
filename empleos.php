@@ -101,6 +101,56 @@ function decodeAllEntities($text) {
     return $text;
 }
 
+/**
+ * Extrae un resumen limpio de la descripción para el listado
+ * Elimina URLs, información redundante, y formatea para visualización
+ */
+function getDescriptionSummary($description, $maxLength = 250) {
+    // Decodificar entidades
+    $text = decodeAllEntities($description);
+
+    // Remover URLs
+    $text = preg_replace('/(https?:\/\/[^\s<>"\']+)/i', '', $text);
+
+    // Remover markdown básico (**texto**)
+    $text = preg_replace('/\*\*([^*]+)\*\*/i', '$1', $text);
+
+    // Remover líneas que son solo etiquetas (Empresa:, Ubicación:, etc.)
+    $lines = explode("\n", $text);
+    $cleanLines = [];
+    foreach ($lines as $line) {
+        $line = trim($line);
+        // Saltar líneas vacías o que son solo etiquetas
+        if (empty($line) || preg_match('/^(Empresa:|Ubicación:|Location:|Company:)\s*$/i', $line)) {
+            continue;
+        }
+        // Saltar líneas que empiezan con emoji de trabajo
+        if (preg_match('/^[🧑‍💼💼📢🔎🔍👔💻🏢]\s*\|?\s*$/u', $line)) {
+            continue;
+        }
+        $cleanLines[] = $line;
+    }
+
+    $text = implode(' ', $cleanLines);
+
+    // Limpiar espacios múltiples
+    $text = preg_replace('/\s+/', ' ', $text);
+    $text = trim($text);
+
+    // Truncar si es muy largo
+    if (mb_strlen($text) > $maxLength) {
+        $text = mb_substr($text, 0, $maxLength);
+        // Cortar en la última palabra completa
+        $lastSpace = mb_strrpos($text, ' ');
+        if ($lastSpace !== false) {
+            $text = mb_substr($text, 0, $lastSpace);
+        }
+        $text .= '...';
+    }
+
+    return $text;
+}
+
 // CSRF por cookie
 $token = $_COOKIE['vg_csrf'] ?? bin2hex(random_bytes(32));
 $isHttps = $__isHttps;
@@ -557,7 +607,7 @@ if (empty($categories)) {
       margin-bottom: 1rem;
       line-height: 1.6;
       display: -webkit-box;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 4;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
@@ -1133,7 +1183,7 @@ if (empty($categories)) {
 
             <?php if ($job['description']): ?>
               <div class="job-description">
-                <?php echo nl2br(htmlspecialchars(decodeAllEntities($job['description']))); ?>
+                <?php echo htmlspecialchars(getDescriptionSummary($job['description'], 280)); ?>
               </div>
             <?php endif; ?>
 

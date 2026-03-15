@@ -94,6 +94,16 @@ function decodeAllEntities($text) {
 }
 
 /**
+ * Convierte URLs en texto a enlaces clickeables
+ */
+function makeUrlsClickable($text) {
+    // Convertir URLs a enlaces
+    $pattern = '/(https?:\/\/[^\s<>"\']+)/i';
+    $replacement = '<a href="$1" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 600;">$1</a>';
+    return preg_replace($pattern, $replacement, $text);
+}
+
+/**
  * Formatea una descripción de empleo de manera profesional
  * Detecta secciones, listas, y formatea con HTML limpio
  */
@@ -152,14 +162,18 @@ function formatJobDescription($text) {
                     $formatted .= '<ul class="professional-list">';
                     $isList = true;
                 }
-                $formatted .= '<li><i class="fas fa-check-circle"></i> ' . htmlspecialchars($line) . '.</li>';
+                // Hacer URLs clickeables en las listas
+                $line = makeUrlsClickable(htmlspecialchars($line));
+                $formatted .= '<li><i class="fas fa-check-circle"></i> ' . $line . '.</li>';
             } else {
                 if ($isList) {
                     $formatted .= '</ul>';
                     $isList = false;
                 }
                 if (strlen($line) > 10) {
-                    $formatted .= '<p>' . htmlspecialchars($line) . '.</p>';
+                    // Hacer URLs clickeables en párrafos
+                    $line = makeUrlsClickable(htmlspecialchars($line));
+                    $formatted .= '<p>' . $line . '.</p>';
                 }
             }
         }
