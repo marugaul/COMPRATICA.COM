@@ -28,28 +28,58 @@ echo "<!DOCTYPE html>
 if (isset($_POST['run'])) {
     echo "<div class='log'>";
 
-    // Ejecutar el script
+    // Ejecutar el script con timeout
     $scriptPath = __DIR__ . '/../scripts/import_telegram_jobs.php';
+    $logPath = __DIR__ . '/../logs/import_telegram.log';
 
-    echo "<div class='warning'>Ejecutando: php {$scriptPath}</div>\n\n";
+    echo "<div class='warning'>⏳ Ejecutando importación (máximo 60 segundos)...</div>\n";
+    echo "<div class='warning'>Script: php {$scriptPath}</div>\n\n";
 
-    // Capturar output
-    ob_start();
-    passthru("php " . escapeshellarg($scriptPath) . " 2>&1", $returnCode);
-    $output = ob_get_clean();
+    // Flush para mostrar inmediatamente
+    if (ob_get_level()) ob_flush();
+    flush();
 
-    // Colorear output
-    $output = htmlspecialchars($output);
-    $output = preg_replace('/✓(.+)/', '<span class="success">✓$1</span>', $output);
-    $output = preg_replace('/✗(.+)/', '<span class="error">✗$1</span>', $output);
-    $output = preg_replace('/ERROR:(.+)/', '<span class="error">ERROR:$1</span>', $output);
-    $output = preg_replace('/⚠(.+)/', '<span class="warning">⚠$1</span>', $output);
+    // Ejecutar con timeout de 60 segundos
+    $cmd = "timeout 60 php " . escapeshellarg($scriptPath) . " 2>&1";
 
-    echo $output;
+    // Ejecutar y capturar output línea por línea
+    $handle = popen($cmd, 'r');
+    $output = '';
+
+    if ($handle) {
+        echo "<pre style='background:#0f172a;padding:10px;border-radius:4px;'>";
+        while (!feof($handle)) {
+            $line = fgets($handle);
+            if ($line === false) break;
+
+            $output .= $line;
+
+            // Colorear y mostrar línea
+            $displayLine = htmlspecialchars($line);
+            $displayLine = preg_replace('/✓(.+)/', '<span class="success">✓$1</span>', $displayLine);
+            $displayLine = preg_replace('/✗(.+)/', '<span class="error">✗$1</span>', $displayLine);
+            $displayLine = preg_replace('/ERROR:(.+)/', '<span class="error">ERROR:$1</span>', $displayLine);
+            $displayLine = preg_replace('/⚠(.+)/', '<span class="warning">⚠$1</span>', $displayLine);
+
+            echo $displayLine;
+
+            // Flush para mostrar en tiempo real
+            if (ob_get_level()) ob_flush();
+            flush();
+        }
+        echo "</pre>";
+
+        $returnCode = pclose($handle);
+    } else {
+        echo "<div class='error'>✗ No se pudo ejecutar el script</div>";
+        $returnCode = 1;
+    }
 
     echo "\n\n";
     if ($returnCode === 0) {
-        echo "<div class='success'>✓ Script completado exitosamente (código: {$returnCode})</div>";
+        echo "<div class='success'>✓ Script completado exitosamente</div>";
+    } elseif ($returnCode === 124) {
+        echo "<div class='warning'>⚠ Script excedió el tiempo límite (60s) - revisar logs</div>";
     } else {
         echo "<div class='error'>✗ Script terminó con errores (código: {$returnCode})</div>";
     }
@@ -58,6 +88,23 @@ if (isset($_POST['run'])) {
 
     echo "<br><a href='?' class='btn'>Volver</a>";
     echo " <a href='../empleos.php' class='btn' style='background:#10b981;'>Ver Empleos</a>";
+
+    if (file_exists($logPath)) {
+        echo " <a href='?view_log=1' class='btn' style='background:#f59e0b;'>Ver Log Completo</a>";
+    }
+
+} elseif (isset($_GET['view_log'])) {
+    // Mostrar log completo
+    $logPath = __DIR__ . '/../logs/import_telegram.log';
+    echo "<h2>📄 Log Completo de Importación</h2>";
+    echo "<div class='log'><pre>";
+    if (file_exists($logPath)) {
+        echo htmlspecialchars(file_get_contents($logPath));
+    } else {
+        echo "No hay log disponible";
+    }
+    echo "</pre></div>";
+    echo "<br><a href='?' class='btn'>Volver</a>";
 
 } else {
     echo "<p>Esta página ejecuta el importador de Telegram directamente.</p>";
