@@ -99,6 +99,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $n = $pdo->exec("UPDATE job_listings SET is_active=0 WHERE import_source IS NOT NULL AND end_date < date('now') AND is_active=1");
         $msg = ['ok', "Se marcaron {$n} empleos expirados como inactivos."];
     }
+
+    if ($action === 'run_bac_import') {
+        $logFile = dirname(__DIR__) . '/logs/import_bac.log';
+        $logDir  = dirname($logFile);
+        if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+
+        // Verificar bot antes de ejecutar
+        $botCheck = $pdo->query("SELECT id FROM users WHERE email='bot@compratica.com' LIMIT 1")->fetchColumn();
+        if (!$botCheck) {
+            $msg = ['err', '<i class="fas fa-exclamation-triangle"></i> El usuario bot no existe.'];
+        } else {
+            set_time_limit(300);
+
+            $scriptPath = dirname(__DIR__) . '/scripts/import_bac_jobs.php';
+
+            // Ejecutar el script BAC
+            $output = [];
+            $returnVar = 0;
+            exec("php {$scriptPath} 2>&1", $output, $returnVar);
+
+            $msg = ['ok',
+                '<i class="fas fa-check-circle"></i> <strong>Importación BAC completada.</strong> '
+                . 'Ver el log de abajo para el resultado.'
+            ];
+        }
+    }
 }
 
 // ── Datos para mostrar ───────────────────────────────────────────────────────
@@ -220,6 +246,27 @@ tr:last-child td { border-bottom:none; }
     </p>
 </div>
 
+<!-- IMPORTACIÓN EXPERIMENTAL: BAC CREDOMATIC -->
+<div class="card" style="background:linear-gradient(135deg,#fff5f5 0%,#ffffff 100%);border-left:4px solid #f59e0b;">
+    <h2 style="color:#f59e0b;">
+        <i class="fas fa-flask"></i> Importación Experimental: BAC Credomatic
+    </h2>
+    <p style="margin:0 0 14px;font-size:.88rem;color:#6b7280;line-height:1.6;">
+        <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i>
+        <strong>Script experimental</strong> que intenta importar empleos del portal de Talento360 del BAC.
+        Puede funcionar o no dependiendo de las protecciones del sitio.
+    </p>
+    <form method="POST" style="display:flex;gap:12px;align-items:center;">
+        <input type="hidden" name="action" value="run_bac_import">
+        <button type="submit" class="btn" style="background:#f59e0b;flex:1;">
+            <i class="fas fa-university"></i> Probar importación BAC
+        </button>
+        <a href="?view_log=bac" class="btn btn-gray" style="text-decoration:none;">
+            <i class="fas fa-file-alt"></i> Ver log BAC
+        </a>
+    </form>
+</div>
+
 <!-- PANEL DE PROGRESO EN TIEMPO REAL -->
 <div id="import-progress" class="card" style="display:none;">
     <h2 style="justify-content:space-between;align-items:center;">
@@ -319,15 +366,33 @@ tr:last-child td { border-bottom:none; }
 
 <!-- LOG DE ARCHIVO EN TIEMPO REAL -->
 <div class="card">
+    <?php
+    $viewLog = $_GET['view_log'] ?? 'default';
+    $logTitle = 'Log en tiempo real';
+    $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
+    $logDesc = 'logs/import_jobs.log';
+
+    if ($viewLog === 'bac') {
+        $logTitle = 'Log BAC Credomatic (Experimental)';
+        $logFile = dirname(__DIR__) . '/logs/import_bac.log';
+        $logDesc = 'logs/import_bac.log';
+    }
+    ?>
     <h2 style="justify-content:space-between;">
-        <span><i class="fas fa-terminal" style="color:#1e293b;"></i> Log en tiempo real</span>
-        <button onclick="refreshLog()" class="btn btn-gray" style="font-size:.8rem;padding:5px 12px;">
-            <i class="fas fa-sync-alt" id="refresh-icon"></i> Actualizar
-        </button>
+        <span><i class="fas fa-terminal" style="color:#1e293b;"></i> <?= htmlspecialchars($logTitle) ?></span>
+        <div style="display:flex;gap:8px;">
+            <?php if ($viewLog === 'bac'): ?>
+                <a href="?" class="btn btn-gray" style="font-size:.8rem;padding:5px 12px;text-decoration:none;">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            <?php endif; ?>
+            <button onclick="refreshLog()" class="btn btn-gray" style="font-size:.8rem;padding:5px 12px;">
+                <i class="fas fa-sync-alt" id="refresh-icon"></i> Actualizar
+            </button>
+        </div>
     </h2>
     <div id="log-box" class="cron-box" style="min-height:120px;max-height:340px;overflow-y:auto;font-size:.8rem;line-height:1.5;">
         <?php
-        $logFile = dirname(__DIR__) . '/logs/import_jobs.log';
         if (file_exists($logFile)) {
             $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
             $last  = array_slice($lines, -60);
@@ -338,7 +403,7 @@ tr:last-child td { border-bottom:none; }
         ?>
     </div>
     <p style="margin:8px 0 0;font-size:.78rem;color:#6b7280;">
-        Últimas 60 líneas de <code>logs/import_jobs.log</code>
+        Últimas 60 líneas de <code><?= htmlspecialchars($logDesc) ?></code>
     </p>
 </div>
 
