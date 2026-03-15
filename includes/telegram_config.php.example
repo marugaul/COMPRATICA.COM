@@ -1,0 +1,21 @@
+<?php
+/**
+ * Configuración para importador de Telegram
+ *
+ * INSTRUCCIONES:
+ * 1. Copia este archivo como: telegram_config.php
+ * 2. Ve a Telegram y habla con @BotFather
+ * 3. Envía: /newbot
+ * 4. Sigue las instrucciones para crear tu bot
+ * 5. Copia el TOKEN que te da y pégalo abajo
+ * 6. Guarda el archivo
+ */
+
+// Token del bot de Telegram (obtenlo de @BotFather)
+define('TELEGRAM_BOT_TOKEN', 'TU_TOKEN_AQUI');
+
+// Canales a importar (sin el @)
+define('TELEGRAM_CHANNELS', [
+    'STEMJobsCR',      // Empleos STEM en Costa Rica
+    'STEMJobsLATAM',   // Empleos remotos LATAM
+]);

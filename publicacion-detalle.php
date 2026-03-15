@@ -74,12 +74,32 @@ if ($id <= 0) {
 }
 
 /**
+ * Decodifica TODAS las entidades HTML (nombradas y numéricas)
+ */
+function decodeAllEntities($text) {
+    // Decodificar entidades nombradas y numéricas
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    // Decodificar entidades numéricas que quedaron (&#8211;, &#8217;, etc.)
+    $text = preg_replace_callback('/&#(\d+);/', function($matches) {
+        return mb_chr((int)$matches[1], 'UTF-8');
+    }, $text);
+
+    // Decodificar entidades hexadecimales (&#x2013;, etc.)
+    $text = preg_replace_callback('/&#x([0-9a-f]+);/i', function($matches) {
+        return mb_chr(hexdec($matches[1]), 'UTF-8');
+    }, $text);
+
+    return $text;
+}
+
+/**
  * Formatea una descripción de empleo de manera profesional
  * Detecta secciones, listas, y formatea con HTML limpio
  */
 function formatJobDescription($text) {
     // Decodificar entidades HTML
-    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = decodeAllEntities($text);
 
     // Limpiar espacios excesivos
     $text = preg_replace('/\s+/', ' ', $text);
@@ -592,26 +612,129 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
     }
 
     @media (max-width: 768px) {
+      .header {
+        padding: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .logo .flag {
+        font-size: 1.5rem;
+      }
+
+      .logo .text .main {
+        font-size: 1.25rem;
+      }
+
+      .logo .text .sub {
+        font-size: 0.75rem;
+      }
+
+      .back-button {
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+      }
+
       .container {
         padding: 1rem;
+        max-width: 100%;
+      }
+
+      .detail-card {
+        padding: 1.5rem;
       }
 
       .detail-title {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
+        line-height: 1.3;
       }
 
       .detail-meta {
         flex-direction: column;
         gap: 0.75rem;
+        font-size: 0.875rem;
+      }
+
+      .detail-description {
+        font-size: 0.9375rem;
+        padding: 1rem;
       }
 
       .contact-buttons {
         flex-direction: column;
+        gap: 0.75rem;
       }
 
       .btn-contact {
         width: 100%;
         justify-content: center;
+        padding: 0.875rem;
+      }
+
+      .translate-btn {
+        width: 100%;
+        padding: 0.875rem;
+      }
+
+      .professional-list li {
+        font-size: 0.9375rem;
+        padding: 0.625rem 0;
+      }
+
+      h3 {
+        font-size: 1.125rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header {
+        padding: 0.75rem;
+      }
+
+      .logo .flag {
+        font-size: 1.25rem;
+      }
+
+      .logo .text .main {
+        font-size: 1.125rem;
+      }
+
+      .back-button {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.8125rem;
+      }
+
+      .container {
+        padding: 0.75rem;
+      }
+
+      .detail-card {
+        padding: 1rem;
+      }
+
+      .detail-title {
+        font-size: 1.25rem;
+      }
+
+      .detail-meta {
+        font-size: 0.8125rem;
+      }
+
+      .detail-description {
+        font-size: 0.875rem;
+        padding: 0.875rem;
+      }
+
+      .btn-contact, .translate-btn {
+        padding: 0.75rem;
+        font-size: 0.9375rem;
+      }
+
+      .professional-list li {
+        font-size: 0.875rem;
+      }
+
+      h3 {
+        font-size: 1rem;
       }
     }
   </style>
@@ -644,7 +767,7 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
         </div>
       <?php endif; ?>
 
-      <h1 class="detail-title"><?php echo htmlspecialchars(html_entity_decode($publicacion['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?></h1>
+      <h1 class="detail-title"><?php echo htmlspecialchars(decodeAllEntities($publicacion['title'])); ?></h1>
 
       <div class="detail-company">
         <?php if ($publicacion['company_logo']): ?>
@@ -656,7 +779,7 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
         <?php endif; ?>
 
         <div class="company-info">
-          <h3><?php echo htmlspecialchars(html_entity_decode($publicacion['company_name'] ?? $publicacion['provider_name'] ?? 'Empresa', ENT_QUOTES | ENT_HTML5, 'UTF-8')); ?></h3>
+          <h3><?php echo htmlspecialchars(decodeAllEntities($publicacion['company_name'] ?? $publicacion['provider_name'] ?? 'Empresa')); ?></h3>
           <?php if ($publicacion['provider_website']): ?>
             <p><a href="<?php echo htmlspecialchars($publicacion['provider_website']); ?>" target="_blank" style="color: var(--primary);">
               <i class="fas fa-globe"></i> <?php echo htmlspecialchars($publicacion['provider_website']); ?>
