@@ -21,10 +21,10 @@ if (!is_dir(__DIR__ . '/../logs')) {
     mkdir(__DIR__ . '/../logs', 0755, true);
 }
 
-function log_msg($msg) {
+function log_msg($msg, $stdout = true) {
     $timestamp = date('Y-m-d H:i:s');
     $line = "[{$timestamp}] {$msg}\n";
-    echo $line;
+    if ($stdout) echo $line;
     file_put_contents(LOG_FILE, $line, FILE_APPEND);
 }
 
@@ -32,7 +32,8 @@ function log_msg($msg) {
  * Intenta diferentes métodos para obtener los empleos del BAC
  */
 function fetchBACJobs() {
-    log_msg("=== Iniciando importación de empleos del BAC ===");
+    // Log detallado solo a archivo
+    log_msg("=== Iniciando importación de empleos del BAC ===", false);
 
     // Método 1: Intentar API directa
     $jobs = tryAPIMethod();
@@ -46,7 +47,7 @@ function fetchBACJobs() {
         return $jobs;
     }
 
-    log_msg("ERROR: No se pudo obtener empleos con ningún método");
+    log_msg("ERROR: No se pudo obtener empleos con ningún método", false);
     return [];
 }
 
@@ -55,20 +56,20 @@ function fetchBACJobs() {
  * Actualizado para usar el endpoint correcto
  */
 function tryAPIMethod() {
-    log_msg("Método 1: Intentando acceso a API de Talento360...");
+    log_msg("Método 1: Intentando acceso a API de Talento360...", false);
 
     // Primero necesitamos obtener el token de la página principal
     $token = getSessionToken();
 
     if (!$token) {
-        log_msg("  ✗ No se pudo obtener token de sesión");
+        log_msg("  ✗ No se pudo obtener token de sesión", false);
         return [];
     }
 
     // Endpoint real de la API con el token
     $url = BAC_BASE_URL . '/rec-job-search/external';
 
-    log_msg("  Probando: {$url}");
+    log_msg("  Probando: {$url}", false);
 
     $ch = curl_init();
     curl_setopt_array($ch, [
@@ -107,36 +108,36 @@ function tryAPIMethod() {
     curl_close($ch);
 
     if ($error) {
-        log_msg("  ✗ Error CURL: {$error}");
+        log_msg("  ✗ Error CURL: {$error}", false);
         return [];
     }
 
-    log_msg("  HTTP {$httpCode}");
+    log_msg("  HTTP {$httpCode}", false);
 
     if ($httpCode == 200 && !empty($response)) {
         $data = json_decode($response, true);
 
         if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
-            log_msg("  ✓ Respuesta JSON válida recibida");
+            log_msg("  ✓ Respuesta JSON válida recibida", false);
 
             // Buscar array de empleos en diferentes estructuras comunes
             $possibleKeys = ['jobs', 'requisitions', 'data', 'results', 'items', 'postings'];
             foreach ($possibleKeys as $key) {
                 if (isset($data[$key]) && is_array($data[$key])) {
-                    log_msg("  ✓ Encontrados empleos en key '{$key}': " . count($data[$key]));
+                    log_msg("  ✓ Encontrados empleos en key '{$key}': " . count($data[$key]), false);
                     return parseAPIJobs($data[$key]);
                 }
             }
 
             // Si el data mismo es array de empleos
             if (isset($data[0]) && is_array($data[0])) {
-                log_msg("  ✓ Data es array directo: " . count($data));
+                log_msg("  ✓ Data es array directo: " . count($data), false);
                 return parseAPIJobs($data);
             }
 
             // Guardar respuesta para debug
             file_put_contents(__DIR__ . '/../logs/bac_api_response.json', json_encode($data, JSON_PRETTY_PRINT));
-            log_msg("  ⚠ Estructura JSON no reconocida. Guardado en logs/bac_api_response.json");
+            log_msg("  ⚠ Estructura JSON no reconocida. Guardado en logs/bac_api_response.json", false);
         }
     }
 
@@ -178,7 +179,7 @@ function getSessionToken() {
  * Método 2: Scraping de la página HTML (fallback)
  */
 function tryScrapingMethod() {
-    log_msg("Método 2: Intentando scraping de HTML...");
+    log_msg("Método 2: Intentando scraping de HTML...", false);
 
     $url = BAC_BASE_URL . '/ux/ats/careersite/4/home?c=talento360&country=cr&lang=es-MX';
 
@@ -197,7 +198,7 @@ function tryScrapingMethod() {
     curl_close($ch);
 
     if ($httpCode != 200 || empty($html)) {
-        log_msg("  ✗ Error obteniendo HTML (HTTP {$httpCode})");
+        log_msg("  ✗ Error obteniendo HTML (HTTP {$httpCode})", false);
         return [];
     }
 
@@ -211,7 +212,7 @@ function tryScrapingMethod() {
                 $data = json_decode($possibleJson, true);
 
                 if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
-                    log_msg("  ✓ JSON encontrado en <script>");
+                    log_msg("  ✓ JSON encontrado en <script>", false);
                     file_put_contents(__DIR__ . '/../logs/bac_scrape_response.json', json_encode($data, JSON_PRETTY_PRINT));
 
                     // Buscar empleos en la estructura
@@ -225,7 +226,7 @@ function tryScrapingMethod() {
         }
     }
 
-    log_msg("  ✗ No se encontraron datos JSON en HTML");
+    log_msg("  ✗ No se encontraron datos JSON en HTML", false);
     return [];
 }
 
@@ -233,7 +234,7 @@ function tryScrapingMethod() {
  * Parsear empleos desde respuesta de API
  */
 function parseAPIJobs($rawJobs) {
-    log_msg("Parseando " . count($rawJobs) . " empleos...");
+    log_msg("Parseando " . count($rawJobs) . " empleos...", false);
 
     $parsed = [];
 
@@ -261,7 +262,7 @@ function parseAPIJobs($rawJobs) {
         ];
     }
 
-    log_msg("✓ Parseados " . count($parsed) . " empleos válidos");
+    log_msg("✓ Parseados " . count($parsed) . " empleos válidos", false);
     return $parsed;
 }
 
@@ -270,7 +271,7 @@ function parseAPIJobs($rawJobs) {
  */
 function importJobs($jobs) {
     if (empty($jobs)) {
-        log_msg("No hay empleos para importar");
+        log_msg("No hay empleos para importar", false);
         return;
     }
 
@@ -289,7 +290,7 @@ function importJobs($jobs) {
     $inserted = 0;
     $skipped = 0;
 
-    log_msg("Iniciando importación a base de datos...");
+    log_msg("Iniciando importación a base de datos...", false);
 
     foreach ($jobs as $job) {
         try {
@@ -330,18 +331,14 @@ function importJobs($jobs) {
             ]);
 
             $inserted++;
-            log_msg("  ✓ Insertado: {$job['title']}");
+            log_msg("  ✓ Insertado: {$job['title']}", false);
 
         } catch (Exception $e) {
-            log_msg("  ✗ Error insertando '{$job['title']}': " . $e->getMessage());
+            log_msg("  ✗ Error insertando '{$job['title']}': " . $e->getMessage(), false);
         }
     }
 
-    log_msg("\n=== Resumen ===");
-    log_msg("Total empleos procesados: " . count($jobs));
-    log_msg("Insertados: {$inserted}");
-    log_msg("Omitidos (duplicados): {$skipped}");
-    log_msg("===============\n");
+    log_msg("  BAC Credomatic (Talento360): +{$inserted} nuevos, {$skipped} duplicados");
 }
 
 // Ejecutar importación
@@ -349,27 +346,19 @@ try {
     $jobs = fetchBACJobs();
 
     if (!empty($jobs)) {
-        log_msg("\n--- Muestra de empleos encontrados ---");
+        log_msg("\n--- Muestra de empleos encontrados ---", false);
         foreach (array_slice($jobs, 0, 3) as $i => $job) {
-            log_msg(($i+1) . ". {$job['title']} - {$job['location']}");
+            log_msg(($i+1) . ". {$job['title']} - {$job['location']}", false);
         }
-        log_msg("--- (mostrando 3 de " . count($jobs) . ") ---\n");
+        log_msg("--- (mostrando 3 de " . count($jobs) . ") ---\n", false);
 
         importJobs($jobs);
     } else {
-        log_msg("\n⚠ NOTA: Este script es experimental.");
-        log_msg("Si no funcionó, puede ser porque:");
-        log_msg("  1. El sitio requiere autenticación");
-        log_msg("  2. Los empleos se cargan dinámicamente con JavaScript");
-        log_msg("  3. La API tiene protección anti-bot");
-        log_msg("\nRecomendaciones:");
-        log_msg("  - Contactar a BAC para preguntar por RSS feed oficial");
-        log_msg("  - Usar canales de Telegram de empleos de CR");
-        log_msg("  - Agregar empleos manualmente desde el admin\n");
+        log_msg("  BAC Credomatic (Talento360): +0 nuevos, 0 duplicados");
     }
 
 } catch (Exception $e) {
     log_msg("ERROR FATAL: " . $e->getMessage());
-    log_msg($e->getTraceAsString());
+    log_msg($e->getTraceAsString(), false);
     exit(1);
 }

@@ -58,10 +58,10 @@ if (!is_dir(__DIR__ . '/../logs')) {
 // Base de datos para tracking de mensajes ya procesados
 $stateFile = __DIR__ . '/../logs/telegram_state.json';
 
-function log_msg($msg) {
+function log_msg($msg, $stdout = true) {
     $timestamp = date('Y-m-d H:i:s');
     $line = "[{$timestamp}] {$msg}\n";
-    echo $line;
+    if ($stdout) echo $line;
     file_put_contents(LOG_FILE, $line, FILE_APPEND);
 }
 
@@ -107,7 +107,7 @@ function telegramAPI($method, $params = []) {
  * Nota: Para canales públicos usamos la web preview
  */
 function getChannelMessages($channelUsername) {
-    log_msg("Obteniendo mensajes de @{$channelUsername}...");
+    log_msg("Obteniendo mensajes de @{$channelUsername}...", false);
 
     // Para canales públicos, scrapeamos la versión web de Telegram
     $url = "https://t.me/s/{$channelUsername}";
@@ -127,7 +127,7 @@ function getChannelMessages($channelUsername) {
     curl_close($ch);
 
     if ($httpCode !== 200 || empty($html)) {
-        log_msg("  ✗ Error obteniendo canal (HTTP {$httpCode})");
+        log_msg("  ✗ Error obteniendo canal (HTTP {$httpCode})", false);
         return [];
     }
 
@@ -210,7 +210,7 @@ function parseChannelHTML($html, $channelUsername) {
         }
     }
 
-    log_msg("  ✓ Encontrados " . count($messages) . " mensajes de empleos");
+    log_msg("  ✓ Encontrados " . count($messages) . " mensajes de empleos", false);
     return $messages;
 }
 
@@ -343,8 +343,8 @@ function saveState($state) {
  */
 function importJobs($jobs) {
     if (empty($jobs)) {
-        log_msg("No hay empleos nuevos para importar");
-        return;
+        log_msg("No hay empleos nuevos para importar", false);
+        return [0, 0];
     }
 
     $pdo = db();
@@ -355,7 +355,7 @@ function importJobs($jobs) {
 
     if (!$bot) {
         log_msg("ERROR: Usuario bot no encontrado");
-        return;
+        return [0, 0];
     }
 
     $botId = $bot['id'];
@@ -399,22 +399,19 @@ function importJobs($jobs) {
             ]);
 
             $inserted++;
-            log_msg("  ✓ {$job['title']} - {$job['company']}");
+            log_msg("  ✓ {$job['title']} - {$job['company']}", false);
 
         } catch (Exception $e) {
-            log_msg("  ✗ Error: " . $e->getMessage());
+            log_msg("  ✗ Error: " . $e->getMessage(), false);
         }
     }
 
-    log_msg("\n=== Resumen ===");
-    log_msg("Insertados: {$inserted}");
-    log_msg("Omitidos: {$skipped}");
-    log_msg("===============\n");
+    return [$inserted, $skipped];
 }
 
 // ===== EJECUCIÓN PRINCIPAL =====
 try {
-    log_msg("=== Importación desde Telegram iniciada ===\n");
+    log_msg("=== Importación desde Telegram iniciada ===\n", false);
 
     $state = loadState();
     $allMessages = [];
@@ -434,7 +431,7 @@ try {
         }
     }
 
-    log_msg("\nTotal mensajes nuevos: " . count($allMessages) . "\n");
+    log_msg("\nTotal mensajes nuevos: " . count($allMessages) . "\n", false);
 
     // Parsear empleos
     $jobs = [];
@@ -445,17 +442,20 @@ try {
         }
     }
 
-    log_msg("Total empleos parseados: " . count($jobs) . "\n");
+    log_msg("Total empleos parseados: " . count($jobs) . "\n", false);
 
     if (!empty($jobs)) {
         // Mostrar muestra
-        log_msg("--- Muestra de empleos ---");
+        log_msg("--- Muestra de empleos ---", false);
         foreach (array_slice($jobs, 0, 5) as $i => $job) {
-            log_msg(($i+1) . ". {$job['title']} | {$job['company']} | {$job['location']}");
+            log_msg(($i+1) . ". {$job['title']} | {$job['company']} | {$job['location']}", false);
         }
-        log_msg("--- (mostrando " . min(5, count($jobs)) . " de " . count($jobs) . ") ---\n");
+        log_msg("--- (mostrando " . min(5, count($jobs)) . " de " . count($jobs) . ") ---\n", false);
 
-        importJobs($jobs);
+        list($inserted, $skipped) = importJobs($jobs);
+        log_msg("  Telegram (STEMJobsCR + STEMJobsLATAM): +{$inserted} nuevos, {$skipped} duplicados");
+    } else {
+        log_msg("  Telegram (STEMJobsCR + STEMJobsLATAM): +0 nuevos, 0 duplicados");
     }
 
     // Guardar estado
@@ -465,10 +465,10 @@ try {
     }
     saveState($state);
 
-    log_msg("=== Importación completada ===");
+    log_msg("=== Importación completada ===", false);
 
 } catch (Exception $e) {
     log_msg("ERROR FATAL: " . $e->getMessage());
-    log_msg($e->getTraceAsString());
+    log_msg($e->getTraceAsString(), false);
     exit(1);
 }
