@@ -140,12 +140,25 @@ function getChannelMessages($channelUsername) {
 function parseChannelHTML($html, $channelUsername) {
     $messages = [];
 
-    // Buscar todos los divs de texto de mensajes
-    if (preg_match_all('/<div class="tgme_widget_message_text[^"]*"[^>]*>(.*?)<\/div>/s', $html, $textMatches, PREG_SET_ORDER)) {
+    // Buscar todos los mensajes completos (incluyendo fecha)
+    if (preg_match_all('/<div class="tgme_widget_message[^"]*"[^>]*>(.*?)<\/div>\s*<\/div>/s', $html, $messageMatches, PREG_SET_ORDER)) {
 
-        foreach ($textMatches as $idx => $match) {
-            $messageHTML = $match[0];
-            $text = $match[1];
+        foreach ($messageMatches as $idx => $match) {
+            $fullMessageHTML = $match[1];
+
+            // Extraer fecha del mensaje
+            $publishDate = null;
+            if (preg_match('/<time[^>]+datetime="([^"]+)"[^>]*>/i', $fullMessageHTML, $dateMatch)) {
+                $publishDate = $dateMatch[1];
+            }
+
+            // Extraer texto del mensaje
+            if (!preg_match('/<div class="tgme_widget_message_text[^"]*"[^>]*>(.*?)<\/div>/s', $fullMessageHTML, $textMatch)) {
+                continue;
+            }
+
+            $messageHTML = $textMatch[0];
+            $text = $textMatch[1];
 
             // Limpiar HTML: convertir <br/> a saltos de línea, quitar tags
             $text = str_replace(['<br/>', '<br>', '<br />'], "\n", $text);
@@ -206,6 +219,7 @@ function parseChannelHTML($html, $channelUsername) {
                 'text' => $text,
                 'link' => $link,
                 'channel' => $channelUsername,
+                'publish_date' => $publishDate,
             ];
         }
     }
@@ -310,6 +324,7 @@ function parseJobMessage($message) {
         'source_url' => "https://t.me/{$message['channel']}",
         'application_url' => $applicationUrl,
         'external_id' => "TG_{$message['id']}",
+        'publish_date' => $message['publish_date'] ?? null,
     ];
 }
 
@@ -403,8 +418,8 @@ function importJobs($jobs) {
                 INSERT INTO job_listings (
                     employer_id, title, description, category, location,
                     job_type, listing_type, is_active,
-                    import_source, source_url, application_url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    import_source, source_url, application_url, start_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $stmt->execute([
@@ -418,7 +433,8 @@ function importJobs($jobs) {
                 1,
                 'Telegram_' . $job['external_id'],
                 $job['source_url'],
-                $job['application_url']
+                $job['application_url'],
+                $job['publish_date'] ?? null
             ]);
 
             $inserted++;
