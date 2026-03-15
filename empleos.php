@@ -286,10 +286,36 @@ if (empty($categories)) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Empleos en Costa Rica | Bolsa de Trabajo - CompraTica</title>
 
-  <meta name="description" content="Encuentra empleos en Costa Rica. Ofertas de trabajo actualizadas en tecnología, administración, ventas, salud y más. Tu próximo empleo te espera.">
-  <meta name="keywords" content="empleos costa rica, trabajo costa rica, ofertas de empleo, bolsa de trabajo, empleos san jose">
-  <meta name="robots" content="index, follow">
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="🇨🇷 Bolsa de empleos en Costa Rica. Encuentra trabajos en tecnología, finanzas, salud, educación y más. Empleos remotos y presenciales actualizados diariamente. ¡Aplica ya!">
+  <meta name="keywords" content="empleos costa rica, trabajo costa rica, ofertas empleo, bolsa trabajo cr, empleos san jose, empleos alajuela, empleos heredia, empleos remotos costa rica, trabajos tecnologia, empleos linkedin costa rica, stem jobs cr">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="author" content="CompraTica">
   <link rel="canonical" href="https://compratica.com/empleos.php">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://compratica.com/empleos.php">
+  <meta property="og:title" content="Empleos en Costa Rica 🇨🇷 | Bolsa de Trabajo - CompraTica">
+  <meta property="og:description" content="Encuentra empleos en Costa Rica. Ofertas de trabajo actualizadas en tecnología, administración, ventas, salud y más. Empleos remotos y presenciales.">
+  <meta property="og:image" content="https://compratica.com/assets/img/og-empleos.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_CR">
+  <meta property="og:site_name" content="CompraTica">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://compratica.com/empleos.php">
+  <meta name="twitter:title" content="Empleos en Costa Rica 🇨🇷 | Bolsa de Trabajo">
+  <meta name="twitter:description" content="Encuentra empleos en Costa Rica. Ofertas actualizadas en tecnología, administración, ventas y más. ¡Aplica ya!">
+  <meta name="twitter:image" content="https://compratica.com/assets/img/og-empleos.jpg">
+
+  <!-- Geo Tags -->
+  <meta name="geo.region" content="CR">
+  <meta name="geo.placename" content="Costa Rica">
+  <meta name="geo.position" content="9.7489;-83.7534">
+  <meta name="ICBM" content="9.7489, -83.7534">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
@@ -969,6 +995,48 @@ if (empty($categories)) {
       }
     }
   </style>
+
+  <!-- Schema.org JSON-LD para JobPosting -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "CompraTica",
+    "url": "https://compratica.com",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://compratica.com/empleos.php?search={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Empleos en Costa Rica",
+    "description": "Bolsa de empleos en Costa Rica. Encuentra trabajo en tecnología, finanzas, salud, educación y más áreas.",
+    "url": "https://compratica.com/empleos.php",
+    "inLanguage": "es-CR",
+    "about": {
+      "@type": "Thing",
+      "name": "Empleos en Costa Rica"
+    },
+    "provider": {
+      "@type": "Organization",
+      "name": "CompraTica",
+      "url": "https://compratica.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://compratica.com/assets/img/logo.png"
+      }
+    }
+  }
+  </script>
 </head>
 <body>
 
