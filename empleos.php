@@ -284,10 +284,10 @@ if (empty($categories)) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Empleos en Costa Rica | Bolsa de Trabajo - CompraTica</title>
+  <title>Empleos en Costa Rica y Otros Países | Bolsa de Trabajo - CompraTica</title>
 
   <!-- SEO Meta Tags -->
-  <meta name="description" content="🇨🇷 Bolsa de empleos en Costa Rica. Encuentra trabajos en tecnología, finanzas, salud, educación y más. Empleos remotos y presenciales actualizados diariamente. ¡Aplica ya!">
+  <meta name="description" content="🌎 Bolsa de empleos en Costa Rica y otros países. Encuentra trabajos remotos, presenciales e híbridos en tecnología, finanzas, salud, educación y más. ¡Aplica ya!">
   <meta name="keywords" content="empleos costa rica, trabajo costa rica, ofertas empleo, bolsa trabajo cr, empleos san jose, empleos alajuela, empleos heredia, empleos remotos costa rica, trabajos tecnologia, empleos linkedin costa rica, stem jobs cr">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <meta name="author" content="CompraTica">
@@ -296,8 +296,8 @@ if (empty($categories)) {
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://compratica.com/empleos.php">
-  <meta property="og:title" content="Empleos en Costa Rica 🇨🇷 | Bolsa de Trabajo - CompraTica">
-  <meta property="og:description" content="Encuentra empleos en Costa Rica. Ofertas de trabajo actualizadas en tecnología, administración, ventas, salud y más. Empleos remotos y presenciales.">
+  <meta property="og:title" content="Empleos en Costa Rica y Otros Países 🌎 | Bolsa de Trabajo - CompraTica">
+  <meta property="og:description" content="Encuentra empleos en Costa Rica y otros países. Ofertas de trabajo remotas, presenciales e híbridas en tecnología, administración, ventas, salud y más.">
   <meta property="og:image" content="https://compratica.com/assets/img/og-empleos.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -307,8 +307,8 @@ if (empty($categories)) {
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://compratica.com/empleos.php">
-  <meta name="twitter:title" content="Empleos en Costa Rica 🇨🇷 | Bolsa de Trabajo">
-  <meta name="twitter:description" content="Encuentra empleos en Costa Rica. Ofertas actualizadas en tecnología, administración, ventas y más. ¡Aplica ya!">
+  <meta name="twitter:title" content="Empleos en Costa Rica y Otros Países 🌎 | Bolsa de Trabajo">
+  <meta name="twitter:description" content="Encuentra empleos en Costa Rica y otros países. Ofertas remotas, presenciales e híbridas en tecnología, administración, ventas y más. ¡Aplica ya!">
   <meta name="twitter:image" content="https://compratica.com/assets/img/og-empleos.jpg">
 
   <!-- Geo Tags -->
@@ -1062,11 +1062,11 @@ if (empty($categories)) {
   <section class="hero-section">
     <div class="hero-content">
       <h1 class="hero-title">
-        Empleos en Costa Rica <span class="emoji">💼</span>
+        Empleos en Costa Rica y Otros Países <span class="emoji">💼</span>
       </h1>
       <p class="hero-description">
-        Encuentra tu próximo empleo en las mejores empresas de Costa Rica.
-        Ofertas actualizadas en tecnología, administración, ventas, salud y mucho más.
+        Encuentra tu próximo empleo en las mejores empresas. Ofertas remotas, presenciales e híbridas
+        en tecnología, administración, ventas, salud y mucho más.
       </p>
 
       <div class="hero-stats">
