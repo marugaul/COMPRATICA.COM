@@ -2,11 +2,7 @@
 /**
  * Página Principal de Servicios
  *
- * Muestra las categorías de servicios disponibles:
- * - Abogados
- * - Mantenimiento y Reparación
- * - Tutorías
- * - Fletes
+ * Muestra los servicios profesionales disponibles en Costa Rica
  */
 
 ini_set('display_errors', '0');
@@ -140,6 +136,10 @@ if (PHP_VERSION_ID < 70300) {
     ]);
 }
 
+// Obtener parámetro de búsqueda
+$searchQuery = isset($_GET['q']) ? trim($_GET['q']) : '';
+logDebug("SEARCH_QUERY", ['q' => $searchQuery]);
+
 // Obtener servicios activos de ambos sistemas
 $pdo = db();
 $servicios = [];
@@ -147,57 +147,118 @@ $servicios = [];
 try {
     // UNION de servicios del sistema antiguo (affiliates) y nuevo (job_listings)
     // Usando índices numéricos en ORDER BY para compatibilidad con SQLite UNION
-    $stmt = $pdo->query("
-        SELECT
-            s.id,
-            s.title,
-            s.description,
-            s.short_description,
-            s.price_per_hour as service_price,
-            'CRC' as salary_currency,
-            'hourly' as service_price_type,
-            s.slug,
-            a.name as provider_name,
-            a.name as company_name,
-            NULL as location,
-            s.created_at,
-            s.is_active,
-            0 as is_featured,
-            s.cover_image as image_1,
-            'services' as source_table
-        FROM services s
-        INNER JOIN affiliates a ON a.id = s.affiliate_id
-        WHERE s.is_active = 1
-          AND a.is_active = 1
 
-        UNION ALL
+    if ($searchQuery) {
+        // Con búsqueda: filtrar por título y descripción
+        $searchLike = '%' . $searchQuery . '%';
+        $stmt = $pdo->prepare("
+            SELECT
+                s.id,
+                s.title,
+                s.description,
+                s.short_description,
+                s.price_per_hour as service_price,
+                'CRC' as salary_currency,
+                'hourly' as service_price_type,
+                s.slug,
+                a.name as provider_name,
+                a.name as company_name,
+                NULL as location,
+                s.created_at,
+                s.is_active,
+                0 as is_featured,
+                s.cover_image as image_1,
+                'services' as source_table
+            FROM services s
+            INNER JOIN affiliates a ON a.id = s.affiliate_id
+            WHERE s.is_active = 1
+              AND a.is_active = 1
+              AND (s.title LIKE ? OR s.description LIKE ?)
 
-        SELECT
-            jl.id,
-            jl.title,
-            jl.description,
-            jl.description as short_description,
-            jl.service_price,
-            jl.salary_currency,
-            jl.service_price_type,
-            NULL as slug,
-            u.name as provider_name,
-            COALESCE(u.company_name, u.name) as company_name,
-            jl.location,
-            jl.created_at,
-            jl.is_active,
-            jl.is_featured,
-            jl.image_1,
-            'job_listings' as source_table
-        FROM job_listings jl
-        INNER JOIN users u ON u.id = jl.employer_id
-        WHERE jl.listing_type = 'service'
-          AND jl.is_active = 1
-          AND u.status = 'active'
+            UNION ALL
 
-        ORDER BY 14 DESC, 12 DESC
-    ");
-    $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            SELECT
+                jl.id,
+                jl.title,
+                jl.description,
+                jl.description as short_description,
+                jl.service_price,
+                jl.salary_currency,
+                jl.service_price_type,
+                NULL as slug,
+                u.name as provider_name,
+                COALESCE(u.company_name, u.name) as company_name,
+                jl.location,
+                jl.created_at,
+                jl.is_active,
+                jl.is_featured,
+                jl.image_1,
+                'job_listings' as source_table
+            FROM job_listings jl
+            INNER JOIN users u ON u.id = jl.employer_id
+            WHERE jl.listing_type = 'service'
+              AND jl.is_active = 1
+              AND u.status = 'active'
+              AND (jl.title LIKE ? OR jl.description LIKE ?)
+
+            ORDER BY 14 DESC, 12 DESC
+        ");
+        $stmt->execute([$searchLike, $searchLike, $searchLike, $searchLike]);
+        $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        // Sin búsqueda: mostrar todos
+        $stmt = $pdo->query("
+            SELECT
+                s.id,
+                s.title,
+                s.description,
+                s.short_description,
+                s.price_per_hour as service_price,
+                'CRC' as salary_currency,
+                'hourly' as service_price_type,
+                s.slug,
+                a.name as provider_name,
+                a.name as company_name,
+                NULL as location,
+                s.created_at,
+                s.is_active,
+                0 as is_featured,
+                s.cover_image as image_1,
+                'services' as source_table
+            FROM services s
+            INNER JOIN affiliates a ON a.id = s.affiliate_id
+            WHERE s.is_active = 1
+              AND a.is_active = 1
+
+            UNION ALL
+
+            SELECT
+                jl.id,
+                jl.title,
+                jl.description,
+                jl.description as short_description,
+                jl.service_price,
+                jl.salary_currency,
+                jl.service_price_type,
+                NULL as slug,
+                u.name as provider_name,
+                COALESCE(u.company_name, u.name) as company_name,
+                jl.location,
+                jl.created_at,
+                jl.is_active,
+                jl.is_featured,
+                jl.image_1,
+                'job_listings' as source_table
+            FROM job_listings jl
+            INNER JOIN users u ON u.id = jl.employer_id
+            WHERE jl.listing_type = 'service'
+              AND jl.is_active = 1
+              AND u.status = 'active'
+
+            ORDER BY 14 DESC, 12 DESC
+        ");
+        $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     logDebug("SERVICES_LOADED_SUCCESS", ['count' => count($servicios)]);
 } catch (Exception $e) {
     logDebug("ERROR_LOADING_SERVICES", ['error' => $e->getMessage()]);
@@ -211,11 +272,11 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Servicios Profesionales en Costa Rica | Abogados, Shuttle, Mantenimiento - CompraTica</title>
+  <title>Servicios Profesionales en Costa Rica - CompraTica</title>
 
   <!-- SEO -->
-  <meta name="description" content="Directorio de servicios profesionales en Costa Rica: abogados, shuttle aeropuerto, mantenimiento, tutorías y fletes. Contacta a los mejores profesionales ticos.">
-  <meta name="keywords" content="servicios costa rica, abogados costa rica, shuttle aeropuerto, mantenimiento hogar, tutores costa rica, fletes san jose, profesionales ticos, directorio servicios">
+  <meta name="description" content="Encuentra servicios profesionales de calidad en Costa Rica. Contrata profesionales ticos confiables para tus necesidades.">
+  <meta name="keywords" content="servicios costa rica, profesionales ticos, servicios profesionales, directorio servicios costa rica">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://compratica.com/servicios.php">
 
@@ -223,7 +284,7 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://compratica.com/servicios.php">
   <meta property="og:title" content="Servicios Profesionales en Costa Rica">
-  <meta property="og:description" content="Encuentra abogados, shuttle, mantenimiento y más servicios en Costa Rica.">
+  <meta property="og:description" content="Encuentra servicios profesionales de calidad en Costa Rica. Contrata profesionales ticos confiables.">
   <meta property="og:image" content="https://compratica.com/logo.png">
 
   <!-- Schema.org para Servicios -->
@@ -233,14 +294,7 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
     "@type": "ItemList",
     "name": "Servicios Profesionales en Costa Rica",
     "description": "Directorio de servicios profesionales costarricenses",
-    "url": "https://compratica.com/servicios.php",
-    "itemListElement": [
-      {"@type": "ListItem", "position": 1, "name": "Abogados", "url": "https://compratica.com/services_list.php?category=abogados"},
-      {"@type": "ListItem", "position": 2, "name": "Shuttle Aeropuerto", "url": "https://compratica.com/shuttle_search.php"},
-      {"@type": "ListItem", "position": 3, "name": "Mantenimiento", "url": "https://compratica.com/services_list.php?category=mantenimiento"},
-      {"@type": "ListItem", "position": 4, "name": "Tutorías", "url": "https://compratica.com/services_list.php?category=tutorias"},
-      {"@type": "ListItem", "position": 5, "name": "Fletes", "url": "https://compratica.com/services_list.php?category=fletes"}
-    ]
+    "url": "https://compratica.com/servicios.php"
   }
   </script>
 
@@ -1302,7 +1356,7 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
 
   <!-- Search Section -->
   <section class="search-section">
-    <form class="search-form" action="services_search" method="GET">
+    <form class="search-form" action="servicios.php" method="GET">
       <input
         type="text"
         name="q"
@@ -1319,10 +1373,19 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
 
   <!-- Services Section -->
   <div class="section-header">
-    <h2 class="section-title">Servicios Disponibles</h2>
-    <p class="section-subtitle">
-      Encuentra el servicio que necesitas
-    </p>
+    <?php if ($searchQuery): ?>
+      <h2 class="section-title">Resultados de búsqueda para "<?php echo htmlspecialchars($searchQuery); ?>"</h2>
+      <p class="section-subtitle">
+        <?php echo count($servicios); ?> servicio<?php echo count($servicios) !== 1 ? 's' : ''; ?> encontrado<?php echo count($servicios) !== 1 ? 's' : ''; ?>
+        &nbsp;•&nbsp;
+        <a href="servicios.php" style="color: var(--primary); text-decoration: underline;">Ver todos los servicios</a>
+      </p>
+    <?php else: ?>
+      <h2 class="section-title">Servicios Disponibles</h2>
+      <p class="section-subtitle">
+        Encuentra el servicio que necesitas
+      </p>
+    <?php endif; ?>
   </div>
 
   <?php if (empty($servicios)): ?>
