@@ -162,7 +162,8 @@ function formatJobDescription($text) {
     ];
 
     foreach ($sections as $section => $html) {
-        $text = preg_replace('/\b' . preg_quote($section, '/') . '\b/i', "\n\n" . $html . "\n", $text);
+        // Solo reemplazar la primera ocurrencia para evitar duplicados
+        $text = preg_replace('/\b' . preg_quote($section, '/') . '\b/i', "\n\n" . $html . "\n", $text, 1);
     }
 
     // Dividir en párrafos por puntos seguidos o secciones
@@ -1215,14 +1216,49 @@ async function translateDescription() {
   textSpan.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Traduciendo...';
 
   try {
-    // Obtener todo el texto de la descripción
-    const textContent = descDiv.textContent || descDiv.innerText;
+    // Crear una copia temporal del DOM para trabajar
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = originalDescription;
 
-    // Traducir en chunks de 5000 caracteres (límite de Google Translate)
+    // Marcar los títulos (h3) para NO traducirlos porque ya están en español
+    const headers = tempDiv.querySelectorAll('h3');
+    headers.forEach(h3 => {
+      h3.setAttribute('data-no-translate', 'true');
+    });
+
+    // Obtener solo el texto que NO está en títulos
+    const textParts = [];
+    const walker = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null, false);
+
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      // Solo incluir texto que NO está dentro de un h3
+      let isInHeader = false;
+      let parent = node.parentElement;
+      while (parent) {
+        if (parent.tagName === 'H3') {
+          isInHeader = true;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+
+      if (!isInHeader && node.textContent.trim()) {
+        textParts.push({
+          node: node,
+          text: node.textContent
+        });
+      }
+    }
+
+    // Concatenar todo el texto a traducir (sin títulos)
+    const textToTranslate = textParts.map(p => p.text).join(' ');
+
+    // Traducir en chunks de 5000 caracteres
     const chunkSize = 5000;
     const chunks = [];
-    for (let i = 0; i < textContent.length; i += chunkSize) {
-      chunks.push(textContent.substring(i, i + chunkSize));
+    for (let i = 0; i < textToTranslate.length; i += chunkSize) {
+      chunks.push(textToTranslate.substring(i, i + chunkSize));
     }
 
     let translatedText = '';
@@ -1241,24 +1277,13 @@ async function translateDescription() {
       translatedText += data.translated || chunk;
     }
 
-    // Reemplazar el texto manteniendo la estructura HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = originalDescription;
-
-    // Reemplazar solo el texto, manteniendo los tags HTML
-    const walker = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT, null, false);
-    const textNodes = [];
-    while (walker.nextNode()) {
-      textNodes.push(walker.currentNode);
-    }
-
-    // Dividir el texto traducido proporcionalmente
+    // Distribuir el texto traducido de vuelta a los nodos originales (sin los títulos)
     let translated = translatedText;
-    textNodes.forEach(node => {
-      const originalLength = node.textContent.trim().length;
-      if (originalLength > 0) {
+    textParts.forEach(part => {
+      const originalLength = part.text.trim().length;
+      if (originalLength > 0 && translated.length > 0) {
         const portion = translated.substring(0, Math.min(originalLength * 1.5, translated.length));
-        node.textContent = portion;
+        part.node.textContent = portion;
         translated = translated.substring(portion.length).trim();
       }
     });
