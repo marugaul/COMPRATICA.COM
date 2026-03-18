@@ -153,31 +153,6 @@ try {
         $searchLike = '%' . $searchQuery . '%';
         $stmt = $pdo->prepare("
             SELECT
-                s.id,
-                s.title,
-                s.description,
-                s.short_description,
-                s.price_per_hour as service_price,
-                'CRC' as salary_currency,
-                'hourly' as service_price_type,
-                s.slug,
-                a.name as provider_name,
-                a.name as company_name,
-                NULL as location,
-                s.created_at,
-                s.is_active,
-                0 as is_featured,
-                s.cover_image as image_1,
-                'services' as source_table
-            FROM services s
-            INNER JOIN affiliates a ON a.id = s.affiliate_id
-            WHERE s.is_active = 1
-              AND a.is_active = 1
-              AND (s.title LIKE ? OR s.description LIKE ?)
-
-            UNION ALL
-
-            SELECT
                 jl.id,
                 jl.title,
                 jl.description,
@@ -200,38 +175,13 @@ try {
               AND jl.is_active = 1
               AND u.status = 'active'
               AND (jl.title LIKE ? OR jl.description LIKE ?)
-
-            ORDER BY 14 DESC, 12 DESC
+            ORDER BY jl.is_featured DESC, jl.created_at DESC
         ");
-        $stmt->execute([$searchLike, $searchLike, $searchLike, $searchLike]);
+        $stmt->execute([$searchLike, $searchLike]);
         $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } else {
         // Sin búsqueda: mostrar todos
         $stmt = $pdo->query("
-            SELECT
-                s.id,
-                s.title,
-                s.description,
-                s.short_description,
-                s.price_per_hour as service_price,
-                'CRC' as salary_currency,
-                'hourly' as service_price_type,
-                s.slug,
-                a.name as provider_name,
-                a.name as company_name,
-                NULL as location,
-                s.created_at,
-                s.is_active,
-                0 as is_featured,
-                s.cover_image as image_1,
-                'services' as source_table
-            FROM services s
-            INNER JOIN affiliates a ON a.id = s.affiliate_id
-            WHERE s.is_active = 1
-              AND a.is_active = 1
-
-            UNION ALL
-
             SELECT
                 jl.id,
                 jl.title,
@@ -254,8 +204,7 @@ try {
             WHERE jl.listing_type = 'service'
               AND jl.is_active = 1
               AND u.status = 'active'
-
-            ORDER BY 14 DESC, 12 DESC
+            ORDER BY jl.is_featured DESC, jl.created_at DESC
         ");
         $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
