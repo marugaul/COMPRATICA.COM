@@ -25,8 +25,8 @@ if ($listing_id <= 0) {
   exit;
 }
 
-// Verificar que la publicación pertenece al empleador
-$stmt = $pdo->prepare("SELECT id FROM job_listings WHERE id = ? AND employer_id = ?");
+// Verificar que la publicación pertenece al empleador (solo empleos)
+$stmt = $pdo->prepare("SELECT id FROM job_listings WHERE id = ? AND employer_id = ? AND listing_type = 'job'");
 $stmt->execute([$listing_id, $employer_id]);
 $listing = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -35,9 +35,9 @@ if (!$listing) {
   exit;
 }
 
-// Eliminar la publicación
+// Eliminar la publicación (solo empleos)
 try {
-  $stmt = $pdo->prepare("DELETE FROM job_listings WHERE id = ? AND employer_id = ?");
+  $stmt = $pdo->prepare("DELETE FROM job_listings WHERE id = ? AND employer_id = ? AND listing_type = 'job'");
   $stmt->execute([$listing_id, $employer_id]);
 
   header('Location: dashboard.php?success=deleted');

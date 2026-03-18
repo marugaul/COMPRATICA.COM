@@ -50,30 +50,26 @@ if (isset($_GET['error'])) {
   }
 }
 
-// Obtener publicaciones del empleador
+// Obtener publicaciones del empleador (solo empleos)
 $stmt = $pdo->prepare("
   SELECT * FROM job_listings
   WHERE employer_id = ?
+    AND listing_type = 'job'
   ORDER BY created_at DESC
 ");
 $stmt->execute([$employer_id]);
 $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Estadísticas
+// Estadísticas (solo empleos)
 $stats = [
   'total' => count($listings),
   'active' => 0,
-  'inactive' => 0,
-  'jobs' => 0,
-  'services' => 0
+  'inactive' => 0
 ];
 
 foreach ($listings as $listing) {
   if ($listing['is_active']) $stats['active']++;
   else $stats['inactive']++;
-
-  if ($listing['listing_type'] === 'job') $stats['jobs']++;
-  else $stats['services']++;
 }
 ?>
 <!doctype html>
@@ -81,7 +77,7 @@ foreach ($listings as $listing) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard Empleos y Servicios — <?php echo APP_NAME; ?></title>
+  <title>Dashboard Empleos — <?php echo APP_NAME; ?></title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
   <style>
@@ -367,7 +363,7 @@ foreach ($listings as $listing) {
 </head>
 <body>
   <div class="header">
-    <h1><i class="fas fa-briefcase"></i> Panel de Empleos y Servicios</h1>
+    <h1><i class="fas fa-briefcase"></i> Panel de Empleos</h1>
     <div class="user-info">
       <span><i class="fas fa-user"></i> <?php echo htmlspecialchars($employer_name); ?></span>
       <a href="logout.php" class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i> Salir</a>
@@ -392,19 +388,15 @@ foreach ($listings as $listing) {
     <div class="stats-grid">
       <div class="stat-card">
         <h3><?php echo $stats['total']; ?></h3>
-        <p><i class="fas fa-list"></i> Total Publicaciones</p>
+        <p><i class="fas fa-list"></i> Total Empleos</p>
       </div>
       <div class="stat-card">
         <h3><?php echo $stats['active']; ?></h3>
         <p><i class="fas fa-check-circle"></i> Activas</p>
       </div>
       <div class="stat-card">
-        <h3><?php echo $stats['jobs']; ?></h3>
-        <p><i class="fas fa-briefcase"></i> Empleos</p>
-      </div>
-      <div class="stat-card">
-        <h3><?php echo $stats['services']; ?></h3>
-        <p><i class="fas fa-tools"></i> Servicios</p>
+        <h3><?php echo $stats['inactive']; ?></h3>
+        <p><i class="fas fa-times-circle"></i> Inactivas</p>
       </div>
     </div>
 
@@ -419,12 +411,12 @@ foreach ($listings as $listing) {
     <?php if (empty($listings)): ?>
       <div class="empty-state">
         <i class="fas fa-inbox"></i>
-        <h3>No tenés publicaciones todavía</h3>
-        <p>Creá tu primera publicación de empleo o servicio para empezar.</p>
+        <h3>No tenés empleos publicados todavía</h3>
+        <p>Creá tu primera publicación de empleo para empezar.</p>
         <br>
         <a href="create-listing.php" class="btn">
           <i class="fas fa-plus"></i>
-          Crear Primera Publicación
+          Crear Primer Empleo
         </a>
       </div>
     <?php else: ?>
