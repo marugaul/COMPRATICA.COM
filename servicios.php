@@ -1356,7 +1356,7 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
 
   <!-- Search Section -->
   <section class="search-section">
-    <form class="search-form" action="servicios.php" method="GET">
+    <form class="search-form" action="servicios" method="GET">
       <input
         type="text"
         name="q"
@@ -1378,7 +1378,7 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
       <p class="section-subtitle">
         <?php echo count($servicios); ?> servicio<?php echo count($servicios) !== 1 ? 's' : ''; ?> encontrado<?php echo count($servicios) !== 1 ? 's' : ''; ?>
         &nbsp;•&nbsp;
-        <a href="servicios.php" style="color: var(--primary); text-decoration: underline;">Ver todos los servicios</a>
+        <a href="servicios" style="color: var(--primary); text-decoration: underline;">Ver todos los servicios</a>
       </p>
     <?php else: ?>
       <h2 class="section-title">Servicios Disponibles</h2>
