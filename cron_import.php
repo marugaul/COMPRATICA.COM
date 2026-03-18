@@ -40,10 +40,11 @@ ini_set('memory_limit', '256M');
 header('Content-Type: text/plain; charset=utf-8');
 
 // Cambiar al directorio raíz del proyecto
-chdir(dirname(__DIR__));
+$rootDir = __DIR__;
+chdir($rootDir);
 
 // Incluir el script principal
-$scriptPath = __DIR__ . '/../scripts/cron_import_all.php';
+$scriptPath = $rootDir . '/scripts/cron_import_all.php';
 
 if (!file_exists($scriptPath)) {
     http_response_code(500);
