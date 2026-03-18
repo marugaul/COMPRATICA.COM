@@ -24,12 +24,12 @@ if ($listing_id <= 0) {
   exit;
 }
 
-// Obtener información de la publicación y el plan
+// Obtener información de la publicación y el plan (solo empleos)
 $stmt = $pdo->prepare("
   SELECT l.*, p.name as plan_name, p.price_usd, p.price_crc, p.payment_methods, p.duration_days
   FROM job_listings l
   LEFT JOIN job_pricing p ON l.pricing_plan_id = p.id
-  WHERE l.id = ? AND l.employer_id = ?
+  WHERE l.id = ? AND l.employer_id = ? AND l.listing_type = 'job'
   LIMIT 1
 ");
 $stmt->execute([$listing_id, $employer_id]);
