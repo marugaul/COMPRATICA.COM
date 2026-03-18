@@ -45,12 +45,12 @@ Ve a **cPanel → Cron Jobs** y agrega:
 
 **Con wget:**
 ```bash
-0 8,18 * * * wget -q -O /dev/null "https://tudominio.com/cron_import.php?key=TU_CLAVE_AQUI"
+0 8,18 * * * wget -q -O /dev/null "https://compratica.com/cron_import.php?key=compratica_cron_2024_c96a32e9e65e4dad331a186fac2c3672"
 ```
 
 **Con curl:**
 ```bash
-0 8,18 * * * curl -s "https://tudominio.com/cron_import.php?key=TU_CLAVE_AQUI"
+0 8,18 * * * curl -s "https://compratica.com/cron_import.php?key=compratica_cron_2024_c96a32e9e65e4dad331a186fac2c3672"
 ```
 
 ⚠️ **IMPORTANTE:** Reemplaza `TU_CLAVE_AQUI` con la clave generada en el paso 1.
