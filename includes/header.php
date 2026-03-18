@@ -122,7 +122,7 @@
       <span>Portal Servicios</span>
     </a>
 
-    <a href="/jobs/login.php" class="menu-item">
+    <a href="/jobs_service/login.php" class="menu-item">
       <i class="fas fa-briefcase"></i>
       <span>Portal Empleos</span>
     </a>

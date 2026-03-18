@@ -305,7 +305,7 @@ ini_set('default_charset', 'UTF-8');
       </a>
 
       <!-- EMPLEOS Y SERVICIOS -->
-      <a href="/jobs/register.php" class="publication-card">
+      <a href="/jobs_service/register.php" class="publication-card">
         <div class="card-icon empleos">
           <i class="fas fa-briefcase"></i>
         </div>
