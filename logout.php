@@ -85,6 +85,7 @@ function expireCookieClient(string $name, string $domain, bool $secure, bool $ht
 }
 
 function removeSessionFilesForUid($uid) {
+    $startTime = microtime(true);
     $savePath = session_save_path();
     if (!$savePath) {
         logDebug("REMOVE_SESSIONS_NO_SAVE_PATH", ['save_path' => $savePath]);
@@ -104,34 +105,68 @@ function removeSessionFilesForUid($uid) {
     $files = glob($savePath . DIRECTORY_SEPARATOR . 'sess_*');
     if (!$files) return 0;
 
+    // ✅ OPTIMIZADO: Límite de 500 archivos y timeout de 2 segundos
+    $maxFiles = 500;
+    $maxTime = 2.0;
+    $filesChecked = 0;
+
+    $uidEsc = preg_quote((string)$uid, '/');
+    $patterns = [
+        '/uid\|i:'.$uidEsc.';/',
+        '/"uid";i:'.$uidEsc.';/',
+        '/uid\|s:\d+:"'.$uidEsc.'";/',
+        '/s:\d+:"uid";i:'.$uidEsc.';/',
+        '/"uid":"'.$uidEsc.'"/',
+        '/"uid":\s*'.$uidEsc.'([,\}])/'
+    ];
+
     foreach ($files as $f) {
+        // Timeout check
+        if ((microtime(true) - $startTime) > $maxTime) {
+            logDebug("REMOVE_SESSIONS_TIMEOUT", ['checked' => $filesChecked, 'removed' => $count]);
+            break;
+        }
+
+        // Límite de archivos
+        if ($filesChecked >= $maxFiles) {
+            logDebug("REMOVE_SESSIONS_LIMIT_REACHED", ['limit' => $maxFiles, 'removed' => $count]);
+            break;
+        }
+
         if (!is_file($f) || !is_readable($f)) continue;
-        $content = @file_get_contents($f);
+
+        $filesChecked++;
+
+        // ✅ Leer solo primeros 2KB (suficiente para encontrar uid)
+        $content = @file_get_contents($f, false, null, 0, 2048);
         if ($content === false) continue;
 
-        $uidEsc = preg_quote((string)$uid, '/');
-        $patterns = [
-            '/uid\|i:'.$uidEsc.';/',
-            '/"uid";i:'.$uidEsc.';/',
-            '/uid\|s:\d+:"'.$uidEsc.'";/',
-            '/s:\d+:"uid";i:'.$uidEsc.';/',
-            '/"uid":"'.$uidEsc.'"/',
-            '/"uid":\s*'.$uidEsc.'([,\}])/'
-        ];
         $match = false;
         foreach ($patterns as $pat) {
-            if (preg_match($pat, $content)) { $match = true; break; }
+            if (preg_match($pat, $content)) {
+                $match = true;
+                break;
+            }
         }
+
         if ($match) {
             @unlink($f);
             $count++;
         }
     }
-    logDebug("REMOVE_SESSIONS_FILES_COUNT", ['uid' => $uid, 'removed' => $count]);
+
+    $elapsed = round((microtime(true) - $startTime) * 1000, 2);
+    logDebug("REMOVE_SESSIONS_FILES_COUNT", [
+        'uid' => $uid,
+        'removed' => $count,
+        'checked' => $filesChecked,
+        'time_ms' => $elapsed
+    ]);
     return $count;
 }
 
 function invalidateDbSessionsForUid($uid) {
+    $startTime = microtime(true);
     try {
         if (!file_exists(__DIR__ . '/includes/db.php')) {
             logDebug("DB_INVALIDATION_SKIPPED", ['reason' => 'no includes/db.php']);
@@ -140,36 +175,49 @@ function invalidateDbSessionsForUid($uid) {
         require_once __DIR__ . '/includes/db.php';
         $pdo = db();
 
-        $affected = 0;
-        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        if ($driver === 'sqlite') {
-            $sqlCheck = "SELECT name FROM sqlite_master WHERE type='table' AND name='user_sessions'";
-            $exists = (bool)$pdo->query($sqlCheck)->fetchColumn();
-        } else {
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'user_sessions'");
-            $stmt->execute();
-            $exists = ((int)$stmt->fetchColumn() > 0);
+        // ✅ Timeout de 2 segundos
+        if (method_exists($pdo, 'setAttribute')) {
+            try {
+                $pdo->setAttribute(PDO::ATTR_TIMEOUT, 2);
+            } catch (Exception $e) {
+                // Ignorar si no se puede establecer
+            }
         }
 
-        if ($exists) {
+        $affected = 0;
+
+        // ✅ OPTIMIZADO: Verificar tabla de forma más eficiente
+        try {
+            // Intentar directamente el UPDATE/DELETE en lugar de verificar primero
+            $upd = $pdo->prepare('UPDATE user_sessions SET revoked = 1 WHERE user_id = ?');
+            $upd->execute([$uid]);
+            $affected = $upd->rowCount();
+
+            $elapsed = round((microtime(true) - $startTime) * 1000, 2);
+            logDebug("DB_INVALIDATED_USER_SESSIONS", [
+                'uid' => $uid,
+                'affected' => $affected,
+                'time_ms' => $elapsed
+            ]);
+        } catch (Exception $e) {
+            // Si falla UPDATE (ej: no existe columna revoked), intentar DELETE
             try {
-                $upd = $pdo->prepare('UPDATE user_sessions SET revoked = 1 WHERE user_id = ?');
-                $upd->execute([$uid]);
-                $affected = $upd->rowCount();
-                logDebug("DB_INVALIDATED_USER_SESSIONS", ['uid' => $uid, 'affected' => $affected]);
-            } catch (Exception $e) {
-                try {
-                    $del = $pdo->prepare('DELETE FROM user_sessions WHERE user_id = ?');
-                    $del->execute([$uid]);
-                    $affected = $del->rowCount();
-                    logDebug("DB_DELETED_USER_SESSIONS", ['uid' => $uid, 'affected' => $affected]);
-                } catch (Exception $e2) {
-                    logDebug("DB_INVALIDATION_ERROR", ['msg' => $e2->getMessage()]);
-                }
+                $del = $pdo->prepare('DELETE FROM user_sessions WHERE user_id = ?');
+                $del->execute([$uid]);
+                $affected = $del->rowCount();
+
+                $elapsed = round((microtime(true) - $startTime) * 1000, 2);
+                logDebug("DB_DELETED_USER_SESSIONS", [
+                    'uid' => $uid,
+                    'affected' => $affected,
+                    'time_ms' => $elapsed
+                ]);
+            } catch (Exception $e2) {
+                // Si falla DELETE (ej: tabla no existe), simplemente continuar
+                logDebug("DB_INVALIDATION_SKIPPED", ['reason' => 'table_not_found_or_error']);
             }
-        } else {
-            logDebug("DB_USER_SESSIONS_TABLE_NOT_FOUND");
         }
+
         return $affected;
     } catch (Exception $e) {
         logDebug("DB_INVALIDATION_EXCEPTION", ['msg' => $e->getMessage()]);
@@ -179,6 +227,10 @@ function invalidateDbSessionsForUid($uid) {
 
 // --- POST: ejecutar logout ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // ✅ Timeout máximo de 5 segundos para todo el logout
+    set_time_limit(5);
+
+    $logoutStartTime = microtime(true);
     $redirect = $_POST['redirect'] ?? 'index.php';
     $allDevices = !empty($_POST['all_devices']) ? true : false;
 
@@ -200,11 +252,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     logDebug("CART_BEFORE_LOGOUT", ['items' => $cartItemCount, 'cart' => $savedCart]);
     
-    // Guardar carrito en BD si hay items
+    // ✅ OPTIMIZADO: Guardar carrito en BD con transacción (max 3 segundos)
     if ($cartItemCount > 0 && $uid) {
         try {
+            $startTime = microtime(true);
             require_once __DIR__ . '/includes/db.php';
             $pdo = db();
+
+            // Timeout de 3 segundos para esta operación
+            if (method_exists($pdo, 'setAttribute')) {
+                try {
+                    $pdo->setAttribute(PDO::ATTR_TIMEOUT, 3);
+                } catch (Exception $e) {
+                    // Ignorar si no se puede establecer timeout
+                }
+            }
+
+            $pdo->beginTransaction();
 
             // Obtener o crear cart_id del usuario
             $st = $pdo->prepare("SELECT id FROM carts WHERE user_id=? ORDER BY id DESC LIMIT 1");
@@ -215,11 +279,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $st = $pdo->prepare("INSERT INTO carts (user_id, currency, created_at, updated_at) VALUES (?, 'CRC', datetime('now'), datetime('now'))");
                 $st->execute([$uid]);
                 $cartId = (int)$pdo->lastInsertId();
-                logDebug("CART_CREATED_ON_LOGOUT", ['cart_id' => $cartId, 'uid' => $uid]);
             }
 
-            // Guardar items del carrito en BD
+            // ✅ OPTIMIZADO: Usar REPLACE INTO o INSERT ON DUPLICATE KEY UPDATE
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
             $groups = $savedCart['groups'] ?? [];
+            $itemsProcessed = 0;
+
             foreach ($groups as $group) {
                 $sale_id = (int)($group['sale_id'] ?? 0);
                 $items = $group['items'] ?? [];
@@ -230,27 +296,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $unit_price = (float)($item['unit_price'] ?? 0);
 
                     if ($product_id > 0 && $qty > 0) {
-                        // Verificar si ya existe
-                        $check = $pdo->prepare("SELECT id, qty FROM cart_items WHERE cart_id=? AND product_id=? AND sale_id=?");
-                        $check->execute([$cartId, $product_id, $sale_id]);
-                        $existing = $check->fetch(PDO::FETCH_ASSOC);
-
-                        if ($existing) {
-                            // Actualizar cantidad
-                            $update = $pdo->prepare("UPDATE cart_items SET qty=? WHERE id=?");
-                            $update->execute([$qty, $existing['id']]);
+                        // Usar UPSERT según el driver
+                        if ($driver === 'mysql') {
+                            $upsert = $pdo->prepare("
+                                INSERT INTO cart_items (cart_id, product_id, sale_id, qty, unit_price)
+                                VALUES (?, ?, ?, ?, ?)
+                                ON DUPLICATE KEY UPDATE qty = VALUES(qty), unit_price = VALUES(unit_price)
+                            ");
+                            $upsert->execute([$cartId, $product_id, $sale_id, $qty, $unit_price]);
                         } else {
-                            // Insertar nuevo
-                            $insert = $pdo->prepare("INSERT INTO cart_items (cart_id, product_id, sale_id, qty, unit_price) VALUES (?, ?, ?, ?, ?)");
-                            $insert->execute([$cartId, $product_id, $sale_id, $qty, $unit_price]);
+                            // SQLite usa REPLACE
+                            $upsert = $pdo->prepare("
+                                REPLACE INTO cart_items (cart_id, product_id, sale_id, qty, unit_price)
+                                VALUES (?, ?, ?, ?, ?)
+                            ");
+                            $upsert->execute([$cartId, $product_id, $sale_id, $qty, $unit_price]);
                         }
+                        $itemsProcessed++;
                     }
+
+                    // Timeout check
+                    if ((microtime(true) - $startTime) > 2.5) break 2;
                 }
             }
 
-            logDebug("CART_SAVED_TO_DB", ['cart_id' => $cartId, 'groups' => count($groups)]);
+            $pdo->commit();
+
+            $elapsed = round((microtime(true) - $startTime) * 1000, 2);
+            logDebug("CART_SAVED_TO_DB_OPTIMIZED", [
+                'cart_id' => $cartId,
+                'items' => $itemsProcessed,
+                'time_ms' => $elapsed
+            ]);
 
         } catch (Exception $e) {
+            if (isset($pdo) && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             logDebug("CART_SAVE_ERROR", ['error' => $e->getMessage()]);
         }
     }
@@ -319,7 +401,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    logDebug("LOGOUT_COMPLETE", ['redirect' => $redirect, 'cart_preserved' => true]);
+    $totalElapsed = round((microtime(true) - $logoutStartTime) * 1000, 2);
+    logDebug("LOGOUT_COMPLETE", [
+        'redirect' => $redirect,
+        'cart_preserved' => true,
+        'total_time_ms' => $totalElapsed
+    ]);
+
     header('Location: ' . $redirect);
     exit;
 }
