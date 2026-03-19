@@ -1689,15 +1689,20 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       </a>
       <div class="menu-divider"></div>
     <?php endif; ?>
-    
+
     <a href="index" class="menu-item">
       <i class="fas fa-home"></i>
       <span>Inicio</span>
     </a>
-    
+
     <a href="/servicios" class="menu-item">
       <i class="fas fa-concierge-bell"></i>
       <span>Empleos y Servicios</span>
+    </a>
+
+    <a href="venta-garaje" class="menu-item">
+      <i class="fas fa-tags"></i>
+      <span>Venta de Garaje</span>
     </a>
 
     <a href="bienes-raices" class="menu-item">
@@ -1705,19 +1710,14 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <span>Bienes Raíces</span>
     </a>
 
-    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
-      <i class="fas fa-rocket"></i>
-      <span>Emprendedores - Muy Pronto</span>
-    </div>
-
-    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
+    <a href="emprendedoras-catalogo.php" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
       <i class="fas fa-crown"></i>
-      <span>Emprendedoras - Muy Pronto</span>
-    </div>
-    
+      <span>✨ Emprendedoras</span>
+    </a>
+
     <div class="menu-divider"></div>
-    
-    <a href="affiliate/register.php" class="menu-item">
+
+    <a href="select-publication-type.php" class="menu-item">
       <i class="fas fa-bullhorn"></i>
       <span>Publicar mi venta</span>
     </a>
@@ -1727,7 +1727,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <span>Portal Venta Garaje</span>
     </a>
 
-    <a href="/jobs/login.php" class="menu-item">
+    <a href="/jobs_service/login.php" class="menu-item">
       <i class="fas fa-briefcase"></i>
       <span>Portal Empleos y Servicios</span>
     </a>
@@ -1737,11 +1737,16 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <span>Portal Bienes Raíces</span>
     </a>
 
+    <a href="emprendedoras-dashboard" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+      <i class="fas fa-crown"></i>
+      <span>Portal Emprendedoras</span>
+    </a>
+
     <a href="admin/login.php" class="menu-item">
       <i class="fas fa-user-shield"></i>
       <span>Administrador</span>
     </a>
-    
+
     <?php if ($isLoggedIn): ?>
       <div class="menu-divider"></div>
       <a href="logout" class="menu-item danger">
