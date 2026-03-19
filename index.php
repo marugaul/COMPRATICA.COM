@@ -393,7 +393,7 @@ logDebug("RENDERING_PAGE");
         <i class="fas fa-compass"></i>
         Explorar Ahora
       </a>
-      <a href="register" class="btn-hero btn-hero-secondary">
+      <a href="emprendedoras.php" class="btn-hero btn-hero-secondary">
         <i class="fas fa-rocket"></i>
         Únete como Emprendedor
       </a>
