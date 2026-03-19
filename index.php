@@ -133,28 +133,6 @@ if (PHP_VERSION_ID < 70300) {
 
 logDebug("RENDERING_PAGE");
 
-// Obtener empleos destacados para mostrar en la página principal
-$pdo = db();
-$empleosDestacados = [];
-try {
-    $stmt = $pdo->prepare("
-        SELECT
-            jl.*,
-            u.company_name,
-            u.company_logo
-        FROM job_listings jl
-        LEFT JOIN users u ON u.id = jl.employer_id
-        WHERE jl.listing_type = 'job'
-          AND jl.is_active = 1
-          AND (u.status = 'active' OR jl.import_source IS NOT NULL)
-        ORDER BY jl.is_featured DESC, jl.created_at DESC
-        LIMIT 6
-    ");
-    $stmt->execute();
-    $empleosDestacados = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Exception $e) {
-    logDebug("ERROR_FETCHING_JOBS", ['error' => $e->getMessage()]);
-}
 ?>
 <!doctype html>
 <html lang="es">
@@ -500,96 +478,6 @@ try {
   </div>
 </section>
 
-<!-- EMPLEOS DESTACADOS -->
-<?php if (!empty($empleosDestacados)): ?>
-<section class="jobs-section" style="padding: 60px 20px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
-  <div class="section-header" style="text-align: center; margin-bottom: 40px;">
-    <h2 class="section-title" style="font-size: 2.5rem; font-weight: 700; color: #2d3748; margin-bottom: 10px;">
-      <i class="fas fa-briefcase" style="color: #0077cc;"></i> Empleos Destacados
-    </h2>
-    <p class="section-subtitle" style="font-size: 1.1rem; color: #4a5568; max-width: 800px; margin: 0 auto;">
-      Oportunidades laborales en empresas costarricenses. ¡Encontrá tu próximo empleo aquí!
-    </p>
-  </div>
-
-  <div class="jobs-grid" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px;">
-    <?php foreach ($empleosDestacados as $job): ?>
-      <?php
-        $jobTitle = htmlspecialchars($job['title'] ?? 'Sin título');
-        $jobCompany = htmlspecialchars($job['company_name'] ?? 'Empresa');
-        $jobLocation = htmlspecialchars($job['location'] ?? 'Costa Rica');
-        $jobType = htmlspecialchars($job['job_type'] ?? 'full-time');
-        $jobDescription = $job['description'] ?? '';
-
-        // Extraer resumen limpio de la descripción
-        $jobSummary = strip_tags($jobDescription);
-        $jobSummary = preg_replace('/\s+/', ' ', $jobSummary);
-        if (mb_strlen($jobSummary) > 150) {
-            $jobSummary = mb_substr($jobSummary, 0, 150);
-            $lastSpace = mb_strrpos($jobSummary, ' ');
-            if ($lastSpace !== false) {
-                $jobSummary = mb_substr($jobSummary, 0, $lastSpace);
-            }
-            $jobSummary .= '...';
-        }
-
-        // Traducir tipo de empleo
-        $jobTypeLabel = [
-            'full-time' => 'Tiempo Completo',
-            'part-time' => 'Medio Tiempo',
-            'freelance' => 'Freelance',
-            'contract' => 'Contrato',
-            'internship' => 'Pasantía'
-        ][$jobType] ?? 'Tiempo Completo';
-
-        $jobId = (int)($job['id'] ?? 0);
-      ?>
-      <article class="job-card" style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; border: 1px solid #e2e8f0;">
-        <div class="job-header" style="margin-bottom: 15px;">
-          <h3 style="font-size: 1.4rem; font-weight: 600; color: #2d3748; margin: 0 0 8px 0;">
-            <?php echo $jobTitle; ?>
-          </h3>
-          <div style="display: flex; align-items: center; gap: 8px; color: #718096; font-size: 0.95rem; margin-bottom: 5px;">
-            <i class="fas fa-building"></i>
-            <span><?php echo $jobCompany; ?></span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px; color: #718096; font-size: 0.95rem;">
-            <i class="fas fa-map-marker-alt"></i>
-            <span><?php echo $jobLocation; ?></span>
-          </div>
-        </div>
-
-        <div class="job-badges" style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;">
-          <span style="background: #edf2f7; color: #2d3748; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">
-            <i class="fas fa-clock"></i> <?php echo $jobTypeLabel; ?>
-          </span>
-          <?php if (!empty($job['remote_allowed']) || $job['job_type'] === 'remote'): ?>
-            <span style="background: #c6f6d5; color: #22543d; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">
-              <i class="fas fa-home"></i> Remoto
-            </span>
-          <?php endif; ?>
-        </div>
-
-        <p style="color: #4a5568; font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px;">
-          <?php echo htmlspecialchars($jobSummary); ?>
-        </p>
-
-        <a href="/empleos.php?id=<?php echo $jobId; ?>"
-           style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: transform 0.2s;">
-          Ver Detalles <i class="fas fa-arrow-right"></i>
-        </a>
-      </article>
-    <?php endforeach; ?>
-  </div>
-
-  <div style="text-align: center; margin-top: 40px;">
-    <a href="/empleos.php"
-       style="display: inline-block; background: #0077cc; color: white; padding: 15px 35px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 1.1rem; transition: background 0.3s;">
-      Ver Todos los Empleos <i class="fas fa-arrow-right"></i>
-    </a>
-  </div>
-</section>
-<?php endif; ?>
 
 <!-- ESTADÍSTICAS -->
 <section class="stats-section">
