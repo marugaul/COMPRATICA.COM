@@ -97,6 +97,13 @@ function detectLanguage($text) {
  * Divide textos largos en chunks automáticamente
  */
 function translateText($text, $from, $to) {
+    // NORMALIZAR TEXTO ANTES DE TRADUCIR
+    // Eliminar saltos de línea que dividen palabras
+    $text = preg_replace('/(\S)\s*[\r\n]+\s*(\S)/u', '$1 $2', $text);
+    // Normalizar espacios múltiples a un solo espacio
+    $text = preg_replace('/\s+/u', ' ', $text);
+    $text = trim($text);
+
     // Si from es 'auto', detectar el idioma primero
     if ($from === 'auto') {
         $from = detectLanguage($text);
@@ -150,6 +157,14 @@ function translateText($text, $from, $to) {
     }
 
     $finalTranslation = implode(' ', $translatedChunks);
+
+    // NORMALIZAR RESULTADO FINAL
+    // Eliminar saltos de línea que dividen palabras
+    $finalTranslation = preg_replace('/(\S)\s*[\r\n]+\s*(\S)/u', '$1 $2', $finalTranslation);
+    // Normalizar espacios múltiples a un solo espacio
+    $finalTranslation = preg_replace('/\s+/u', ' ', $finalTranslation);
+    $finalTranslation = trim($finalTranslation);
+
     return [
         'translated' => $finalTranslation,
         'original' => $text,
@@ -196,6 +211,11 @@ function translateWithMyMemory($text, $from, $to) {
             return false;
         }
 
+        // Normalizar resultado
+        $translated = preg_replace('/(\S)\s*[\r\n]+\s*(\S)/u', '$1 $2', $translated);
+        $translated = preg_replace('/\s+/u', ' ', $translated);
+        $translated = trim($translated);
+
         return $translated;
     }
 
@@ -231,6 +251,11 @@ function translateWithGoogle($text, $from, $to) {
             $translated .= $chunk[0];
         }
     }
+
+    // Normalizar resultado
+    $translated = preg_replace('/(\S)\s*[\r\n]+\s*(\S)/u', '$1 $2', $translated);
+    $translated = preg_replace('/\s+/u', ' ', $translated);
+    $translated = trim($translated);
 
     return $translated;
 }
