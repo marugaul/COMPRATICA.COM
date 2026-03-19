@@ -1434,12 +1434,16 @@ async function translateJob(jobId, button) {
       descData = await descRes.json();
     }
 
-    // Aplicar traducciones
+    // Aplicar traducciones (normalizar espacios y saltos de línea)
     if (titleData.translated) {
-      titleEl.textContent = titleData.translated;
+      // Normalizar el título: eliminar saltos de línea y espacios múltiples
+      const normalizedTitle = titleData.translated.replace(/\s+/g, ' ').trim();
+      titleEl.textContent = normalizedTitle;
     }
     if (descData && descData.translated && descEl) {
-      descEl.textContent = descData.translated;
+      // Normalizar la descripción: eliminar saltos de línea y espacios múltiples
+      const normalizedDesc = descData.translated.replace(/\s+/g, ' ').trim();
+      descEl.textContent = normalizedDesc;
     }
 
     // Guardar para poder revertir

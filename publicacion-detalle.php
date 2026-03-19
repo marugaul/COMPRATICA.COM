@@ -1277,6 +1277,9 @@ async function translateDescription() {
       translatedText += data.translated || chunk;
     }
 
+    // Normalizar el texto traducido completo primero (eliminar saltos de línea innecesarios)
+    translatedText = translatedText.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+
     // Distribuir el texto traducido de vuelta a los nodos originales (sin los títulos)
     let translated = translatedText;
     textParts.forEach(part => {
