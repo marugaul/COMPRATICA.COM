@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $subId  = (int)($_POST['sub_id'] ?? 0);
     $act    = $_POST['action'] ?? '';
 
-    if ($subId > 0 && in_array($act, ['approve', 'reject'], true)) {
+    if ($subId > 0 && in_array($act, ['approve', 'reject', 'activate', 'inactivate'], true)) {
         try {
             // Obtener suscripción
             $sub = $pdo->prepare("
@@ -120,6 +120,134 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         } catch (Throwable $e) {
                             error_log('[admin/emprendedoras] Email rechazo error: ' . $e->getMessage());
                         }
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            $msg = 'Error: ' . $e->getMessage();
+            $msgType = 'error';
+        }
+    }
+
+    // Activar suscripción
+    if ($subId > 0 && $act === 'activate') {
+        try {
+            $sub = $pdo->prepare("
+                SELECT s.*, p.name AS plan_name, u.name AS user_name, u.email AS user_email
+                FROM entrepreneur_subscriptions s
+                JOIN entrepreneur_plans p ON p.id = s.plan_id
+                JOIN users u ON u.id = s.user_id
+                WHERE s.id = ?
+            ");
+            $sub->execute([$subId]);
+            $row = $sub->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                $msg = 'Suscripción no encontrada.';
+                $msgType = 'error';
+            } else {
+                $pdo->beginTransaction();
+
+                // Reactivar por 1 mes desde hoy
+                $endDate = date('Y-m-d H:i:s', strtotime('+1 month'));
+                $pdo->prepare("
+                    UPDATE entrepreneur_subscriptions
+                    SET status='active', start_date=datetime('now'), end_date=?, updated_at=datetime('now')
+                    WHERE id=?
+                ")->execute([$endDate, $subId]);
+
+                $pdo->commit();
+                $msg = "Suscripción de {$row['user_name']} reactivada correctamente.";
+                $msgType = 'success';
+
+                // Email al usuario
+                if ($row['user_email']) {
+                    $html = "
+                    <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
+                        <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:40px;text-align:center;border-radius:16px 16px 0 0;'>
+                            <h1 style='color:#fff;margin:0;font-size:1.8rem;'>🌸 CompraTica Emprendedoras</h1>
+                        </div>
+                        <div style='background:#fff;padding:40px;border:1px solid #e0e0e0;'>
+                            <h2 style='color:#27ae60;'>✅ ¡Tu suscripción fue reactivada!</h2>
+                            <p>Hola <strong>" . h($row['user_name']) . "</strong>,</p>
+                            <p>Tu suscripción al plan <strong>" . h($row['plan_name']) . "</strong> ha sido <strong>reactivada</strong>.</p>
+                            <p>Ya puedes acceder nuevamente a tu dashboard y seguir publicando tus productos.</p>
+                            <div style='text-align:center;margin:30px 0;'>
+                                <a href='" . SITE_URL . "/emprendedoras-dashboard' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ir a mi Dashboard</a>
+                            </div>
+                        </div>
+                        <div style='background:#f9fafb;padding:20px;text-align:center;border-radius:0 0 16px 16px;color:#666;font-size:0.85rem;'>
+                            CompraTica — El marketplace costarricense
+                        </div>
+                    </div>";
+                    try {
+                        send_email($row['user_email'], '✅ Suscripción Reactivada - Emprendedoras CompraTica', $html);
+                    } catch (Throwable $e) {
+                        error_log('[admin/emprendedoras] Email reactivación error: ' . $e->getMessage());
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            $msg = 'Error: ' . $e->getMessage();
+            $msgType = 'error';
+        }
+    }
+
+    // Inactivar suscripción
+    if ($subId > 0 && $act === 'inactivate') {
+        try {
+            $sub = $pdo->prepare("
+                SELECT s.*, p.name AS plan_name, u.name AS user_name, u.email AS user_email
+                FROM entrepreneur_subscriptions s
+                JOIN entrepreneur_plans p ON p.id = s.plan_id
+                JOIN users u ON u.id = s.user_id
+                WHERE s.id = ?
+            ");
+            $sub->execute([$subId]);
+            $row = $sub->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                $msg = 'Suscripción no encontrada.';
+                $msgType = 'error';
+            } else {
+                $pdo->beginTransaction();
+
+                $pdo->prepare("
+                    UPDATE entrepreneur_subscriptions
+                    SET status='cancelled', updated_at=datetime('now')
+                    WHERE id=?
+                ")->execute([$subId]);
+
+                $pdo->commit();
+                $msg = "Suscripción de {$row['user_name']} desactivada correctamente.";
+                $msgType = 'warning';
+
+                // Email al usuario
+                if ($row['user_email']) {
+                    $html = "
+                    <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
+                        <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:40px;text-align:center;border-radius:16px 16px 0 0;'>
+                            <h1 style='color:#fff;margin:0;font-size:1.8rem;'>🌸 CompraTica Emprendedoras</h1>
+                        </div>
+                        <div style='background:#fff;padding:40px;border:1px solid #e0e0e0;'>
+                            <h2 style='color:#e74c3c;'>⚠️ Tu suscripción fue desactivada</h2>
+                            <p>Hola <strong>" . h($row['user_name']) . "</strong>,</p>
+                            <p>Tu suscripción al plan <strong>" . h($row['plan_name']) . "</strong> ha sido <strong>desactivada</strong>.</p>
+                            <p>Si crees que esto es un error o deseas reactivar tu cuenta, por favor contáctanos.</p>
+                            <div style='text-align:center;margin:30px 0;'>
+                                <a href='" . SITE_URL . "/emprendedoras-planes' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ver planes</a>
+                            </div>
+                        </div>
+                        <div style='background:#f9fafb;padding:20px;text-align:center;border-radius:0 0 16px 16px;color:#666;font-size:0.85rem;'>
+                            CompraTica — El marketplace costarricense
+                        </div>
+                    </div>";
+                    try {
+                        send_email($row['user_email'], '⚠️ Suscripción Desactivada - Emprendedoras CompraTica', $html);
+                    } catch (Throwable $e) {
+                        error_log('[admin/emprendedoras] Email desactivación error: ' . $e->getMessage());
                     }
                 }
             }
@@ -228,6 +356,10 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
         .btn-reject:hover  { background: #dc2626; }
         .btn-view    { background: #667eea; color: white; }
         .btn-view:hover { background: #5a6fd6; }
+        .btn-activate { background: #10b981; color: white; }
+        .btn-activate:hover { background: #059669; }
+        .btn-inactivate { background: #f59e0b; color: white; }
+        .btn-inactivate:hover { background: #d97706; }
         .empty { text-align: center; padding: 40px; color: #999; }
         .empty i { font-size: 2.5rem; margin-bottom: 10px; }
     </style>
@@ -339,6 +471,7 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                         <th>Estado</th>
                         <th>Inicio</th>
                         <th>Vence</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -359,6 +492,27 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                         </td>
                         <td><?php echo $row['start_date'] ? date('d/m/Y', strtotime($row['start_date'])) : '—'; ?></td>
                         <td><?php echo $row['end_date'] ? date('d/m/Y', strtotime($row['end_date'])) : '—'; ?></td>
+                        <td>
+                            <?php if ($row['status'] === 'active'): ?>
+                                <form method="post" onsubmit="return confirm('¿Desactivar esta suscripción?');" style="display:inline;">
+                                    <input type="hidden" name="sub_id" value="<?php echo $row['id']; ?>">
+                                    <input type="hidden" name="action" value="inactivate">
+                                    <button type="submit" class="btn btn-inactivate">
+                                        <i class="fas fa-pause"></i> Desactivar
+                                    </button>
+                                </form>
+                            <?php elseif (in_array($row['status'], ['cancelled', 'expired'])): ?>
+                                <form method="post" onsubmit="return confirm('¿Reactivar esta suscripción por 1 mes?');" style="display:inline;">
+                                    <input type="hidden" name="sub_id" value="<?php echo $row['id']; ?>">
+                                    <input type="hidden" name="action" value="activate">
+                                    <button type="submit" class="btn btn-activate">
+                                        <i class="fas fa-play"></i> Reactivar
+                                    </button>
+                                </form>
+                            <?php else: ?>
+                                <span style="color:#999;">—</span>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
