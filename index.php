@@ -465,6 +465,17 @@ try {
       </div>
     </a>
 
+    <!-- EMPLEOS -->
+    <a href="empleos" class="category-card category-empleos">
+      <div class="category-content">
+        <div class="category-icon">
+          <i class="fas fa-briefcase"></i>
+        </div>
+        <h3 class="category-title">Empleos</h3>
+        <p class="category-description">Encontrá oportunidades laborales en empresas costarricenses. Publicá tu CV o buscá el trabajo ideal para vos</p>
+      </div>
+    </a>
+
     <!-- EMPRENDEDORES -->
     <div class="category-card category-emprendedores" style="opacity: 0.6; cursor: not-allowed; position: relative;">
       <div class="category-content">
