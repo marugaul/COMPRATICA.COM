@@ -329,11 +329,6 @@ logDebug("RENDERING_PAGE");
       <span>Bienes Raíces</span>
     </a>
 
-    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
-      <i class="fas fa-rocket"></i>
-      <span>Emprendedores - Muy Pronto</span>
-    </div>
-
     <a href="emprendedoras-catalogo.php" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
       <i class="fas fa-crown"></i>
       <span>✨ Emprendedoras</span>
@@ -344,11 +339,6 @@ logDebug("RENDERING_PAGE");
     <a href="select-publication-type.php" class="menu-item">
       <i class="fas fa-bullhorn"></i>
       <span>Publicar mi venta</span>
-    </a>
-
-    <a href="select-publication-type.php" class="menu-item highlight">
-      <i class="fas fa-building"></i>
-      <span>Publicar Propiedad</span>
     </a>
 
     <a href="affiliate/login.php" class="menu-item">
