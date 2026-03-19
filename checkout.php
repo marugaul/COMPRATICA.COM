@@ -1223,19 +1223,72 @@ document.getElementById('geolocate-btn')?.addEventListener('click', async functi
 
       // Hacer reverse geocoding para obtener la dirección
       try {
-        // Usar servicio de geocoding inverso
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`);
+        // Usar servicio de geocoding inverso con más detalle
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es&addressdetails=1`);
         const data = await response.json();
 
-        if (data && data.display_name) {
+        if (data && data.address) {
+          // Construir dirección legible usando componentes
+          const addr = data.address;
+          const parts = [];
+
+          // Prioridad: road (calle), house_number, neighbourhood, suburb, city, town, county, state
+          if (addr.road) {
+            let street = addr.road;
+            if (addr.house_number) {
+              street += ' ' + addr.house_number;
+            }
+            parts.push(street);
+          } else if (addr.pedestrian) {
+            parts.push(addr.pedestrian);
+          }
+
+          // Añadir barrio/colonia si está disponible
+          if (addr.neighbourhood) {
+            parts.push(addr.neighbourhood);
+          } else if (addr.suburb) {
+            parts.push(addr.suburb);
+          }
+
+          // Añadir ciudad/pueblo
+          if (addr.city) {
+            parts.push(addr.city);
+          } else if (addr.town) {
+            parts.push(addr.town);
+          } else if (addr.village) {
+            parts.push(addr.village);
+          } else if (addr.county) {
+            parts.push(addr.county);
+          }
+
+          // Añadir provincia/estado
+          if (addr.state) {
+            parts.push(addr.state);
+          }
+
+          // Construir dirección final
+          const finalAddress = parts.join(', ');
+
+          if (finalAddress) {
+            document.getElementById('delivery_address').value = finalAddress;
+            alert('✅ Ubicación detectada: ' + finalAddress);
+          } else if (data.display_name) {
+            // Fallback a display_name si no hay componentes
+            document.getElementById('delivery_address').value = data.display_name;
+            alert('✅ Ubicación detectada. Por favor verifica que la dirección sea correcta.');
+          } else {
+            alert('📍 Coordenadas obtenidas. Por favor completa tu dirección manualmente.');
+          }
+        } else if (data && data.display_name) {
+          // Fallback si no hay address pero sí display_name
           document.getElementById('delivery_address').value = data.display_name;
-          alert('✅ Ubicación detectada correctamente');
+          alert('✅ Ubicación detectada. Por favor verifica que la dirección sea correcta.');
         } else {
-          alert('📍 Coordenadas obtenidas. Por favor completa tu dirección manualmente.');
+          alert('📍 No se pudo obtener la dirección. Por favor ingrésala manualmente.');
         }
       } catch (error) {
         console.error('Error en reverse geocoding:', error);
-        alert('📍 Coordenadas obtenidas: ' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '\nPor favor completa tu dirección manualmente.');
+        alert('⚠️ Error al obtener la dirección. Por favor ingrésala manualmente.\n\nCoordenadas: ' + lat.toFixed(6) + ', ' + lng.toFixed(6));
       }
 
       btn.disabled = false;
