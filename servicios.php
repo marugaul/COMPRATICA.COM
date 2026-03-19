@@ -1222,19 +1222,19 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
       <span>Venta de Garaje</span>
     </a>
 
-    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
-      <i class="fas fa-rocket"></i>
-      <span>Emprendedores - Muy Pronto</span>
-    </div>
+    <a href="bienes-raices" class="menu-item">
+      <i class="fas fa-home"></i>
+      <span>Bienes Raíces</span>
+    </a>
 
-    <div class="menu-item" style="opacity: 0.5; cursor: not-allowed;">
+    <a href="emprendedoras-catalogo.php" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
       <i class="fas fa-crown"></i>
-      <span>Emprendedoras - Muy Pronto</span>
-    </div>
+      <span>✨ Emprendedoras</span>
+    </a>
 
     <div class="menu-divider"></div>
 
-    <a href="affiliate/register.php" class="menu-item">
+    <a href="select-publication-type.php" class="menu-item">
       <i class="fas fa-bullhorn"></i>
       <span>Publicar mi venta</span>
     </a>
@@ -1244,7 +1244,7 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
       <span>Portal Venta Garaje</span>
     </a>
 
-    <a href="/jobs/login.php" class="menu-item">
+    <a href="/jobs_service/login.php" class="menu-item">
       <i class="fas fa-briefcase"></i>
       <span>Portal Empleos y Servicios</span>
     </a>
@@ -1252,6 +1252,11 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
     <a href="/real-estate/login.php" class="menu-item">
       <i class="fas fa-home"></i>
       <span>Portal Bienes Raíces</span>
+    </a>
+
+    <a href="emprendedoras-dashboard" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+      <i class="fas fa-crown"></i>
+      <span>Portal Emprendedoras</span>
     </a>
 
     <a href="admin/login.php" class="menu-item">
