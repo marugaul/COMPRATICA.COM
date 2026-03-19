@@ -324,27 +324,6 @@ ini_set('default_charset', 'UTF-8');
           <i class="fas fa-arrow-right"></i>
         </span>
       </a>
-
-      <!-- BIENES RAÍCES -->
-      <a href="/real-estate/register.php" class="publication-card">
-        <div class="card-icon bienes">
-          <i class="fas fa-home"></i>
-        </div>
-        <h2 class="card-title">Bienes Raíces</h2>
-        <p class="card-description">
-          Publicá propiedades en venta o alquiler con información detallada.
-        </p>
-        <ul class="card-features">
-          <li><i class="fas fa-check-circle"></i> Propiedades en venta/alquiler</li>
-          <li><i class="fas fa-check-circle"></i> Detalles de metros cuadrados</li>
-          <li><i class="fas fa-check-circle"></i> Ubicación en mapa</li>
-          <li><i class="fas fa-check-circle"></i> Galería de fotos completa</li>
-        </ul>
-        <span class="card-button">
-          Publicar Propiedad
-          <i class="fas fa-arrow-right"></i>
-        </span>
-      </a>
     </div>
 
     <div class="back-link">
