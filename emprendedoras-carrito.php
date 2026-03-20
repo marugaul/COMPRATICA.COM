@@ -185,7 +185,7 @@ foreach ($shippingChoices as $sid => $choice) {
     <div id="cart-groups">
     <?php foreach ($groups as $sid => $group):
         $sc   = $sellerShipping[$sid] ?? [];
-        $hasMethods = !empty($sc['enable_pickup']) || !empty($sc['enable_free_shipping']) || !empty($sc['enable_express']);
+        $hasMethods = !empty($sc['enable_pickup']) || !empty($sc['enable_free_shipping']) || !empty($sc['enable_express']) || !empty($sc['enable_mooving']);
         $chosen = $shippingChoices[$sid] ?? null;
     ?>
         <div class="seller-group" data-seller="<?= $sid ?>">
@@ -259,6 +259,16 @@ foreach ($shippingChoices as $sid => $choice) {
                         <i class="fas fa-shipping-fast" style="color:#f59e0b;"></i> Envío express
                     </label>
                     <?php endif; ?>
+
+                    <?php if (!empty($sc['enable_mooving'])): ?>
+                    <label class="ship-option <?= ($chosen['method']??'') === 'mooving' ? 'selected' : '' ?>"
+                           onclick="selectShipping(<?= $sid ?>, 'mooving', this)">
+                        <input type="radio" name="ship_<?= $sid ?>" value="mooving"
+                               <?= ($chosen['method']??'') === 'mooving' ? 'checked' : '' ?>>
+                        <i class="fas fa-motorcycle" style="color:#8b5cf6;"></i> Envío Mooving
+                        <span style="font-weight:400;color:#8b5cf6;font-size:.78rem;">⭐ Nuevo</span>
+                    </label>
+                    <?php endif; ?>
                 </div>
 
                 <?php if (!empty($sc['enable_pickup']) && !empty($sc['pickup_instructions'])): ?>
@@ -295,6 +305,31 @@ foreach ($shippingChoices as $sid => $choice) {
                         <?php if (!empty($chosen['zone_price'])): ?>
                             <span class="express-cost-badge">
                                 <i class="fas fa-truck"></i> Envío: ₡<?= number_format($chosen['zone_price'], 0) ?>
+                            </span>
+                        <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($sc['enable_mooving'])): ?>
+                <div id="mooving-detail-<?= $sid ?>" style="<?= ($chosen['method']??'') !== 'mooving' ? 'display:none;' : '' ?>">
+                    <div class="express-detail">
+                        <button type="button" class="locate-btn" onclick="locateMe(<?= $sid ?>, true)">
+                            <i class="fas fa-location-arrow"></i> Usar mi ubicación actual
+                        </button>
+                        <label>Dirección de entrega</label>
+                        <input type="text" id="addr-mooving-<?= $sid ?>"
+                               placeholder="Ej: 100m norte del parque, San José"
+                               value="<?= htmlspecialchars($chosen['address'] ?? '') ?>"
+                               oninput="requestMovingQuote(<?= $sid ?>)">
+                        <div id="mooving-quote-<?= $sid ?>" style="margin-top:10px;">
+                            <p style="color:#8b5cf6;font-size:.88rem;"><i class="fas fa-info-circle"></i> Ingresa tu dirección para calcular el costo de envío con Mooving</p>
+                        </div>
+                        <div id="mooving-cost-<?= $sid ?>">
+                        <?php if (!empty($chosen['zone_price'])): ?>
+                            <span class="express-cost-badge" style="background:#f3e8ff;color:#6b21a8;">
+                                <i class="fas fa-motorcycle"></i> Envío Mooving: ₡<?= number_format($chosen['zone_price'], 0) ?>
                             </span>
                         <?php endif; ?>
                         </div>
@@ -401,20 +436,25 @@ function selectShipping(sid, method, labelEl) {
     if (labelEl) labelEl.classList.add('selected');
 
     // Show/hide sub-panels
-    const pickupInfo   = document.getElementById(`pickup-info-${sid}`);
-    const expressDetail= document.getElementById(`express-detail-${sid}`);
-    if (pickupInfo)    pickupInfo.style.display    = (method === 'pickup')  ? 'block' : 'none';
-    if (expressDetail) expressDetail.style.display = (method === 'express') ? 'block' : 'none';
+    const pickupInfo    = document.getElementById(`pickup-info-${sid}`);
+    const expressDetail = document.getElementById(`express-detail-${sid}`);
+    const moovingDetail = document.getElementById(`mooving-detail-${sid}`);
+    if (pickupInfo)     pickupInfo.style.display    = (method === 'pickup')  ? 'block' : 'none';
+    if (expressDetail)  expressDetail.style.display = (method === 'express') ? 'block' : 'none';
+    if (moovingDetail)  moovingDetail.style.display = (method === 'mooving') ? 'block' : 'none';
 
-    if (method !== 'express') {
+    if (method !== 'express' && method !== 'mooving') {
         // Save immediately
         const cost = 0;
         shippingCosts[sid] = cost;
         saveToSession(sid, method, '', '', 0);
         updateSummary(sid, method, '', 0);
-    } else {
+    } else if (method === 'express') {
         // For express: wait for zone selection before saving
         updateSummary(sid, 'express', '', 0);
+    } else if (method === 'mooving') {
+        // For mooving: show initial state
+        updateSummary(sid, 'mooving', '', 0);
     }
 }
 
@@ -456,13 +496,13 @@ function updateSummary(sid, method, zoneName, zonePrice) {
     const row  = document.getElementById(`ship-summary-${sid}`);
     const cost = document.getElementById(`ship-cost-${sid}`);
     if (row && cost) {
-        const labels = { pickup: 'Retiro en local', free: 'Envío gratis', express: 'Envío express' };
-        const icons  = { pickup: 'store', free: 'gift', express: 'shipping-fast' };
-        const label  = labels[method] + (method === 'express' && zoneName ? ` (${zoneName})` : '');
+        const labels = { pickup: 'Retiro en local', free: 'Envío gratis', express: 'Envío express', mooving: 'Envío Mooving' };
+        const icons  = { pickup: 'store', free: 'gift', express: 'shipping-fast', mooving: 'motorcycle' };
+        const label  = labels[method] + ((method === 'express' || method === 'mooving') && zoneName ? ` (${zoneName})` : '');
         row.style.display = '';
         row.querySelector('span').innerHTML = `<i class="fas fa-${icons[method]}"></i> ${label}`;
         cost.textContent  = zonePrice > 0 ? `₡${zonePrice.toLocaleString('es-CR')}` : 'Gratis';
-        cost.style.color  = zonePrice > 0 ? '#f59e0b' : '#10b981';
+        cost.style.color  = zonePrice > 0 ? (method === 'mooving' ? '#8b5cf6' : '#f59e0b') : '#10b981';
     }
     // Recalc grand total
     let total = Object.values(sellerSubtotals).reduce((a, b) => a + b, 0);
@@ -472,12 +512,12 @@ function updateSummary(sid, method, zoneName, zonePrice) {
 }
 
 // Geolocalización → rellenar campo dirección con Nominatim (OpenStreetMap)
-function locateMe(sid) {
+function locateMe(sid, isMooving = false) {
     if (!navigator.geolocation) {
         alert('Tu navegador no soporta geolocalización.');
         return;
     }
-    const addrEl = document.getElementById(`addr-${sid}`);
+    const addrEl = document.getElementById(isMooving ? `addr-mooving-${sid}` : `addr-${sid}`);
     if (addrEl) { addrEl.placeholder = 'Detectando ubicación…'; addrEl.disabled = true; }
     navigator.geolocation.getCurrentPosition(
         pos => {
@@ -490,7 +530,13 @@ function locateMe(sid) {
                         addrEl.value = addr;
                         addrEl.disabled = false;
                         addrEl.placeholder = 'Dirección de entrega';
-                        saveExpressChoice(sid);
+                        addrEl.dataset.lat = lat;
+                        addrEl.dataset.lng = lng;
+                        if (isMooving) {
+                            requestMovingQuote(sid);
+                        } else {
+                            saveExpressChoice(sid);
+                        }
                     }
                 })
                 .catch(() => {
@@ -498,7 +544,13 @@ function locateMe(sid) {
                         addrEl.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
                         addrEl.disabled = false;
                         addrEl.placeholder = 'Dirección de entrega';
-                        saveExpressChoice(sid);
+                        addrEl.dataset.lat = lat;
+                        addrEl.dataset.lng = lng;
+                        if (isMooving) {
+                            requestMovingQuote(sid);
+                        } else {
+                            saveExpressChoice(sid);
+                        }
                     }
                 });
         },
@@ -508,6 +560,94 @@ function locateMe(sid) {
         },
         { timeout: 10000 }
     );
+}
+
+// ── Mooving Integration ──────────────────────────────────────────────────────
+let moovingQuoteTimers = {}; // sid → timeout id
+
+function requestMovingQuote(sid) {
+    // Debounce: esperar 1 segundo después de que el usuario deje de escribir
+    if (moovingQuoteTimers[sid]) {
+        clearTimeout(moovingQuoteTimers[sid]);
+    }
+
+    moovingQuoteTimers[sid] = setTimeout(() => {
+        const addrEl = document.getElementById(`addr-mooving-${sid}`);
+        const quoteDiv = document.getElementById(`mooving-quote-${sid}`);
+        const costDiv = document.getElementById(`mooving-cost-${sid}`);
+
+        if (!addrEl || !quoteDiv) return;
+
+        const address = addrEl.value.trim();
+        if (!address) {
+            quoteDiv.innerHTML = '<p style="color:#8b5cf6;font-size:.88rem;"><i class="fas fa-info-circle"></i> Ingresa tu dirección para calcular el costo de envío</p>';
+            return;
+        }
+
+        // Mostrar loading
+        quoteDiv.innerHTML = '<p style="color:#8b5cf6;font-size:.88rem;"><i class="fas fa-spinner fa-spin"></i> Calculando costo de envío...</p>';
+
+        // Obtener coordenadas si están disponibles, sino usar default
+        const lat = parseFloat(addrEl.dataset.lat || 0);
+        const lng = parseFloat(addrEl.dataset.lng || 0);
+
+        const subtotal = sellerSubtotals[sid] || 0;
+
+        const requestData = {
+            seller_id: sid,
+            destination_address: address,
+            destination_lat: lat || 9.9281, // Default San José si no hay coordenadas
+            destination_lng: lng || -84.0907,
+            package_value: subtotal
+        };
+
+        fetch('/mooving/ajax_mooving_quote.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok && data.price > 0) {
+                const price = Math.round(data.price);
+                const estimatedTime = data.estimated_time || 60;
+
+                quoteDiv.innerHTML = `
+                    <div style="background:#f3e8ff;border:2px solid #8b5cf6;border-radius:10px;padding:12px;margin-top:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <span style="font-weight:700;color:#6b21a8;"><i class="fas fa-motorcycle"></i> Costo de envío</span>
+                            <span style="font-weight:800;font-size:1.1rem;color:#6b21a8;">₡${price.toLocaleString('es-CR')}</span>
+                        </div>
+                        <div style="font-size:.82rem;color:#7c3aed;">
+                            <i class="fas fa-clock"></i> Tiempo estimado: ~${estimatedTime} minutos
+                        </div>
+                        ${data.is_estimate ? '<div style="font-size:.75rem;color:#9333ea;margin-top:4px;"><i class="fas fa-info-circle"></i> Precio estimado</div>' : ''}
+                    </div>
+                `;
+
+                if (costDiv) {
+                    costDiv.innerHTML = `
+                        <span class="express-cost-badge" style="background:#f3e8ff;color:#6b21a8;">
+                            <i class="fas fa-motorcycle"></i> Envío Mooving: ₡${price.toLocaleString('es-CR')}
+                        </span>
+                    `;
+                }
+
+                // Guardar en sesión
+                shippingCosts[sid] = price;
+                saveToSession(sid, 'mooving', address, 'Mooving', price);
+                updateSummary(sid, 'mooving', 'Mooving', price);
+
+            } else {
+                quoteDiv.innerHTML = `<p style="color:#dc2626;font-size:.88rem;"><i class="fas fa-exclamation-triangle"></i> ${data.error || 'No se pudo calcular el costo'}</p>`;
+            }
+        })
+        .catch(err => {
+            quoteDiv.innerHTML = '<p style="color:#dc2626;font-size:.88rem;"><i class="fas fa-exclamation-triangle"></i> Error al obtener cotización. Intenta de nuevo.</p>';
+            console.error('Mooving quote error:', err);
+        });
+
+    }, 1000); // Esperar 1 segundo después de que deje de escribir
 }
 </script>
 </body>

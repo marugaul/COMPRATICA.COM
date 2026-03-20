@@ -12,12 +12,31 @@ function initShippingTable(PDO $pdo): void {
             enable_free_shipping INTEGER NOT NULL DEFAULT 0,
             enable_pickup        INTEGER NOT NULL DEFAULT 0,
             enable_express       INTEGER NOT NULL DEFAULT 0,
+            enable_mooving       INTEGER NOT NULL DEFAULT 0,
             free_shipping_min    INTEGER NOT NULL DEFAULT 0,
             pickup_instructions  TEXT    NOT NULL DEFAULT '',
             express_zones        TEXT    NOT NULL DEFAULT '[]',
             updated_at           TEXT    DEFAULT (datetime('now','localtime'))
         )
     ");
+
+    // Agregar columna enable_mooving si no existe (para bases de datos existentes)
+    try {
+        $stmt = $pdo->query("PRAGMA table_info(entrepreneur_shipping)");
+        $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $hasMoving = false;
+        foreach ($columns as $col) {
+            if ($col['name'] === 'enable_mooving') {
+                $hasMoving = true;
+                break;
+            }
+        }
+        if (!$hasMoving) {
+            $pdo->exec("ALTER TABLE entrepreneur_shipping ADD COLUMN enable_mooving INTEGER NOT NULL DEFAULT 0");
+        }
+    } catch (Exception $e) {
+        // Silencioso: ya existe o tabla nueva
+    }
 }
 
 /** Devuelve la config de envío de un vendedor (array o defaults si no existe). */
@@ -32,6 +51,7 @@ function getShippingConfig(PDO $pdo, int $userId): array {
             'enable_free_shipping' => 0,
             'enable_pickup'        => 0,
             'enable_express'       => 0,
+            'enable_mooving'       => 0,
             'free_shipping_min'    => 0,
             'pickup_instructions'  => '',
             'express_zones'        => [],
@@ -40,6 +60,7 @@ function getShippingConfig(PDO $pdo, int $userId): array {
     $row['enable_free_shipping'] = (int)$row['enable_free_shipping'];
     $row['enable_pickup']        = (int)$row['enable_pickup'];
     $row['enable_express']       = (int)$row['enable_express'];
+    $row['enable_mooving']       = (int)($row['enable_mooving'] ?? 0);
     $row['free_shipping_min']    = (int)$row['free_shipping_min'];
     $row['express_zones']        = json_decode($row['express_zones'] ?? '[]', true) ?: [];
     return $row;
@@ -61,6 +82,7 @@ function saveShippingConfig(PDO $pdo, int $userId, array $data): void {
                 enable_free_shipping = ?,
                 enable_pickup        = ?,
                 enable_express       = ?,
+                enable_mooving       = ?,
                 free_shipping_min    = ?,
                 pickup_instructions  = ?,
                 express_zones        = ?,
@@ -70,6 +92,7 @@ function saveShippingConfig(PDO $pdo, int $userId, array $data): void {
             (int)($data['enable_free_shipping'] ?? 0),
             (int)($data['enable_pickup']        ?? 0),
             (int)($data['enable_express']       ?? 0),
+            (int)($data['enable_mooving']       ?? 0),
             (int)($data['free_shipping_min']    ?? 0),
             trim($data['pickup_instructions']   ?? ''),
             $zonesJson,
@@ -79,14 +102,15 @@ function saveShippingConfig(PDO $pdo, int $userId, array $data): void {
         // INSERT
         $pdo->prepare("
             INSERT INTO entrepreneur_shipping
-                (user_id, enable_free_shipping, enable_pickup, enable_express,
+                (user_id, enable_free_shipping, enable_pickup, enable_express, enable_mooving,
                  free_shipping_min, pickup_instructions, express_zones, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
         ")->execute([
             $userId,
             (int)($data['enable_free_shipping'] ?? 0),
             (int)($data['enable_pickup']        ?? 0),
             (int)($data['enable_express']       ?? 0),
+            (int)($data['enable_mooving']       ?? 0),
             (int)($data['free_shipping_min']    ?? 0),
             trim($data['pickup_instructions']   ?? ''),
             $zonesJson,
