@@ -645,6 +645,10 @@ $stats = [
       <i class="fas fa-crown"></i>
       <span>EMPRENDEDORAS</span>
     </a>
+    <a class="nav-btn" href="mooving-config.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(139,92,246,0.7); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 700; transition: all 0.3s ease; border: 2px solid rgba(196,181,253,0.8);" onmouseover="this.style.background='rgba(139,92,246,0.9)';" onmouseout="this.style.background='rgba(139,92,246,0.7)';">
+      <i class="fas fa-motorcycle"></i>
+      <span>MOOVING</span>
+    </a>
     <a class="nav-btn" href="bienes_raices_config.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.15); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.3);" onmouseover="this.style.background='rgba(255,255,255,0.25)'; this.style.borderColor='rgba(255,255,255,0.5)';" onmouseout="this.style.background='rgba(255,255,255,0.15)'; this.style.borderColor='rgba(255,255,255,0.3)';">
       <i class="fas fa-home"></i>
       <span>BIENES RAICES</span>
