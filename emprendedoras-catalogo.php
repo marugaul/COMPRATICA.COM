@@ -702,9 +702,9 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
 
         <!-- Cabecera -->
         <div class="puesto-header" style="overflow:visible;">
-            <!-- Avatar chibi animado -->
+            <!-- Avatar profesional DiceBear -->
             <div class="puesto-avatar-chibi" title="<?= $name ?>">
-                <?= avatarSVG($avatarCfg, 56) ?>
+                <?= avatarImg($avatarCfg, 68, '', $name) ?>
             </div>
             <div class="puesto-info">
                 <div class="puesto-name">

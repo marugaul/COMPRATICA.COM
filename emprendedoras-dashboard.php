@@ -158,24 +158,28 @@ try {
 // ── Manejar guardado de avatar ────────────────────────────────────────────────
 $avatarMsg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_store_avatar') {
-    $avType    = in_array($_POST['av_type'] ?? '', ['woman','man','girl','boy']) ? $_POST['av_type'] : 'woman';
-    $avSkin    = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['av_skin']       ?? '') ? $_POST['av_skin']       : '#F0C27F';
-    $avHStyle  = in_array($_POST['av_hair_style'] ?? '', ['long','short','curly','bun','ponytail','spiky','braid','afro']) ? $_POST['av_hair_style'] : 'long';
-    $avHColor  = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['av_hair_color'] ?? '') ? $_POST['av_hair_color'] : '#4a2040';
-    $avEStyle  = in_array($_POST['av_eye_style']  ?? '', ['happy','normal','star','wink','sleepy']) ? $_POST['av_eye_style']  : 'happy';
-    $avOutfit  = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['av_outfit']     ?? '') ? $_POST['av_outfit']     : '#667eea';
-    $avAcc     = in_array($_POST['av_accessory']  ?? '', ['none','glasses','hat','bow','cap','crown']) ? $_POST['av_accessory'] : 'none';
-    $avBlush   = !empty($_POST['av_blush']);
-    $avCfg = compact('avType','avSkin','avHStyle','avHColor','avEStyle','avOutfit','avAcc','avBlush');
+    $avType      = in_array($_POST['av_type'] ?? '', ['woman','man','girl','boy']) ? $_POST['av_type'] : 'woman';
+    $avSkin      = in_array($_POST['av_skin'] ?? '', array_keys(AV_SKIN)) ? $_POST['av_skin'] : 'light';
+    $avHStyle    = in_array($_POST['av_hair_style'] ?? '', array_keys(AV_HAIR)) ? $_POST['av_hair_style'] : 'short_flat';
+    $avHColor    = preg_match('/^#[0-9a-fA-F]{6}$/i', $_POST['av_hair_color'] ?? '') ? $_POST['av_hair_color'] : '#4a312c';
+    $avEStyle    = in_array($_POST['av_eye_style']   ?? '', array_keys(AV_EYES))   ? $_POST['av_eye_style']   : 'Default';
+    $avOutfit    = preg_match('/^#[0-9a-fA-F]{6}$/i', $_POST['av_outfit']      ?? '') ? $_POST['av_outfit']   : '#667eea';
+    $avAcc       = in_array($_POST['av_accessory']   ?? '', array_keys(AV_ACCESSORIES)) ? $_POST['av_accessory'] : 'Blank';
+    $avClothes   = in_array($_POST['av_clothes']     ?? '', array_keys(AV_CLOTHES)) ? $_POST['av_clothes']     : 'ShirtCrewNeck';
+    $avFacial    = in_array($_POST['av_facialHair']  ?? '', array_keys(AV_FACIAL_HAIR)) ? $_POST['av_facialHair'] : 'Blank';
+    $avBodyShape = in_array($_POST['av_body_shape']  ?? '', array_keys(AV_BODY)) ? $_POST['av_body_shape'] : 'average';
     $avatarCfgSave = [
-        'type'       => $avType,
-        'skin'       => $avSkin,
-        'hair_style' => $avHStyle,
-        'hair_color' => $avHColor,
-        'eye_style'  => $avEStyle,
-        'outfit'     => $avOutfit,
-        'accessory'  => $avAcc,
-        'blush'      => $avBlush,
+        'type'        => $avType,
+        'skin'        => $avSkin,
+        'hair'        => $avHStyle,
+        'hairColor'   => $avHColor,
+        'eyes'        => $avEStyle,
+        'clothesColor'=> $avOutfit,
+        'accessory'   => $avAcc,
+        'clothes'     => $avClothes,
+        'facialHair'  => $avFacial,
+        'body_shape'  => $avBodyShape,
+        'mouth'       => 'Smile',
     ];
     try {
         $pdo->prepare("UPDATE users SET store_avatar=?, seller_type=? WHERE id=?")
@@ -187,8 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 }
 
 // ── Cargar avatar actual ───────────────────────────────────────────────────────
-$currentAvatar = ['type'=>'woman','skin'=>'#F0C27F','hair_style'=>'long','hair_color'=>'#4a2040',
-                  'eye_style'=>'happy','outfit'=>'#667eea','accessory'=>'none','blush'=>true];
+$currentAvatar = avatarDefaults('woman');
 try {
     $avRow = $pdo->prepare("SELECT store_avatar FROM users WHERE id=?");
     $avRow->execute([$userId]);
@@ -1011,13 +1014,15 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                 <div class="av-grid">
                     <!-- PREVIEW -->
                     <div class="av-preview-panel">
-                        <div class="av-preview-stage">
-                            <img id="av-preview-img"
-                                 src="api/emp-avatar-svg.php?size=130&cfg=<?= urlencode(json_encode($currentAvatar)) ?>"
-                                 width="100" height="130" alt="Tu avatar" style="display:block;">
+                        <div class="av-preview-stage" style="width:160px;height:240px;">
+                            <!-- Preview compuesto: DiceBear portrait + cuerpo SVG -->
+                            <div id="av-full-preview" style="animation: avFloat 2.4s ease-in-out infinite;transform-origin:bottom center;">
+                                <?= avatarFull($currentAvatar, 155) ?>
+                            </div>
                         </div>
-                        <div style="font-size:.78rem;color:#6b7280;text-align:center;line-height:1.4;">
-                            Así te verán<br>en el catálogo ✨
+                        <div style="margin-top:8px;font-size:.78rem;color:#6b7280;text-align:center;line-height:1.5;">
+                            Vista previa completa<br>
+                            <span style="font-size:.7rem;opacity:.7;">La card del catálogo muestra el retrato circular</span>
                         </div>
                         <button type="submit"
                                 style="width:100%;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:white;border:none;padding:12px;border-radius:10px;font-weight:800;font-size:.95rem;cursor:pointer;margin-top:4px;">
@@ -1155,14 +1160,32 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                             <input type="hidden" name="av_accessory" id="in-accessory" value="<?= htmlspecialchars($currentAvatar['accessory']??'none') ?>">
                         </div>
 
-                        <!-- RUBOR -->
+                        <!-- CONTORNO DEL CUERPO -->
                         <div class="av-group">
-                            <label class="av-toggle">
-                                <input type="checkbox" name="av_blush" id="av-blush" value="1"
-                                       <?= !empty($currentAvatar['blush']) ? 'checked' : '' ?>
-                                       onchange="avRefreshPreview()">
-                                <span style="font-weight:700;color:#374151;">🌸 Rubor en las mejillas</span>
-                            </label>
+                            <div class="av-group-title"><i class="fas fa-male"></i> Contorno del cuerpo</div>
+                            <div class="av-chips" id="chips-body_shape">
+                                <?php foreach (AV_BODY as $v => $info): ?>
+                                <div class="av-chip <?= ($currentAvatar['body_shape']??'average')===$v?'sel':'' ?>"
+                                     data-group="body_shape" data-val="<?= $v ?>" onclick="avSelect(this,'body_shape')">
+                                    <?= $info['label'] ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_body_shape" id="in-body_shape" value="<?= htmlspecialchars($currentAvatar['body_shape']??'average') ?>">
+                        </div>
+
+                        <!-- BARBA (hombres) -->
+                        <div class="av-group" id="facial-hair-group" style="<?= in_array($currentAvatar['type']??'woman', ['man','boy'])?'':'display:none' ?>">
+                            <div class="av-group-title"><i class="fas fa-male"></i> Barba / bigote</div>
+                            <div class="av-chips" id="chips-facialHair">
+                                <?php foreach (AV_FACIAL_HAIR as $v => $l): ?>
+                                <div class="av-chip <?= ($currentAvatar['facialHair']??'Blank')===$v?'sel':'' ?>"
+                                     data-group="facialHair" data-val="<?= $v ?>" onclick="avSelect(this,'facialHair')">
+                                    <?= $l ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_facialHair" id="in-facialHair" value="<?= htmlspecialchars($currentAvatar['facialHair']??'Blank') ?>">
                         </div>
 
                     </div><!-- /av-controls -->
@@ -1743,16 +1766,39 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             avRefreshPreview();
         }
 
+        // Muestra/oculta barba según tipo
+        function toggleFacialHair(type) {
+            const fg = document.getElementById('facial-hair-group');
+            if (fg) fg.style.display = (type === 'man' || type === 'boy') ? '' : 'none';
+        }
+
+        // Override avSelect para manejar type + body_shape specially
+        const _avSelectOrig = avSelect;
+        function avSelect(el, group) {
+            document.querySelectorAll('#chips-' + group + ' .av-chip').forEach(c => {
+                c.classList.remove('sel','sel-pink','sel-blue');
+            });
+            const val = el.dataset.val;
+            const isBlue = (val === 'man' || val === 'boy');
+            el.classList.add(isBlue ? 'sel-blue' : (group === 'type' ? 'sel-pink' : 'sel'));
+            document.getElementById('in-' + group).value = val;
+            if (group === 'type') { avApplyTypeDefaults(val); toggleFacialHair(val); }
+            avRefreshPreview();
+        }
+
         function avGetConfig() {
             return {
-                type:       document.getElementById('in-type').value,
-                skin:       document.getElementById('in-skin').value,
-                hair_style: document.getElementById('in-hair_style').value,
-                hair_color: document.getElementById('in-hair_color').value,
-                eye_style:  document.getElementById('in-eye_style').value,
-                outfit:     document.getElementById('in-outfit').value,
-                accessory:  document.getElementById('in-accessory').value,
-                blush:      document.getElementById('av-blush').checked ? 1 : 0,
+                type:        document.getElementById('in-type').value,
+                skin:        document.getElementById('in-skin').value,
+                hair:        document.getElementById('in-hair_style').value,
+                hairColor:   document.getElementById('in-hair_color').value,
+                eyes:        document.getElementById('in-eye_style').value,
+                clothesColor:document.getElementById('in-outfit').value,
+                accessory:   document.getElementById('in-accessory').value,
+                body_shape:  document.getElementById('in-body_shape')?.value || 'average',
+                facialHair:  document.getElementById('in-facialHair')?.value || 'Blank',
+                clothes:     'ShirtCrewNeck',
+                mouth:       'Smile',
             };
         }
 
@@ -1760,10 +1806,15 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             clearTimeout(_avDebounce);
             _avDebounce = setTimeout(function() {
                 const cfg = avGetConfig();
-                const url = 'api/emp-avatar-svg.php?size=130&cfg=' + encodeURIComponent(JSON.stringify(cfg));
-                const img = document.getElementById('av-preview-img');
-                if (img) img.src = url;
-            }, 120);
+                // Refresh full-body preview via AJAX (server renders composite SVG)
+                fetch('api/emp-avatar-full.php?cfg=' + encodeURIComponent(JSON.stringify(cfg)))
+                    .then(r => r.text())
+                    .then(svg => {
+                        const wrap = document.getElementById('av-full-preview');
+                        if (wrap) wrap.innerHTML = svg;
+                    })
+                    .catch(() => {}); // Silently fail - preview just won't update
+            }, 350);
         }
 
         // ── Fin avatar builder ─────────────────────────────────────────────
