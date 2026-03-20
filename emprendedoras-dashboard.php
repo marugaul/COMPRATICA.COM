@@ -1159,10 +1159,17 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                 if (empty) empty.style.display = 'none';
                 data.messages.forEach(appendMsg);
                 lastId = data.messages[data.messages.length-1].id;
-                newCount += data.messages.filter(m=>m.sender_type==='client').length;
-                if (newCount > 0 && newBadge) {
-                    newBadge.style.display='inline';
-                    newBadge.textContent = newCount + ' nuevo' + (newCount>1?'s':'');
+                // Solo acumular badge si la sección no está visible en pantalla
+                if (log && !isElementVisible(log)) {
+                    newCount += data.messages.filter(m=>m.sender_type==='client').length;
+                    if (newCount > 0 && newBadge) {
+                        newBadge.style.display='inline';
+                        newBadge.textContent = newCount + ' nuevo' + (newCount>1?'s':'');
+                    }
+                } else {
+                    // La vendedora está viendo el chat: limpiar badge
+                    newCount = 0;
+                    if (newBadge) { newBadge.style.display='none'; newBadge.textContent=''; }
                 }
             }
             if (data.bans) {
@@ -1172,6 +1179,11 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             }
         })
         .catch(()=>{});
+    }
+
+    function isElementVisible(el) {
+        const rect = el.getBoundingClientRect();
+        return rect.top < window.innerHeight && rect.bottom > 0;
     }
 
     function appendMsg(m) {

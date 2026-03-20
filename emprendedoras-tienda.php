@@ -880,7 +880,8 @@ window.openChat = function() {
     panel.classList.add('open');
     btn.innerHTML = '<i class="fas fa-times"></i>';
     unread = 0;
-    if (badge) badge.style.display = 'none';
+    const currentBadge = document.getElementById('chat-unread-badge');
+    if (currentBadge) currentBadge.style.display = 'none';
     if (!pollTimer) startPolling();
     if (input) setTimeout(()=>input.focus(), 200);
 };
