@@ -224,15 +224,19 @@ function avatarFull(array $cfg, int $w = 160): string {
         $parts[] = "<ellipse cx='{$legR}' cy='{$sy}' rx='" . ($lw+7) . "' ry='6' fill='#111'/>";
     }
 
-    // DiceBear head encima de todo (frente)
-    $parts[] = "<image href='{$faceUrl}' x='0' y='0' width='{$w}' height='{$headH}'" .
-               " preserveAspectRatio='xMidYMid meet'/>";
+    // ── HTML composite: body SVG behind, DiceBear <img> on top ──────────────
+    $bodySvg  = "<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'";
+    $bodySvg .= " viewBox='0 0 {$w} {$totalH}' width='{$w}' height='{$totalH}'";
+    $bodySvg .= " style='position:absolute;top:0;left:0;pointer-events:none;'>";
+    $bodySvg .= implode('', $parts);
+    $bodySvg .= "</svg>";
 
-    $svg  = "<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'";
-    $svg .= " viewBox='0 0 {$w} {$totalH}' width='{$w}' height='{$totalH}'>";
-    $svg .= implode('', $parts);
-    $svg .= "</svg>";
-    return $svg;
+    $html  = "<div style='position:relative;width:{$w}px;height:{$totalH}px;display:inline-block;vertical-align:bottom;'>";
+    $html .= $bodySvg;
+    $html .= "<img src='{$faceUrl}' width='{$w}' height='{$headH}' alt='avatar' loading='eager'";
+    $html .= " style='position:absolute;top:0;left:0;width:{$w}px;height:{$headH}px;display:block;'>";
+    $html .= "</div>";
+    return $html;
 }
 
 // ── Defaults por tipo de personaje ───────────────────────────────────────────

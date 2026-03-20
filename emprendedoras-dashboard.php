@@ -970,7 +970,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                 background:radial-gradient(ellipse at 50% 100%,rgba(139,92,246,.15) 0%,transparent 70%);
                 border-radius:12px;
             }
-            .av-preview-stage img { animation: avFloat 2.4s ease-in-out infinite; }
+            #av-full-preview { animation: avFloat 2.4s ease-in-out infinite; transform-origin: bottom center; }
             @keyframes avFloat {
                 0%,100% { transform: translateY(0px) rotate(0deg); }
                 35%     { transform: translateY(-7px) rotate(-1.5deg); }
@@ -1016,7 +1016,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                     <div class="av-preview-panel">
                         <div class="av-preview-stage" style="width:160px;height:240px;">
                             <!-- Preview compuesto: DiceBear portrait + cuerpo SVG -->
-                            <div id="av-full-preview" style="animation: avFloat 2.4s ease-in-out infinite;transform-origin:bottom center;">
+                            <div id="av-full-preview">
                                 <?= avatarFull($currentAvatar, 155) ?>
                             </div>
                         </div>
@@ -1682,19 +1682,6 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         // ── AVATAR BUILDER ─────────────────────────────────────────────────
         var _avDebounce = null;
 
-        function avSelect(el, group) {
-            document.querySelectorAll('#chips-' + group + ' .av-chip').forEach(c => {
-                c.classList.remove('sel','sel-pink','sel-blue');
-            });
-            const val = el.dataset.val;
-            const isBlue = (val === 'man' || val === 'boy');
-            el.classList.add(isBlue ? 'sel-blue' : (group === 'type' ? 'sel-pink' : 'sel'));
-            document.getElementById('in-' + group).value = val;
-            // Si cambia el tipo, aplica defaults de cabello/ropa
-            if (group === 'type') avApplyTypeDefaults(val);
-            avRefreshPreview();
-        }
-
         function avApplyTypeDefaults(type) {
             const defs = {
                 woman: { hair_style:'long',    hair_color:'#4a2040', outfit:'#ec4899', eye_style:'happy',  accessory:'none', blush:true  },
@@ -1772,8 +1759,6 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             if (fg) fg.style.display = (type === 'man' || type === 'boy') ? '' : 'none';
         }
 
-        // Override avSelect para manejar type + body_shape specially
-        const _avSelectOrig = avSelect;
         function avSelect(el, group) {
             document.querySelectorAll('#chips-' + group + ' .av-chip').forEach(c => {
                 c.classList.remove('sel','sel-pink','sel-blue');

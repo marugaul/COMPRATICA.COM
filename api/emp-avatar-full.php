@@ -4,8 +4,8 @@
  */
 require_once __DIR__ . '/../includes/avatar_builder.php';
 
-header('Content-Type: image/svg+xml');
-header('Cache-Control: no-cache'); // No cachear preview en tiempo real
+header('Content-Type: text/html; charset=utf-8');
+header('Cache-Control: no-cache');
 
 $cfg = json_decode($_GET['cfg'] ?? '{}', true);
 if (!is_array($cfg)) $cfg = [];
