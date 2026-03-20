@@ -12,9 +12,9 @@ function parseLiveUrl(string $url): array
     $icon  = 'fas fa-video';
     $color = '#ef4444';
 
-    if (preg_match('%(?:youtube\.com/(?:watch\?(?:.*&)?v=|live/)|youtu\.be/)([a-zA-Z0-9_-]{11})%', $url, $m)) {
+    if (preg_match('%(?:youtube\.com/(?:watch\?(?:.*&)?v=|live/)|youtu\.be/|studio\.youtube\.com/video/)([a-zA-Z0-9_-]{11})%', $url, $m)) {
         $platform = 'YouTube';
-        $embedUrl = 'https://www.youtube.com/embed/' . $m[1] . '?autoplay=1&rel=0';
+        $embedUrl = 'https://www.youtube.com/embed/' . $m[1] . '?autoplay=1&rel=0&playsinline=1';
         $icon  = 'fab fa-youtube';
         $color = '#FF0000';
 
