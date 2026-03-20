@@ -4,6 +4,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/live_embed.php';
+require_once __DIR__ . '/includes/avatar_builder.php';
 
 $isLoggedIn = isset($_SESSION['uid']) && $_SESSION['uid'] > 0;
 $userName   = $_SESSION['name'] ?? 'Usuario';
@@ -27,6 +28,7 @@ try {
     if (!in_array('store_banner_style',$cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_style TEXT DEFAULT 'stripes'");
     if (!in_array('store_logo',        $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_logo TEXT");
     if (!in_array('seller_type',       $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedora'");
+    if (!in_array('store_avatar',      $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_avatar TEXT");
 } catch (Throwable $_e) {}
 
 // Filtros de búsqueda
@@ -39,6 +41,7 @@ $sellersSql  = "
            COALESCE(u.is_live, 0) AS is_live,
            u.live_title, u.live_link,
            COALESCE(u.live_type,'link') AS live_type,
+           COALESCE(u.store_avatar,'') AS store_avatar,
            COALESCE(u.store_color1,'#667eea') AS store_color1,
            COALESCE(u.store_color2,'#764ba2') AS store_color2,
            COALESCE(u.store_banner_style,'stripes') AS store_banner_style,
@@ -476,6 +479,39 @@ $awningPalette = [
             font-size: 0.8rem; font-weight: 700; padding: 5px 12px;
             border-radius: 8px; text-decoration: none; color: white; white-space: nowrap;
         }
+
+        /* ── Avatar chibi animado ── */
+        @keyframes avatarFloat {
+            0%,100% { transform: translateY(0px) rotate(0deg); }
+            30%     { transform: translateY(-5px) rotate(-1.5deg); }
+            70%     { transform: translateY(-3px) rotate(1.2deg); }
+        }
+        @keyframes avatarWave {
+            0%,100% { transform: rotate(0deg); transform-origin: bottom right; }
+            20%     { transform: rotate(-18deg); }
+            50%     { transform: rotate(14deg); }
+            80%     { transform: rotate(-10deg); }
+        }
+        .puesto-avatar-chibi {
+            flex-shrink: 0;
+            animation: avatarFloat 2.8s ease-in-out infinite;
+            display: block;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.18));
+            margin-top: -18px;   /* Asoma sobre el borde del card */
+            cursor: default;
+        }
+        .puesto-avatar-chibi:hover {
+            animation: avatarFloat 0.6s ease-in-out infinite;
+            filter: drop-shadow(0 6px 10px rgba(0,0,0,0.25));
+        }
+        .seller-type-pill {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: .68rem; font-weight: 700; padding: 2px 8px;
+            border-radius: 20px; margin-left: 4px; vertical-align: middle;
+            letter-spacing: .2px;
+        }
+        .seller-type-pill.mujer  { background: #fce7f3; color: #be185d; }
+        .seller-type-pill.hombre { background: #dbeafe; color: #1d4ed8; }
     </style>
 </head>
 <body>
@@ -593,6 +629,18 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
     $products    = $productsBySeller[$sid] ?? [];
     $sellerType  = $seller['seller_type'] ?? 'emprendedora';
 
+    // Avatar chibi: decodificar JSON o usar defaults
+    $avatarRaw = $seller['store_avatar'] ?? '';
+    $avatarCfg = $avatarRaw ? (json_decode($avatarRaw, true) ?: []) : [];
+    if (empty($avatarCfg)) {
+        $avType    = ($sellerType === 'emprendedor') ? 'man' : 'woman';
+        $avatarCfg = avatarDefaults($avType);
+    }
+    // Sincronizar tipo con seller_type si no fue personalizado
+    if (empty($seller['store_avatar'])) {
+        $avatarCfg['type'] = ($sellerType === 'emprendedor') ? 'man' : 'woman';
+    }
+
     // Colores: usa los personalizados si el vendedor los configuró, si no usa la paleta por índice
     $c1     = !empty($seller['store_color1']) ? $seller['store_color1'] : $palette[$idx % count($palette)][0];
     $c2     = !empty($seller['store_color2']) ? $seller['store_color2'] : $palette[$idx % count($palette)][1];
@@ -653,17 +701,26 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
         <div class="puesto">
 
         <!-- Cabecera -->
-        <div class="puesto-header">
-            <?php if ($logo): ?>
-                <img src="<?= htmlspecialchars($logo) ?>" alt="Logo"
-                     style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;
-                            border:3px solid rgba(255,255,255,.5);box-shadow:0 3px 8px rgba(0,0,0,.15);">
-            <?php else: ?>
-                <div class="puesto-avatar" style="background:<?= $c1 ?>"><?= $initial ?></div>
-            <?php endif; ?>
+        <div class="puesto-header" style="overflow:visible;">
+            <!-- Avatar chibi animado -->
+            <div class="puesto-avatar-chibi" title="<?= $name ?>">
+                <?= avatarSVG($avatarCfg, 56) ?>
+            </div>
             <div class="puesto-info">
-                <div class="puesto-name"><?= $name ?> <?= $typeBadge ?></div>
-                <div class="puesto-meta"><?= $pCount ?> producto<?= $pCount !== 1 ? 's' : '' ?></div>
+                <div class="puesto-name">
+                    <?= $name ?>
+                    <?php if ($sellerType === 'emprendedor'): ?>
+                        <span class="seller-type-pill hombre">👨 Emprendedor</span>
+                    <?php else: ?>
+                        <span class="seller-type-pill mujer">👩 Emprendedora</span>
+                    <?php endif; ?>
+                </div>
+                <div class="puesto-meta">
+                    <?= $pCount ?> producto<?= $pCount !== 1 ? 's' : '' ?>
+                    <?php if ($logo): ?>
+                        &nbsp;·&nbsp;<img src="<?= htmlspecialchars($logo) ?>" alt="logo" style="height:16px;vertical-align:middle;border-radius:3px;">
+                    <?php endif; ?>
+                </div>
             </div>
             <?php if ($isLive): ?>
                 <?php if ($isCamLive): ?>
