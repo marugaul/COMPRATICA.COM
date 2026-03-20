@@ -143,6 +143,45 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
 }
 $isLoggedIn = true;
 
+// ── Migración silenciosa: columnas de personalización y seller_type ──────────
+try {
+    $colsU = array_column($pdo->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+    if (!in_array('store_color1',      $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color1 TEXT DEFAULT '#667eea'");
+    if (!in_array('store_color2',      $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color2 TEXT DEFAULT '#764ba2'");
+    if (!in_array('store_banner_style',$colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_style TEXT DEFAULT 'stripes'");
+    if (!in_array('store_logo',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_logo TEXT");
+    if (!in_array('seller_type',       $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedora'");
+} catch (Throwable $_e) {}
+
+// ── Manejar guardado de diseño del puesto ────────────────────────────────────
+$designMsg = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_store_design') {
+    $color1  = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['store_color1'] ?? '') ? $_POST['store_color1'] : '#667eea';
+    $color2  = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['store_color2'] ?? '') ? $_POST['store_color2'] : '#764ba2';
+    $bStyle  = in_array($_POST['store_banner_style'] ?? '', ['stripes','gradient','solid','wave']) ? $_POST['store_banner_style'] : 'stripes';
+    $sType   = in_array($_POST['seller_type'] ?? '', ['emprendedora','emprendedor']) ? $_POST['seller_type'] : 'emprendedora';
+    $logo    = trim($_POST['store_logo'] ?? '');
+    // Validar que la URL del logo sea segura
+    if ($logo && !preg_match('/^https?:\/\//i', $logo)) $logo = '';
+
+    try {
+        $pdo->prepare("UPDATE users SET store_color1=?, store_color2=?, store_banner_style=?, store_logo=?, seller_type=? WHERE id=?")
+            ->execute([$color1, $color2, $bStyle, $logo ?: null, $sType, $userId]);
+        $designMsg = ['ok', '✅ Diseño de tu puesto guardado correctamente.'];
+    } catch (Exception $e) {
+        $designMsg = ['err', '❌ Error al guardar: ' . $e->getMessage()];
+    }
+}
+
+// ── Cargar configuración de diseño actual del usuario ─────────────────────────
+$storeDesign = ['store_color1'=>'#667eea','store_color2'=>'#764ba2','store_banner_style'=>'stripes','store_logo'=>'','seller_type'=>'emprendedora'];
+try {
+    $sd = $pdo->prepare("SELECT store_color1, store_color2, store_banner_style, store_logo, seller_type FROM users WHERE id=?");
+    $sd->execute([$userId]);
+    $row = $sd->fetch(PDO::FETCH_ASSOC);
+    if ($row) $storeDesign = array_merge($storeDesign, array_filter($row, fn($v) => $v !== null));
+} catch (Throwable $_e) {}
+
 // ── Manejar guardado de opciones de envío ────────────────────────────────
 $shippingMsg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_shipping') {
@@ -852,6 +891,220 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         </div>
         <?php endif; ?>
 
+        <!-- ── SECCIÓN PERSONALIZAR MI PUESTO ──────────────────────────── -->
+        <div class="section" id="design-section">
+            <div class="section-header">
+                <h2><i class="fas fa-palette" style="color:#8b5cf6;"></i> Personalizar mi Puesto</h2>
+            </div>
+
+            <?php if (!empty($designMsg)): ?>
+            <div style="background:<?= $designMsg[0]==='ok'?'#f0fdf4':'#fef2f2' ?>;border:1px solid <?= $designMsg[0]==='ok'?'#86efac':'#fecaca' ?>;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:<?= $designMsg[0]==='ok'?'#166534':'#991b1b' ?>;">
+                <?= htmlspecialchars($designMsg[1]) ?>
+            </div>
+            <?php endif; ?>
+
+            <form method="POST" id="design-form">
+                <input type="hidden" name="action" value="save_store_design">
+
+                <style>
+                .design-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+                @media(max-width:640px){ .design-grid { grid-template-columns:1fr; } }
+                .design-block { background:#f9fafb; border-radius:12px; padding:20px; border:1px solid #e5e7eb; }
+                .design-block h4 { font-size:.95rem; font-weight:700; color:#374151; margin:0 0 14px; display:flex; align-items:center; gap:8px; }
+                .style-presets { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:8px; }
+                .preset-btn {
+                    border:3px solid transparent; border-radius:10px; cursor:pointer;
+                    padding:0; overflow:hidden; aspect-ratio:3/2; transition:all .2s;
+                    background:none;
+                }
+                .preset-btn.active { border-color:#8b5cf6; box-shadow:0 0 0 2px #8b5cf6; }
+                .preset-btn:hover { transform:scale(1.04); }
+                .preset-preview { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+                .color-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+                .color-item { display:flex; flex-direction:column; gap:4px; }
+                .color-item label { font-size:.8rem; font-weight:600; color:#6b7280; }
+                .color-item input[type=color] { width:54px; height:38px; border:2px solid #e5e7eb; border-radius:8px; cursor:pointer; padding:2px; }
+                .design-preview-wrap { background:#f3f4f6; border-radius:12px; padding:16px; border:1px solid #e5e7eb; }
+                .mini-card {
+                    max-width:280px; margin:0 auto; border-radius:12px; overflow:visible;
+                    box-shadow:0 4px 20px rgba(0,0,0,.12);
+                }
+                .mini-awning {
+                    height:40px; border-radius:10px 10px 0 0;
+                    display:flex; align-items:center; justify-content:center;
+                }
+                .mini-body {
+                    background:linear-gradient(to bottom,#f5f1e8,#ede8dc);
+                    border:5px solid #d4a574; border-top:none;
+                    border-radius:0 0 10px 10px; padding:12px 14px;
+                }
+                .mini-header { display:flex; align-items:center; gap:8px; }
+                .mini-avatar {
+                    width:34px; height:34px; border-radius:50%;
+                    display:flex; align-items:center; justify-content:center;
+                    font-weight:800; color:white; font-size:.9rem; flex-shrink:0;
+                }
+                .mini-products { display:grid; grid-template-columns:repeat(3,1fr); gap:2px; margin:8px 0; height:50px; }
+                .mini-product { border-radius:3px; background:#e5e7eb; }
+                .mini-footer { display:flex; justify-content:flex-end; }
+                .mini-btn { padding:6px 14px; border-radius:8px; font-size:.75rem; font-weight:700; color:white; border:none; }
+                </style>
+
+                <div class="design-grid">
+                    <!-- Columna izquierda: controles -->
+                    <div>
+                        <!-- Tipo de cuenta -->
+                        <div class="design-block" style="margin-bottom:16px;">
+                            <h4><i class="fas fa-user-tag"></i> Tipo de cuenta</h4>
+                            <div style="display:flex;gap:12px;">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border-radius:10px;border:2px solid <?= ($storeDesign['seller_type']==='emprendedora')?'#db2777':'#e5e7eb' ?>;background:<?= ($storeDesign['seller_type']==='emprendedora')?'#fce7f3':'white' ?>;font-weight:600;font-size:.9rem;flex:1;justify-content:center;">
+                                    <input type="radio" name="seller_type" value="emprendedora" <?= ($storeDesign['seller_type']==='emprendedora')?'checked':'' ?> style="accent-color:#db2777;">
+                                    👩 Emprendedora
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 18px;border-radius:10px;border:2px solid <?= ($storeDesign['seller_type']==='emprendedor')?'#1d4ed8':'#e5e7eb' ?>;background:<?= ($storeDesign['seller_type']==='emprendedor')?'#dbeafe':'white' ?>;font-weight:600;font-size:.9rem;flex:1;justify-content:center;">
+                                    <input type="radio" name="seller_type" value="emprendedor" <?= ($storeDesign['seller_type']==='emprendedor')?'checked':'' ?> style="accent-color:#1d4ed8;">
+                                    👨 Emprendedor
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Colores -->
+                        <div class="design-block" style="margin-bottom:16px;">
+                            <h4><i class="fas fa-fill-drip"></i> Colores del toldo</h4>
+                            <div class="color-row">
+                                <div class="color-item">
+                                    <label>Color principal</label>
+                                    <input type="color" name="store_color1" id="color1-pick"
+                                           value="<?= htmlspecialchars($storeDesign['store_color1']) ?>"
+                                           oninput="updatePreview()">
+                                </div>
+                                <div class="color-item">
+                                    <label>Color secundario</label>
+                                    <input type="color" name="store_color2" id="color2-pick"
+                                           value="<?= htmlspecialchars($storeDesign['store_color2']) ?>"
+                                           oninput="updatePreview()">
+                                </div>
+                                <div style="flex:1;">
+                                    <div style="font-size:.8rem;font-weight:600;color:#6b7280;margin-bottom:4px;">Paletas rápidas</div>
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        <?php foreach ([
+                                            ['#ef4444','#dc2626','Rojo'],
+                                            ['#f97316','#ea580c','Naranja'],
+                                            ['#22c55e','#16a34a','Verde'],
+                                            ['#8b5cf6','#7c3aed','Morado'],
+                                            ['#06b6d4','#0891b2','Cyan'],
+                                            ['#f59e0b','#d97706','Dorado'],
+                                            ['#ec4899','#db2777','Rosa'],
+                                            ['#1d4ed8','#1e40af','Azul'],
+                                        ] as [$c1,$c2,$lbl]): ?>
+                                        <button type="button" title="<?= $lbl ?>"
+                                            onclick="setColors('<?= $c1 ?>','<?= $c2 ?>')"
+                                            style="width:28px;height:28px;border-radius:50%;border:3px solid rgba(0,0,0,.1);
+                                                   background:linear-gradient(135deg,<?= $c1 ?>,<?= $c2 ?>);cursor:pointer;
+                                                   transition:transform .2s;" onmouseover="this.style.transform='scale(1.2)'"
+                                            onmouseout="this.style.transform='scale(1)'">
+                                        </button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estilo del toldo -->
+                        <div class="design-block" style="margin-bottom:16px;">
+                            <h4><i class="fas fa-store"></i> Estilo del toldo</h4>
+                            <div class="style-presets" id="style-presets">
+                                <?php foreach ([
+                                    ['stripes' ,'Rayas',   'linear-gradient(90deg,var(--c1) 50%,var(--c2) 50%)'],
+                                    ['gradient','Degradado','linear-gradient(135deg,var(--c1),var(--c2))'],
+                                    ['solid',   'Sólido',  'var(--c1)'],
+                                    ['wave',    'Ondas',   'var(--c1)'],
+                                ] as [$val,$lbl,$bg]):
+                                    $active = $storeDesign['store_banner_style'] === $val;
+                                ?>
+                                <label style="cursor:pointer;">
+                                    <input type="radio" name="store_banner_style" value="<?= $val ?>"
+                                           <?= $active?'checked':'' ?> style="display:none"
+                                           oninput="updatePreview()">
+                                    <div class="preset-btn <?= $active?'active':'' ?>"
+                                         onclick="this.parentNode.querySelector('input').checked=true;updatePreview();updateActiveStyle();"
+                                         style="--c1:<?= htmlspecialchars($storeDesign['store_color1']) ?>;--c2:<?= htmlspecialchars($storeDesign['store_color2']) ?>;">
+                                        <div class="preset-preview" style="background:<?= $bg ?>;"></div>
+                                        <div style="text-align:center;font-size:.7rem;font-weight:700;color:#374151;padding:4px 0;"><?= $lbl ?></div>
+                                    </div>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <!-- Logo (URL) -->
+                        <div class="design-block">
+                            <h4><i class="fas fa-image"></i> Logo de tu tienda <span style="font-size:.75rem;font-weight:400;color:#9ca3af;">(opcional)</span></h4>
+                            <input type="url" name="store_logo" id="logo-url"
+                                   value="<?= htmlspecialchars($storeDesign['store_logo'] ?? '') ?>"
+                                   placeholder="https://... URL de imagen de tu logo"
+                                   oninput="updatePreview()"
+                                   style="width:100%;padding:10px 12px;border:2px solid #e5e7eb;border-radius:10px;font-size:.9rem;box-sizing:border-box;">
+                            <p style="font-size:.78rem;color:#9ca3af;margin-top:6px;">
+                                <i class="fas fa-info-circle"></i> Sube tu logo a Google Drive, Imgur, o cualquier host de imágenes y pega la URL aquí.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Columna derecha: preview en vivo -->
+                    <div>
+                        <div class="design-preview-wrap">
+                            <div style="font-size:.85rem;font-weight:700;color:#374151;margin-bottom:12px;text-align:center;">
+                                <i class="fas fa-eye"></i> Vista previa en tiempo real
+                            </div>
+                            <div class="mini-card" id="mini-card-preview">
+                                <div class="mini-awning" id="mini-awning" style="background:linear-gradient(135deg,<?= htmlspecialchars($storeDesign['store_color1']) ?>,<?= htmlspecialchars($storeDesign['store_color2']) ?>);">
+                                </div>
+                                <div class="mini-body">
+                                    <div class="mini-header">
+                                        <div class="mini-avatar" id="mini-avatar" style="background:<?= htmlspecialchars($storeDesign['store_color1']) ?>;">
+                                            <?php if ($storeDesign['store_logo']): ?>
+                                                <img src="<?= htmlspecialchars($storeDesign['store_logo']) ?>" style="width:34px;height:34px;border-radius:50%;object-fit:cover;">
+                                            <?php else: ?>
+                                                <?= strtoupper(mb_substr($userName, 0, 1)) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight:800;font-size:.88rem;color:#2c2416;"><?= htmlspecialchars(mb_substr($userName, 0, 20)) ?></div>
+                                            <div style="font-size:.75rem;color:#6b5d4f;">Mis productos</div>
+                                        </div>
+                                    </div>
+                                    <div class="mini-products">
+                                        <div class="mini-product" style="background:#e5e7eb;"></div>
+                                        <div class="mini-product" style="background:#d1d5db;"></div>
+                                        <div class="mini-product" style="background:#e5e7eb;"></div>
+                                    </div>
+                                    <div class="mini-footer">
+                                        <div class="mini-btn" id="mini-btn" style="background:linear-gradient(135deg,<?= htmlspecialchars($storeDesign['store_color1']) ?>,<?= htmlspecialchars($storeDesign['store_color2']) ?>);">
+                                            <i class="fas fa-store" style="font-size:.7rem;"></i> Entrar
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top:16px;text-align:center;color:#6b7280;font-size:.82rem;">
+                            <i class="fas fa-info-circle"></i> Así verán tu puesto los compradores en el catálogo
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:24px;">
+                    <button type="submit" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:white;border:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:1rem;cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:all .2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <i class="fas fa-save"></i> Guardar diseño
+                    </button>
+                    <a href="emprendedoras-catalogo.php" target="_blank" style="margin-left:16px;color:#667eea;font-size:.9rem;">
+                        <i class="fas fa-eye"></i> Ver en el catálogo
+                    </a>
+                </div>
+            </form>
+        </div>
+        <!-- ── FIN SECCIÓN PERSONALIZAR ──────────────────────────────────── -->
+
         <!-- ── SECCIÓN ENVÍO Y ENTREGA ─────────────────────────────────── -->
         <div class="section" id="shipping-section">
             <div class="section-header">
@@ -1128,6 +1381,70 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                 window.location.href = 'emprendedoras-producto-eliminar.php?id=' + productId;
             }
         }
+
+        // ── Preview en vivo del diseño del puesto ──────────────────────────
+        function setColors(c1, c2) {
+            document.getElementById('color1-pick').value = c1;
+            document.getElementById('color2-pick').value = c2;
+            updatePreview();
+            updateStylePresets(c1, c2);
+        }
+
+        function updatePreview() {
+            const c1 = document.getElementById('color1-pick').value;
+            const c2 = document.getElementById('color2-pick').value;
+            const style = document.querySelector('input[name="store_banner_style"]:checked')?.value || 'stripes';
+            const logoUrl = document.getElementById('logo-url').value.trim();
+            const awning = document.getElementById('mini-awning');
+            const avatar = document.getElementById('mini-avatar');
+            const btn    = document.getElementById('mini-btn');
+
+            if (!awning) return;
+
+            // Actualizar toldo según estilo
+            if (style === 'gradient') {
+                awning.style.background = `linear-gradient(135deg,${c1},${c2})`;
+            } else if (style === 'solid') {
+                awning.style.background = c1;
+                awning.style.backgroundImage = `repeating-linear-gradient(0deg,transparent,transparent 8px,rgba(255,255,255,.12) 8px,rgba(255,255,255,.12) 10px)`;
+            } else if (style === 'wave') {
+                awning.style.background = c1;
+            } else {
+                // stripes
+                awning.style.background = `repeating-linear-gradient(90deg,${c1} 0px,${c1} 16px,${c2} 16px,${c2} 32px)`;
+            }
+
+            // Avatar / logo
+            if (logoUrl) {
+                avatar.innerHTML = `<img src="${logoUrl}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">`;
+            } else {
+                avatar.style.background = c1;
+                avatar.innerHTML = avatar.dataset.initial || '<?= strtoupper(mb_substr($userName, 0, 1)) ?>';
+            }
+
+            // Botón
+            btn.style.background = `linear-gradient(135deg,${c1},${c2})`;
+
+            // Actualizar CSS vars de los presets
+            updateStylePresets(c1, c2);
+        }
+
+        function updateStylePresets(c1, c2) {
+            document.querySelectorAll('.preset-btn').forEach(el => {
+                el.style.setProperty('--c1', c1);
+                el.style.setProperty('--c2', c2);
+            });
+        }
+
+        function updateActiveStyle() {
+            document.querySelectorAll('.preset-btn').forEach(el => el.classList.remove('active'));
+            const checked = document.querySelector('input[name="store_banner_style"]:checked');
+            if (checked) checked.parentNode.querySelector('.preset-btn')?.classList.add('active');
+        }
+
+        // Inicializar avatar data-initial
+        const av = document.getElementById('mini-avatar');
+        if (av) av.dataset.initial = av.textContent.trim();
     </script>
 
     <?php if ($isPaidPlan && $liveData['is_live']): ?>

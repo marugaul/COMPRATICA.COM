@@ -14,23 +14,36 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
 
 $pdo = db();
 
-// Migración silenciosa: columnas de "En Vivo"
+// Migración silenciosa: columnas de "En Vivo" y personalización de puesto
 try {
     $cols = array_column($pdo->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC), 'name');
-    if (!in_array('is_live',        $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN is_live INTEGER DEFAULT 0");
-    if (!in_array('live_title',     $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_title TEXT");
-    if (!in_array('live_link',      $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_link TEXT");
-    if (!in_array('live_started_at',$cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_started_at TEXT");
-    if (!in_array('live_type',      $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_type TEXT DEFAULT 'link'");
+    if (!in_array('is_live',           $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN is_live INTEGER DEFAULT 0");
+    if (!in_array('live_title',        $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_title TEXT");
+    if (!in_array('live_link',         $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_link TEXT");
+    if (!in_array('live_started_at',   $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_started_at TEXT");
+    if (!in_array('live_type',         $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN live_type TEXT DEFAULT 'link'");
+    if (!in_array('store_color1',      $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color1 TEXT DEFAULT '#667eea'");
+    if (!in_array('store_color2',      $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color2 TEXT DEFAULT '#764ba2'");
+    if (!in_array('store_banner_style',$cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_style TEXT DEFAULT 'stripes'");
+    if (!in_array('store_logo',        $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_logo TEXT");
+    if (!in_array('seller_type',       $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedora'");
 } catch (Throwable $_e) {}
 
-// Buscar vendedores con productos activos
+// Filtros de búsqueda
 $searchQuery = trim($_GET['search'] ?? '');
+$filterType  = in_array($_GET['filter'] ?? '', ['emprendedora','emprendedor']) ? $_GET['filter'] : 'all';
+
+// Buscar vendedores con productos activos
 $sellersSql  = "
     SELECT u.id AS seller_id, u.name AS seller_name,
            COALESCE(u.is_live, 0) AS is_live,
            u.live_title, u.live_link,
            COALESCE(u.live_type,'link') AS live_type,
+           COALESCE(u.store_color1,'#667eea') AS store_color1,
+           COALESCE(u.store_color2,'#764ba2') AS store_color2,
+           COALESCE(u.store_banner_style,'stripes') AS store_banner_style,
+           COALESCE(u.store_logo,'') AS store_logo,
+           COALESCE(u.seller_type,'emprendedora') AS seller_type,
            COUNT(p.id) AS product_count,
            SUM(p.sales_count) AS total_sales
     FROM entrepreneur_products p
@@ -42,6 +55,10 @@ if ($searchQuery !== '') {
     $sellersSql  .= " AND (p.name LIKE ? OR u.name LIKE ?)";
     $sellerParams[] = "%$searchQuery%";
     $sellerParams[] = "%$searchQuery%";
+}
+if ($filterType !== 'all') {
+    $sellersSql  .= " AND COALESCE(u.seller_type,'emprendedora') = ?";
+    $sellerParams[] = $filterType;
 }
 $sellersSql .= " GROUP BY u.id ORDER BY COALESCE(u.is_live,0) DESC, total_sales DESC, product_count DESC";
 
@@ -465,8 +482,8 @@ $awningPalette = [
 <?php include __DIR__ . '/includes/header.php'; ?>
 
 <div class="hero">
-    <h1>🏪 Mercadito <span>Emprendedoras</span></h1>
-    <p>Camina por cada puesto, conoce a las emprendedoras y compra directo a ellas.</p>
+    <h1>🏪 Mercadito <span>Emprendedor</span></h1>
+    <p>Camina por cada puesto, conoce a quienes venden y compra directo a ellos.</p>
     <?php if ($isLoggedIn): ?>
         <a href="emprendedoras-dashboard.php" class="hero-cta"><i class="fas fa-store"></i> Mi Tienda</a>
     <?php else: ?>
@@ -475,12 +492,39 @@ $awningPalette = [
 </div>
 
 <div class="market-wrap">
-    <!-- Búsqueda -->
+    <!-- Búsqueda + filtros -->
     <form method="GET" class="search-wrap">
-        <input type="text" name="search" placeholder="Buscar productos o emprendedoras…"
+        <input type="text" name="search" placeholder="Buscar productos o vendedores…"
                value="<?= htmlspecialchars($searchQuery) ?>">
+        <?php if ($filterType !== 'all'): ?>
+            <input type="hidden" name="filter" value="<?= htmlspecialchars($filterType) ?>">
+        <?php endif; ?>
         <button type="submit"><i class="fas fa-search"></i></button>
     </form>
+
+    <!-- Tabs de filtro por tipo -->
+    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:32px;flex-wrap:wrap;">
+        <?php
+        $baseUrl = 'emprendedoras-catalogo.php' . ($searchQuery ? '?search='.urlencode($searchQuery).'&filter=' : '?filter=');
+        $tabs = [
+            'all'           => ['🏪 Todos',          '#1f2937'],
+            'emprendedora'  => ['👩 Emprendedoras',   '#db2777'],
+            'emprendedor'   => ['👨 Emprendedores',   '#1d4ed8'],
+        ];
+        foreach ($tabs as $key => [$label, $color]):
+            $active = $filterType === $key;
+        ?>
+        <a href="<?= $baseUrl . $key ?>"
+           style="display:inline-flex;align-items:center;gap:6px;padding:10px 22px;
+                  border-radius:999px;font-weight:700;font-size:.92rem;text-decoration:none;
+                  transition:all .2s;
+                  <?= $active
+                      ? "background:{$color};color:white;box-shadow:0 4px 14px {$color}55;"
+                      : "background:white;color:{$color};border:2px solid {$color}40;" ?>">
+            <?= $label ?>
+        </a>
+        <?php endforeach; ?>
+    </div>
 
     <?php
     $liveSellers   = array_filter($sellers, fn($s) => $s['is_live']);
@@ -537,38 +581,88 @@ $awningPalette = [
 <?php
 // ─── Helper: renderizar un puesto ───────────────────────────────────────────
 function renderPuesto(array $seller, int $idx, array $productsBySeller, array $palette): void {
-    $sid      = (int)$seller['seller_id'];
-    $name     = htmlspecialchars($seller['seller_name']);
-    $initial  = strtoupper(mb_substr($seller['seller_name'], 0, 1));
-    $isLive   = (int)$seller['is_live'];
-    $liveTitle= htmlspecialchars($seller['live_title'] ?? '');
-    $liveLink = htmlspecialchars($seller['live_link'] ?? '#');
-    $liveType = $seller['live_type'] ?? 'link';
-    $isCamLive = ($liveType === 'camera');
-    $pCount   = (int)$seller['product_count'];
-    $c        = $palette[$idx % count($palette)];
-    $products = $productsBySeller[$sid] ?? [];
+    $sid         = (int)$seller['seller_id'];
+    $name        = htmlspecialchars($seller['seller_name']);
+    $initial     = strtoupper(mb_substr($seller['seller_name'], 0, 1));
+    $isLive      = (int)$seller['is_live'];
+    $liveTitle   = htmlspecialchars($seller['live_title'] ?? '');
+    $liveLink    = htmlspecialchars($seller['live_link'] ?? '#');
+    $liveType    = $seller['live_type'] ?? 'link';
+    $isCamLive   = ($liveType === 'camera');
+    $pCount      = (int)$seller['product_count'];
+    $products    = $productsBySeller[$sid] ?? [];
+    $sellerType  = $seller['seller_type'] ?? 'emprendedora';
+
+    // Colores: usa los personalizados si el vendedor los configuró, si no usa la paleta por índice
+    $c1     = !empty($seller['store_color1']) ? $seller['store_color1'] : $palette[$idx % count($palette)][0];
+    $c2     = !empty($seller['store_color2']) ? $seller['store_color2'] : $palette[$idx % count($palette)][1];
+    $style  = $seller['store_banner_style'] ?? 'stripes';
+    $logo   = $seller['store_logo'] ?? '';
+
+    // Badge de tipo (emprendedor/a)
+    $typeBadge = $sellerType === 'emprendedor'
+        ? '<span style="font-size:.68rem;background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:20px;font-weight:700;margin-left:6px;">👨 Emprendedor</span>'
+        : '<span style="font-size:.68rem;background:#fce7f3;color:#be185d;padding:2px 8px;border-radius:20px;font-weight:700;margin-left:6px;">👩 Emprendedora</span>';
+
+    // Construir SVG del toldo según el estilo elegido
+    if ($style === 'gradient') {
+        $awningInner = "<defs>
+            <linearGradient id='awn{$sid}' x1='0' y1='0' x2='1' y2='0'>
+                <stop offset='0%' stop-color='{$c1}'/>
+                <stop offset='100%' stop-color='{$c2}'/>
+            </linearGradient>
+        </defs>
+        <rect width='100%' height='100%' fill='url(#awn{$sid})'/>
+        <rect width='100%' height='100%' fill='rgba(255,255,255,0.07)'
+              style='background:repeating-linear-gradient(90deg,transparent,transparent 2px,rgba(255,255,255,.05) 2px,rgba(255,255,255,.05) 4px)'/>
+        <rect y='0' width='100%' height='4' fill='rgba(255,255,255,.25)'/>";
+    } elseif ($style === 'solid') {
+        $awningInner = "<rect width='100%' height='100%' fill='{$c1}'/>
+        <rect width='100%' height='6' fill='rgba(255,255,255,.15)'/>
+        <rect y='16' width='100%' height='3' fill='rgba(255,255,255,.1)'/>
+        <rect y='30' width='100%' height='3' fill='rgba(255,255,255,.1)'/>";
+    } elseif ($style === 'wave') {
+        $awningInner = "<rect width='100%' height='100%' fill='{$c1}'/>
+        <defs>
+            <pattern id='awn{$sid}' x='0' y='0' width='40' height='60' patternUnits='userSpaceOnUse'>
+                <rect width='40' height='60' fill='{$c1}'/>
+                <path d='M0 20 Q10 10 20 20 Q30 30 40 20' stroke='{$c2}' stroke-width='6' fill='none'/>
+                <path d='M0 40 Q10 30 20 40 Q30 50 40 40' stroke='{$c2}' stroke-width='6' fill='none'/>
+            </pattern>
+        </defs>
+        <rect width='100%' height='100%' fill='url(#awn{$sid})'/>";
+    } else {
+        // stripes (default)
+        $awningInner = "<defs>
+            <pattern id='awn{$sid}' x='0' y='0' width='50' height='60' patternUnits='userSpaceOnUse'>
+                <rect width='25' height='60' fill='{$c1}'/>
+                <rect x='25' width='25' height='60' fill='{$c2}'/>
+            </pattern>
+        </defs>
+        <rect width='100%' height='100%' fill='url(#awn{$sid})'/>
+        <rect width='100%' height='100%' fill='rgba(0,0,0,0.04)'/>";
+    }
     ?>
     <div class="puesto-wrapper">
         <!-- Toldo (fuera del overflow:hidden) -->
         <div class="puesto-awning">
             <svg class="puesto-awning-stripes" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="none">
-                <defs>
-                    <pattern id="awn<?= $sid ?>" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse" patternTransform="rotate(0)">
-                        <rect width="30" height="60" fill="<?= $c[0] ?>"/>
-                        <rect x="30" width="30" height="60" fill="<?= $c[1] ?>"/>
-                    </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#awn<?= $sid ?>)"/>
+                <?= $awningInner ?>
             </svg>
         </div>
         <div class="puesto">
 
         <!-- Cabecera -->
         <div class="puesto-header">
-            <div class="puesto-avatar" style="background:<?= $c[0] ?>"><?= $initial ?></div>
+            <?php if ($logo): ?>
+                <img src="<?= htmlspecialchars($logo) ?>" alt="Logo"
+                     style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;
+                            border:3px solid rgba(255,255,255,.5);box-shadow:0 3px 8px rgba(0,0,0,.15);">
+            <?php else: ?>
+                <div class="puesto-avatar" style="background:<?= $c1 ?>"><?= $initial ?></div>
+            <?php endif; ?>
             <div class="puesto-info">
-                <div class="puesto-name"><?= $name ?></div>
+                <div class="puesto-name"><?= $name ?> <?= $typeBadge ?></div>
                 <div class="puesto-meta"><?= $pCount ?> producto<?= $pCount !== 1 ? 's' : '' ?></div>
             </div>
             <?php if ($isLive): ?>
@@ -663,8 +757,9 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
 
         <!-- Footer -->
         <div class="puesto-footer">
-            <span class="puesto-count"><i class="fas fa-eye" style="color:#667eea;"></i> <?= number_format((int)$seller['total_sales']) ?> ventas</span>
-            <a href="emprendedoras-tienda.php?id=<?= $sid ?>" class="btn-entrar">
+            <span class="puesto-count"><i class="fas fa-shopping-bag" style="color:<?= $c1 ?>;"></i> <?= number_format((int)$seller['total_sales']) ?> ventas</span>
+            <a href="emprendedoras-tienda.php?id=<?= $sid ?>" class="btn-entrar"
+               style="background:linear-gradient(135deg,<?= $c1 ?>,<?= $c2 ?>);">
                 <i class="fas fa-store"></i> Entrar al puesto
             </a>
         </div>
