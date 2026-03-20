@@ -3,25 +3,66 @@
  * Panel de Configuración de Mooving - CompraTica
  * Configuración corporativa de credenciales y comisión
  */
-session_start();
-require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../mooving/MovingAPI.php';
 
-// Verificar que es admin
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-    header('Location: login.php');
-    exit;
+// 🔧 LOGGING DETALLADO PARA DEBUG
+$logFile = __DIR__ . '/../logs/mooving_debug.log';
+@mkdir(dirname($logFile), 0777, true);
+
+function logDebug($message) {
+    global $logFile;
+    $timestamp = date('Y-m-d H:i:s');
+    $logEntry = "[$timestamp] $message\n";
+    @file_put_contents($logFile, $logEntry, FILE_APPEND);
 }
 
+logDebug("=== INICIO mooving-config.php ===");
+
+try {
+    logDebug("Iniciando session...");
+    session_start();
+    logDebug("Session iniciada OK");
+
+    logDebug("Cargando db.php...");
+    require_once __DIR__ . '/../includes/db.php';
+    logDebug("db.php cargado OK");
+
+    logDebug("Cargando MovingAPI.php...");
+    require_once __DIR__ . '/../mooving/MovingAPI.php';
+    logDebug("MovingAPI.php cargado OK");
+
+    logDebug("Verificando sesión admin...");
+    // Verificar que es admin
+    if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        logDebug("Usuario no autorizado - redirigiendo a login");
+        header('Location: login.php');
+        exit;
+    }
+    logDebug("Usuario autorizado OK");
+
+} catch (Exception $e) {
+    logDebug("ERROR FATAL: " . $e->getMessage());
+    logDebug("Stack trace: " . $e->getTraceAsString());
+    die("Error al cargar Mooving Config. Ver logs/mooving_debug.log para detalles.");
+}
+
+logDebug("Obteniendo conexión PDO...");
 $pdo = db();
+logDebug("PDO obtenido OK");
+
 $success = '';
 $error = '';
 
 // Crear tabla si no existe
 try {
+    logDebug("Creando instancia MovingAPI...");
     $api = new MovingAPI($pdo);
+    logDebug("Instancia MovingAPI creada OK");
+
+    logDebug("Inicializando tabla de configuración...");
     $api->initConfigTable();
+    logDebug("Tabla de configuración inicializada OK");
 } catch (Exception $e) {
+    logDebug("Error al inicializar tabla: " . $e->getMessage());
     // Tabla ya existe o se creará en el primer save
 }
 
@@ -88,12 +129,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // Cargar configuración actual
 $config = null;
 try {
+    logDebug("Cargando configuración actual...");
     $stmt = $pdo->prepare("SELECT * FROM mooving_config WHERE entrepreneur_id IS NULL LIMIT 1");
     $stmt->execute();
     $config = $stmt->fetch(PDO::FETCH_ASSOC);
+    logDebug("Configuración cargada: " . ($config ? "SI (config_id=" . ($config['id'] ?? 'N/A') . ")" : "NO"));
 } catch (Exception $e) {
+    logDebug("Error al cargar configuración: " . $e->getMessage());
     // No hay configuración aún
 }
+
+logDebug("Renderizando HTML...");
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -564,3 +610,6 @@ try {
     </script>
 </body>
 </html>
+<?php
+logDebug("=== HTML renderizado exitosamente ===");
+?>

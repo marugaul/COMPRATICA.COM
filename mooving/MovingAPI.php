@@ -31,34 +31,58 @@ class MovingAPI {
      * Cargar configuración de Mooving (global o por emprendedora)
      */
     private function loadConfig($entrepreneur_id = null) {
-        $sql = "SELECT * FROM mooving_config WHERE ";
-        $sql .= $entrepreneur_id ? "entrepreneur_id = ?" : "(entrepreneur_id IS NULL OR entrepreneur_id = 0)";
-        $sql .= " AND is_active = 1 ORDER BY id DESC LIMIT 1";
+        // 🔧 Logging para debug
+        $logFile = __DIR__ . '/../logs/mooving_debug.log';
+        $log = function($msg) use ($logFile) {
+            @file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] [MovingAPI::loadConfig] $msg\n", FILE_APPEND);
+        };
 
-        $stmt = $this->pdo->prepare($sql);
-        if ($entrepreneur_id) {
-            $stmt->execute([$entrepreneur_id]);
-        } else {
-            $stmt->execute();
-        }
+        try {
+            $log("Iniciando loadConfig (entrepreneur_id=" . ($entrepreneur_id ?? 'NULL') . ")");
 
-        $config = $stmt->fetch(PDO::FETCH_ASSOC);
+            $sql = "SELECT * FROM mooving_config WHERE ";
+            $sql .= $entrepreneur_id ? "entrepreneur_id = ?" : "(entrepreneur_id IS NULL OR entrepreneur_id = 0)";
+            $sql .= " AND is_active = 1 ORDER BY id DESC LIMIT 1";
 
-        // Si no hay configuración específica, usar valores por defecto
-        if (!$config) {
+            $log("Preparando query SQL: $sql");
+            $stmt = $this->pdo->prepare($sql);
+
+            if ($entrepreneur_id) {
+                $stmt->execute([$entrepreneur_id]);
+            } else {
+                $stmt->execute();
+            }
+
+            $config = $stmt->fetch(PDO::FETCH_ASSOC);
+            $log("Query ejecutado - Config encontrado: " . ($config ? "SI" : "NO"));
+
+            // Si no hay configuración específica, usar valores por defecto
+            if (!$config) {
+                $log("Usando valores por defecto");
+                $this->api_key = '';
+                $this->api_secret = '';
+                $this->merchant_id = '';
+                $this->is_sandbox = true;
+                $this->commission_percentage = 15.0;
+                return;
+            }
+
+            $this->api_key = $config['api_key'] ?? '';
+            $this->api_secret = $config['api_secret'] ?? '';
+            $this->merchant_id = $config['merchant_id'] ?? '';
+            $this->is_sandbox = (bool)($config['is_sandbox'] ?? true);
+            $this->commission_percentage = (float)($config['commission_percentage'] ?? 15.0);
+            $log("Configuración cargada exitosamente");
+
+        } catch (Exception $e) {
+            $log("ERROR en loadConfig: " . $e->getMessage());
+            // Si la tabla no existe, usar valores por defecto
             $this->api_key = '';
             $this->api_secret = '';
             $this->merchant_id = '';
             $this->is_sandbox = true;
             $this->commission_percentage = 15.0;
-            return;
         }
-
-        $this->api_key = $config['api_key'] ?? '';
-        $this->api_secret = $config['api_secret'] ?? '';
-        $this->merchant_id = $config['merchant_id'] ?? '';
-        $this->is_sandbox = (bool)($config['is_sandbox'] ?? true);
-        $this->commission_percentage = (float)($config['commission_percentage'] ?? 15.0);
     }
 
     /**
