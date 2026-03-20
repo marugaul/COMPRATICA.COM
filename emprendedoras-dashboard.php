@@ -56,6 +56,7 @@ require_once __DIR__ . '/includes/logger.php';
 require_once __DIR__ . '/includes/chat_helpers.php';
 require_once __DIR__ . '/includes/live_cam.php';
 require_once __DIR__ . '/includes/shipping_emprendedoras.php';
+require_once __DIR__ . '/includes/avatar_builder.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
@@ -151,6 +152,51 @@ try {
     if (!in_array('store_banner_style',$colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_style TEXT DEFAULT 'stripes'");
     if (!in_array('store_logo',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_logo TEXT");
     if (!in_array('seller_type',       $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedora'");
+    if (!in_array('store_avatar',      $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_avatar TEXT");
+} catch (Throwable $_e) {}
+
+// ── Manejar guardado de avatar ────────────────────────────────────────────────
+$avatarMsg = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_store_avatar') {
+    $avType    = in_array($_POST['av_type'] ?? '', ['woman','man','girl','boy']) ? $_POST['av_type'] : 'woman';
+    $avSkin    = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['av_skin']       ?? '') ? $_POST['av_skin']       : '#F0C27F';
+    $avHStyle  = in_array($_POST['av_hair_style'] ?? '', ['long','short','curly','bun','ponytail','spiky','braid','afro']) ? $_POST['av_hair_style'] : 'long';
+    $avHColor  = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['av_hair_color'] ?? '') ? $_POST['av_hair_color'] : '#4a2040';
+    $avEStyle  = in_array($_POST['av_eye_style']  ?? '', ['happy','normal','star','wink','sleepy']) ? $_POST['av_eye_style']  : 'happy';
+    $avOutfit  = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['av_outfit']     ?? '') ? $_POST['av_outfit']     : '#667eea';
+    $avAcc     = in_array($_POST['av_accessory']  ?? '', ['none','glasses','hat','bow','cap','crown']) ? $_POST['av_accessory'] : 'none';
+    $avBlush   = !empty($_POST['av_blush']);
+    $avCfg = compact('avType','avSkin','avHStyle','avHColor','avEStyle','avOutfit','avAcc','avBlush');
+    $avatarCfgSave = [
+        'type'       => $avType,
+        'skin'       => $avSkin,
+        'hair_style' => $avHStyle,
+        'hair_color' => $avHColor,
+        'eye_style'  => $avEStyle,
+        'outfit'     => $avOutfit,
+        'accessory'  => $avAcc,
+        'blush'      => $avBlush,
+    ];
+    try {
+        $pdo->prepare("UPDATE users SET store_avatar=?, seller_type=? WHERE id=?")
+            ->execute([json_encode($avatarCfgSave), ($avType === 'man' || $avType === 'boy') ? 'emprendedor' : 'emprendedora', $userId]);
+        $avatarMsg = ['ok', '✅ Avatar guardado correctamente.'];
+    } catch (Exception $e) {
+        $avatarMsg = ['err', '❌ Error al guardar el avatar.'];
+    }
+}
+
+// ── Cargar avatar actual ───────────────────────────────────────────────────────
+$currentAvatar = ['type'=>'woman','skin'=>'#F0C27F','hair_style'=>'long','hair_color'=>'#4a2040',
+                  'eye_style'=>'happy','outfit'=>'#667eea','accessory'=>'none','blush'=>true];
+try {
+    $avRow = $pdo->prepare("SELECT store_avatar FROM users WHERE id=?");
+    $avRow->execute([$userId]);
+    $avData = $avRow->fetchColumn();
+    if ($avData) {
+        $parsed = json_decode($avData, true);
+        if (is_array($parsed)) $currentAvatar = array_merge($currentAvatar, $parsed);
+    }
 } catch (Throwable $_e) {}
 
 // ── Manejar guardado de diseño del puesto ────────────────────────────────────
@@ -891,6 +937,240 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         </div>
         <?php endif; ?>
 
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- ── SECCIÓN CREADOR DE AVATAR ──────────────────────────────── -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <div class="section" id="avatar-section">
+            <div class="section-header">
+                <h2><i class="fas fa-user-astronaut" style="color:#8b5cf6;"></i> Mi Avatar Animado</h2>
+                <p style="color:#6b7280;font-size:.9rem;margin-top:4px;">Crea tu personaje chibi que aparecerá en el catálogo como tu representante en el mercado.</p>
+            </div>
+
+            <?php if (!empty($avatarMsg)): ?>
+            <div style="background:<?= $avatarMsg[0]==='ok'?'#f0fdf4':'#fef2f2' ?>;border:1px solid <?= $avatarMsg[0]==='ok'?'#86efac':'#fecaca' ?>;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:<?= $avatarMsg[0]==='ok'?'#166534':'#991b1b' ?>;">
+                <?= htmlspecialchars($avatarMsg[1]) ?>
+            </div>
+            <?php endif; ?>
+
+            <style>
+            .av-grid { display:grid; grid-template-columns:200px 1fr; gap:24px; }
+            @media(max-width:700px){ .av-grid { grid-template-columns:1fr; } }
+            .av-preview-panel {
+                display:flex; flex-direction:column; align-items:center; gap:12px;
+                background:linear-gradient(160deg,#f0f4ff,#fdf0ff);
+                border-radius:16px; padding:24px 16px; border:2px solid #e0e7ff;
+                position:sticky; top:80px;
+            }
+            .av-preview-stage {
+                width:130px; height:170px;
+                display:flex; align-items:flex-end; justify-content:center;
+                background:radial-gradient(ellipse at 50% 100%,rgba(139,92,246,.15) 0%,transparent 70%);
+                border-radius:12px;
+            }
+            .av-preview-stage img { animation: avFloat 2.4s ease-in-out infinite; }
+            @keyframes avFloat {
+                0%,100% { transform: translateY(0px) rotate(0deg); }
+                35%     { transform: translateY(-7px) rotate(-1.5deg); }
+                70%     { transform: translateY(-4px) rotate(1.2deg); }
+            }
+            .av-controls { display:flex; flex-direction:column; gap:18px; }
+            .av-group { background:#f9fafb; border:1px solid #e5e7eb; border-radius:12px; padding:16px; }
+            .av-group-title { font-size:.85rem; font-weight:800; color:#4b5563; margin:0 0 12px; text-transform:uppercase; letter-spacing:.5px; display:flex; align-items:center; gap:6px; }
+            .av-chips { display:flex; flex-wrap:wrap; gap:8px; }
+            .av-chip {
+                display:inline-flex; align-items:center; gap:5px;
+                padding:8px 14px; border-radius:30px; border:2.5px solid #e5e7eb;
+                font-size:.82rem; font-weight:700; cursor:pointer; background:white;
+                transition:all .18s; user-select:none;
+            }
+            .av-chip:hover { border-color:#8b5cf6; color:#8b5cf6; }
+            .av-chip.sel { background:#8b5cf6; border-color:#8b5cf6; color:white; box-shadow:0 3px 10px #8b5cf655; }
+            .av-chip.sel-pink { background:#ec4899; border-color:#ec4899; color:white; box-shadow:0 3px 10px #ec489955; }
+            .av-chip.sel-blue { background:#2563eb; border-color:#2563eb; color:white; box-shadow:0 3px 10px #2563eb55; }
+            .av-skins { display:flex; gap:8px; flex-wrap:wrap; }
+            .av-skin-btn {
+                width:34px; height:34px; border-radius:50%; cursor:pointer; border:3px solid transparent;
+                transition:all .18s; flex-shrink:0;
+            }
+            .av-skin-btn:hover { transform:scale(1.15); }
+            .av-skin-btn.sel { border-color:#8b5cf6; box-shadow:0 0 0 2px #8b5cf6; }
+            .av-color-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+            .av-color-dot {
+                width:26px; height:26px; border-radius:50%; cursor:pointer;
+                border:3px solid transparent; transition:all .18s; flex-shrink:0;
+            }
+            .av-color-dot:hover { transform:scale(1.2); }
+            .av-color-dot.sel { border-color:#333; box-shadow:0 0 0 2px rgba(0,0,0,.4); }
+            .av-toggle { display:flex; align-items:center; gap:10px; cursor:pointer; }
+            .av-toggle input[type=checkbox] { width:18px; height:18px; accent-color:#ec4899; cursor:pointer; }
+            </style>
+
+            <form method="POST" id="av-form">
+                <input type="hidden" name="action" value="save_store_avatar">
+
+                <div class="av-grid">
+                    <!-- PREVIEW -->
+                    <div class="av-preview-panel">
+                        <div class="av-preview-stage">
+                            <img id="av-preview-img"
+                                 src="api/emp-avatar-svg.php?size=130&cfg=<?= urlencode(json_encode($currentAvatar)) ?>"
+                                 width="100" height="130" alt="Tu avatar" style="display:block;">
+                        </div>
+                        <div style="font-size:.78rem;color:#6b7280;text-align:center;line-height:1.4;">
+                            Así te verán<br>en el catálogo ✨
+                        </div>
+                        <button type="submit"
+                                style="width:100%;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:white;border:none;padding:12px;border-radius:10px;font-weight:800;font-size:.95rem;cursor:pointer;margin-top:4px;">
+                            <i class="fas fa-save"></i> Guardar Avatar
+                        </button>
+                    </div>
+
+                    <!-- CONTROLES -->
+                    <div class="av-controls">
+
+                        <!-- TIPO DE PERSONAJE -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-user"></i> Tipo de personaje</div>
+                            <div class="av-chips" id="chips-type">
+                                <?php foreach (['woman'=>'👩 Mujer','man'=>'👨 Hombre','girl'=>'👧 Niña','boy'=>'👦 Niño'] as $v=>$l): ?>
+                                <div class="av-chip <?= ($currentAvatar['type']??'woman')===$v ? ($v==='man'||$v==='boy'?'sel-blue':'sel-pink') : '' ?>"
+                                     data-group="type" data-val="<?= $v ?>" onclick="avSelect(this,'type')">
+                                    <?= $l ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_type" id="in-type" value="<?= htmlspecialchars($currentAvatar['type']??'woman') ?>">
+                        </div>
+
+                        <!-- TONO DE PIEL -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-hand-paper"></i> Tono de piel</div>
+                            <div class="av-skins" id="skins-wrap">
+                                <?php foreach ([
+                                    '#FDDBB4'=>'Muy claro','#F0C27F'=>'Claro','#D4956A'=>'Medio',
+                                    '#B07040'=>'Canela','#7D4E2D'=>'Oscuro','#3D2010'=>'Muy oscuro'
+                                ] as $hex=>$lbl): ?>
+                                <div class="av-skin-btn <?= ($currentAvatar['skin']??'#F0C27F')===$hex?'sel':'' ?>"
+                                     style="background:<?= $hex ?>;" title="<?= $lbl ?>"
+                                     data-val="<?= $hex ?>" onclick="avSkin(this)"></div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_skin" id="in-skin" value="<?= htmlspecialchars($currentAvatar['skin']??'#F0C27F') ?>">
+                        </div>
+
+                        <!-- ESTILO DE CABELLO -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-wind"></i> Cabello</div>
+                            <div class="av-chips" id="chips-hair-style">
+                                <?php foreach ([
+                                    'long'=>'💇 Largo','short'=>'💈 Corto','curly'=>'🌀 Rizado',
+                                    'bun'=>'🎀 Chongo','ponytail'=>'🦄 Cola','spiky'=>'⚡ Punk',
+                                    'braid'=>'🌿 Trenza','afro'=>'☁️ Afro'
+                                ] as $v=>$l): ?>
+                                <div class="av-chip <?= ($currentAvatar['hair_style']??'long')===$v?'sel':'' ?>"
+                                     data-group="hair_style" data-val="<?= $v ?>" onclick="avSelect(this,'hair_style')">
+                                    <?= $l ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_hair_style" id="in-hair_style" value="<?= htmlspecialchars($currentAvatar['hair_style']??'long') ?>">
+
+                            <div style="margin-top:12px;">
+                                <div style="font-size:.8rem;font-weight:600;color:#6b7280;margin-bottom:6px;">Color del cabello</div>
+                                <div class="av-color-row">
+                                    <?php foreach ([
+                                        '#1a1a1a'=>'Negro','#4a2040'=>'Castaño oscuro','#8B4513'=>'Café',
+                                        '#D4A843'=>'Rubio','#FF6B35'=>'Rojizo','#C0392B'=>'Rojo',
+                                        '#8E44AD'=>'Morado','#2980B9'=>'Azul','#E8E8E8'=>'Plateado',
+                                        '#FFB347'=>'Naranja','#27AE60'=>'Verde','#FF69B4'=>'Rosa',
+                                    ] as $hex=>$lbl): ?>
+                                    <div class="av-color-dot <?= ($currentAvatar['hair_color']??'#4a2040')===$hex?'sel':'' ?>"
+                                         style="background:<?= $hex ?>;" title="<?= $lbl ?>"
+                                         data-val="<?= $hex ?>" onclick="avHairColor(this)"></div>
+                                    <?php endforeach; ?>
+                                    <input type="color" id="av-hair-custom"
+                                           value="<?= htmlspecialchars($currentAvatar['hair_color']??'#4a2040') ?>"
+                                           oninput="avHairColorCustom(this.value)"
+                                           style="width:34px;height:34px;border:2px solid #e5e7eb;border-radius:50%;cursor:pointer;padding:1px;"
+                                           title="Color personalizado">
+                                </div>
+                            </div>
+                            <input type="hidden" name="av_hair_color" id="in-hair_color" value="<?= htmlspecialchars($currentAvatar['hair_color']??'#4a2040') ?>">
+                        </div>
+
+                        <!-- EXPRESIÓN -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-smile"></i> Expresión de los ojos</div>
+                            <div class="av-chips" id="chips-eye_style">
+                                <?php foreach ([
+                                    'happy'=>'😊 Feliz','normal'=>'👁️ Normal','star'=>'✨ Estrella',
+                                    'wink'=>'😉 Guiño','sleepy'=>'😴 Soñoliento'
+                                ] as $v=>$l): ?>
+                                <div class="av-chip <?= ($currentAvatar['eye_style']??'happy')===$v?'sel':'' ?>"
+                                     data-group="eye_style" data-val="<?= $v ?>" onclick="avSelect(this,'eye_style')">
+                                    <?= $l ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_eye_style" id="in-eye_style" value="<?= htmlspecialchars($currentAvatar['eye_style']??'happy') ?>">
+                        </div>
+
+                        <!-- ROPA -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-tshirt"></i> Color de ropa</div>
+                            <div class="av-color-row">
+                                <?php foreach ([
+                                    '#667eea'=>'Lila','#ec4899'=>'Rosa','#ef4444'=>'Rojo','#f97316'=>'Naranja',
+                                    '#f59e0b'=>'Amarillo','#22c55e'=>'Verde','#06b6d4'=>'Cyan',
+                                    '#2563eb'=>'Azul','#7c3aed'=>'Morado','#6b7280'=>'Gris',
+                                    '#1f2937'=>'Negro','#ffffff'=>'Blanco',
+                                ] as $hex=>$lbl): ?>
+                                <div class="av-color-dot <?= ($currentAvatar['outfit']??'#667eea')===$hex?'sel':'' ?>"
+                                     style="background:<?= $hex ?>;<?= $hex==='#ffffff'?'border:2px solid #ddd;':'' ?>"
+                                     title="<?= $lbl ?>" data-val="<?= $hex ?>" onclick="avOutfitColor(this)"></div>
+                                <?php endforeach; ?>
+                                <input type="color" id="av-outfit-custom"
+                                       value="<?= htmlspecialchars($currentAvatar['outfit']??'#667eea') ?>"
+                                       oninput="avOutfitColorCustom(this.value)"
+                                       style="width:34px;height:34px;border:2px solid #e5e7eb;border-radius:50%;cursor:pointer;padding:1px;"
+                                       title="Color personalizado">
+                            </div>
+                            <input type="hidden" name="av_outfit" id="in-outfit" value="<?= htmlspecialchars($currentAvatar['outfit']??'#667eea') ?>">
+                        </div>
+
+                        <!-- ACCESORIOS -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-hat-wizard"></i> Accesorio</div>
+                            <div class="av-chips" id="chips-accessory">
+                                <?php foreach ([
+                                    'none'=>'🚫 Ninguno','glasses'=>'👓 Gafas','hat'=>'🎩 Sombrero',
+                                    'bow'=>'🎀 Moño','cap'=>'🧢 Gorra','crown'=>'👑 Corona'
+                                ] as $v=>$l): ?>
+                                <div class="av-chip <?= ($currentAvatar['accessory']??'none')===$v?'sel':'' ?>"
+                                     data-group="accessory" data-val="<?= $v ?>" onclick="avSelect(this,'accessory')">
+                                    <?= $l ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_accessory" id="in-accessory" value="<?= htmlspecialchars($currentAvatar['accessory']??'none') ?>">
+                        </div>
+
+                        <!-- RUBOR -->
+                        <div class="av-group">
+                            <label class="av-toggle">
+                                <input type="checkbox" name="av_blush" id="av-blush" value="1"
+                                       <?= !empty($currentAvatar['blush']) ? 'checked' : '' ?>
+                                       onchange="avRefreshPreview()">
+                                <span style="font-weight:700;color:#374151;">🌸 Rubor en las mejillas</span>
+                            </label>
+                        </div>
+
+                    </div><!-- /av-controls -->
+                </div><!-- /av-grid -->
+            </form>
+        </div>
+        <!-- ── FIN SECCIÓN AVATAR ─────────────────────────────────────── -->
+
         <!-- ── SECCIÓN PERSONALIZAR MI PUESTO ──────────────────────────── -->
         <div class="section" id="design-section">
             <div class="section-header">
@@ -1376,6 +1656,118 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
     </div>
 
     <script>
+        // ── AVATAR BUILDER ─────────────────────────────────────────────────
+        var _avDebounce = null;
+
+        function avSelect(el, group) {
+            document.querySelectorAll('#chips-' + group + ' .av-chip').forEach(c => {
+                c.classList.remove('sel','sel-pink','sel-blue');
+            });
+            const val = el.dataset.val;
+            const isBlue = (val === 'man' || val === 'boy');
+            el.classList.add(isBlue ? 'sel-blue' : (group === 'type' ? 'sel-pink' : 'sel'));
+            document.getElementById('in-' + group).value = val;
+            // Si cambia el tipo, aplica defaults de cabello/ropa
+            if (group === 'type') avApplyTypeDefaults(val);
+            avRefreshPreview();
+        }
+
+        function avApplyTypeDefaults(type) {
+            const defs = {
+                woman: { hair_style:'long',    hair_color:'#4a2040', outfit:'#ec4899', eye_style:'happy',  accessory:'none', blush:true  },
+                man:   { hair_style:'short',   hair_color:'#2c1a0e', outfit:'#2563eb', eye_style:'normal', accessory:'none', blush:false },
+                girl:  { hair_style:'ponytail',hair_color:'#c0392b', outfit:'#f97316', eye_style:'star',   accessory:'bow',  blush:true  },
+                boy:   { hair_style:'spiky',   hair_color:'#1a1a1a', outfit:'#16a34a', eye_style:'wink',   accessory:'cap',  blush:false },
+            };
+            const d = defs[type];
+            if (!d) return;
+            // Cabello
+            document.querySelectorAll('#chips-hair_style .av-chip').forEach(c => {
+                c.classList.toggle('sel', c.dataset.val === d.hair_style);
+            });
+            document.getElementById('in-hair_style').value = d.hair_style;
+            // Color cabello
+            avHairColorCustom(d.hair_color);
+            document.getElementById('av-hair-custom').value = d.hair_color;
+            // Outfit
+            avOutfitColorCustom(d.outfit);
+            document.getElementById('av-outfit-custom').value = d.outfit;
+            // Ojos
+            document.querySelectorAll('#chips-eye_style .av-chip').forEach(c => {
+                c.classList.toggle('sel', c.dataset.val === d.eye_style);
+            });
+            document.getElementById('in-eye_style').value = d.eye_style;
+            // Accesorio
+            document.querySelectorAll('#chips-accessory .av-chip').forEach(c => {
+                c.classList.toggle('sel', c.dataset.val === d.accessory);
+            });
+            document.getElementById('in-accessory').value = d.accessory;
+            // Rubor
+            document.getElementById('av-blush').checked = d.blush;
+        }
+
+        function avSkin(el) {
+            document.querySelectorAll('#skins-wrap .av-skin-btn').forEach(b => b.classList.remove('sel'));
+            el.classList.add('sel');
+            document.getElementById('in-skin').value = el.dataset.val;
+            avRefreshPreview();
+        }
+
+        function avHairColor(el) {
+            document.querySelectorAll('.av-color-row .av-color-dot').forEach(d => {
+                if (d.closest('#av-form .av-group:nth-of-type(3)')) d.classList.remove('sel');
+            });
+            el.classList.add('sel');
+            document.getElementById('in-hair_color').value = el.dataset.val;
+            document.getElementById('av-hair-custom').value = el.dataset.val;
+            avRefreshPreview();
+        }
+
+        function avHairColorCustom(val) {
+            document.querySelectorAll('[onclick="avHairColor(this)"]').forEach(d => d.classList.remove('sel'));
+            document.getElementById('in-hair_color').value = val;
+            avRefreshPreview();
+        }
+
+        function avOutfitColor(el) {
+            document.querySelectorAll('[onclick="avOutfitColor(this)"]').forEach(d => d.classList.remove('sel'));
+            el.classList.add('sel');
+            document.getElementById('in-outfit').value = el.dataset.val;
+            document.getElementById('av-outfit-custom').value = el.dataset.val;
+            avRefreshPreview();
+        }
+
+        function avOutfitColorCustom(val) {
+            document.querySelectorAll('[onclick="avOutfitColor(this)"]').forEach(d => d.classList.remove('sel'));
+            document.getElementById('in-outfit').value = val;
+            avRefreshPreview();
+        }
+
+        function avGetConfig() {
+            return {
+                type:       document.getElementById('in-type').value,
+                skin:       document.getElementById('in-skin').value,
+                hair_style: document.getElementById('in-hair_style').value,
+                hair_color: document.getElementById('in-hair_color').value,
+                eye_style:  document.getElementById('in-eye_style').value,
+                outfit:     document.getElementById('in-outfit').value,
+                accessory:  document.getElementById('in-accessory').value,
+                blush:      document.getElementById('av-blush').checked ? 1 : 0,
+            };
+        }
+
+        function avRefreshPreview() {
+            clearTimeout(_avDebounce);
+            _avDebounce = setTimeout(function() {
+                const cfg = avGetConfig();
+                const url = 'api/emp-avatar-svg.php?size=130&cfg=' + encodeURIComponent(JSON.stringify(cfg));
+                const img = document.getElementById('av-preview-img');
+                if (img) img.src = url;
+            }, 120);
+        }
+
+        // ── Fin avatar builder ─────────────────────────────────────────────
+
         function deleteProduct(productId) {
             if (confirm('¿Estás segura de que quieres eliminar este producto?')) {
                 window.location.href = 'emprendedoras-producto-eliminar.php?id=' + productId;
