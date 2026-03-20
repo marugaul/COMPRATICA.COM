@@ -394,6 +394,13 @@ if (empty($categories)) {
       color: var(--gray-900);
       line-height: 1.6;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
     }
 
     a {
@@ -470,6 +477,9 @@ if (empty($categories)) {
       border: none;
       box-shadow: var(--shadow);
       font-size: 1.1rem;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      user-select: none;
     }
 
     .btn-icon:hover {
@@ -733,9 +743,15 @@ if (empty($categories)) {
 
     .filters-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 1.25rem;
       align-items: end;
+    }
+
+    @media (max-width: 1024px) {
+      .filters-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     .filter-item {
@@ -852,9 +868,32 @@ if (empty($categories)) {
       color: var(--white);
     }
 
+    @media (max-width: 1024px) {
+      .main-wrapper {
+        padding: 2rem 1.5rem;
+      }
+
+      .hero-section {
+        padding: 3rem 2rem;
+      }
+
+      .hero-title {
+        font-size: 2.5rem;
+      }
+
+      .hero-stats {
+        gap: 2rem;
+      }
+    }
+
     @media (max-width: 768px) {
       .header {
         padding: 1rem 1.25rem;
+        flex-wrap: nowrap;
+      }
+
+      .logo .flag {
+        font-size: 1.75rem;
       }
 
       .logo .text .main {
@@ -865,20 +904,33 @@ if (empty($categories)) {
         font-size: 0.6rem;
       }
 
+      .header-nav {
+        gap: 0.5rem;
+      }
+
+      .btn-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1rem;
+      }
+
       .main-wrapper {
         padding: 1.5rem 1rem;
       }
 
       .hero-section {
         padding: 2rem 1.5rem;
+        border-radius: var(--radius-lg);
       }
 
       .hero-title {
         font-size: 2rem;
+        margin-bottom: 1rem;
       }
 
       .hero-description {
         font-size: 1rem;
+        margin-bottom: 2rem;
       }
 
       .hero-stats {
@@ -895,11 +947,22 @@ if (empty($categories)) {
 
       .filters-section {
         padding: 1.5rem 1rem;
+        border-radius: var(--radius);
       }
 
       .filters-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
+      }
+
+      .filter-item label {
+        font-size: 0.8125rem;
+      }
+
+      .filter-item input,
+      .filter-item select {
+        padding: 0.625rem 0.875rem;
+        font-size: 0.875rem;
       }
 
       .filter-actions {
@@ -910,8 +973,12 @@ if (empty($categories)) {
 
       .btn-filter {
         flex: 1;
-        font-size: 0.85rem;
+        font-size: 0.875rem;
         padding: 0.625rem 1rem;
+      }
+
+      .section-header {
+        margin-bottom: 2rem;
       }
 
       .section-title {
@@ -920,6 +987,10 @@ if (empty($categories)) {
 
       .section-subtitle {
         font-size: 1rem;
+      }
+
+      .jobs-grid {
+        gap: 1.25rem;
       }
 
       .job-card {
@@ -933,41 +1004,51 @@ if (empty($categories)) {
       }
 
       .job-logo {
-        width: 50px;
-        height: 50px;
+        width: 60px;
+        height: 60px;
       }
 
       .job-title {
         font-size: 1.125rem;
+        line-height: 1.3;
       }
 
       .job-company {
         font-size: 0.9rem;
+        margin-bottom: 0.75rem;
       }
 
       .job-meta {
-        flex-direction: column;
-        gap: 0.5rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
         font-size: 0.85rem;
+        margin-bottom: 0.875rem;
       }
 
       .job-description {
         font-size: 0.9rem;
+        line-height: 1.5;
       }
 
       .job-footer {
         flex-direction: column;
         gap: 0.75rem;
         align-items: stretch;
+        padding-top: 0.875rem;
       }
 
       .job-footer > div:first-child {
         width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
       }
 
       .job-footer > div:last-child {
         width: 100%;
+        display: flex;
         flex-direction: column;
+        gap: 0.625rem;
       }
 
       .btn-translate,
@@ -975,16 +1056,29 @@ if (empty($categories)) {
         width: 100%;
         justify-content: center;
         font-size: 0.9rem;
-        padding: 0.625rem 1rem;
+        padding: 0.75rem 1rem;
       }
 
       .badge {
         font-size: 0.75rem;
         padding: 0.375rem 0.75rem;
+        white-space: nowrap;
+      }
+
+      .cart-popover-actions {
+        flex-direction: column;
+      }
+
+      .cart-popover-btn {
+        width: 100%;
       }
     }
 
     @media (max-width: 480px) {
+      .header {
+        padding: 0.875rem 1rem;
+      }
+
       .logo .flag {
         font-size: 1.5rem;
       }
@@ -993,8 +1087,33 @@ if (empty($categories)) {
         font-size: 1.125rem;
       }
 
+      .logo .text .sub {
+        display: none;
+      }
+
+      .btn-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        font-size: 0.9rem;
+      }
+
+      .main-wrapper {
+        padding: 1rem 0.75rem;
+      }
+
+      .hero-section {
+        padding: 1.5rem 1.25rem;
+        margin-bottom: 2rem;
+      }
+
       .hero-title {
         font-size: 1.75rem;
+        margin-bottom: 0.875rem;
+      }
+
+      .hero-description {
+        font-size: 0.9375rem;
+        margin-bottom: 1.5rem;
       }
 
       .hero-stats {
@@ -1007,16 +1126,147 @@ if (empty($categories)) {
         text-align: center;
       }
 
+      .stat-number {
+        font-size: 1.75rem;
+      }
+
+      .stat-label {
+        font-size: 0.8125rem;
+      }
+
       .filters-section {
-        padding: 1rem;
+        padding: 1rem 0.875rem;
+      }
+
+      .filter-item label {
+        font-size: 0.75rem;
+      }
+
+      .filter-item input,
+      .filter-item select {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem;
+      }
+
+      .btn-filter {
+        font-size: 0.8125rem;
+        padding: 0.5rem 0.875rem;
+      }
+
+      .section-header {
+        margin-bottom: 1.5rem;
+      }
+
+      .section-title {
+        font-size: 1.5rem;
+      }
+
+      .section-subtitle {
+        font-size: 0.9375rem;
+      }
+
+      .jobs-grid {
+        gap: 1rem;
       }
 
       .job-card {
         padding: 1rem;
+        gap: 0.875rem;
+      }
+
+      .job-logo {
+        width: 50px;
+        height: 50px;
       }
 
       .job-title {
         font-size: 1rem;
+        line-height: 1.3;
+      }
+
+      .job-company {
+        font-size: 0.8125rem;
+        margin-bottom: 0.625rem;
+      }
+
+      .job-meta {
+        gap: 0.625rem;
+        font-size: 0.8125rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .job-meta-item {
+        font-size: 0.8125rem;
+      }
+
+      .job-description {
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .job-footer {
+        padding-top: 0.75rem;
+        gap: 0.625rem;
+      }
+
+      .btn-translate,
+      .btn-apply {
+        font-size: 0.875rem;
+        padding: 0.625rem 0.875rem;
+      }
+
+      .badge {
+        font-size: 0.6875rem;
+        padding: 0.3125rem 0.625rem;
+      }
+
+      .empty-state {
+        padding: 3rem 1.5rem;
+      }
+
+      .empty-state i {
+        font-size: 3rem;
+      }
+
+      .empty-state h3 {
+        font-size: 1.125rem;
+      }
+
+      .empty-state p {
+        font-size: 0.9375rem;
+      }
+
+      #cart-popover {
+        width: calc(100vw - 1.5rem);
+        right: -0.75rem;
+      }
+
+      #hamburger-menu {
+        width: 280px;
+        right: -280px;
+      }
+
+      .menu-header {
+        padding: 1.25rem;
+      }
+
+      .menu-user-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 1.125rem;
+      }
+
+      .menu-user-info h3 {
+        font-size: 1rem;
+      }
+
+      .menu-user-info p {
+        font-size: 0.8125rem;
+      }
+
+      .menu-item {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.875rem;
       }
     }
 
@@ -1044,12 +1294,14 @@ if (empty($categories)) {
       top: 0;
       right: -320px;
       width: 320px;
+      max-width: 100vw;
       height: 100vh;
       background: var(--white);
       box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
       z-index: 1000;
       transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     #hamburger-menu.show {
@@ -1187,6 +1439,20 @@ if (empty($categories)) {
       flex-direction: column;
       max-height: 500px;
       z-index: 101;
+    }
+
+    @media (max-width: 420px) {
+      #cart-popover {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100%;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        max-height: 70vh;
+      }
     }
 
     #cart-popover.show {
