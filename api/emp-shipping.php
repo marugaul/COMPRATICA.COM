@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $zoneName  = trim($body['zone_name'] ?? '');
     $zonePrice = (int)($body['zone_price'] ?? 0);
 
-    $allowed = ['free', 'pickup', 'express'];
+    $allowed = ['free', 'pickup', 'express', 'mooving'];
     if ($sellerId <= 0 || !in_array($method, $allowed)) {
         echo json_encode(['ok'=>false,'error'=>'datos inválidos']); exit;
     }
@@ -49,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'free'    => (bool)$cfg['enable_free_shipping'],
         'pickup'  => (bool)$cfg['enable_pickup'],
         'express' => (bool)$cfg['enable_express'],
+        'mooving' => (bool)($cfg['enable_mooving'] ?? 0),
         default   => false,
     };
     if (!$valid) { echo json_encode(['ok'=>false,'error'=>'método no disponible']); exit; }
@@ -56,9 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_SESSION['emp_shipping'])) $_SESSION['emp_shipping'] = [];
     $_SESSION['emp_shipping'][$sellerId] = [
         'method'     => $method,
-        'address'    => $method === 'express' ? $address : '',
-        'zone_name'  => $method === 'express' ? $zoneName  : '',
-        'zone_price' => $method === 'express' ? $zonePrice : 0,
+        'address'    => ($method === 'express' || $method === 'mooving') ? $address : '',
+        'zone_name'  => ($method === 'express' || $method === 'mooving') ? $zoneName  : '',
+        'zone_price' => ($method === 'express' || $method === 'mooving') ? $zonePrice : 0,
     ];
 
     echo json_encode(['ok'=>true, 'shipping'=>$_SESSION['emp_shipping'][$sellerId]]);

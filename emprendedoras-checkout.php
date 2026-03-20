@@ -129,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
                     'pickup'  => 'Retiro en local',
                     'free'    => 'Envío gratis',
                     'express' => 'Envío express' . ($group['shipping_zone'] ? ' — '.$group['shipping_zone'] : ''),
+                    'mooving' => 'Envío Mooving' . ($group['shipping_zone'] ? ' — '.$group['shipping_zone'] : ''),
                     default   => ''
                 };
                 $shipLine = $shipMethod ? "
@@ -411,13 +412,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
         <?php if (!empty($group['shipping_method'])): ?>
         <div style="padding:10px 24px;background:#f8f9ff;border-bottom:1px solid #e5e7eb;font-size:.88rem;color:#6b7280;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
             <span>
-                <i class="fas fa-<?= $group['shipping_method']==='pickup'?'store':($group['shipping_method']==='free'?'gift':'shipping-fast') ?>"
-                   style="color:<?= $group['shipping_method']==='express'?'#f59e0b':'#667eea' ?>;"></i>
+                <i class="fas fa-<?= $group['shipping_method']==='pickup'?'store':($group['shipping_method']==='free'?'gift':($group['shipping_method']==='mooving'?'motorcycle':'shipping-fast')) ?>"
+                   style="color:<?= $group['shipping_method']==='express'?'#f59e0b':($group['shipping_method']==='mooving'?'#8b5cf6':'#667eea') ?>;"></i>
                 <?php
                     echo match($group['shipping_method']) {
                         'pickup'  => 'Retiro en local',
                         'free'    => 'Envío gratis',
                         'express' => 'Envío express' . ($group['shipping_zone'] ? ' — '.$group['shipping_zone'] : ''),
+                        'mooving' => 'Envío Mooving' . ($group['shipping_zone'] ? ' — '.$group['shipping_zone'] : ''),
                         default   => ''
                     };
                 ?>
