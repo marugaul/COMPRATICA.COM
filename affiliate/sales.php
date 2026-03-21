@@ -694,8 +694,42 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
         // ¿Se puede re-activar? Solo si el último fee fue pagado y el espacio no está activo
         $canReactivate = (!empty($s['is_active']) === false) && $lastFeeStatus === 'Pagado';
       ?>
+        <?php
+          // URL pública del espacio
+          $salePublicUrl = rtrim(APP_URL, '/') . '/store.php?sale_id=' . (int)$s['id'];
+          // Texto WhatsApp de compartir
+          $waShareText = 'Hola! Te comparto mi espacio en COMPRATICA: ' . $salePublicUrl;
+          if (!empty($s['is_private']) && !empty($s['access_code'])) {
+            $waShareText .= ' — Código de acceso: ' . $s['access_code'];
+          }
+          $waShareUrl = 'https://wa.me/?text=' . rawurlencode($waShareText);
+        ?>
         <tr>
-          <td><?= htmlspecialchars($s['title']) ?></td>
+          <td>
+            <?= htmlspecialchars($s['title']) ?>
+            <?php if (!empty($s['is_private'])): ?>
+              <div style="margin-top:6px;">
+                <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
+                             background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;
+                             font-size:.78rem;font-weight:600;color:#92400e;">
+                  <i class="fas fa-lock" style="font-size:.7rem;"></i> Privado
+                </span>
+                <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;
+                             background:#ede9fe;border:1px solid #8b5cf6;border-radius:6px;
+                             font-size:.85rem;font-weight:700;color:#5b21b6;
+                             letter-spacing:.15rem;font-family:'Courier New',monospace;margin-left:4px;">
+                  <i class="fas fa-key" style="font-size:.7rem;"></i>
+                  <?= htmlspecialchars($s['access_code'] ?? '—') ?>
+                </span>
+              </div>
+            <?php else: ?>
+              <div style="margin-top:4px;">
+                <span style="display:inline-flex;align-items:center;gap:4px;font-size:.75rem;color:#6b7280;">
+                  <i class="fas fa-globe"></i> Público
+                </span>
+              </div>
+            <?php endif; ?>
+          </td>
           <td><?= htmlspecialchars($s['start_at']) ?></td>
           <td><?= htmlspecialchars($s['end_at']) ?></td>
           <td>
@@ -761,6 +795,26 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
                 <span><?= htmlspecialchars($pickup_location['city'] ?? '') ?> - <?= htmlspecialchars($pickup_location['contact_name'] ?? '') ?></span>
               </div>
             <?php endif; ?>
+
+            <!-- Compartir por WhatsApp -->
+            <a href="<?= htmlspecialchars($waShareUrl) ?>" target="_blank" rel="noopener"
+               title="Compartir espacio por WhatsApp"
+               style="margin-top:0.4rem;display:inline-flex;align-items:center;gap:6px;
+                      padding:0.45rem 0.9rem;background:#25D366;color:white;text-decoration:none;
+                      border-radius:6px;font-size:0.8rem;font-weight:600;
+                      box-shadow:0 2px 6px rgba(37,211,102,.3);transition:background .2s;"
+               onmouseover="this.style.background='#1ebe5e'" onmouseout="this.style.background='#25D366'">
+              <i class="fab fa-whatsapp" style="font-size:1rem;"></i> Compartir
+            </a>
+
+            <!-- Link directo al espacio -->
+            <a href="<?= htmlspecialchars($salePublicUrl) ?>" target="_blank"
+               title="Ver espacio público"
+               style="margin-top:0.4rem;display:inline-flex;align-items:center;gap:5px;
+                      padding:0.45rem 0.75rem;background:#e0f2fe;color:#0369a1;text-decoration:none;
+                      border-radius:6px;font-size:0.8rem;font-weight:600;border:1px solid #bae6fd;">
+              <i class="fas fa-external-link-alt"></i> Ver
+            </a>
           </td>
         </tr>
       <?php endforeach; ?>
