@@ -68,11 +68,24 @@ $FACEBOOK_REDIRECT_URI = ($__isHttps ? 'https://' : 'http://') . $host . '/login
 
 $error = '';
 $success = '';
-$redirect = $_GET['redirect'] ?? 'index.php';
+$redirect = $_GET['redirect'] ?? '';
+
+// Si viene el callback de OAuth, recuperar redirect guardado en sesión
+if (empty($redirect) && !empty($_SESSION['pending_redirect'])) {
+    $redirect = $_SESSION['pending_redirect'];
+}
+if (empty($redirect)) {
+    $redirect = 'index.php';
+}
 
 // Sanitize redirect to prevent open redirect vulnerability
 if (strpos($redirect, 'http') === 0 || strpos($redirect, '//') === 0) {
     $redirect = 'index.php';
+}
+
+// Guardar redirect en sesión para que sobreviva el callback OAuth
+if (!empty($_GET['redirect'])) {
+    $_SESSION['pending_redirect'] = $redirect;
 }
 
 if (isset($_SESSION['uid']) && $_SESSION['uid'] > 0 && empty($_GET['reset']) && empty($_GET['oauth'])) {
@@ -171,10 +184,11 @@ if (isset($_GET['oauth']) && isset($_GET['code'])) {
         }
         
         if ($result && isset($result['success'])) {
-            $old_sid = session_id();
+            // Usar guest_sid de sesión (token propio del carrito) para migrar artículos
+            $guest_sid_cart = $_SESSION['guest_sid'] ?? session_id();
             try {
                 $stmt = $pdo->prepare("UPDATE carts SET user_id = ? WHERE guest_sid = ?");
-                $stmt->execute([$result['user_id'], $old_sid]);
+                $stmt->execute([$result['user_id'], $guest_sid_cart]);
             } catch (Exception $e) {}
 
             // Set all session variables (both legacy and standardized)
@@ -185,6 +199,7 @@ if (isset($_GET['oauth']) && isset($_GET['code'])) {
             $_SESSION['name'] = $result['name'];
             $_SESSION['user_name'] = $result['name'];
             $_SESSION['role'] = 'active';
+            unset($_SESSION['pending_redirect']);
 
             logDebug("OAUTH_LOGIN_OK", ['provider' => $_GET['oauth'], 'uid' => $result['user_id']]);
 
@@ -218,10 +233,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $ok = $storedHash ? password_verify($password, $storedHash) : false;
 
                 if ($user && $ok) {
-                    $old_sid = session_id();
+                    $guest_sid_cart = $_SESSION['guest_sid'] ?? session_id();
                     try {
                         $stmt = $pdo->prepare("UPDATE carts SET user_id = ? WHERE guest_sid = ?");
-                        $stmt->execute([$user['id'], $old_sid]);
+                        $stmt->execute([$user['id'], $guest_sid_cart]);
                     } catch (Exception $e) {}
 
                     // Set all session variables (both legacy and standardized)
@@ -232,6 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $_SESSION['name'] = $user['name'] ?? '';
                     $_SESSION['user_name'] = $user['name'] ?? '';
                     $_SESSION['role'] = $user['status'] ?? 'active';
+                    unset($_SESSION['pending_redirect']);
 
                     header('Location: ' . $redirect);
                     exit;
@@ -266,10 +282,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $ins->execute([$name, $email, $phone, $hash]);
                         $newUid = (int)$pdo->lastInsertId();
 
-                        $old_sid = session_id();
+                        $guest_sid_cart = $_SESSION['guest_sid'] ?? session_id();
                         try {
                             $stmt = $pdo->prepare("UPDATE carts SET user_id = ? WHERE guest_sid = ?");
-                            $stmt->execute([$newUid, $old_sid]);
+                            $stmt->execute([$newUid, $guest_sid_cart]);
                         } catch (Exception $e) {}
 
                         // Set all session variables (both legacy and standardized)
@@ -280,6 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $_SESSION['name'] = $name;
                         $_SESSION['user_name'] = $name;
                         $_SESSION['role'] = 'active';
+                        unset($_SESSION['pending_redirect']);
 
                         header('Location: ' . $redirect);
                         exit;
