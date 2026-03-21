@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Listado de productos del afiliado (cualquiera sea su sale_id)
-$q = $pdo->prepare("SELECT id, name, sale_id, price, stock, currency, active, image, image2, category, created_at
+$q = $pdo->prepare("SELECT id, name, description, sale_id, price, stock, currency, active, image, image2, category, created_at
                     FROM products
                     WHERE affiliate_id=?
                     ORDER BY id DESC
