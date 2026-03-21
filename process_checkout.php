@@ -378,9 +378,9 @@ $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $base   = $scheme.'://'.$host;
 
 
-/*$paypal_url = 'https://www.paypal.com/cgi-bin/webscr';*/
-
-$paypal_url = 'https://www.sandbox.paypal.com/cgi-bin/webscr';
+$paypal_url = (PAYPAL_MODE === 'live')
+    ? 'https://www.paypal.com/cgi-bin/webscr'
+    : 'https://www.sandbox.paypal.com/cgi-bin/webscr';
 
 $paypal_return = $base . '/order-success.php?' . http_build_query([
     'order_id' => $first_order_id,
