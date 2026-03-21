@@ -259,6 +259,17 @@ try {
         ]);
 
         $order_ids[] = (int)$pdo->lastInsertId();
+
+        // Descontar inventario inmediatamente al crear la orden (dentro de la transacción)
+        $pid = (int)$it['product_id'];
+        if ($pid > 0 && $qty > 0) {
+            $pdo->prepare(
+                "UPDATE products
+                    SET stock = CASE WHEN stock >= ? THEN stock - ? ELSE 0 END,
+                        updated_at = datetime('now')
+                  WHERE id = ?"
+            )->execute([$qty, $qty, $pid]);
+        }
     }
 
     $pdo->commit();

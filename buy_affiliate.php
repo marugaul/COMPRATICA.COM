@@ -225,6 +225,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $order_id = insert_order_dynamic($pdo, $data);
 
+        // Descontar inventario inmediatamente al crear la orden
+        if ($order_id && $product_id > 0 && $qty > 0) {
+            try {
+                $pdo->prepare(
+                    "UPDATE products
+                        SET stock = CASE WHEN stock >= ? THEN stock - ? ELSE 0 END,
+                            updated_at = datetime('now')
+                      WHERE id = ?"
+                )->execute([$qty, $qty, $product_id]);
+            } catch (Throwable $e) {
+                error_log("stock_decrement_error order={$order_id} product={$product_id}: " . $e->getMessage());
+            }
+        }
+
         // ------- Emails: admin y cliente -------
         $pname = htmlspecialchars($p['name'] ?? ('Producto #'.$product_id));
         $monto_str_crc = '₡' . number_format($tot['total_crc'], 0, ',', '.');
