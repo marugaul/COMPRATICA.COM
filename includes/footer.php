@@ -38,3 +38,18 @@
     </p>
   </div>
 </footer>
+
+<script>
+/* ── Visitor tracker (analytics) ─────────────────────────────────────────── */
+(function(){
+  try {
+    const fd = new FormData();
+    fd.append('page',     window.location.pathname + window.location.search);
+    fd.append('referrer', document.referrer || '');
+    const saleMatch = window.location.search.match(/sale_id=(\d+)/);
+    if (saleMatch) fd.append('sale_id', saleMatch[1]);
+    navigator.sendBeacon ? navigator.sendBeacon('/api/track.php', fd)
+      : fetch('/api/track.php', { method: 'POST', body: fd, keepalive: true });
+  } catch(e) {}
+})();
+</script>
