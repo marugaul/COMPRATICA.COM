@@ -6,23 +6,24 @@
 
 // ── Mapas de opciones DiceBear ──────────────────────────────────────────────
 
+// Valores correctos para DiceBear v9.x (camelCase, nombres actualizados)
 const AV_HAIR = [
     // Estilos largos (mujer/niña)
-    'long_straight' => 'LongHairStraight',
-    'long_wavy'     => 'LongHairCurvy',
-    'long_curly'    => 'LongHairCurly',
-    'long_bun'      => 'LongHairBun',
-    'long_dreads'   => 'LongHairDreads',
-    'afro'          => 'LongHairFro',
+    'long_straight' => 'straight01',
+    'long_wavy'     => 'curvy',
+    'long_curly'    => 'curly',
+    'long_bun'      => 'bun',
+    'long_dreads'   => 'dreads',
+    'afro'          => 'fro',
     // Estilos cortos (hombre/niño)
-    'short_flat'    => 'ShortHairShortFlat',
-    'short_wavy'    => 'ShortHairShortWaved',
-    'short_curly'   => 'ShortHairShortCurly',
-    'short_dreads'  => 'ShortHairDreads01',
-    'sides'         => 'ShortHairSides',
-    // Neutros
-    'bald'          => 'NoHair',
-    'hat'           => 'Hat',
+    'short_flat'    => 'shortFlat',
+    'short_wavy'    => 'shortWaved',
+    'short_curly'   => 'shortCurly',
+    'short_dreads'  => 'dreads01',
+    'sides'         => 'sides',
+    // Neutros (topProbability=0 para calvo)
+    'bald'          => '',
+    'hat'           => 'hat',
 ];
 
 const AV_SKIN = [
@@ -44,75 +45,117 @@ const AV_BODY = [
     'plus'     => ['hw' => 27, 'lw' => 14, 'waistRatio' => 0.68, 'label' => '✨ Talla grande'],
 ];
 
+// Claves son los valores v9 que se pasan a la API; valores son etiquetas UI
 const AV_EYES = [
-    'Default'   => '😐 Expresivo',
-    'Happy'     => '😊 Feliz',
-    'Surprised' => '😮 Sorprendido',
-    'Wink'      => '😉 Guiño',
-    'Squint'    => '😴 Soñoliento',
-    'Hearts'    => '😍 Enamorado',
-    'EyeRoll'   => '🙄 Cansado',
+    'default'   => '😐 Expresivo',
+    'happy'     => '😊 Feliz',
+    'surprised' => '😮 Sorprendido',
+    'wink'      => '😉 Guiño',
+    'squint'    => '😴 Soñoliento',
+    'hearts'    => '😍 Enamorado',
+    'eyeRoll'   => '🙄 Cansado',
 ];
 
 const AV_MOUTH = [
-    'Smile'     => '😄 Sonrisa',
-    'Twinkle'   => '😏 Pícara',
-    'Default'   => '😶 Neutral',
-    'Tongue'    => '😛 Lengua',
-    'Serious'   => '😑 Serio',
-    'Concerned' => '😟 Preocupado',
+    'smile'    => '😄 Sonrisa',
+    'twinkle'  => '😏 Pícara',
+    'default'  => '😶 Neutral',
+    'tongue'   => '😛 Lengua',
+    'serious'  => '😑 Serio',
+    'concerned'=> '😟 Preocupado',
 ];
 
+// '' = sin accesorios (accessoriesProbability=0)
 const AV_ACCESSORIES = [
-    'Blank'          => '🚫 Ninguno',
-    'Sunglasses'     => '😎 Gafas de sol',
-    'Round'          => '🔵 Gafas redondas',
-    'Prescription01' => '👓 Gafas clásicas',
-    'Wayfarers'      => '😎 Wayfarers',
+    ''               => '🚫 Ninguno',
+    'sunglasses'     => '😎 Gafas de sol',
+    'round'          => '🔵 Gafas redondas',
+    'prescription01' => '👓 Gafas clásicas',
+    'wayfarers'      => '😎 Wayfarers',
 ];
 
+// Valores v9 para clothing (param correcto es "clothing", no "clothes")
 const AV_CLOTHES = [
-    'BlazerShirt'   => '🧥 Blazer + camisa',
-    'BlazerSweater' => '🧥 Blazer + suéter',
-    'CollarSweater' => '🧶 Suéter cuello',
-    'Hoodie'        => '👕 Hoodie',
-    'ShirtCrewNeck' => '👕 Camiseta',
-    'GraphicShirt'  => '🎨 Camiseta gráfica',
-    'Overall'       => '👗 Overall',
+    'blazerAndShirt'   => '🧥 Blazer + camisa',
+    'blazerAndSweater' => '🧥 Blazer + suéter',
+    'collarAndSweater' => '🧶 Suéter cuello',
+    'hoodie'           => '👕 Hoodie',
+    'shirtCrewNeck'    => '👕 Camiseta',
+    'graphicShirt'     => '🎨 Camiseta gráfica',
+    'overall'          => '👗 Overall',
 ];
 
+// '' = sin barba (facialHairProbability=0)
 const AV_FACIAL_HAIR = [
-    'Blank'          => '🚫 Sin barba',
-    'BeardLight'     => '🧔 Barba ligera',
-    'BeardMedium'    => '🧔 Barba mediana',
-    'BeardMagestic'  => '🧔 Barba majestuosa',
-    'MoustacheFancy' => '👨 Bigote',
+    ''               => '🚫 Sin barba',
+    'beardLight'     => '🧔 Barba ligera',
+    'beardMedium'    => '🧔 Barba mediana',
+    'beardMajestic'  => '🧔 Barba majestuosa',
+    'moustacheFancy' => '👨 Bigote',
 ];
 
 // ── Función principal: URL de DiceBear ────────────────────────────────────────
 
 function avatarUrl(array $cfg, int $size = 100): string {
-    $hair    = AV_HAIR[ $cfg['hair']   ?? 'short_flat' ] ?? 'ShortHairShortFlat';
-    $skin    = (AV_SKIN[$cfg['skin']   ?? 'light'] ?? AV_SKIN['light'])['dicebear'];
-    $hairHex = ltrim($cfg['hairColor']    ?? '4a312c', '#');
-    $clothHex= ltrim($cfg['clothesColor'] ?? '667eea', '#');
-    $eyes    = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['eyes']       ?? 'Default');
-    $mouth   = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['mouth']      ?? 'Smile');
-    $acc     = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['accessory']  ?? 'Blank');
-    $clothes = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['clothes']    ?? 'ShirtCrewNeck');
-    $facial  = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['facialHair'] ?? 'Blank');
+    // Cabello — clave interna → valor v9
+    $hairKey = $cfg['hair'] ?? 'short_flat';
+    $hair    = AV_HAIR[$hairKey] ?? 'shortFlat';
+
+    // Piel — usar hex directamente (v9 usa skinColor=hex, no nombres)
+    $skinHex = ltrim((AV_SKIN[$cfg['skin'] ?? 'light'] ?? AV_SKIN['light'])['hex'], '#');
+
+    // Colores (limpiar #)
+    $hairHex  = ltrim($cfg['hairColor']    ?? '4a312c', '#');
+    $clothHex = ltrim($cfg['clothesColor'] ?? '667eea', '#');
+
+    // Ojos/boca — ya son valores v9 camelCase
+    $eyes   = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['eyes']  ?? 'default');
+    $mouth  = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['mouth'] ?? 'smile');
+
+    // Accesorio — '' = ninguno
+    $acc    = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['accessory']  ?? '');
+
+    // Ropa — v9 usa "clothing" con nombres camelCase nuevos
+    $clothes = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['clothes'] ?? 'shirtCrewNeck');
+
+    // Barba — '' = ninguna
+    $facial = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['facialHair'] ?? '');
 
     $url  = 'https://api.dicebear.com/9.x/avataaars/svg?backgroundColor=transparent';
-    $url .= '&size='           . $size;
-    $url .= '&top[]='          . rawurlencode($hair);
-    $url .= '&skin[]='         . rawurlencode($skin);
-    $url .= '&hairColor[]='    . rawurlencode($hairHex);
-    $url .= '&eyes[]='         . rawurlencode($eyes);
-    $url .= '&mouth[]='        . rawurlencode($mouth);
-    $url .= '&accessories[]='  . rawurlencode($acc);
-    $url .= '&clothes[]='      . rawurlencode($clothes);
+    $url .= '&size=' . $size;
+
+    // Cabello
+    if ($hair !== '') {
+        $url .= '&top[]=' . rawurlencode($hair);
+    } else {
+        $url .= '&topProbability=0'; // calvo
+    }
+
+    // Piel, color cabello
+    $url .= '&skinColor[]='  . rawurlencode($skinHex);
+    $url .= '&hairColor[]='  . rawurlencode($hairHex);
+
+    // Expresión
+    $url .= '&eyes[]='  . rawurlencode($eyes);
+    $url .= '&mouth[]=' . rawurlencode($mouth);
+
+    // Accesorios (v9: "clothing" para ropa, "accessories" para gafas)
+    if ($acc !== '') {
+        $url .= '&accessories[]=' . rawurlencode($acc);
+    } else {
+        $url .= '&accessoriesProbability=0';
+    }
+
+    // Ropa: v9 usa "clothing" (no "clothes")
+    $url .= '&clothing[]=' . rawurlencode($clothes);
     $url .= '&clothesColor[]=' . rawurlencode($clothHex);
-    $url .= '&facialHair[]='   . rawurlencode($facial);
+
+    // Barba
+    if ($facial !== '') {
+        $url .= '&facialHair[]=' . rawurlencode($facial);
+    } else {
+        $url .= '&facialHairProbability=0';
+    }
 
     return $url;
 }
@@ -249,30 +292,31 @@ function avatarFull(array $cfg, int $w = 160): string {
 // ── Defaults por tipo de personaje ───────────────────────────────────────────
 
 function avatarDefaults(string $type = 'woman'): array {
+    // Valores en formato v9 (camelCase, '' para "ninguno")
     $d = [
         'woman' => [
             'hair' => 'long_straight', 'hairColor' => '#8B4513', 'skin' => 'light',
-            'eyes' => 'Happy',   'mouth' => 'Smile',   'accessory' => 'Blank',
-            'clothes' => 'BlazerShirt', 'clothesColor' => '#ec4899',
-            'facialHair' => 'Blank', 'body_shape' => 'average',
+            'eyes' => 'happy',   'mouth' => 'smile',   'accessory' => '',
+            'clothes' => 'blazerAndShirt', 'clothesColor' => '#ec4899',
+            'facialHair' => '', 'body_shape' => 'average',
         ],
         'man' => [
             'hair' => 'short_flat', 'hairColor' => '#1a1a1a', 'skin' => 'light',
-            'eyes' => 'Default', 'mouth' => 'Default', 'accessory' => 'Blank',
-            'clothes' => 'BlazerShirt', 'clothesColor' => '#2563eb',
-            'facialHair' => 'Blank', 'body_shape' => 'athletic',
+            'eyes' => 'default', 'mouth' => 'default', 'accessory' => '',
+            'clothes' => 'blazerAndShirt', 'clothesColor' => '#2563eb',
+            'facialHair' => '', 'body_shape' => 'athletic',
         ],
         'girl' => [
             'hair' => 'long_curly', 'hairColor' => '#D4A843', 'skin' => 'pale',
-            'eyes' => 'Happy',   'mouth' => 'Smile',   'accessory' => 'Round',
-            'clothes' => 'ShirtCrewNeck', 'clothesColor' => '#f97316',
-            'facialHair' => 'Blank', 'body_shape' => 'slim',
+            'eyes' => 'happy',   'mouth' => 'smile',   'accessory' => 'round',
+            'clothes' => 'shirtCrewNeck', 'clothesColor' => '#f97316',
+            'facialHair' => '', 'body_shape' => 'slim',
         ],
         'boy' => [
             'hair' => 'short_curly', 'hairColor' => '#2c1a0e', 'skin' => 'tanned',
-            'eyes' => 'Squint',  'mouth' => 'Twinkle', 'accessory' => 'Blank',
-            'clothes' => 'Hoodie', 'clothesColor' => '#16a34a',
-            'facialHair' => 'Blank', 'body_shape' => 'slim',
+            'eyes' => 'squint',  'mouth' => 'twinkle', 'accessory' => '',
+            'clothes' => 'hoodie', 'clothesColor' => '#16a34a',
+            'facialHair' => '', 'body_shape' => 'slim',
         ],
     ];
     $def = $d[$type] ?? $d['woman'];
