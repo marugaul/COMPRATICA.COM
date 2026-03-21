@@ -98,7 +98,15 @@ $sale_id        = isset($_POST['sale_id']) ? (int)$_POST['sale_id'] : 0;
 $cart_id        = isset($_POST['cart_id']) ? (int)$_POST['cart_id'] : 0;
 $payment_method = isset($_POST['payment_method']) ? trim((string)$_POST['payment_method']) : '';
 $buyer_phone    = isset($_POST['customer_phone']) ? trim((string)$_POST['customer_phone']) : '';
-$delivery_notes = isset($_POST['notes']) ? trim((string)$_POST['notes']) : '';
+$delivery_notes_raw = isset($_POST['notes'])       ? trim((string)$_POST['notes'])       : '';
+$location_url       = isset($_POST['location_url'])  ? trim((string)$_POST['location_url'])  : '';
+$otras_senas        = isset($_POST['otras_senas'])   ? trim((string)$_POST['otras_senas'])   : '';
+
+// Combinar dirección de entrega y otras señas en delivery_notes
+$delivery_parts = array_filter([$delivery_notes_raw]);
+if ($location_url !== '') $delivery_parts[] = 'Ubicación: ' . $location_url;
+if ($otras_senas  !== '') $delivery_parts[] = 'Otras señas: ' . $otras_senas;
+$delivery_notes = implode(' | ', $delivery_parts);
 
 checkout_log("FORM_DATA", [
     'sale_id' => $sale_id,
