@@ -185,7 +185,7 @@ if (isset($_GET['oauth']) && isset($_GET['code'])) {
         
         if ($result && isset($result['success'])) {
             // Usar guest_sid de sesión (token propio del carrito) para migrar artículos
-            $guest_sid_cart = $_SESSION['guest_sid'] ?? session_id();
+            $guest_sid_cart = $_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? '');
             try {
                 $stmt = $pdo->prepare("UPDATE carts SET user_id = ? WHERE guest_sid = ?");
                 $stmt->execute([$result['user_id'], $guest_sid_cart]);
@@ -233,7 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $ok = $storedHash ? password_verify($password, $storedHash) : false;
 
                 if ($user && $ok) {
-                    $guest_sid_cart = $_SESSION['guest_sid'] ?? session_id();
+                    $guest_sid_cart = $_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? '');
                     try {
                         $stmt = $pdo->prepare("UPDATE carts SET user_id = ? WHERE guest_sid = ?");
                         $stmt->execute([$user['id'], $guest_sid_cart]);
@@ -282,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $ins->execute([$name, $email, $phone, $hash]);
                         $newUid = (int)$pdo->lastInsertId();
 
-                        $guest_sid_cart = $_SESSION['guest_sid'] ?? session_id();
+                        $guest_sid_cart = $_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? '');
                         try {
                             $stmt = $pdo->prepare("UPDATE carts SET user_id = ? WHERE guest_sid = ?");
                             $stmt->execute([$newUid, $guest_sid_cart]);
