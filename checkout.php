@@ -901,6 +901,32 @@ foreach ($_SESSION['cart'] as $it) {
             <label>Teléfono <span style="color:var(--danger)">*</span></label>
             <input type="tel" name="customer_phone" id="customer_phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>" required>
           </div>
+
+          <!-- Dirección de entrega -->
+          <div class="form-group">
+            <label>Dirección de entrega <span style="font-size:.85em;color:#888">(opcional)</span></label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <button type="button" id="btn-location" onclick="captureLocation()"
+                style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:.9rem">
+                <i class="fas fa-map-marker-alt"></i> Indicar mi ubicación actual
+              </button>
+              <span id="location-status" style="font-size:.85rem;color:#666"></span>
+            </div>
+            <input type="hidden" name="location_url" id="location_url" value="">
+            <div id="location-preview" style="display:none;margin-top:6px">
+              <a id="location-link" href="#" target="_blank" style="font-size:.85rem;color:var(--primary)">
+                <i class="fas fa-external-link-alt"></i> Ver en Google Maps
+              </a>
+            </div>
+          </div>
+
+          <!-- Otras señas -->
+          <div class="form-group">
+            <label>Otras señas <span style="font-size:.85em;color:#888">(color de portón, punto de referencia, etc.)</span></label>
+            <textarea name="otras_senas" id="otras_senas" rows="2"
+              placeholder="Ej: casa blanca con portón negro, frente al parque..."
+              style="width:100%;border:1px solid #ddd;border-radius:8px;padding:10px;font-size:.95rem;resize:vertical"></textarea>
+          </div>
         </div>
 
         <!-- ⭐ OPCIONES DE ENVÍO -->
@@ -1474,6 +1500,46 @@ form.addEventListener('submit', function(e){
     }
   }
 });
+
+// ── Captura de ubicación GPS ──────────────────────────────────────────────
+function captureLocation() {
+  const btn    = document.getElementById('btn-location');
+  const status = document.getElementById('location-status');
+  const input  = document.getElementById('location_url');
+  const preview= document.getElementById('location-preview');
+  const link   = document.getElementById('location-link');
+
+  if (!navigator.geolocation) {
+    status.textContent = 'Tu navegador no soporta geolocalización.';
+    return;
+  }
+
+  btn.disabled = true;
+  status.textContent = 'Obteniendo ubicación…';
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      const url = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+
+      input.value = url;
+      link.href   = url;
+      preview.style.display = 'block';
+      status.innerHTML = '<span style="color:green"><i class="fas fa-check-circle"></i> Ubicación capturada</span>';
+      btn.textContent = '';
+      btn.innerHTML   = '<i class="fas fa-map-marker-alt"></i> Actualizar ubicación';
+      btn.disabled    = false;
+    },
+    function(err) {
+      let msg = 'No se pudo obtener la ubicación.';
+      if (err.code === 1) msg = 'Permiso denegado. Activa la ubicación en tu navegador.';
+      status.textContent = msg;
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
 </script>
 </body>
 </html>
