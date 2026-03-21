@@ -39,14 +39,17 @@ try {
         referrer   VARCHAR(500),
         user_agent VARCHAR(500),
         sale_id    INTEGER DEFAULT NULL,
+        user_id    INTEGER DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )");
     $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sv_created ON site_visits(created_at)");
+    try { $pdo->exec("ALTER TABLE site_visits ADD COLUMN user_id INTEGER DEFAULT NULL"); } catch (Throwable $e) {}
 } catch (Throwable $e) {}
 
 // ─── Visitantes online ────────────────────────────────────────────────────────
-$online_now   = (int)safeqv($pdo, "SELECT COUNT(DISTINCT session_id) FROM site_visits WHERE created_at > datetime('now','-5 minutes')");
-$online_1h    = (int)safeqv($pdo, "SELECT COUNT(DISTINCT session_id) FROM site_visits WHERE created_at > datetime('now','-1 hour')");
+$online_now        = (int)safeqv($pdo, "SELECT COUNT(DISTINCT session_id) FROM site_visits WHERE created_at > datetime('now','-5 minutes')");
+$users_online_now  = (int)safeqv($pdo, "SELECT COUNT(DISTINCT user_id) FROM site_visits WHERE user_id IS NOT NULL AND created_at > datetime('now','-5 minutes')");
+$online_1h         = (int)safeqv($pdo, "SELECT COUNT(DISTINCT session_id) FROM site_visits WHERE created_at > datetime('now','-1 hour')");
 $visits_today = (int)safeqv($pdo, "SELECT COUNT(*) FROM site_visits WHERE date(created_at)=date('now')");
 $visits_week  = (int)safeqv($pdo, "SELECT COUNT(*) FROM site_visits WHERE created_at > datetime('now','-7 days')");
 
@@ -214,13 +217,20 @@ foreach ($visits_by_hour as $r) {
 
   <!-- ONLINE AHORA -->
   <div class="online-hero">
-    <div>
-      <div class="big"><?= $online_now ?></div>
-      <div style="font-size:1rem;font-weight:600;margin-top:.25rem">usuarios online ahora</div>
-      <div class="desc">Visitantes únicos en los últimos 5 minutos</div>
+    <div style="display:flex;gap:2.5rem;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div class="big"><?= $online_now ?></div>
+        <div style="font-size:1rem;font-weight:600;margin-top:.25rem"><i class="fas fa-users"></i> visitantes online ahora</div>
+        <div class="desc">Sesiones únicas en los últimos 5 min</div>
+      </div>
+      <div style="border-left:1px solid rgba(255,255,255,.3);padding-left:2rem">
+        <div class="big" style="font-size:2.6rem"><?= $users_online_now ?></div>
+        <div style="font-size:1rem;font-weight:600;margin-top:.25rem"><i class="fas fa-user-check"></i> usuarios registrados online</div>
+        <div class="desc">Con sesión iniciada, últimos 5 min</div>
+      </div>
     </div>
     <div class="side">
-      <p><strong><?= $online_1h ?></strong> en la última hora</p>
+      <p><strong><?= $online_1h ?></strong> visitantes en la última hora</p>
       <p><strong><?= number_format($visits_today) ?></strong> páginas vistas hoy</p>
       <p><strong><?= number_format($visits_week) ?></strong> páginas vistas esta semana</p>
       <p><strong><?= $conversion ?>%</strong> tasa de conversión hoy</p>

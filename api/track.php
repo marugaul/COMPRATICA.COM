@@ -9,6 +9,12 @@ header('Access-Control-Allow-Origin: same-origin');
 
 require_once __DIR__ . '/../includes/db.php';
 
+// Iniciar sesión para leer user_id si el visitante está logueado
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
+$user_id = !empty($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+
 // Crear tabla si no existe
 $pdo = db();
 $pdo->exec("
@@ -20,11 +26,14 @@ $pdo->exec("
     referrer   VARCHAR(500),
     user_agent VARCHAR(500),
     sale_id    INTEGER DEFAULT NULL,
+    user_id    INTEGER DEFAULT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 ");
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sv_created ON site_visits(created_at)");
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sv_session ON site_visits(session_id)");
+// Agregar columna user_id a tablas existentes (idempotente)
+try { $pdo->exec("ALTER TABLE site_visits ADD COLUMN user_id INTEGER DEFAULT NULL"); } catch (Throwable $e) {}
 
 // Datos recibidos
 $page       = substr(trim($_POST['page'] ?? $_SERVER['HTTP_REFERER'] ?? ''), 0, 500);
@@ -45,10 +54,10 @@ $dup = $pdo->prepare("
 $dup->execute([$session_id, $page]);
 if ((int)$dup->fetchColumn() === 0) {
     $ins = $pdo->prepare("
-      INSERT INTO site_visits (session_id, ip, page, referrer, user_agent, sale_id, created_at)
-      VALUES (?,?,?,?,?,?,datetime('now'))
+      INSERT INTO site_visits (session_id, ip, page, referrer, user_agent, sale_id, user_id, created_at)
+      VALUES (?,?,?,?,?,?,?,datetime('now'))
     ");
-    $ins->execute([$session_id, $ip, $page, $referrer, $ua, $sale_id]);
+    $ins->execute([$session_id, $ip, $page, $referrer, $ua, $sale_id, $user_id]);
 }
 
 // Purgar registros > 30 días
