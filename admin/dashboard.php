@@ -911,9 +911,24 @@ $stats = [
             <td class="small"><?= h($o['residency']) ?></td>
             <td><strong><?= h($o['status']) ?></strong></td>
             <td>
-              <?php if(!empty($o['proof_image'])): ?>
-                <a href="../uploads/payments/<?php echo h($o['proof_image']); ?>" target="_blank">
-                  <img class="thumb" src="../uploads/payments/<?php echo h($o['proof_image']); ?>" alt="proof-<?php echo (int)$o['id']; ?>">
+              <?php if(!empty($o['proof_image'])):
+                $pf = $o['proof_image'];
+                $ext = strtolower(pathinfo($pf, PATHINFO_EXTENSION));
+                $pUrl = file_exists(__DIR__.'/../uploads/proofs/'.$pf)
+                      ? '../uploads/proofs/'.$pf
+                      : (file_exists(__DIR__.'/../uploads/payments/'.$pf)
+                         ? '../uploads/payments/'.$pf
+                         : '../uploads/payments/'.$pf);
+              ?>
+                <a href="<?php echo h($pUrl); ?>" target="_blank">
+                  <?php if ($ext === 'pdf'): ?>
+                    <span style="font-size:.8rem;color:#ef4444;"><i class="fas fa-file-pdf"></i> PDF</span>
+                  <?php else: ?>
+                    <img class="thumb" src="<?php echo h($pUrl); ?>"
+                         alt="proof-<?php echo (int)$o['id']; ?>"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+                    <span style="display:none;font-size:.75rem;color:#f59e0b;"><i class="fas fa-link"></i> Ver</span>
+                  <?php endif; ?>
                 </a>
               <?php else: ?>
                 <span class="small">Sin comprobante</span>
