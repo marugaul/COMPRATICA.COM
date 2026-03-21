@@ -162,9 +162,11 @@ function avatarUrl(array $cfg, int $size = 100): string {
 
 // ── URL del proxy local (mismo origen, evita CORB) ───────────────────────────
 
-function avatarProxyUrl(array $cfg, int $size = 100): string {
-    return 'api/dicebear-proxy.php?size=' . $size
+function avatarProxyUrl(array $cfg, int $size = 100, bool $faceOnly = false): string {
+    $url = 'api/dicebear-proxy.php?size=' . $size
          . '&cfg=' . rawurlencode(json_encode($cfg));
+    if ($faceOnly) $url .= '&face=1';
+    return $url;
 }
 
 // ── Avatar circular para tarjetas del catálogo ───────────────────────────────
@@ -178,113 +180,151 @@ function avatarImg(array $cfg, int $size = 72, string $extra = '', string $title
            "border:3px solid rgba(255,255,255,.6);box-shadow:0 3px 12px rgba(0,0,0,.2);'>";
 }
 
-// ── Avatar compuesto: DiceBear head + cuerpo SVG con contornos ───────────────
+// ── Avatar compuesto: cara circular DiceBear + cuerpo SVG completo (con brazos) ─
 
 function avatarFull(array $cfg, int $w = 160): string {
-    $type      = $cfg['type']        ?? 'woman';
+    $type      = $cfg['type']       ?? 'woman';
     $isSkirt   = in_array($type, ['woman', 'girl']);
     $shape     = AV_BODY[$cfg['body_shape'] ?? 'average'] ?? AV_BODY['average'];
     $clothHex  = _avHex($cfg['clothesColor'] ?? '#667eea');
     $clothDark = _avDarken($clothHex, 30);
     $skinKey   = $cfg['skin'] ?? 'light';
     $skinHex   = (AV_SKIN[$skinKey] ?? AV_SKIN['light'])['hex'];
+    $skinDark  = _avDarken($skinHex, 15);
 
-    $hw       = $shape['hw'];
-    $lw       = $shape['lw'];
-    $cx       = (int)($w / 2);
-    $headH    = $w;
-    $bodyH    = (int)($w * 0.58);
-    $totalH   = $headH + $bodyH + 12;
-    $waistY   = (int)($headH * $shape['waistRatio']);
+    $hw = $shape['hw'];
+    $lw = $shape['lw'];
+    $cx = (int)($w / 2);
 
-    $faceUrl  = htmlspecialchars(avatarProxyUrl($cfg, $w));
-    $parts    = [];
+    // ── Dimensiones ─────────────────────────────────────────────────────────
+    // Cara: círculo centrado en la parte superior
+    $headSz  = (int)($w * 0.56);          // diámetro de la cara
+    $headX   = $cx - (int)($headSz / 2);  // posición X de la cara
+    $headY   = 0;
 
-    // ── Cuerpo según tipo ────────────────────────────────────────────────────
-    if ($isSkirt) {
-        // Falda A-line con forma según contorno
-        $skirtBot = $headH + (int)($bodyH * 0.72);
-        $flare    = (int)($hw * 1.5);
+    // Cuello
+    $neckW   = max(6, (int)($headSz * 0.09));
+    $neckTop = (int)($headSz * 0.80);
+    $neckH   = (int)($headSz * 0.14);
+    $shouldY = $neckTop + $neckH;          // inicio del torso/hombros
 
-        // Curva de falda con bezier
-        $parts[] = "<defs>" .
-            "<linearGradient id='skirtG' x1='0' y1='0' x2='1' y2='0'>" .
+    // Torso
+    $torsoH = (int)($w * 0.30);
+    $waistY = $shouldY + $torsoH;
+
+    // Brazos: rectángulo redondeado a cada lado del torso
+    $armW   = max(7, (int)($hw * 0.38));
+    $armH   = (int)($torsoH * 0.80);
+    $armLX  = $cx - $hw - $armW;
+    $armRX  = $cx + $hw;
+    $armR   = max(4, (int)($armW / 2));
+
+    // Piernas/falda
+    $legH   = (int)($w * 0.32);
+    $totalH = $waistY + $legH + 14;
+
+    $parts = [];
+
+    // ── Defs (gradientes reutilizables) ──────────────────────────────────────
+    $parts[] = "<defs>" .
+        "<linearGradient id='cG' x1='0' y1='0' x2='1' y2='0'>" .
             "<stop offset='0%' stop-color='{$clothDark}'/>" .
             "<stop offset='50%' stop-color='{$clothHex}'/>" .
             "<stop offset='100%' stop-color='{$clothDark}'/>" .
-            "</linearGradient>" .
-            "<linearGradient id='legG' x1='0' y1='0' x2='0' y2='1'>" .
+        "</linearGradient>" .
+        "<linearGradient id='cV' x1='0' y1='0' x2='0' y2='1'>" .
+            "<stop offset='0%' stop-color='{$clothHex}'/>" .
+            "<stop offset='100%' stop-color='{$clothDark}'/>" .
+        "</linearGradient>" .
+        "<linearGradient id='sG' x1='0' y1='0' x2='0' y2='1'>" .
             "<stop offset='0%' stop-color='{$skinHex}'/>" .
-            "<stop offset='100%' stop-color='" . _avDarken($skinHex, 15) . "'/>" .
-            "</linearGradient>" .
-            "</defs>";
+            "<stop offset='100%' stop-color='{$skinDark}'/>" .
+        "</linearGradient>" .
+        "</defs>";
 
-        $midY = (int)(($waistY + $skirtBot) / 2);
-        $parts[] = "<path d='M" . ($cx-$hw) . " {$waistY} " .
-                   "Q" . ($cx-$flare) . " {$midY} " . ($cx-$flare) . " {$skirtBot} " .
-                   "L" . ($cx+$flare) . " {$skirtBot} " .
-                   "Q" . ($cx+$flare) . " {$midY} " . ($cx+$hw) . " {$waistY} Z' " .
-                   "fill='url(#skirtG)'/>";
-        // Sombra central (pliegue)
-        $parts[] = "<path d='M{$cx} {$waistY} Q" . ($cx+3) . " {$midY} {$cx} {$skirtBot}' " .
-                   "stroke='{$clothDark}' stroke-width='1.5' fill='none' opacity='0.35'/>";
+    // ── Cuello ───────────────────────────────────────────────────────────────
+    $parts[] = "<rect x='" . ($cx-$neckW) . "' y='{$neckTop}' " .
+               "width='" . ($neckW*2) . "' height='{$neckH}' fill='url(#sG)' rx='{$neckW}'/>";
 
-        // Piernas debajo de la falda
+    // ── Brazos (detrás del torso) ─────────────────────────────────────────────
+    $parts[] = "<rect x='{$armLX}' y='{$shouldY}' width='{$armW}' height='{$armH}' fill='url(#cV)' rx='{$armR}'/>";
+    $parts[] = "<rect x='{$armRX}' y='{$shouldY}' width='{$armW}' height='{$armH}' fill='url(#cV)' rx='{$armR}'/>";
+    // Manos (piel al final del brazo)
+    $handR = max(4, $armR - 1);
+    $handH = (int)($armW * 1.1);
+    $handY = $shouldY + $armH - 2;
+    $parts[] = "<rect x='{$armLX}' y='{$handY}' width='{$armW}' height='{$handH}' fill='url(#sG)' rx='{$handR}'/>";
+    $parts[] = "<rect x='{$armRX}' y='{$handY}' width='{$armW}' height='{$handH}' fill='url(#sG)' rx='{$handR}'/>";
+
+    if ($isSkirt) {
+        // ── Blusa ────────────────────────────────────────────────────────────
+        $buH = (int)($torsoH * 0.52);
+        $buW = $hw + 2;
+        $parts[] = "<rect x='" . ($cx-$buW) . "' y='{$shouldY}' width='" . ($buW*2) . "' height='{$buH}' fill='url(#cG)' rx='4'/>";
+
+        // ── Falda A-line ─────────────────────────────────────────────────────
+        $skirtTop = $shouldY + (int)($torsoH * 0.46);
+        $skirtBot = $waistY + (int)($legH * 0.46);
+        $flare    = (int)($hw * 1.6);
+        $midY     = (int)(($skirtTop + $skirtBot) / 2);
+        $parts[]  = "<path d='M" . ($cx-$hw) . " {$skirtTop} " .
+                    "Q" . ($cx-$flare) . " {$midY} " . ($cx-$flare) . " {$skirtBot} " .
+                    "L" . ($cx+$flare) . " {$skirtBot} " .
+                    "Q" . ($cx+$flare) . " {$midY} " . ($cx+$hw) . " {$skirtTop} Z' fill='url(#cG)'/>";
+        $parts[]  = "<path d='M{$cx} {$skirtTop} Q" . ($cx+3) . " {$midY} {$cx} {$skirtBot}' " .
+                    "stroke='{$clothDark}' stroke-width='1.5' fill='none' opacity='0.3'/>";
+
+        // ── Piernas ───────────────────────────────────────────────────────────
         $legTop = $skirtBot;
-        $legBot = $headH + $bodyH;
+        $legBot = $waistY + $legH;
         $legL   = $cx - (int)($lw * 1.5);
         $legR   = $cx + (int)($lw * 0.5);
         $lh     = $legBot - $legTop;
+        $parts[] = "<rect x='" . ($legL-$lw) . "' y='{$legTop}' width='" . ($lw*2) . "' height='{$lh}' fill='url(#sG)' rx='{$lw}'/>";
+        $parts[] = "<rect x='" . ($legR-$lw) . "' y='{$legTop}' width='" . ($lw*2) . "' height='{$lh}' fill='url(#sG)' rx='{$lw}'/>";
 
-        $parts[] = "<rect x='" . ($legL-$lw) . "' y='{$legTop}' width='" . ($lw*2) . "' height='{$lh}' fill='url(#legG)' rx='{$lw}'/>";
-        $parts[] = "<rect x='" . ($legR-$lw) . "' y='{$legTop}' width='" . ($lw*2) . "' height='{$lh}' fill='url(#legG)' rx='{$lw}'/>";
-
-        // Zapatos
+        // ── Zapatos con tacón ──────────────────────────────────────────────────
         $sy = $legBot + 5;
         $parts[] = "<ellipse cx='{$legL}' cy='{$sy}' rx='" . ($lw+6) . "' ry='5' fill='#1a0a00'/>";
         $parts[] = "<ellipse cx='{$legR}' cy='{$sy}' rx='" . ($lw+6) . "' ry='5' fill='#1a0a00'/>";
-        // Tacón
-        $parts[] = "<rect x='" . ($legR+$lw-2) . "' y='{$sy}' width='4' height='6' fill='#0a0500' rx='1'/>";
+        $parts[] = "<rect x='" . ($legR+$lw-3) . "' y='{$sy}' width='4' height='5' fill='#0a0500' rx='1'/>";
 
     } else {
-        // Pantalón con forma según contorno
-        $pantBot = $headH + $bodyH;
-        $pantMid = (int)($headH + $bodyH * 0.12);
-        $legL    = $cx - (int)($lw * 1.4);
-        $legR    = $cx + (int)($lw * 0.4);
-        $lh      = $pantBot - $pantMid;
+        // ── Camisa/torso ────────────────────────────────────────────────────
+        $parts[] = "<rect x='" . ($cx-$hw) . "' y='{$shouldY}' width='" . ($hw*2) . "' height='{$torsoH}' fill='url(#cG)' rx='5'/>";
 
-        $parts[] = "<defs>" .
-            "<linearGradient id='pantG' x1='0' y1='0' x2='0' y2='1'>" .
-            "<stop offset='0%' stop-color='{$clothHex}'/>" .
-            "<stop offset='100%' stop-color='{$clothDark}'/>" .
-            "</linearGradient>" .
-            "</defs>";
+        // ── Pantalón ──────────────────────────────────────────────────────────
+        $pantColor = _avDarken($clothHex, 38);
+        $pantDark  = _avDarken($clothHex, 55);
+        $pantTop   = $waistY - (int)($torsoH * 0.08);
+        $pantBot   = $waistY + $legH;
+        $legL      = $cx - (int)($lw * 1.4);
+        $legR      = $cx + (int)($lw * 0.4);
+        $lh        = $pantBot - $pantTop;
+        $parts[] = "<rect x='" . ($legL-$lw) . "' y='{$pantTop}' width='" . ($lw*2) . "' height='{$lh}' fill='{$pantColor}' rx='{$lw}'/>";
+        $parts[] = "<rect x='" . ($legR-$lw) . "' y='{$pantTop}' width='" . ($lw*2) . "' height='{$lh}' fill='{$pantColor}' rx='{$lw}'/>";
+        $parts[] = "<line x1='{$cx}' y1='{$pantTop}' x2='{$cx}' y2='{$pantBot}' stroke='{$pantDark}' stroke-width='2' opacity='0.35'/>";
 
-        // Cintura/cadera
-        $parts[] = "<rect x='" . ($cx-$hw) . "' y='{$waistY}' width='" . ($hw*2) . "' height='" . ($pantMid-$waistY+$lw) . "' fill='url(#pantG)' rx='6'/>";
-        // Piernas
-        $parts[] = "<rect x='" . ($legL-$lw) . "' y='{$pantMid}' width='" . ($lw*2) . "' height='{$lh}' fill='url(#pantG)' rx='{$lw}'/>";
-        $parts[] = "<rect x='" . ($legR-$lw) . "' y='{$pantMid}' width='" . ($lw*2) . "' height='{$lh}' fill='url(#pantG)' rx='{$lw}'/>";
-        // Línea separadora pantalonera
-        $parts[] = "<line x1='{$cx}' y1='{$pantMid}' x2='{$cx}' y2='{$pantBot}' stroke='{$clothDark}' stroke-width='2' opacity='0.4'/>";
-        // Zapatos
+        // ── Zapatos ────────────────────────────────────────────────────────────
         $sy = $pantBot + 6;
         $parts[] = "<ellipse cx='{$legL}' cy='{$sy}' rx='" . ($lw+7) . "' ry='6' fill='#111'/>";
         $parts[] = "<ellipse cx='{$legR}' cy='{$sy}' rx='" . ($lw+7) . "' ry='6' fill='#111'/>";
     }
 
-    // ── HTML composite: body SVG behind, DiceBear <img> on top ──────────────
-    $bodySvg  = "<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'";
+    // ── HTML compuesto: SVG cuerpo + img cara circular (DiceBear style=circle) ─
+    $bodySvg  = "<svg xmlns='http://www.w3.org/2000/svg'";
     $bodySvg .= " viewBox='0 0 {$w} {$totalH}' width='{$w}' height='{$totalH}'";
     $bodySvg .= " style='position:absolute;top:0;left:0;pointer-events:none;'>";
     $bodySvg .= implode('', $parts);
     $bodySvg .= "</svg>";
 
+    // DiceBear con style=circle → solo cara circular, sin cuerpo/brazos propios
+    $faceUrl = htmlspecialchars(avatarProxyUrl($cfg, $headSz, true));
+
     $html  = "<div style='position:relative;width:{$w}px;height:{$totalH}px;display:inline-block;vertical-align:bottom;'>";
     $html .= $bodySvg;
-    $html .= "<img src='{$faceUrl}' width='{$w}' height='{$headH}' alt='avatar' loading='eager'";
-    $html .= " style='position:absolute;top:0;left:0;width:{$w}px;height:{$headH}px;display:block;'>";
+    $html .= "<img src='{$faceUrl}' width='{$headSz}' height='{$headSz}' alt='avatar' loading='eager'";
+    $html .= " style='position:absolute;top:{$headY}px;left:{$headX}px;width:{$headSz}px;height:{$headSz}px;display:block;border-radius:50%;overflow:hidden;'>";
     $html .= "</div>";
     return $html;
 }
