@@ -558,7 +558,29 @@ $orders = $list->fetchAll(PDO::FETCH_ASSOC);
                   <span><i class="fas fa-phone" style="opacity: 0.5;"></i> <?= htmlspecialchars($o['buyer_phone']) ?></span>
                 </div>
               </td>
-              <td class="small"><?= htmlspecialchars($o['residency']) ?></td>
+              <td class="small">
+                <?php
+                  // Combinar residency (flujo buy_affiliate) + note (flujo checkout)
+                  $parts_addr = array_filter([
+                    trim($o['residency'] ?? ''),
+                    trim($o['note'] ?? ''),
+                  ]);
+                  $addr_text = implode(' | ', $parts_addr);
+                  if ($addr_text === '') {
+                    echo '<span style="color:#bbb">—</span>';
+                  } else {
+                    // Convertir URLs de Google Maps en links clicables
+                    $addr_safe = htmlspecialchars($addr_text, ENT_QUOTES, 'UTF-8');
+                    $addr_linked = preg_replace(
+                      '/(https?:\/\/www\.google\.com\/maps[^\s|<]*)/i',
+                      '<a href="$1" target="_blank" style="color:var(--primary);white-space:nowrap">'
+                      . '<i class="fas fa-map-marker-alt"></i> Ver mapa</a>',
+                      $addr_safe
+                    );
+                    echo $addr_linked;
+                  }
+                ?>
+              </td>
               <td>
                 <?php
                   $proof = getProofInfo($o['proof_image'] ?? '');
