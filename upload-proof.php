@@ -227,6 +227,10 @@ try {
             // grand_total es el mismo para todos los rows (total de la orden), tomar del primero
             $order_grand_total = (float)$orderDetails['grand_total'];
 
+            $buyer_email_lower    = strtolower(trim($orderDetails['buyer_email'] ?? ''));
+            $affiliate_email_lower = strtolower(trim($orderDetails['affiliate_email'] ?? ''));
+            $admin_email_lower    = strtolower(defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '');
+
             // Email al comprador
             $buyer_subject = "Comprobante recibido - En Revisión - {$orderDetails['sale_title']}";
             $buyer_message = "Hola {$orderDetails['buyer_name']},\n\n";
@@ -237,7 +241,9 @@ try {
             $buyer_message .= "- Total: ₡" . number_format($order_grand_total, 2) . "\n\n";
             $buyer_message .= "Gracias por tu compra!\n{$app_name}";
             $buyer_html = nl2br(htmlspecialchars($buyer_message, ENT_QUOTES, 'UTF-8'));
-            @send_email($orderDetails['buyer_email'], $buyer_subject, $buyer_html, $orderDetails['affiliate_email'] ?? null, $orderDetails['affiliate_name'] ?? null);
+            if ($buyer_email_lower !== '') {
+              @send_email($orderDetails['buyer_email'], $buyer_subject, $buyer_html, $orderDetails['affiliate_email'] ?? null, $orderDetails['affiliate_name'] ?? null);
+            }
 
             // Email al vendedor/afiliado
             $seller_subject  = "Comprobante recibido - En Revisión - {$orderDetails['sale_title']}";
@@ -254,7 +260,24 @@ try {
             $seller_message .= "Comprobante: {$site_url}/uploads/proofs/{$filename}\n\n";
             $seller_message .= "Saludos,\n{$app_name}";
             $seller_html = nl2br(htmlspecialchars($seller_message, ENT_QUOTES, 'UTF-8'));
-            @send_email($orderDetails['affiliate_email'], $seller_subject, $seller_html, $orderDetails['buyer_email'] ?? null, $orderDetails['buyer_name'] ?? null);
+            if ($affiliate_email_lower !== '' && $affiliate_email_lower !== $buyer_email_lower) {
+              @send_email($orderDetails['affiliate_email'], $seller_subject, $seller_html, $orderDetails['buyer_email'] ?? null, $orderDetails['buyer_name'] ?? null);
+            }
+
+            // Email al admin (si es diferente al comprador y al afiliado)
+            if ($admin_email_lower !== '' && $admin_email_lower !== $buyer_email_lower && $admin_email_lower !== $affiliate_email_lower) {
+              $admin_subject  = "[Admin] Comprobante SINPE recibido - {$orderNumber}";
+              $admin_message  = "Se ha recibido un comprobante de pago SINPE.\n\n";
+              $admin_message .= "Orden: {$orderNumber}\n";
+              $admin_message .= "Comprador: {$orderDetails['buyer_name']} ({$orderDetails['buyer_email']})\n";
+              $admin_message .= "Vendedor: {$orderDetails['affiliate_name']} ({$orderDetails['affiliate_email']})\n\n";
+              $admin_message .= "Productos:\n";
+              $admin_message .= $items_lines;
+              $admin_message .= "- Total: ₡" . number_format($order_grand_total, 2) . "\n\n";
+              $admin_message .= "Comprobante: {$site_url}/uploads/proofs/{$filename}";
+              $admin_html = nl2br(htmlspecialchars($admin_message, ENT_QUOTES, 'UTF-8'));
+              @send_email(ADMIN_EMAIL, $admin_subject, $admin_html);
+            }
           }
 
           $success = '¡Comprobante subido! Tu pedido quedó en EN REVISIÓN y el vendedor lo confirmará.';

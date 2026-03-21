@@ -323,7 +323,9 @@ try {
 
     // Notificación al administrador
     $admin_email = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
-    if ($admin_email !== '') {
+    $buyer_email_lower = strtolower((string)($user['email'] ?? ''));
+
+    if ($admin_email !== '' && strtolower($admin_email) !== $buyer_email_lower) {
         $html_admin = '<h2>Nuevo pedido recibido</h2>'
             . '<p>Se ha recibido el pedido <strong>' . htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8') . '</strong> de '
             . htmlspecialchars($user['name'] ?? '', ENT_QUOTES, 'UTF-8') . ' ('
@@ -336,6 +338,33 @@ try {
             . '<p><strong>Total:</strong> ' . number_format($grand_total, 2) . ' ' . $currency . '</p>';
         @send_mail($admin_email, '[COMPRATICA] Nuevo pedido '.$order_number, $html_admin);
         checkout_log("EMAIL_SENT_ADMIN", ['to' => $admin_email]);
+    }
+
+    // Notificación al afiliado (vendedor)
+    if ($affiliate_id > 0) {
+        try {
+            $st_aff = $pdo->prepare("SELECT email, name FROM affiliates WHERE id = ? LIMIT 1");
+            $st_aff->execute([$affiliate_id]);
+            $aff_row = $st_aff->fetch(PDO::FETCH_ASSOC);
+            $aff_email = strtolower(trim((string)($aff_row['email'] ?? '')));
+            if ($aff_email !== '' && $aff_email !== $buyer_email_lower && $aff_email !== strtolower($admin_email)) {
+                $html_aff = '<h2>Nuevo pedido recibido en tu tienda</h2>'
+                    . '<p>Hola ' . htmlspecialchars($aff_row['name'] ?? '', ENT_QUOTES, 'UTF-8') . ',</p>'
+                    . '<p>Has recibido el pedido <strong>' . htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8') . '</strong> de '
+                    . htmlspecialchars($user['name'] ?? '', ENT_QUOTES, 'UTF-8') . ' ('
+                    . htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') . ').</p>'
+                    . '<p><strong>Método de pago:</strong> ' . htmlspecialchars($payment_method, ENT_QUOTES, 'UTF-8') . '</p>'
+                    . '<table width="100%" cellspacing="0" cellpadding="6" border="1" style="border-collapse:collapse">'
+                    . '<thead><tr><th>Producto</th><th>Cant.</th><th>Total línea</th></tr></thead>'
+                    . '<tbody>' . $detalle . '</tbody>'
+                    . '</table>'
+                    . '<p><strong>Total:</strong> ' . number_format($grand_total, 2) . ' ' . $currency . '</p>';
+                @send_mail($aff_email, '[COMPRATICA] Nuevo pedido '.$order_number, $html_aff);
+                checkout_log("EMAIL_SENT_AFFILIATE", ['to' => $aff_email]);
+            }
+        } catch (Throwable $e) {
+            checkout_log("EMAIL_AFFILIATE_ERROR", ['err' => $e->getMessage()]);
+        }
     }
 } catch (Throwable $e) {
     checkout_log("EMAIL_ERROR", ['err'=>$e->getMessage()]);
