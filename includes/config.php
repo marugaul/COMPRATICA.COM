@@ -145,7 +145,7 @@ if (!defined('FACEBOOK_APP_ID')) define('FACEBOOK_APP_ID', '');
 if (!defined('FACEBOOK_APP_SECRET')) define('FACEBOOK_APP_SECRET', '');
 
 // PayPal API Configuration
-if (!defined('PAYPAL_MODE')) define('PAYPAL_MODE', 'sandbox'); // 'sandbox' para pruebas, 'live' para producción
+if (!defined('PAYPAL_MODE')) define('PAYPAL_MODE', 'live'); // 'sandbox' para pruebas, 'live' para producción
 if (!defined('PAYPAL_CLIENT_ID')) define('PAYPAL_CLIENT_ID', '');
 if (!defined('PAYPAL_SECRET')) define('PAYPAL_SECRET', '');
 
