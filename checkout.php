@@ -913,7 +913,7 @@ foreach ($_SESSION['cart'] as $it) {
               <span id="location-status" style="font-size:.85rem;color:#666"></span>
             </div>
             <input type="text" name="location_url" id="location_url" value=""
-              placeholder="La ubicación GPS aparecerá aquí — puedes editarla"
+              placeholder="La dirección aparecerá aquí — podés editarla"
               style="width:100%;border:1px solid #ddd;border-radius:8px;padding:10px;font-size:.9rem;box-sizing:border-box">
             <div id="location-preview" style="display:none;margin-top:4px">
               <a id="location-link" href="#" target="_blank" style="font-size:.82rem;color:var(--primary)">
@@ -1517,16 +1517,38 @@ function captureLocation() {
   }
 
   btn.disabled = true;
-  status.textContent = 'Obteniendo ubicación…';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Obteniendo…';
+  status.textContent = '';
 
   navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      const lat = pos.coords.latitude.toFixed(6);
-      const lng = pos.coords.longitude.toFixed(6);
-      const url = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+    async function(pos) {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const mapsUrl = 'https://www.google.com/maps?q=' + lat.toFixed(6) + ',' + lng.toFixed(6);
 
-      input.value = url;
-      link.href   = url;
+      // Intentar obtener dirección legible vía Nominatim (OpenStreetMap)
+      let address = lat.toFixed(5) + ', ' + lng.toFixed(5); // fallback coordenadas
+      try {
+        const res = await fetch(
+          'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng +
+          '&format=json&accept-language=es',
+          { headers: { 'Accept-Language': 'es' } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.display_name) {
+            // Usar display_name pero limpiar partes muy largas/técnicas
+            const parts = data.display_name.split(', ');
+            // Tomar los primeros 4-5 componentes relevantes
+            address = parts.slice(0, 5).join(', ');
+          }
+        }
+      } catch(e) { /* usar fallback */ }
+
+      input.value = address;
+      link.href   = mapsUrl;
+      link.textContent = '';
+      link.innerHTML = '<i class="fas fa-map-marker-alt"></i> Ver en mapa';
       preview.style.display = 'block';
       status.innerHTML = '<span style="color:green"><i class="fas fa-check-circle"></i> Ubicación capturada</span>';
       btn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Actualizar ubicación';
@@ -1534,21 +1556,23 @@ function captureLocation() {
     },
     function(err) {
       let msg = 'No se pudo obtener la ubicación.';
-      if (err.code === 1) msg = 'Permiso denegado. Activa la ubicación en tu navegador.';
+      if (err.code === 1) msg = 'Permiso denegado. Activá la ubicación en tu navegador.';
       status.textContent = msg;
+      btn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Indicar mi ubicación actual';
       btn.disabled = false;
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );
 }
 
-// Actualizar el link "Ver en Google Maps" cuando el cliente edita el campo manualmente
+// Actualizar el link "Ver en mapa" cuando el cliente edita el campo manualmente
 document.getElementById('location_url').addEventListener('input', function() {
   const val     = this.value.trim();
   const preview = document.getElementById('location-preview');
   const link    = document.getElementById('location-link');
-  if (val.startsWith('http')) {
-    link.href = val;
+  // Si el campo tiene texto (cualquier dirección), ocultar el link de mapa
+  // ya que no podemos saber las coordenadas cuando se edita a mano
+  if (val.length > 5 && link.href && link.href !== '#') {
     preview.style.display = 'block';
   } else {
     preview.style.display = 'none';
