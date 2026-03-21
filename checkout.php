@@ -905,16 +905,18 @@ foreach ($_SESSION['cart'] as $it) {
           <!-- Dirección de entrega -->
           <div class="form-group">
             <label>Dirección de entrega <span style="font-size:.85em;color:#888">(opcional)</span></label>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
               <button type="button" id="btn-location" onclick="captureLocation()"
                 style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:.9rem">
                 <i class="fas fa-map-marker-alt"></i> Indicar mi ubicación actual
               </button>
               <span id="location-status" style="font-size:.85rem;color:#666"></span>
             </div>
-            <input type="hidden" name="location_url" id="location_url" value="">
-            <div id="location-preview" style="display:none;margin-top:6px">
-              <a id="location-link" href="#" target="_blank" style="font-size:.85rem;color:var(--primary)">
+            <input type="text" name="location_url" id="location_url" value=""
+              placeholder="La ubicación GPS aparecerá aquí — puedes editarla"
+              style="width:100%;border:1px solid #ddd;border-radius:8px;padding:10px;font-size:.9rem;box-sizing:border-box">
+            <div id="location-preview" style="display:none;margin-top:4px">
+              <a id="location-link" href="#" target="_blank" style="font-size:.82rem;color:var(--primary)">
                 <i class="fas fa-external-link-alt"></i> Ver en Google Maps
               </a>
             </div>
@@ -1527,9 +1529,8 @@ function captureLocation() {
       link.href   = url;
       preview.style.display = 'block';
       status.innerHTML = '<span style="color:green"><i class="fas fa-check-circle"></i> Ubicación capturada</span>';
-      btn.textContent = '';
-      btn.innerHTML   = '<i class="fas fa-map-marker-alt"></i> Actualizar ubicación';
-      btn.disabled    = false;
+      btn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Actualizar ubicación';
+      btn.disabled  = false;
     },
     function(err) {
       let msg = 'No se pudo obtener la ubicación.';
@@ -1540,6 +1541,19 @@ function captureLocation() {
     { enableHighAccuracy: true, timeout: 10000 }
   );
 }
+
+// Actualizar el link "Ver en Google Maps" cuando el cliente edita el campo manualmente
+document.getElementById('location_url').addEventListener('input', function() {
+  const val     = this.value.trim();
+  const preview = document.getElementById('location-preview');
+  const link    = document.getElementById('location-link');
+  if (val.startsWith('http')) {
+    link.href = val;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
