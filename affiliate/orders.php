@@ -25,6 +25,31 @@ function allowed_statuses(): array {
   return ['Pendiente','Pagado','Empacado','En camino','Entregado','Cancelado'];
 }
 
+/** Encuentra la URL correcta del comprobante revisando ambos directorios */
+function getProofInfo(string $filename): array {
+  if ($filename === '') return ['found' => false, 'url' => '', 'type' => ''];
+  $ext  = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+  $type = $ext === 'pdf' ? 'pdf' : 'image';
+  $base = __DIR__ . '/../uploads/';
+  $subs = ['proofs/', 'payments/', ''];
+  foreach ($subs as $sub) {
+    if (file_exists($base . $sub . $filename)) {
+      return ['found' => true, 'url' => '../uploads/' . $sub . $filename, 'type' => $type];
+    }
+  }
+  // Archivo en DB pero no en disco: mostrar enlace de payments como fallback
+  return ['found' => false, 'url' => '../uploads/payments/' . $filename, 'type' => $type];
+}
+
+/** Genera link de WhatsApp al comprador del pedido */
+function whatsappLink(string $phone, int $orderId, string $product): string {
+  $clean = preg_replace('/[^0-9]/', '', $phone);
+  // Agregar código de Costa Rica si el número tiene 8 dígitos
+  if (strlen($clean) === 8) $clean = '506' . $clean;
+  $text = rawurlencode("Hola! Te escribimos de COMPRATICA sobre tu pedido #$orderId ($product). ¿Tienes alguna consulta?");
+  return "https://wa.me/{$clean}?text={$text}";
+}
+
 /** Verifica que el pedido pertenezca a este afiliado */
 function load_aff_order(PDO $pdo, int $order_id, int $aff_id) {
   $sql = "
@@ -535,13 +560,29 @@ $orders = $list->fetchAll(PDO::FETCH_ASSOC);
               </td>
               <td class="small"><?= htmlspecialchars($o['residency']) ?></td>
               <td>
-                <?php if(!empty($o['proof_image'])): ?>
-                  <a href="../uploads/payments/<?= htmlspecialchars($o['proof_image']) ?>" target="_blank">
-                    <img class="thumb" src="../uploads/payments/<?= htmlspecialchars($o['proof_image']) ?>" alt="Comprobante" title="Ver comprobante">
-                  </a>
-                <?php else: ?>
-                  <span class="small" style="opacity: 0.6;"><i class="fas fa-minus-circle"></i> Sin comprobante</span>
-                <?php endif; ?>
+                <?php
+                  $proof = getProofInfo($o['proof_image'] ?? '');
+                  if ($proof['found']):
+                    if ($proof['type'] === 'pdf'): ?>
+                      <a href="<?= htmlspecialchars($proof['url']) ?>" target="_blank"
+                         style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;color:#92400e;font-size:.8rem;font-weight:600;text-decoration:none;">
+                        <i class="fas fa-file-pdf" style="color:#ef4444;font-size:1.2rem;"></i> Ver PDF
+                      </a>
+                    <?php else: ?>
+                      <a href="<?= htmlspecialchars($proof['url']) ?>" target="_blank">
+                        <img class="thumb" src="<?= htmlspecialchars($proof['url']) ?>"
+                             alt="Comprobante" title="Click para ver comprobante completo"
+                             onerror="this.onerror=null;this.closest('a').innerHTML='<span style=\'font-size:.75rem;color:#ef4444;\'><i class=\'fas fa-exclamation-circle\'></i> Error al cargar</span>';">
+                      </a>
+                    <?php endif;
+                  elseif (!empty($o['proof_image'])): // En DB pero archivo no encontrado ?>
+                    <a href="<?= htmlspecialchars($proof['url']) ?>" target="_blank"
+                       style="display:inline-flex;align-items:center;gap:5px;font-size:.8rem;color:#2563eb;">
+                      <i class="fas fa-external-link-alt"></i> Ver adjunto
+                    </a>
+                  <?php else: ?>
+                    <span class="small" style="opacity:.6;"><i class="fas fa-minus-circle"></i> Sin comprobante</span>
+                  <?php endif; ?>
               </td>
               <td>
                 <span class="status-badge <?= $statusClass ?>">
@@ -571,6 +612,17 @@ $orders = $list->fetchAll(PDO::FETCH_ASSOC);
                       Validar pago
                     </button>
                   </form>
+                <?php endif; ?>
+                <?php if (!empty($o['buyer_phone'])): ?>
+                  <a href="<?= htmlspecialchars(whatsappLink($o['buyer_phone'], (int)$o['id'], $o['product_name'])) ?>"
+                     target="_blank" rel="noopener"
+                     style="margin-top:0.5rem;display:inline-flex;align-items:center;gap:6px;
+                            padding:0.45rem 0.9rem;background:#25D366;color:white;text-decoration:none;
+                            border-radius:6px;font-size:0.8rem;font-weight:600;
+                            box-shadow:0 2px 6px rgba(37,211,102,.35);transition:all .2s;"
+                     onmouseover="this.style.background='#1ebe5e'" onmouseout="this.style.background='#25D366'">
+                    <i class="fab fa-whatsapp" style="font-size:1rem;"></i> WhatsApp
+                  </a>
                 <?php endif; ?>
               </td>
             </tr>
