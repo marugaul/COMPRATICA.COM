@@ -117,10 +117,17 @@ function avatarUrl(array $cfg, int $size = 100): string {
     return $url;
 }
 
+// ── URL del proxy local (mismo origen, evita CORB) ───────────────────────────
+
+function avatarProxyUrl(array $cfg, int $size = 100): string {
+    return 'api/dicebear-proxy.php?size=' . $size
+         . '&cfg=' . rawurlencode(json_encode($cfg));
+}
+
 // ── Avatar circular para tarjetas del catálogo ───────────────────────────────
 
 function avatarImg(array $cfg, int $size = 72, string $extra = '', string $title = ''): string {
-    $url = htmlspecialchars(avatarUrl($cfg, $size));
+    $url = htmlspecialchars(avatarProxyUrl($cfg, $size));
     $ttl = $title ? " title='" . htmlspecialchars($title) . "'" : '';
     return "<img src='{$url}' width='{$size}' height='{$size}'{$ttl} {$extra}" .
            " alt='Avatar' loading='lazy'" .
@@ -147,7 +154,7 @@ function avatarFull(array $cfg, int $w = 160): string {
     $totalH   = $headH + $bodyH + 12;
     $waistY   = (int)($headH * $shape['waistRatio']);
 
-    $faceUrl  = htmlspecialchars(avatarUrl($cfg, $w));
+    $faceUrl  = htmlspecialchars(avatarProxyUrl($cfg, $w));
     $parts    = [];
 
     // ── Cuerpo según tipo ────────────────────────────────────────────────────
