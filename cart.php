@@ -155,6 +155,19 @@ if ($cart_id > 0) {
     $_SESSION['cart']['groups'] = $groups;
 }
 
+/* ==== Métodos de pago por afiliado ==== */
+$payment_methods_map = [];
+if (!empty($groups)) {
+    $aff_ids = array_unique(array_column($groups, 'affiliate_id'));
+    if (!empty($aff_ids)) {
+        $in = implode(',', array_map('intval', $aff_ids));
+        $pm_st = $pdo->query("SELECT affiliate_id, sinpe_phone, paypal_email, active_sinpe, active_paypal FROM affiliate_payment_methods WHERE affiliate_id IN ($in)");
+        foreach ($pm_st->fetchAll(PDO::FETCH_ASSOC) as $pm_row) {
+            $payment_methods_map[(int)$pm_row['affiliate_id']] = $pm_row;
+        }
+    }
+}
+
 /* ==== Utils UI ==== */
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function fmt_price($n, $cur='CRC'){
@@ -797,6 +810,23 @@ if (!headers_sent()) header('Content-Type: text/html; charset=UTF-8'); ini_set('
                             </div>
                         <?php endif; ?>
                         
+                        <?php
+                        $pm_g = $payment_methods_map[(int)$g['affiliate_id']] ?? [];
+                        $g_has_sinpe = !empty($pm_g['active_sinpe']) && !empty($pm_g['sinpe_phone']);
+                        $g_has_paypal = !empty($pm_g['active_paypal']) && !empty($pm_g['paypal_email']);
+                        if ($g_has_sinpe || $g_has_paypal):
+                        ?>
+                        <div style="padding: 0.85rem 1.5rem; background: #f0f9ff; border-top: 1px solid #bde0ff; font-size: 0.9rem; color: #1a3c5e;">
+                            <strong><i class="fas fa-credit-card"></i> Métodos de pago aceptados:</strong>
+                            <?php if ($g_has_sinpe): ?>
+                                &nbsp;📱 <strong>SINPE Móvil:</strong> <?= h($pm_g['sinpe_phone']); ?>
+                            <?php endif; ?>
+                            <?php if ($g_has_paypal): ?>
+                                &nbsp;💳 <strong>PayPal</strong>
+                            <?php endif; ?>
+                        </div>
+                        <?php endif; ?>
+
                         <div class="group-footer">
                             <div class="total-container">
                                 <span class="total-label">Total del espacio</span>

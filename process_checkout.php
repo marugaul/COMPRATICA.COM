@@ -320,6 +320,23 @@ try {
     ';
     @send_mail((string)$user['email'], 'Confirmación de pedido '.$order_number, $html);
     checkout_log("EMAIL_SENT_ORDER_CONFIRM", ['to'=>$user['email'] ?? '']);
+
+    // Notificación al administrador
+    $admin_email = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
+    if ($admin_email !== '') {
+        $html_admin = '<h2>Nuevo pedido recibido</h2>'
+            . '<p>Se ha recibido el pedido <strong>' . htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8') . '</strong> de '
+            . htmlspecialchars($user['name'] ?? '', ENT_QUOTES, 'UTF-8') . ' ('
+            . htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') . ').</p>'
+            . '<p><strong>Método de pago:</strong> ' . htmlspecialchars($payment_method, ENT_QUOTES, 'UTF-8') . '</p>'
+            . '<table width="100%" cellspacing="0" cellpadding="6" border="1" style="border-collapse:collapse">'
+            . '<thead><tr><th>Producto</th><th>Cant.</th><th>Total línea</th></tr></thead>'
+            . '<tbody>' . $detalle . '</tbody>'
+            . '</table>'
+            . '<p><strong>Total:</strong> ' . number_format($grand_total, 2) . ' ' . $currency . '</p>';
+        @send_mail($admin_email, '[COMPRATICA] Nuevo pedido '.$order_number, $html_admin);
+        checkout_log("EMAIL_SENT_ADMIN", ['to' => $admin_email]);
+    }
 } catch (Throwable $e) {
     checkout_log("EMAIL_ERROR", ['err'=>$e->getMessage()]);
 }

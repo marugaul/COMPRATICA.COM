@@ -62,11 +62,21 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf_token = $_SESSION['csrf_token'];
 
+// sale_id (extraer antes del check de login para usarlo en el redirect)
+$sale_id = 0;
+if (isset($_GET['sale_id']) && (int)$_GET['sale_id'] > 0) {
+    $sale_id = (int)$_GET['sale_id'];
+} elseif (isset($_POST['sale_id']) && (int)$_POST['sale_id'] > 0) {
+    $sale_id = (int)$_POST['sale_id'];
+} elseif (!empty($_SESSION['cart']['groups'][0]['sale_id'])) {
+    $sale_id = (int)$_SESSION['cart']['groups'][0]['sale_id'];
+}
+
 // Verificar login
 $user_id = (int)($_SESSION['user_id'] ?? 0);
 if ($user_id <= 0) {
-    $_SESSION['error'] = "Debes iniciar sesión para continuar";
-    header('Location: login.php');
+    $redirect_after_login = 'checkout.php' . ($sale_id > 0 ? '?sale_id=' . $sale_id : '');
+    header('Location: login.php?redirect=' . urlencode($redirect_after_login));
     exit;
 }
 
@@ -80,16 +90,6 @@ if (!$user) {
     $_SESSION['error'] = "Usuario no encontrado";
     header('Location: login.php');
     exit;
-}
-
-// sale_id
-$sale_id = 0;
-if (isset($_GET['sale_id']) && (int)$_GET['sale_id'] > 0) {
-    $sale_id = (int)$_GET['sale_id'];
-} elseif (isset($_POST['sale_id']) && (int)$_POST['sale_id'] > 0) {
-    $sale_id = (int)$_POST['sale_id'];
-} elseif (!empty($_SESSION['cart']['groups'][0]['sale_id'])) {
-    $sale_id = (int)$_SESSION['cart']['groups'][0]['sale_id'];
 }
 
 if ($sale_id <= 0) {
@@ -1077,6 +1077,9 @@ foreach ($_SESSION['cart'] as $it) {
                   <div class="payment-info">
                     <h4>SINPE Móvil</h4>
                     <p>Transferencia bancaria instantánea</p>
+                    <p style="font-size: 1rem; font-weight: 700; color: #2c3e50; margin-top: 4px;">
+                      Número SINPE: <strong><?= htmlspecialchars($pm['sinpe_phone'] ?? '') ?></strong>
+                    </p>
                     <p style="color: var(--gray-400); font-size: 0.85rem;">
                       Deberás subir tu comprobante de pago
                     </p>

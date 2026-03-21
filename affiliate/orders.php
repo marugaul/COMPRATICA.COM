@@ -84,57 +84,73 @@ function orders_has_updated_at(PDO $pdo): bool {
   return false;
 }
 
-/** Construye asunto y cuerpo según el nuevo estado */
-function build_status_email(string $estado, int $order_id, string $product_name): array {
-  $product = htmlspecialchars($product_name, ENT_QUOTES, 'UTF-8');
+/** Construye asunto y cuerpo unificado usando order_number y todos los artículos */
+function build_status_email_unified(string $estado, string $order_number, array $items, float $grand_total, string $currency): array {
+  $on = htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8');
+  $cur = strtoupper($currency);
+
+  // Tabla de artículos
+  $rows = '';
+  foreach ($items as $it) {
+    $name = htmlspecialchars($it['product_name'] ?? 'Producto', ENT_QUOTES, 'UTF-8');
+    $qty  = number_format((float)($it['qty'] ?? 1), 0);
+    $tot  = ($cur === 'USD') ? '$'.number_format((float)($it['grand_total'] ?? 0), 2) : '₡'.number_format((float)($it['grand_total'] ?? 0), 0);
+    $rows .= "<tr><td style='padding:6px 10px;border-bottom:1px solid #eee'>{$name}</td><td style='padding:6px 10px;border-bottom:1px solid #eee;text-align:center'>{$qty}</td><td style='padding:6px 10px;border-bottom:1px solid #eee;text-align:right'>{$tot}</td></tr>";
+  }
+  $total_fmt = ($cur === 'USD') ? '$'.number_format($grand_total, 2) : '₡'.number_format($grand_total, 0);
+  $items_table = "<table width='100%' cellspacing='0' cellpadding='0' style='border-collapse:collapse;margin:12px 0'>"
+    . "<thead><tr style='background:#f5f5f5'><th style='padding:8px 10px;text-align:left'>Artículo</th><th style='padding:8px 10px;text-align:center'>Cant.</th><th style='padding:8px 10px;text-align:right'>Total</th></tr></thead>"
+    . "<tbody>{$rows}</tbody>"
+    . "<tfoot><tr><td colspan='2' style='padding:8px 10px;font-weight:700'>Total del pedido:</td><td style='padding:8px 10px;text-align:right;font-weight:700'>{$total_fmt}</td></tr></tfoot>"
+    . "</table>";
 
   switch ($estado) {
     case 'Pagado':
-      $subject = "Tu pedido #{$order_id} fue validado y aprobado";
+      $subject = "Tu pedido {$on} fue validado y aprobado";
       $body = "Hola,<br><br>"
-            . "Tu pago ha sido <strong>validado y aprobado</strong> para el pedido <strong>#{$order_id}</strong> "
-            . "del artículo <strong>{$product}</strong>.<br>"
-            . "Pronto coordinaremos la entrega. ¡Gracias por tu compra!<br><br>"
+            . "Tu pago ha sido <strong>validado y aprobado</strong> para el pedido <strong>{$on}</strong>.<br><br>"
+            . $items_table
+            . "<br>Pronto coordinaremos la entrega. ¡Gracias por tu compra!<br><br>"
             . APP_NAME;
       break;
-
     case 'Empacado':
-      $subject = "Tu pedido #{$order_id} está empacado";
+      $subject = "Tu pedido {$on} está empacado";
       $body = "Hola,<br><br>"
-            . "Tu pedido <strong>#{$order_id}</strong> del artículo <strong>{$product}</strong> ha sido <strong>empacado</strong>.<br>"
-            . "Nos pondremos en contacto para la entrega.<br><br>"
+            . "Tu pedido <strong>{$on}</strong> ha sido <strong>empacado</strong>.<br><br>"
+            . $items_table
+            . "<br>Nos pondremos en contacto para la entrega.<br><br>"
             . APP_NAME;
       break;
-
     case 'En camino':
-      $subject = "Tu pedido #{$order_id} va en camino";
+      $subject = "Tu pedido {$on} va en camino";
       $body = "Hola,<br><br>"
-            . "Tu pedido <strong>#{$order_id}</strong> del artículo <strong>{$product}</strong> está <strong>en camino</strong>.<br>"
-            . "¡Gracias por tu compra!<br><br>"
+            . "Tu pedido <strong>{$on}</strong> está <strong>en camino</strong>.<br><br>"
+            . $items_table
+            . "<br>¡Gracias por tu compra!<br><br>"
             . APP_NAME;
       break;
-
     case 'Entregado':
-      $subject = "¡Tu pedido #{$order_id} fue entregado!";
+      $subject = "¡Tu pedido {$on} fue entregado!";
       $body = "Hola,<br><br>"
-            . "Confirmamos que tu pedido <strong>#{$order_id}</strong> del artículo <strong>{$product}</strong> ha sido <strong>entregado</strong>.<br>"
-            . "¡Esperamos que lo disfrutes!<br><br>"
+            . "Confirmamos que tu pedido <strong>{$on}</strong> ha sido <strong>entregado</strong>.<br><br>"
+            . $items_table
+            . "<br>¡Esperamos que lo disfrutes!<br><br>"
             . APP_NAME;
       break;
-
     case 'Cancelado':
-      $subject = "Tu pedido #{$order_id} fue cancelado";
+      $subject = "Tu pedido {$on} fue cancelado";
       $body = "Hola,<br><br>"
-            . "Tu pedido <strong>#{$order_id}</strong> del artículo <strong>{$product}</strong> ha sido <strong>cancelado</strong>.<br>"
-            . "Si tienes dudas, por favor contáctanos.<br><br>"
+            . "Tu pedido <strong>{$on}</strong> ha sido <strong>cancelado</strong>.<br><br>"
+            . $items_table
+            . "<br>Si tienes dudas, por favor contáctanos.<br><br>"
             . APP_NAME;
       break;
-
-    default: // Pendiente u otros
-      $subject = "Actualización del pedido #{$order_id}: {$estado}";
+    default:
+      $subject = "Actualización del pedido {$on}: {$estado}";
       $body = "Hola,<br><br>"
-            . "Tu pedido <strong>#{$order_id}</strong> del artículo <strong>{$product}</strong> ahora está en estado: <strong>{$estado}</strong>.<br>"
-            . "Te mantendremos informado.<br><br>"
+            . "Tu pedido <strong>{$on}</strong> ahora está en estado: <strong>{$estado}</strong>.<br><br>"
+            . $items_table
+            . "<br>Te mantendremos informado.<br><br>"
             . APP_NAME;
   }
 
@@ -157,58 +173,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
       throw new RuntimeException('Pedido no encontrado o no pertenece a este afiliado.');
     }
 
-    // UPDATE (con o sin updated_at)
+    $order_number = (string)($ord['order_number'] ?? '');
+    $buyerEmail   = trim((string)($ord['buyer_email'] ?? ''));
+
+    // UPDATE TODOS los items de la misma orden (mismo order_number)
     $hasUpdatedAt = orders_has_updated_at($pdo);
-    if ($hasUpdatedAt) {
-      $upd = $pdo->prepare("UPDATE orders SET status=?, updated_at=datetime('now') WHERE id=?");
-      $upd->execute([$new_status, $order_id]);
+    if ($order_number !== '') {
+      if ($hasUpdatedAt) {
+        $upd = $pdo->prepare("UPDATE orders SET status=?, updated_at=datetime('now') WHERE order_number=? AND affiliate_id=?");
+        $upd->execute([$new_status, $order_number, $aff_id]);
+      } else {
+        $upd = $pdo->prepare("UPDATE orders SET status=? WHERE order_number=? AND affiliate_id=?");
+        $upd->execute([$new_status, $order_number, $aff_id]);
+      }
     } else {
-      $upd = $pdo->prepare("UPDATE orders SET status=? WHERE id=?");
-      $upd->execute([$new_status, $order_id]);
+      // Fallback: actualizar solo este id
+      if ($hasUpdatedAt) {
+        $upd = $pdo->prepare("UPDATE orders SET status=?, updated_at=datetime('now') WHERE id=?");
+        $upd->execute([$new_status, $order_id]);
+      } else {
+        $upd = $pdo->prepare("UPDATE orders SET status=? WHERE id=?");
+        $upd->execute([$new_status, $order_id]);
+      }
     }
 
-    // Construir correo para cualquier estado
-    $buyerEmail = trim((string)($ord['buyer_email'] ?? ''));
-    $productName = (string)($ord['product_name'] ?? '');
-    [$subject, $body] = build_status_email($new_status, $order_id, $productName);
+    // Obtener TODOS los items de esta orden para el email unificado
+    $all_items = [];
+    $grand_total_order = 0.0;
+    $currency_order = 'CRC';
+    if ($order_number !== '') {
+      $st_items = $pdo->prepare("SELECT o.*, p.name AS product_name FROM orders o JOIN products p ON p.id = o.product_id WHERE o.order_number = ?");
+      $st_items->execute([$order_number]);
+      $all_items = $st_items->fetchAll(PDO::FETCH_ASSOC);
+      foreach ($all_items as $ai) {
+        $grand_total_order += (float)($ai['grand_total'] ?? 0);
+        if (!empty($ai['currency'])) $currency_order = strtoupper($ai['currency']);
+      }
+    }
+    if (empty($all_items)) {
+      $all_items = [['product_name' => $ord['product_name'] ?? '', 'qty' => $ord['qty'] ?? 1, 'grand_total' => $ord['grand_total'] ?? 0]];
+      $grand_total_order = (float)($ord['grand_total'] ?? 0);
+      $currency_order = strtoupper((string)($ord['currency'] ?? 'CRC'));
+    }
 
-    error_log("[affiliate/orders.php] Notificación estado '{$new_status}' order #{$order_id} buyer='{$buyerEmail}'");
+    [$subject, $body] = build_status_email_unified($new_status, $order_number ?: '#'.$order_id, $all_items, $grand_total_order, $currency_order);
+
+    error_log("[affiliate/orders.php] Notificación estado '{$new_status}' order {$order_number} buyer='{$buyerEmail}'");
 
     // Enviar al cliente
     if ($buyerEmail !== '') {
       try {
         $okClient = send_email($buyerEmail, $subject, $body);
-        error_log("[affiliate/orders.php] send_email cliente ".($okClient ? 'OK' : 'FAIL')." (order #{$order_id})");
+        error_log("[affiliate/orders.php] send_email cliente ".($okClient ? 'OK' : 'FAIL')." (order {$order_number})");
       } catch (Throwable $e) {
         error_log("[affiliate/orders.php] Excepción email cliente: ".$e->getMessage());
       }
-    } else {
-      error_log("[affiliate/orders.php] Buyer email vacío; no se envía (order #{$order_id})");
     }
 
-    // Aviso al admin (opcional)
+    // Aviso al admin
     try {
       $admin = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
       if ($admin !== '') {
-        $okAdm = send_email($admin, "[Afiliado] Pedido #{$order_id} → {$new_status}", $body);
-        error_log("[affiliate/orders.php] send_email admin ".($okAdm ? 'OK' : 'FAIL')." (order #{$order_id})");
-      } else {
-        error_log("[affiliate/orders.php] ADMIN_EMAIL no definido; no se envía admin (order #{$order_id})");
+        $okAdm = send_email($admin, "[Afiliado] Pedido {$order_number} → {$new_status}", $body);
+        error_log("[affiliate/orders.php] send_email admin ".($okAdm ? 'OK' : 'FAIL')." (order {$order_number})");
       }
     } catch (Throwable $e) {
       error_log("[affiliate/orders.php] Excepción email admin: ".$e->getMessage());
     }
 
-    $msg = "Estado del pedido #{$order_id} actualizado a '{$new_status}'.";
+    $msg = "Pedido {$order_number} actualizado a '{$new_status}' (todos los artículos).";
   } catch (Throwable $e) {
     $msg = 'Error: ' . $e->getMessage();
     error_log("[affiliate/orders.php] ERROR al actualizar estado: ".$e->getMessage());
   }
 }
 
-/** Listado de pedidos del afiliado */
+/** Listado de pedidos del afiliado - agrupados por order_number */
 $list = $pdo->prepare("
-  SELECT 
+  SELECT
     o.*,
     p.name  AS product_name,
     p.image AS product_image
@@ -217,10 +259,41 @@ $list = $pdo->prepare("
   LEFT JOIN sales s ON s.id = p.sale_id
   WHERE (s.affiliate_id = ? OR o.affiliate_id = ?)
   ORDER BY o.created_at DESC
-  LIMIT 200
+  LIMIT 500
 ");
 $list->execute([$aff_id, $aff_id]);
-$orders = $list->fetchAll(PDO::FETCH_ASSOC);
+$raw_orders = $list->fetchAll(PDO::FETCH_ASSOC);
+
+// Agrupar por order_number: una fila = una orden completa
+$orders_grouped = [];
+foreach ($raw_orders as $row) {
+  $key = !empty($row['order_number']) ? $row['order_number'] : 'no-order-'.$row['id'];
+  if (!isset($orders_grouped[$key])) {
+    $orders_grouped[$key] = [
+      'id'           => $row['id'],
+      'order_number' => $row['order_number'] ?? '',
+      'buyer_name'   => $row['buyer_name'] ?? '',
+      'buyer_email'  => $row['buyer_email'] ?? '',
+      'buyer_phone'  => $row['buyer_phone'] ?? '',
+      'payment_method'=> $row['payment_method'] ?? '',
+      'status'       => $row['status'] ?? 'Pendiente',
+      'currency'     => $row['currency'] ?? 'CRC',
+      'note'         => $row['note'] ?? '',
+      'created_at'   => $row['created_at'] ?? '',
+      'proof_file'   => $row['proof_image'] ?? '',
+      'grand_total'  => 0.0,
+      'items'        => [],
+    ];
+  }
+  $orders_grouped[$key]['items'][] = [
+    'product_name'  => $row['product_name'] ?? 'Producto',
+    'product_image' => $row['product_image'] ?? '',
+    'qty'           => $row['qty'] ?? 1,
+    'grand_total'   => (float)($row['grand_total'] ?? 0),
+  ];
+  $orders_grouped[$key]['grand_total'] += (float)($row['grand_total'] ?? 0);
+}
+$orders = array_values($orders_grouped);
 ?>
 <!doctype html>
 <html lang="es">
@@ -516,12 +589,12 @@ $orders = $list->fetchAll(PDO::FETCH_ASSOC);
       <table class="table">
         <thead>
           <tr>
-            <th>ID</th>
+            <th>Orden</th>
             <th>Fecha</th>
-            <th>Producto</th>
-            <th>Cant</th>
+            <th>Artículos</th>
+            <th>Total</th>
             <th>Cliente</th>
-            <th>Residencia</th>
+            <th>Notas / Dirección</th>
             <th>Comprobante</th>
             <th>Estado</th>
             <th class="nowrap">Actualizar</th>
@@ -539,51 +612,53 @@ $orders = $list->fetchAll(PDO::FETCH_ASSOC);
               'Cancelado' => 'times-circle'
             ];
             $icon = $statusIcon[$o['status']] ?? 'circle';
+            $cur = strtoupper($o['currency'] ?? 'CRC');
+            $total_fmt = ($cur === 'USD') ? '$'.number_format($o['grand_total'], 2) : '₡'.number_format($o['grand_total'], 0);
           ?>
             <tr>
-              <td><strong>#<?= (int)$o['id'] ?></strong></td>
-              <td class="small"><?= htmlspecialchars($o['created_at']) ?></td>
+              <td><strong style="font-size:0.85rem"><?= htmlspecialchars($o['order_number'] ?: '#'.$o['id']) ?></strong></td>
+              <td class="small"><?= htmlspecialchars(substr($o['created_at'], 0, 16)) ?></td>
               <td>
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                  <?php if(!empty($o['product_image'])): ?>
-                    <img class="thumb" src="../uploads/<?= htmlspecialchars($o['product_image']) ?>" alt="">
-                  <?php endif; ?>
-                  <div><?= htmlspecialchars($o['product_name']) ?></div>
-                </div>
+                <?php foreach ($o['items'] as $it): ?>
+                  <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:4px;">
+                    <?php if(!empty($it['product_image'])): ?>
+                      <img class="thumb" style="width:40px;height:40px" src="../uploads/<?= htmlspecialchars($it['product_image']) ?>" alt="">
+                    <?php endif; ?>
+                    <div>
+                      <div><?= htmlspecialchars($it['product_name']) ?></div>
+                      <div class="small">Cant: <?= (int)$it['qty'] ?></div>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
               </td>
-              <td><strong><?= (int)$o['qty'] ?></strong></td>
+              <td><strong><?= $total_fmt ?></strong></td>
               <td class="small">
                 <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                  <span><?= htmlspecialchars($o['buyer_name'] ?? '') ?></span>
                   <span><i class="fas fa-envelope" style="opacity: 0.5;"></i> <?= htmlspecialchars($o['buyer_email']) ?></span>
                   <span><i class="fas fa-phone" style="opacity: 0.5;"></i> <?= htmlspecialchars($o['buyer_phone']) ?></span>
                 </div>
               </td>
               <td class="small">
                 <?php
-                  // Combinar residency (flujo buy_affiliate) + note (flujo checkout)
-                  $parts_addr = array_filter([
-                    trim($o['residency'] ?? ''),
-                    trim($o['note'] ?? ''),
-                  ]);
-                  $addr_text = implode(' | ', $parts_addr);
-                  if ($addr_text === '') {
+                  $note_text = trim($o['note'] ?? '');
+                  if ($note_text === '') {
                     echo '<span style="color:#bbb">—</span>';
                   } else {
-                    // Convertir URLs de Google Maps en links clicables
-                    $addr_safe = htmlspecialchars($addr_text, ENT_QUOTES, 'UTF-8');
-                    $addr_linked = preg_replace(
+                    $note_safe = htmlspecialchars($note_text, ENT_QUOTES, 'UTF-8');
+                    $note_linked = preg_replace(
                       '/(https?:\/\/www\.google\.com\/maps[^\s|<]*)/i',
                       '<a href="$1" target="_blank" style="color:var(--primary);white-space:nowrap">'
                       . '<i class="fas fa-map-marker-alt"></i> Ver mapa</a>',
-                      $addr_safe
+                      $note_safe
                     );
-                    echo $addr_linked;
+                    echo $note_linked;
                   }
                 ?>
               </td>
               <td>
                 <?php
-                  $proof = getProofInfo($o['proof_image'] ?? '');
+                  $proof = getProofInfo($o['proof_file'] ?? '');
                   if ($proof['found']):
                     if ($proof['type'] === 'pdf'): ?>
                       <a href="<?= htmlspecialchars($proof['url']) ?>" target="_blank"
@@ -597,7 +672,7 @@ $orders = $list->fetchAll(PDO::FETCH_ASSOC);
                              onerror="this.onerror=null;this.closest('a').innerHTML='<span style=\'font-size:.75rem;color:#ef4444;\'><i class=\'fas fa-exclamation-circle\'></i> Error al cargar</span>';">
                       </a>
                     <?php endif;
-                  elseif (!empty($o['proof_image'])): // En DB pero archivo no encontrado ?>
+                  elseif (!empty($o['proof_file'])): ?>
                     <a href="<?= htmlspecialchars($proof['url']) ?>" target="_blank"
                        style="display:inline-flex;align-items:center;gap:5px;font-size:.8rem;color:#2563eb;">
                       <i class="fas fa-external-link-alt"></i> Ver adjunto
@@ -625,7 +700,7 @@ $orders = $list->fetchAll(PDO::FETCH_ASSOC);
                     Guardar
                   </button>
                 </form>
-                <?php if (!empty($o['proof_image']) && $o['status'] !== 'Pagado'): ?>
+                <?php if (!empty($o['proof_file']) && $o['status'] !== 'Pagado'): ?>
                   <form method="post" style="margin-top: 0.5rem;">
                     <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
                     <input type="hidden" name="status" value="Pagado">
@@ -636,7 +711,11 @@ $orders = $list->fetchAll(PDO::FETCH_ASSOC);
                   </form>
                 <?php endif; ?>
                 <?php if (!empty($o['buyer_phone'])): ?>
-                  <a href="<?= htmlspecialchars(whatsappLink($o['buyer_phone'], (int)$o['id'], $o['product_name'])) ?>"
+                  <?php
+                    $wa_items_list = implode(', ', array_column($o['items'], 'product_name'));
+                    $wa_order = htmlspecialchars($o['order_number'] ?: '#'.$o['id']);
+                  ?>
+                  <a href="<?= htmlspecialchars(whatsappLink($o['buyer_phone'], (int)$o['id'], $wa_items_list)) ?>"
                      target="_blank" rel="noopener"
                      style="margin-top:0.5rem;display:inline-flex;align-items:center;gap:6px;
                             padding:0.45rem 0.9rem;background:#25D366;color:white;text-decoration:none;
