@@ -173,8 +173,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
       throw new RuntimeException('Pedido no encontrado o no pertenece a este afiliado.');
     }
 
-    $order_number = (string)($ord['order_number'] ?? '');
-    $buyerEmail   = trim((string)($ord['buyer_email'] ?? ''));
+    $order_number    = (string)($ord['order_number'] ?? '');
+    $buyerEmail      = trim((string)($ord['buyer_email'] ?? ''));
+    $previous_status = (string)($ord['status'] ?? '');
 
     // UPDATE TODOS los items de la misma orden (mismo order_number)
     $hasUpdatedAt = orders_has_updated_at($pdo);
@@ -218,34 +219,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
 
     [$subject, $body] = build_status_email_unified($new_status, $order_number ?: '#'.$order_id, $all_items, $grand_total_order, $currency_order);
 
-    error_log("[affiliate/orders.php] Notificación estado '{$new_status}' order {$order_number} buyer='{$buyerEmail}'");
+    // Solo enviar emails si el estado realmente cambió (evita duplicados por doble clic o re-envío)
+    if ($previous_status !== $new_status) {
+      error_log("[affiliate/orders.php] Notificación estado '{$previous_status}' → '{$new_status}' order {$order_number} buyer='{$buyerEmail}'");
 
-    // Enviar al cliente
-    if ($buyerEmail !== '') {
+      // Enviar al cliente
+      if ($buyerEmail !== '') {
+        try {
+          $okClient = send_email($buyerEmail, $subject, $body);
+          error_log("[affiliate/orders.php] send_email cliente ".($okClient ? 'OK' : 'FAIL')." (order {$order_number})");
+        } catch (Throwable $e) {
+          error_log("[affiliate/orders.php] Excepción email cliente: ".$e->getMessage());
+        }
+      }
+
+      // Aviso al admin (solo si su email es distinto al del comprador para evitar duplicado visual)
       try {
-        $okClient = send_email($buyerEmail, $subject, $body);
-        error_log("[affiliate/orders.php] send_email cliente ".($okClient ? 'OK' : 'FAIL')." (order {$order_number})");
+        $admin = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
+        if ($admin !== '' && strtolower($admin) !== strtolower($buyerEmail)) {
+          $okAdm = send_email($admin, "[Afiliado] Pedido {$order_number} → {$new_status}", $body);
+          error_log("[affiliate/orders.php] send_email admin ".($okAdm ? 'OK' : 'FAIL')." (order {$order_number})");
+        }
       } catch (Throwable $e) {
-        error_log("[affiliate/orders.php] Excepción email cliente: ".$e->getMessage());
+        error_log("[affiliate/orders.php] Excepción email admin: ".$e->getMessage());
       }
-    }
-
-    // Aviso al admin
-    try {
-      $admin = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
-      if ($admin !== '') {
-        $okAdm = send_email($admin, "[Afiliado] Pedido {$order_number} → {$new_status}", $body);
-        error_log("[affiliate/orders.php] send_email admin ".($okAdm ? 'OK' : 'FAIL')." (order {$order_number})");
-      }
-    } catch (Throwable $e) {
-      error_log("[affiliate/orders.php] Excepción email admin: ".$e->getMessage());
+    } else {
+      error_log("[affiliate/orders.php] Estado '{$new_status}' ya era el mismo; no se envían emails (order {$order_number})");
     }
 
     $msg = "Pedido {$order_number} actualizado a '{$new_status}' (todos los artículos).";
+    // PRG: redirect para evitar reenvío del form al refrescar
+    header('Location: orders.php?msg=' . urlencode($msg));
+    exit;
   } catch (Throwable $e) {
     $msg = 'Error: ' . $e->getMessage();
     error_log("[affiliate/orders.php] ERROR al actualizar estado: ".$e->getMessage());
   }
+}
+
+// Leer mensaje de redirect si viene en GET
+if (empty($msg) && !empty($_GET['msg'])) {
+  $msg = (string)$_GET['msg'];
 }
 
 /** Listado de pedidos del afiliado - agrupados por order_number */
@@ -733,5 +747,14 @@ $orders = array_values($orders_grouped);
     <?php endif; ?>
   </div>
 </div>
+<script>
+// Deshabilitar botones de submit al primer clic para evitar doble envío
+document.querySelectorAll('form[method="post"] button[name="update_order_status"]').forEach(function(btn) {
+  btn.closest('form').addEventListener('submit', function() {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+  });
+});
+</script>
 </body>
 </html>
