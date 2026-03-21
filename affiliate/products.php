@@ -556,7 +556,7 @@ $products = $q->fetchAll(PDO::FETCH_ASSOC);
                 <summary class="btn">Editar</summary>
                 <div style="padding:8px 0; display:grid; gap:6px">
                   <label>Nombre <input class="input" name="name" value="<?= htmlspecialchars($p['name']) ?>" required></label>
-                  <label>Descripción <textarea class="input" name="description" rows="3"></textarea></label>
+                  <label>Descripción <textarea class="input" name="description" rows="3"><?= htmlspecialchars($p['description'] ?? '') ?></textarea></label>
                   <label>Categoría
                     <select class="input" name="category">
                       <option value="">Sin categoría</option>
