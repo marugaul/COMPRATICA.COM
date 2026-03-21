@@ -36,20 +36,15 @@ $__isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
     || (!empty($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], '"scheme":"https"') !== false);
 
 $host = $_SERVER['HTTP_HOST'] ?? '';
-$cookieDomain = '';
-if ($host && strpos($host, 'localhost') === false && !filter_var($host, FILTER_VALIDATE_IP)) {
-    $clean = preg_replace('/^www\./i', '', $host);
-    if (filter_var($clean, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) $cookieDomain = $clean;
-}
 
 date_default_timezone_set('America/Costa_Rica');
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_name('PHPSESSID');
     if (PHP_VERSION_ID < 70300) {
-        session_set_cookie_params(0, '/', $cookieDomain ?: '', $__isHttps, true);
+        session_set_cookie_params(0, '/', '', $__isHttps, true);
     } else {
         session_set_cookie_params([
-            'lifetime' => 0, 'path' => '/', 'domain' => $cookieDomain,
+            'lifetime' => 0, 'path' => '/', 'domain' => '',
             'secure' => $__isHttps, 'httponly' => true, 'samesite' => 'Lax',
         ]);
     }
