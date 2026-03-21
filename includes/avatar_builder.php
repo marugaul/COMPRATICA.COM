@@ -65,13 +65,15 @@ const AV_MOUTH = [
     'concerned'=> '😟 Preocupado',
 ];
 
-// '' = sin accesorios (accessoriesProbability=0)
+// Accesorios: 'none','hat','bow','cap','crown' se mapean a top[] en DiceBear
+// 'glasses' → accessories[]=prescription01
 const AV_ACCESSORIES = [
-    ''               => '🚫 Ninguno',
-    'sunglasses'     => '😎 Gafas de sol',
-    'round'          => '🔵 Gafas redondas',
-    'prescription01' => '👓 Gafas clásicas',
-    'wayfarers'      => '😎 Wayfarers',
+    'none'    => '🚫 Ninguno',
+    'glasses' => '👓 Gafas',
+    'hat'     => '🎩 Sombrero',
+    'bow'     => '🎀 Moño',
+    'cap'     => '🧢 Gorra',
+    'crown'   => '👑 Corona',
 ];
 
 // Valores v9 para clothing (param correcto es "clothing", no "clothes")
@@ -96,61 +98,73 @@ const AV_FACIAL_HAIR = [
 
 // ── Función principal: URL de DiceBear ────────────────────────────────────────
 
+// ── Helper: obtener hex de piel (acepta clave AV_SKIN o hex directo) ─────────
+function avSkinHex(string $skin): string {
+    if (preg_match('/^#?[0-9a-fA-F]{6}$/i', $skin)) {
+        return preg_match('/^#/', $skin) ? $skin : '#' . $skin;
+    }
+    return (AV_SKIN[$skin] ?? AV_SKIN['light'])['hex'];
+}
+
 function avatarUrl(array $cfg, int $size = 100): string {
-    // Cabello — clave interna → valor v9
-    $hairKey = $cfg['hair'] ?? 'short_flat';
-    $hair    = AV_HAIR[$hairKey] ?? 'shortFlat';
+    // ── Cabello ───────────────────────────────────────────────────────────────
+    $hairKey = $cfg['hair'] ?? 'long_straight';
+    $hair    = AV_HAIR[$hairKey] ?? 'straight01';
 
-    // Piel — usar hex directamente (v9 usa skinColor=hex, no nombres)
-    $skinHex = ltrim((AV_SKIN[$cfg['skin'] ?? 'light'] ?? AV_SKIN['light'])['hex'], '#');
+    // ── Piel: acepta clave AV_SKIN ('light') o hex directo ('#EDB98A') ────────
+    $skinHex = ltrim(avSkinHex($cfg['skin'] ?? 'light'), '#');
 
-    // Colores (limpiar #)
-    $hairHex  = ltrim($cfg['hairColor']    ?? '4a312c', '#');
-    $clothHex = ltrim($cfg['clothesColor'] ?? '667eea', '#');
+    // ── Colores ───────────────────────────────────────────────────────────────
+    $hairHex  = ltrim($cfg['hairColor']    ?? '#4a312c', '#');
+    $clothHex = ltrim($cfg['clothesColor'] ?? '#667eea', '#');
 
-    // Ojos/boca — ya son valores v9 camelCase
-    $eyes   = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['eyes']  ?? 'default');
-    $mouth  = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['mouth'] ?? 'smile');
+    // ── Expresión ─────────────────────────────────────────────────────────────
+    $eyes  = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['eyes']  ?? 'happy');
+    $mouth = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['mouth'] ?? 'smile');
 
-    // Accesorio — '' = ninguno
-    $acc    = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['accessory']  ?? '');
-
-    // Ropa — v9 usa "clothing" con nombres camelCase nuevos
+    // ── Ropa ──────────────────────────────────────────────────────────────────
     $clothes = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['clothes'] ?? 'shirtCrewNeck');
 
-    // Barba — '' = ninguna
+    // ── Barba ─────────────────────────────────────────────────────────────────
     $facial = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['facialHair'] ?? '');
 
+    // ── Accesorio: algunos son "de cabeza" (top[]), otros "faciales" (accessories[]) ─
+    $accVal = $cfg['accessory'] ?? 'none';
+    // Accesorios que reemplazan el estilo de cabello en top[]
+    $HEAD_ACC = ['hat' => 'hat', 'bow' => 'froBand', 'cap' => 'winterHat1', 'crown' => 'turban'];
+    // Accesorios faciales (gafas) → accessories[]
+    $FACE_ACC = ['glasses' => 'prescription01', 'sunglasses' => 'sunglasses',
+                 'round' => 'round', 'prescription01' => 'prescription01', 'wayfarers' => 'wayfarers'];
+    $headAcc = $HEAD_ACC[$accVal] ?? null;
+    $faceAcc = $FACE_ACC[$accVal] ?? null;
+
+    // ── Build URL ─────────────────────────────────────────────────────────────
     $url  = 'https://api.dicebear.com/9.x/avataaars/svg?backgroundColor=transparent';
     $url .= '&size=' . $size;
 
-    // Cabello
-    if ($hair !== '') {
+    // Top: accesorio de cabeza tiene prioridad sobre estilo de cabello
+    if ($headAcc !== null) {
+        $url .= '&top[]=' . rawurlencode($headAcc);
+    } elseif ($hair !== '') {
         $url .= '&top[]=' . rawurlencode($hair);
     } else {
-        $url .= '&topProbability=0'; // calvo
+        $url .= '&topProbability=0';
     }
 
-    // Piel, color cabello
     $url .= '&skinColor[]='  . rawurlencode($skinHex);
     $url .= '&hairColor[]='  . rawurlencode($hairHex);
+    $url .= '&eyes[]='       . rawurlencode($eyes);
+    $url .= '&mouth[]='      . rawurlencode($mouth);
 
-    // Expresión
-    $url .= '&eyes[]='  . rawurlencode($eyes);
-    $url .= '&mouth[]=' . rawurlencode($mouth);
-
-    // Accesorios (v9: "clothing" para ropa, "accessories" para gafas)
-    if ($acc !== '') {
-        $url .= '&accessories[]=' . rawurlencode($acc);
+    if ($faceAcc !== null) {
+        $url .= '&accessories[]=' . rawurlencode($faceAcc);
     } else {
         $url .= '&accessoriesProbability=0';
     }
 
-    // Ropa: v9 usa "clothing" (no "clothes")
-    $url .= '&clothing[]=' . rawurlencode($clothes);
+    $url .= '&clothing[]='    . rawurlencode($clothes);
     $url .= '&clothesColor[]=' . rawurlencode($clothHex);
 
-    // Barba
     if ($facial !== '') {
         $url .= '&facialHair[]=' . rawurlencode($facial);
     } else {
@@ -188,8 +202,7 @@ function avatarFull(array $cfg, int $w = 160): string {
     $shape     = AV_BODY[$cfg['body_shape'] ?? 'average'] ?? AV_BODY['average'];
     $clothHex  = _avHex($cfg['clothesColor'] ?? '#667eea');
     $clothDark = _avDarken($clothHex, 30);
-    $skinKey   = $cfg['skin'] ?? 'light';
-    $skinHex   = (AV_SKIN[$skinKey] ?? AV_SKIN['light'])['hex'];
+    $skinHex   = avSkinHex($cfg['skin'] ?? 'light');
     $skinDark  = _avDarken($skinHex, 15);
 
     $hw = $shape['hw'];
@@ -332,29 +345,28 @@ function avatarFull(array $cfg, int $w = 160): string {
 // ── Defaults por tipo de personaje ───────────────────────────────────────────
 
 function avatarDefaults(string $type = 'woman'): array {
-    // Valores en formato v9 (camelCase, '' para "ninguno")
     $d = [
         'woman' => [
-            'hair' => 'long_straight', 'hairColor' => '#8B4513', 'skin' => 'light',
-            'eyes' => 'happy',   'mouth' => 'smile',   'accessory' => '',
+            'hair' => 'long_straight', 'hairColor' => '#8B4513', 'skin' => '#EDB98A',
+            'eyes' => 'happy',   'mouth' => 'smile',   'accessory' => 'none',
             'clothes' => 'blazerAndShirt', 'clothesColor' => '#ec4899',
             'facialHair' => '', 'body_shape' => 'average',
         ],
         'man' => [
-            'hair' => 'short_flat', 'hairColor' => '#1a1a1a', 'skin' => 'light',
-            'eyes' => 'default', 'mouth' => 'default', 'accessory' => '',
+            'hair' => 'short_flat', 'hairColor' => '#1a1a1a', 'skin' => '#EDB98A',
+            'eyes' => 'default', 'mouth' => 'smile',   'accessory' => 'none',
             'clothes' => 'blazerAndShirt', 'clothesColor' => '#2563eb',
             'facialHair' => '', 'body_shape' => 'athletic',
         ],
         'girl' => [
-            'hair' => 'long_curly', 'hairColor' => '#D4A843', 'skin' => 'pale',
-            'eyes' => 'happy',   'mouth' => 'smile',   'accessory' => 'round',
+            'hair' => 'long_curly', 'hairColor' => '#D4A843', 'skin' => '#FDDBB4',
+            'eyes' => 'happy',   'mouth' => 'smile',   'accessory' => 'glasses',
             'clothes' => 'shirtCrewNeck', 'clothesColor' => '#f97316',
             'facialHair' => '', 'body_shape' => 'slim',
         ],
         'boy' => [
-            'hair' => 'short_curly', 'hairColor' => '#2c1a0e', 'skin' => 'tanned',
-            'eyes' => 'squint',  'mouth' => 'twinkle', 'accessory' => '',
+            'hair' => 'short_curly', 'hairColor' => '#2c1a0e', 'skin' => '#D08B5B',
+            'eyes' => 'squint',  'mouth' => 'smile',   'accessory' => 'none',
             'clothes' => 'hoodie', 'clothesColor' => '#16a34a',
             'facialHair' => '', 'body_shape' => 'slim',
         ],
