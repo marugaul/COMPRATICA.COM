@@ -20,6 +20,28 @@ $sales_stmt = $pdo->prepare("SELECT id, title FROM sales WHERE affiliate_id = ? 
 $sales_stmt->execute([$aff_id]);
 $my_sales = $sales_stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Datos completos del afiliado
+$aff_stmt = $pdo->prepare("SELECT id, name, email, phone FROM affiliates WHERE id = ? LIMIT 1");
+$aff_stmt->execute([$aff_id]);
+$aff_data = $aff_stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+// Métodos de pago
+$pm_stmt = $pdo->prepare("SELECT paypal_email, sinpe_phone, active_paypal, active_sinpe FROM affiliate_payment_methods WHERE affiliate_id = ? LIMIT 1");
+$pm_stmt->execute([$aff_id]);
+$aff_pm = $pm_stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+// Opciones de envío/entrega
+$sh_stmt = $pdo->prepare("SELECT enable_pickup, enable_free_shipping, enable_uber, pickup_instructions FROM affiliate_shipping_options WHERE affiliate_id = ? LIMIT 1");
+$sh_stmt->execute([$aff_id]);
+$aff_sh = $sh_stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+// URL del primer espacio activo (para link al store)
+$app_url_base = defined('APP_URL') ? rtrim(APP_URL, '/') : 'https://compratica.com';
+$store_links = [];
+foreach ($my_sales as $s) {
+    $store_links[] = ['title' => $s['title'], 'url' => $app_url_base . '/store.php?sale_id=' . (int)$s['id']];
+}
+
 // Procesar formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
@@ -51,10 +73,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Generar según el tipo de acción
     if ($action === 'pdf') {
-      generatePDF($products, $_SESSION['aff_name'] ?? 'Afiliado');
+      generatePDF($products, $aff_data, $aff_pm, $aff_sh, $store_links);
       exit;
     } elseif ($action === 'excel') {
-      generateExcel($products, $_SESSION['aff_name'] ?? 'Afiliado');
+      generateExcel($products, $aff_data['name'] ?? 'Afiliado');
       exit;
     } elseif ($action === 'email') {
       if (empty($recipient_email)) {
@@ -65,8 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
 
       // Generar PDF y enviarlo por correo
-      $pdf_file = generatePDFFile($products, $_SESSION['aff_name'] ?? 'Afiliado');
-      sendInventoryEmail($recipient_email, $_SESSION['aff_name'] ?? 'Afiliado', $pdf_file);
+      $pdf_file = generatePDFFile($products, $aff_data, $aff_pm, $aff_sh, $store_links);
+      sendInventoryEmail($recipient_email, $aff_data['name'] ?? 'Afiliado', $pdf_file);
       @unlink($pdf_file); // Eliminar archivo temporal
 
       $msg = "Inventario enviado exitosamente a {$recipient_email}";
@@ -80,19 +102,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 /**
  * Genera PDF y lo envía al navegador para descarga
  */
-function generatePDF($products, $affiliate_name) {
+function generatePDF($products, $aff_data, $aff_pm = [], $aff_sh = [], $store_links = []) {
   $app_url = defined('APP_URL') ? APP_URL : 'https://compratica.com';
 
   // Verificar si TCPDF está disponible
   $tcpdf_path = __DIR__ . '/../vendor/tecnickcom/tcpdf/tcpdf.php';
   if (file_exists($tcpdf_path)) {
     require_once $tcpdf_path;
-    generatePDFWithTCPDF($products, $affiliate_name, $app_url);
+    generatePDFWithTCPDF($products, $aff_data['name'] ?? 'Afiliado', $app_url);
     return;
   }
 
   // Si no hay TCPDF, generar HTML optimizado para imprimir a PDF
-  generatePrintableHTML($products, $affiliate_name, $app_url);
+  generatePrintableHTML($products, $aff_data, $aff_pm, $aff_sh, $store_links, $app_url);
 }
 
 /**
@@ -206,7 +228,9 @@ function generatePDFWithTCPDF($products, $affiliate_name, $app_url) {
 /**
  * Genera HTML optimizado para imprimir a PDF (fallback)
  */
-function generatePrintableHTML($products, $affiliate_name, $app_url) {
+function generatePrintableHTML($products, $aff_data, $aff_pm = [], $aff_sh = [], $store_links = [], $app_url = '') {
+  $affiliate_name = $aff_data['name'] ?? 'Afiliado';
+  if (!$app_url) $app_url = defined('APP_URL') ? APP_URL : 'https://compratica.com';
   header('Content-Type: text/html; charset=utf-8');
   header('Content-Disposition: inline; filename="inventario_' . date('Ymd_His') . '.html"');
 
@@ -311,11 +335,47 @@ function generatePrintableHTML($products, $affiliate_name, $app_url) {
     <p>Inventario de Productos</p>
   </div>
 
-  <div class="info">
-    <p><strong>Afiliado:</strong> ' . htmlspecialchars($affiliate_name) . '</p>
-    <p><strong>Fecha de generación:</strong> ' . date('d/m/Y H:i:s') . '</p>
-    <p><strong>Total de productos:</strong> ' . count($products) . '</p>
-  </div>
+  <div class="info">';
+
+  // ── Datos del afiliado ──────────────────────────────────────────────────
+  echo '<p><strong>Afiliado:</strong> ' . htmlspecialchars($affiliate_name) . '</p>';
+  if (!empty($aff_data['email']))
+    echo '<p><strong>Email:</strong> ' . htmlspecialchars($aff_data['email']) . '</p>';
+  if (!empty($aff_data['phone']))
+    echo '<p><strong>Teléfono:</strong> ' . htmlspecialchars($aff_data['phone']) . '</p>';
+
+  // ── Métodos de pago ─────────────────────────────────────────────────────
+  $pagos = [];
+  if (!empty($aff_pm['active_paypal']) && !empty($aff_pm['paypal_email']))
+    $pagos[] = 'PayPal (' . htmlspecialchars($aff_pm['paypal_email']) . ')';
+  if (!empty($aff_pm['active_sinpe']) && !empty($aff_pm['sinpe_phone']))
+    $pagos[] = 'SINPE Móvil (' . htmlspecialchars($aff_pm['sinpe_phone']) . ')';
+  if ($pagos)
+    echo '<p><strong>Métodos de pago:</strong> ' . implode(', ', $pagos) . '</p>';
+
+  // ── Métodos de entrega ──────────────────────────────────────────────────
+  $entregas = [];
+  if (!empty($aff_sh['enable_pickup']))    $entregas[] = 'Retiro en sitio';
+  if (!empty($aff_sh['enable_free_shipping'])) $entregas[] = 'Envío gratuito';
+  if (!empty($aff_sh['enable_uber']))     $entregas[] = 'Entrega por Uber';
+  if ($entregas)
+    echo '<p><strong>Métodos de entrega:</strong> ' . implode(', ', $entregas) . '</p>';
+  if (!empty($aff_sh['pickup_instructions']))
+    echo '<p><strong>Instrucciones de retiro:</strong> ' . htmlspecialchars($aff_sh['pickup_instructions']) . '</p>';
+
+  // ── Links a los espacios ────────────────────────────────────────────────
+  if ($store_links) {
+    echo '<p><strong>Espacio(s) en tienda:</strong> ';
+    $ls = [];
+    foreach ($store_links as $sl)
+      $ls[] = '<a href="' . htmlspecialchars($sl['url']) . '">' . htmlspecialchars($sl['title']) . '</a>';
+    echo implode(' &nbsp;|&nbsp; ', $ls) . '</p>';
+  }
+
+  echo '<p style="margin-top:8px"><strong>Fecha de generación:</strong> ' . date('d/m/Y H:i:s') . '</p>';
+  echo '<p><strong>Total de productos:</strong> ' . count($products) . '</p>';
+
+  echo '  </div>
 
   <table>
     <thead>
@@ -369,8 +429,9 @@ function generatePrintableHTML($products, $affiliate_name, $app_url) {
 /**
  * Genera PDF y lo guarda en archivo temporal
  */
-function generatePDFFile($products, $affiliate_name) {
+function generatePDFFile($products, $aff_data, $aff_pm = [], $aff_sh = [], $store_links = []) {
   $app_url = defined('APP_URL') ? APP_URL : 'https://compratica.com';
+  $affiliate_name = is_array($aff_data) ? ($aff_data['name'] ?? 'Afiliado') : $aff_data;
 
   // Generar HTML temporal
   $html = generateHTMLContent($products, $affiliate_name, $app_url);
@@ -768,9 +829,69 @@ function sendEmailWithAttachment($to, $subject, $body, $attachment_path) {
 </header>
 
 <div class="container">
-  <h2 style="margin-bottom: 2rem; color: #2c3e50;">
+  <h2 style="margin-bottom: 1.5rem; color: #2c3e50;">
     <i class="fas fa-file-invoice"></i> Generador de Inventario
   </h2>
+
+  <!-- Tarjeta de información del afiliado -->
+  <div class="card" style="margin-bottom:1.5rem;border-left:4px solid #3498db">
+    <h3 style="font-size:1.1rem;margin-bottom:1rem;padding-bottom:.75rem">
+      <i class="fas fa-user-circle"></i> Información del Afiliado
+    </h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;font-size:.9rem">
+
+      <div>
+        <div style="color:#888;font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Nombre</div>
+        <div style="font-weight:600"><?= htmlspecialchars($aff_data['name'] ?? '—') ?></div>
+      </div>
+
+      <div>
+        <div style="color:#888;font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Teléfono</div>
+        <div><?= htmlspecialchars($aff_data['phone'] ?? '—') ?></div>
+      </div>
+
+      <div>
+        <div style="color:#888;font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Email</div>
+        <div><?= htmlspecialchars($aff_data['email'] ?? '—') ?></div>
+      </div>
+
+      <?php
+        $pagos_web = [];
+        if (!empty($aff_pm['active_paypal']) && !empty($aff_pm['paypal_email']))
+          $pagos_web[] = '<i class="fab fa-paypal"></i> PayPal (' . htmlspecialchars($aff_pm['paypal_email']) . ')';
+        if (!empty($aff_pm['active_sinpe']) && !empty($aff_pm['sinpe_phone']))
+          $pagos_web[] = '<i class="fas fa-mobile-alt"></i> SINPE (' . htmlspecialchars($aff_pm['sinpe_phone']) . ')';
+      ?>
+      <div>
+        <div style="color:#888;font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Métodos de pago</div>
+        <div><?= $pagos_web ? implode('<br>', $pagos_web) : '—' ?></div>
+      </div>
+
+      <?php
+        $entregas_web = [];
+        if (!empty($aff_sh['enable_pickup']))         $entregas_web[] = '<i class="fas fa-hand-holding"></i> Retiro en sitio';
+        if (!empty($aff_sh['enable_free_shipping']))  $entregas_web[] = '<i class="fas fa-truck"></i> Envío gratuito';
+        if (!empty($aff_sh['enable_uber']))           $entregas_web[] = '<i class="fas fa-car"></i> Entrega por Uber';
+      ?>
+      <div>
+        <div style="color:#888;font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Métodos de entrega</div>
+        <div><?= $entregas_web ? implode('<br>', $entregas_web) : '—' ?></div>
+      </div>
+
+    </div>
+
+    <?php if ($store_links): ?>
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #eee;display:flex;flex-wrap:wrap;gap:.75rem;align-items:center">
+      <span style="color:#888;font-size:.85rem;font-weight:600"><i class="fas fa-store"></i> Ir al espacio:</span>
+      <?php foreach ($store_links as $sl): ?>
+        <a href="<?= htmlspecialchars($sl['url']) ?>" target="_blank"
+           style="background:#3498db;color:#fff;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:.85rem;font-weight:500">
+          <?= htmlspecialchars($sl['title']) ?> <i class="fas fa-external-link-alt" style="font-size:.75em"></i>
+        </a>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+  </div>
 
   <?php if ($msg): ?>
     <div class="alert alert-success">
