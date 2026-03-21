@@ -159,28 +159,61 @@ try {
 $avatarMsg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_store_avatar') {
     $avType      = in_array($_POST['av_type'] ?? '', ['woman','man','girl','boy']) ? $_POST['av_type'] : 'woman';
-    $avSkin      = in_array($_POST['av_skin'] ?? '', array_keys(AV_SKIN)) ? $_POST['av_skin'] : 'light';
-    $avHStyle    = in_array($_POST['av_hair_style'] ?? '', array_keys(AV_HAIR)) ? $_POST['av_hair_style'] : 'short_flat';
-    $avHColor    = preg_match('/^#[0-9a-fA-F]{6}$/i', $_POST['av_hair_color'] ?? '') ? $_POST['av_hair_color'] : '#4a312c';
-    $avEStyle    = in_array($_POST['av_eye_style']   ?? '', array_keys(AV_EYES))   ? $_POST['av_eye_style']   : 'happy';
+    $avStyle     = in_array($_POST['av_style'] ?? '', ['classic','adventure']) ? $_POST['av_style'] : 'classic';
+    // Skin acepta hex directo
+    $skinPost    = $_POST['av_skin'] ?? '';
+    $advSkinPost = $_POST['av_adv_skin'] ?? '';
+    $avSkin      = preg_match('/^#[0-9a-fA-F]{6}$/i', $skinPost) ? $skinPost : '#EDB98A';
+    $avAdvSkin   = preg_match('/^#[0-9a-fA-F]{6}$/i', $advSkinPost) ? $advSkinPost : '#ecad80';
+    $avHStyle    = in_array($_POST['av_hair_style'] ?? '', array_keys(AV_HAIR)) ? $_POST['av_hair_style'] : 'long_straight';
+    $avAdvHair   = in_array($_POST['av_adv_hair']   ?? '', array_keys(AV_ADV_HAIR)) ? $_POST['av_adv_hair'] : 'long01';
+    $avHColor    = preg_match('/^#[0-9a-fA-F]{6}$/i', $_POST['av_hair_color'] ?? '') ? $_POST['av_hair_color'] : '#8B4513';
+    $avAdvHColor = preg_match('/^#[0-9a-fA-F]{6}$/i', $_POST['av_adv_hair_color'] ?? '') ? $_POST['av_adv_hair_color'] : '#8B4513';
+    $avEStyle    = in_array($_POST['av_eye_style']   ?? '', array_keys(AV_EYES))     ? $_POST['av_eye_style']   : 'happy';
+    $avAdvEyes   = in_array($_POST['av_adv_eyes']    ?? '', array_keys(AV_ADV_EYES)) ? $_POST['av_adv_eyes']    : 'variant09';
+    $avAdvMouth  = in_array($_POST['av_adv_mouth']   ?? '', array_keys(AV_ADV_MOUTH))? $_POST['av_adv_mouth']   : 'variant01';
     $avOutfit    = preg_match('/^#[0-9a-fA-F]{6}$/i', $_POST['av_outfit']      ?? '') ? $_POST['av_outfit']   : '#667eea';
-    $avAcc       = in_array($_POST['av_accessory']   ?? '', array_keys(AV_ACCESSORIES)) ? $_POST['av_accessory'] : '';
+    $avAcc       = in_array($_POST['av_accessory']   ?? '', array_keys(AV_ACCESSORIES)) ? $_POST['av_accessory'] : 'none';
     $avClothes   = in_array($_POST['av_clothes']     ?? '', array_keys(AV_CLOTHES)) ? $_POST['av_clothes']     : 'shirtCrewNeck';
     $avFacial    = in_array($_POST['av_facialHair']  ?? '', array_keys(AV_FACIAL_HAIR)) ? $_POST['av_facialHair'] : '';
     $avBodyShape = in_array($_POST['av_body_shape']  ?? '', array_keys(AV_BODY)) ? $_POST['av_body_shape'] : 'average';
-    $avatarCfgSave = [
-        'type'        => $avType,
-        'skin'        => $avSkin,
-        'hair'        => $avHStyle,
-        'hairColor'   => $avHColor,
-        'eyes'        => $avEStyle,
-        'clothesColor'=> $avOutfit,
-        'accessory'   => $avAcc,
-        'clothes'     => $avClothes,
-        'facialHair'  => $avFacial,
-        'body_shape'  => $avBodyShape,
-        'mouth'       => 'smile',
-    ];
+
+    // Construir config final según estilo seleccionado
+    if ($avStyle === 'adventure') {
+        $avatarCfgSave = [
+            'style'       => 'adventure',
+            'type'        => $avType,
+            'skin'        => $avAdvSkin,
+            'hair'        => $avAdvHair,
+            'hairColor'   => $avAdvHColor,
+            'eyes'        => $avEStyle,    // classic fallback
+            'adv_eyes'    => $avAdvEyes,
+            'adv_mouth'   => $avAdvMouth,
+            'mouth'       => $avAdvMouth,  // usado por avatarUrlAdventure
+            'clothesColor'=> $avOutfit,
+            'accessory'   => 'none',
+            'clothes'     => 'shirtCrewNeck',
+            'facialHair'  => '',
+            'body_shape'  => $avBodyShape,
+        ];
+    } else {
+        $avatarCfgSave = [
+            'style'       => 'classic',
+            'type'        => $avType,
+            'skin'        => $avSkin,
+            'hair'        => $avHStyle,
+            'hairColor'   => $avHColor,
+            'eyes'        => $avEStyle,
+            'clothesColor'=> $avOutfit,
+            'accessory'   => $avAcc,
+            'clothes'     => $avClothes,
+            'facialHair'  => $avFacial,
+            'body_shape'  => $avBodyShape,
+            'mouth'       => 'smile',
+            'adv_eyes'    => $avAdvEyes,
+            'adv_mouth'   => $avAdvMouth,
+        ];
+    }
     try {
         $pdo->prepare("UPDATE users SET store_avatar=?, seller_type=? WHERE id=?")
             ->execute([json_encode($avatarCfgSave), ($avType === 'man' || $avType === 'boy') ? 'emprendedor' : 'emprendedora', $userId]);
@@ -1033,6 +1066,27 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                     <!-- CONTROLES -->
                     <div class="av-controls">
 
+                        <!-- ESTILO DE AVATAR -->
+                        <div class="av-group" style="border:2px solid #7c3aed22;background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-radius:12px;padding:14px;">
+                            <div class="av-group-title" style="color:#7c3aed;"><i class="fas fa-magic"></i> Estilo de avatar</div>
+                            <div class="av-chips" id="chips-style">
+                                <?php foreach (['classic'=>'👤 Clásico','adventure'=>'🐉 Fantasía'] as $v=>$l): ?>
+                                <div class="av-chip <?= ($currentAvatar['style']??'classic')===$v?'sel':'' ?>"
+                                     data-group="style" data-val="<?= $v ?>"
+                                     onclick="avSelect(this,'style');avStyleSwitch('<?= $v ?>')">
+                                    <?= $l ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_style" id="in-style" value="<?= htmlspecialchars($currentAvatar['style']??'classic') ?>">
+                            <p style="font-size:.75rem;color:#6d28d9;margin:8px 0 0;opacity:.8;">
+                                🐉 Fantasía usa personajes ilustrados con colores únicos, incluyendo tonos de dragón.
+                            </p>
+                        </div>
+
+                        <!-- ── CONTROLES CLÁSICO ──────────────────── -->
+                        <div id="av-classic-controls" style="<?= ($currentAvatar['style']??'classic')==='adventure'?'display:none':''; ?>">
+
                         <!-- TIPO DE PERSONAJE -->
                         <div class="av-group">
                             <div class="av-group-title"><i class="fas fa-user"></i> Tipo de personaje</div>
@@ -1051,34 +1105,36 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                         <div class="av-group">
                             <div class="av-group-title"><i class="fas fa-hand-paper"></i> Tono de piel</div>
                             <div class="av-skins" id="skins-wrap">
-                                <?php foreach ([
-                                    '#FDDBB4'=>'Muy claro','#F0C27F'=>'Claro','#D4956A'=>'Medio',
-                                    '#B07040'=>'Canela','#7D4E2D'=>'Oscuro','#3D2010'=>'Muy oscuro'
+                                <?php
+                                $skinHexCurrent = avSkinHex($currentAvatar['skin'] ?? '#EDB98A');
+                                foreach ([
+                                    '#FDDBB4'=>'Muy claro','#EDB98A'=>'Claro','#D08B5B'=>'Medio',
+                                    '#AE5D29'=>'Canela','#7D4E2D'=>'Oscuro','#2A1300'=>'Muy oscuro'
                                 ] as $hex=>$lbl): ?>
-                                <div class="av-skin-btn <?= ($currentAvatar['skin']??'#F0C27F')===$hex?'sel':'' ?>"
+                                <div class="av-skin-btn <?= $skinHexCurrent===$hex?'sel':'' ?>"
                                      style="background:<?= $hex ?>;" title="<?= $lbl ?>"
                                      data-val="<?= $hex ?>" onclick="avSkin(this)"></div>
                                 <?php endforeach; ?>
                             </div>
-                            <input type="hidden" name="av_skin" id="in-skin" value="<?= htmlspecialchars($currentAvatar['skin']??'#F0C27F') ?>">
+                            <input type="hidden" name="av_skin" id="in-skin" value="<?= htmlspecialchars($skinHexCurrent) ?>">
                         </div>
 
                         <!-- ESTILO DE CABELLO -->
                         <div class="av-group">
                             <div class="av-group-title"><i class="fas fa-wind"></i> Cabello</div>
-                            <div class="av-chips" id="chips-hair-style">
+                            <div class="av-chips" id="chips-hair_style">
                                 <?php foreach ([
-                                    'long'=>'💇 Largo','short'=>'💈 Corto','curly'=>'🌀 Rizado',
-                                    'bun'=>'🎀 Chongo','ponytail'=>'🦄 Cola','spiky'=>'⚡ Punk',
-                                    'braid'=>'🌿 Trenza','afro'=>'☁️ Afro'
+                                    'long_straight'=>'💇 Largo','short_flat'=>'💈 Corto','long_curly'=>'🌀 Rizado',
+                                    'long_bun'=>'🎀 Chongo','long_wavy'=>'🦄 Cola','sides'=>'⚡ Punk',
+                                    'dreads'=>'🌿 Trenza','afro'=>'☁️ Afro'
                                 ] as $v=>$l): ?>
-                                <div class="av-chip <?= ($currentAvatar['hair_style']??'long')===$v?'sel':'' ?>"
+                                <div class="av-chip <?= ($currentAvatar['hair']??'long_straight')===$v?'sel':'' ?>"
                                      data-group="hair_style" data-val="<?= $v ?>" onclick="avSelect(this,'hair_style')">
                                     <?= $l ?>
                                 </div>
                                 <?php endforeach; ?>
                             </div>
-                            <input type="hidden" name="av_hair_style" id="in-hair_style" value="<?= htmlspecialchars($currentAvatar['hair_style']??'long') ?>">
+                            <input type="hidden" name="av_hair_style" id="in-hair_style" value="<?= htmlspecialchars($currentAvatar['hair']??'long_straight') ?>">
 
                             <div style="margin-top:12px;">
                                 <div style="font-size:.8rem;font-weight:600;color:#6b7280;margin-bottom:6px;">Color del cabello</div>
@@ -1089,18 +1145,18 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                                         '#8E44AD'=>'Morado','#2980B9'=>'Azul','#E8E8E8'=>'Plateado',
                                         '#FFB347'=>'Naranja','#27AE60'=>'Verde','#FF69B4'=>'Rosa',
                                     ] as $hex=>$lbl): ?>
-                                    <div class="av-color-dot <?= ($currentAvatar['hair_color']??'#4a2040')===$hex?'sel':'' ?>"
+                                    <div class="av-color-dot <?= ($currentAvatar['hairColor']??'#8B4513')===$hex?'sel':'' ?>"
                                          style="background:<?= $hex ?>;" title="<?= $lbl ?>"
                                          data-val="<?= $hex ?>" onclick="avHairColor(this)"></div>
                                     <?php endforeach; ?>
                                     <input type="color" id="av-hair-custom"
-                                           value="<?= htmlspecialchars($currentAvatar['hair_color']??'#4a2040') ?>"
+                                           value="<?= htmlspecialchars($currentAvatar['hairColor']??'#8B4513') ?>"
                                            oninput="avHairColorCustom(this.value)"
                                            style="width:34px;height:34px;border:2px solid #e5e7eb;border-radius:50%;cursor:pointer;padding:1px;"
                                            title="Color personalizado">
                                 </div>
                             </div>
-                            <input type="hidden" name="av_hair_color" id="in-hair_color" value="<?= htmlspecialchars($currentAvatar['hair_color']??'#4a2040') ?>">
+                            <input type="hidden" name="av_hair_color" id="in-hair_color" value="<?= htmlspecialchars($currentAvatar['hairColor']??'#8B4513') ?>">
                         </div>
 
                         <!-- EXPRESIÓN -->
@@ -1108,16 +1164,16 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                             <div class="av-group-title"><i class="fas fa-smile"></i> Expresión de los ojos</div>
                             <div class="av-chips" id="chips-eye_style">
                                 <?php foreach ([
-                                    'happy'=>'😊 Feliz','normal'=>'👁️ Normal','star'=>'✨ Estrella',
-                                    'wink'=>'😉 Guiño','sleepy'=>'😴 Soñoliento'
+                                    'happy'=>'😊 Feliz','default'=>'👁️ Normal','hearts'=>'✨ Estrella',
+                                    'wink'=>'😉 Guiño','squint'=>'😴 Soñoliento'
                                 ] as $v=>$l): ?>
-                                <div class="av-chip <?= ($currentAvatar['eye_style']??'happy')===$v?'sel':'' ?>"
+                                <div class="av-chip <?= ($currentAvatar['eyes']??'happy')===$v?'sel':'' ?>"
                                      data-group="eye_style" data-val="<?= $v ?>" onclick="avSelect(this,'eye_style')">
                                     <?= $l ?>
                                 </div>
                                 <?php endforeach; ?>
                             </div>
-                            <input type="hidden" name="av_eye_style" id="in-eye_style" value="<?= htmlspecialchars($currentAvatar['eye_style']??'happy') ?>">
+                            <input type="hidden" name="av_eye_style" id="in-eye_style" value="<?= htmlspecialchars($currentAvatar['eyes']??'happy') ?>">
                         </div>
 
                         <!-- ROPA -->
@@ -1130,29 +1186,26 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                                     '#2563eb'=>'Azul','#7c3aed'=>'Morado','#6b7280'=>'Gris',
                                     '#1f2937'=>'Negro','#ffffff'=>'Blanco',
                                 ] as $hex=>$lbl): ?>
-                                <div class="av-color-dot <?= ($currentAvatar['outfit']??'#667eea')===$hex?'sel':'' ?>"
+                                <div class="av-color-dot <?= ($currentAvatar['clothesColor']??'#667eea')===$hex?'sel':'' ?>"
                                      style="background:<?= $hex ?>;<?= $hex==='#ffffff'?'border:2px solid #ddd;':'' ?>"
                                      title="<?= $lbl ?>" data-val="<?= $hex ?>" onclick="avOutfitColor(this)"></div>
                                 <?php endforeach; ?>
                                 <input type="color" id="av-outfit-custom"
-                                       value="<?= htmlspecialchars($currentAvatar['outfit']??'#667eea') ?>"
+                                       value="<?= htmlspecialchars($currentAvatar['clothesColor']??'#667eea') ?>"
                                        oninput="avOutfitColorCustom(this.value)"
                                        style="width:34px;height:34px;border:2px solid #e5e7eb;border-radius:50%;cursor:pointer;padding:1px;"
                                        title="Color personalizado">
                             </div>
-                            <input type="hidden" name="av_outfit" id="in-outfit" value="<?= htmlspecialchars($currentAvatar['outfit']??'#667eea') ?>">
+                            <input type="hidden" name="av_outfit" id="in-outfit" value="<?= htmlspecialchars($currentAvatar['clothesColor']??'#667eea') ?>">
                         </div>
 
                         <!-- ACCESORIOS -->
                         <div class="av-group">
                             <div class="av-group-title"><i class="fas fa-hat-wizard"></i> Accesorio</div>
                             <div class="av-chips" id="chips-accessory">
-                                <?php foreach ([
-                                    'none'=>'🚫 Ninguno','glasses'=>'👓 Gafas','hat'=>'🎩 Sombrero',
-                                    'bow'=>'🎀 Moño','cap'=>'🧢 Gorra','crown'=>'👑 Corona'
-                                ] as $v=>$l): ?>
+                                <?php foreach (AV_ACCESSORIES as $v=>$l): ?>
                                 <div class="av-chip <?= ($currentAvatar['accessory']??'none')===$v?'sel':'' ?>"
-                                     data-group="accessory" data-val="<?= $v ?>" onclick="avSelect(this,'accessory')">
+                                     data-group="accessory" data-val="<?= htmlspecialchars($v) ?>" onclick="avSelect(this,'accessory')">
                                     <?= $l ?>
                                 </div>
                                 <?php endforeach; ?>
@@ -1179,14 +1232,118 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                             <div class="av-group-title"><i class="fas fa-male"></i> Barba / bigote</div>
                             <div class="av-chips" id="chips-facialHair">
                                 <?php foreach (AV_FACIAL_HAIR as $v => $l): ?>
-                                <div class="av-chip <?= ($currentAvatar['facialHair']??'Blank')===$v?'sel':'' ?>"
+                                <div class="av-chip <?= ($currentAvatar['facialHair']??'')===$v?'sel':'' ?>"
                                      data-group="facialHair" data-val="<?= $v ?>" onclick="avSelect(this,'facialHair')">
                                     <?= $l ?>
                                 </div>
                                 <?php endforeach; ?>
                             </div>
-                            <input type="hidden" name="av_facialHair" id="in-facialHair" value="<?= htmlspecialchars($currentAvatar['facialHair']??'Blank') ?>">
+                            <input type="hidden" name="av_facialHair" id="in-facialHair" value="<?= htmlspecialchars($currentAvatar['facialHair']??'') ?>">
                         </div>
+
+                        </div><!-- /av-classic-controls -->
+
+                        <!-- ── CONTROLES FANTASÍA 🐉 ──────────────────── -->
+                        <div id="av-adventure-controls" style="<?= ($currentAvatar['style']??'classic')!=='adventure'?'display:none':''; ?>">
+
+                        <!-- TIPO (se comparte) -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-user"></i> Tipo de personaje</div>
+                            <div class="av-chips">
+                                <?php foreach (['woman'=>'👩 Mujer','man'=>'👨 Hombre','girl'=>'👧 Niña','boy'=>'👦 Niño'] as $v=>$l): ?>
+                                <div class="av-chip <?= ($currentAvatar['type']??'woman')===$v ? ($v==='man'||$v==='boy'?'sel-blue':'sel-pink') : '' ?>"
+                                     data-group="type" data-val="<?= $v ?>" onclick="avSelect(this,'type')">
+                                    <?= $l ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <!-- TONO DE PIEL FANTASÍA (colores normales + dragón) -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-palette"></i> Tono de piel</div>
+                            <div class="av-skins" id="adv-skins-wrap">
+                                <?php foreach (AV_ADV_SKIN as $hex=>$lbl): ?>
+                                <div class="av-skin-btn <?= ($currentAvatar['skin']??'#ecad80')===$hex?'sel':'' ?>"
+                                     style="background:<?= $hex ?>;" title="<?= $lbl ?>"
+                                     data-val="<?= $hex ?>" onclick="avAdvSkin(this)"></div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_adv_skin" id="in-adv-skin" value="<?= htmlspecialchars($currentAvatar['skin']??'#ecad80') ?>">
+                        </div>
+
+                        <!-- CABELLO FANTASÍA -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-wind"></i> Cabello</div>
+                            <div class="av-chips" id="chips-adv-hair">
+                                <?php foreach (AV_ADV_HAIR as $v=>$l): ?>
+                                <div class="av-chip <?= ($currentAvatar['hair']??'long01')===$v?'sel':'' ?>"
+                                     data-group="adv_hair" data-val="<?= $v ?>" onclick="avSelect(this,'adv_hair')">
+                                    <?= $l ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_adv_hair" id="in-adv-hair" value="<?= htmlspecialchars($currentAvatar['hair']??'long01') ?>">
+
+                            <div style="margin-top:10px;">
+                                <div style="font-size:.8rem;font-weight:600;color:#6b7280;margin-bottom:6px;">Color del cabello</div>
+                                <div class="av-color-row" id="adv-hair-colors">
+                                    <?php foreach (['#1a1a1a'=>'Negro','#8B4513'=>'Café','#D4A843'=>'Rubio','#FF6B35'=>'Rojizo','#8E44AD'=>'Morado','#2980B9'=>'Azul','#ff85a1'=>'Rosa','#7dcfb6'=>'Verde'] as $hex=>$lbl): ?>
+                                    <div class="av-color-dot <?= ($currentAvatar['hairColor']??'#8B4513')===$hex?'sel':'' ?>"
+                                         style="background:<?= $hex ?>;" title="<?= $lbl ?>"
+                                         data-val="<?= $hex ?>" onclick="avAdvHairColor(this)"></div>
+                                    <?php endforeach; ?>
+                                    <input type="color" id="av-adv-hair-custom"
+                                           value="<?= htmlspecialchars($currentAvatar['hairColor']??'#8B4513') ?>"
+                                           oninput="avAdvHairColorCustom(this.value)"
+                                           style="width:34px;height:34px;border:2px solid #e5e7eb;border-radius:50%;cursor:pointer;padding:1px;">
+                                </div>
+                            </div>
+                            <input type="hidden" name="av_adv_hair_color" id="in-adv-hair-color" value="<?= htmlspecialchars($currentAvatar['hairColor']??'#8B4513') ?>">
+                        </div>
+
+                        <!-- OJOS FANTASÍA -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-eye"></i> Expresión de los ojos</div>
+                            <div class="av-chips" id="chips-adv-eyes">
+                                <?php foreach (AV_ADV_EYES as $v=>$l): ?>
+                                <div class="av-chip <?= ($currentAvatar['adv_eyes']??'variant09')===$v?'sel':'' ?>"
+                                     data-group="adv_eyes" data-val="<?= $v ?>" onclick="avSelect(this,'adv_eyes')">
+                                    <?= $l ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_adv_eyes" id="in-adv-eyes" value="<?= htmlspecialchars($currentAvatar['adv_eyes']??'variant09') ?>">
+                        </div>
+
+                        <!-- BOCA FANTASÍA -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-smile"></i> Expresión de la boca</div>
+                            <div class="av-chips" id="chips-adv-mouth">
+                                <?php foreach (AV_ADV_MOUTH as $v=>$l): ?>
+                                <div class="av-chip <?= ($currentAvatar['adv_mouth']??'variant01')===$v?'sel':'' ?>"
+                                     data-group="adv_mouth" data-val="<?= $v ?>" onclick="avSelect(this,'adv_mouth')">
+                                    <?= $l ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" name="av_adv_mouth" id="in-adv-mouth" value="<?= htmlspecialchars($currentAvatar['adv_mouth']??'variant01') ?>">
+                        </div>
+
+                        <!-- CONTORNO DEL CUERPO (compartido) -->
+                        <div class="av-group">
+                            <div class="av-group-title"><i class="fas fa-male"></i> Contorno del cuerpo</div>
+                            <div class="av-chips">
+                                <?php foreach (AV_BODY as $v => $info): ?>
+                                <div class="av-chip <?= ($currentAvatar['body_shape']??'average')===$v?'sel':'' ?>"
+                                     data-group="body_shape" data-val="<?= $v ?>" onclick="avSelect(this,'body_shape')">
+                                    <?= $info['label'] ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        </div><!-- /av-adventure-controls -->
 
                     </div><!-- /av-controls -->
                 </div><!-- /av-grid -->
@@ -1683,16 +1840,16 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         var _avDebounce = null;
 
         function avApplyTypeDefaults(type) {
-            // Valores alineados con claves v9 de AV_HAIR y AV_EYES
+            // Los data-val de chips corresponden exactamente a claves de AV_HAIR/AV_EYES/AV_ACCESSORIES
             const defs = {
-                woman: { hair_style:'long_straight', hair_color:'#8B4513', outfit:'#ec4899', eye_style:'happy',   accessory:'', blush:true  },
-                man:   { hair_style:'short_flat',    hair_color:'#1a1a1a', outfit:'#2563eb', eye_style:'default', accessory:'', blush:false },
-                girl:  { hair_style:'long_curly',    hair_color:'#D4A843', outfit:'#f97316', eye_style:'happy',   accessory:'round', blush:true  },
-                boy:   { hair_style:'short_curly',   hair_color:'#2c1a0e', outfit:'#16a34a', eye_style:'squint',  accessory:'', blush:false },
+                woman: { hair_style:'long_straight', hair_color:'#8B4513', outfit:'#ec4899', eye_style:'happy',   accessory:'none' },
+                man:   { hair_style:'short_flat',    hair_color:'#1a1a1a', outfit:'#2563eb', eye_style:'default', accessory:'none' },
+                girl:  { hair_style:'long_curly',    hair_color:'#D4A843', outfit:'#f97316', eye_style:'happy',   accessory:'glasses' },
+                boy:   { hair_style:'short_curly',   hair_color:'#2c1a0e', outfit:'#16a34a', eye_style:'squint',  accessory:'none' },
             };
             const d = defs[type];
             if (!d) return;
-            // Cabello
+            // Cabello — chips-hair_style (guión bajo, coincide con el id del div)
             document.querySelectorAll('#chips-hair_style .av-chip').forEach(c => {
                 c.classList.toggle('sel', c.dataset.val === d.hair_style);
             });
@@ -1713,8 +1870,15 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                 c.classList.toggle('sel', c.dataset.val === d.accessory);
             });
             document.getElementById('in-accessory').value = d.accessory;
-            // Rubor
-            document.getElementById('av-blush').checked = d.blush;
+            // Rubor (opcional, puede no existir)
+            const blush = document.getElementById('av-blush');
+            if (blush) blush.checked = (type === 'woman' || type === 'girl');
+            // Sincronizar también los chips de tipo en el bloque de aventura
+            document.querySelectorAll('#av-adventure-controls .av-chip[data-group="type"]').forEach(c => {
+                c.classList.toggle('sel-pink', c.dataset.val === d && (type==='woman'||type==='girl'));
+                c.classList.toggle('sel-blue', c.dataset.val === d && (type==='man'||type==='boy'));
+                c.classList.remove('sel');
+            });
         }
 
         function avSkin(el) {
@@ -1773,19 +1937,71 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         }
 
         function avGetConfig() {
+            const style = document.getElementById('in-style')?.value || 'classic';
+            const type  = document.getElementById('in-type').value;
+            const body  = document.getElementById('in-body_shape')?.value || 'average';
+
+            if (style === 'adventure') {
+                return {
+                    style:       'adventure',
+                    type:        type,
+                    skin:        document.getElementById('in-adv-skin')?.value  || '#ecad80',
+                    hair:        document.getElementById('in-adv-hair')?.value  || 'long01',
+                    hairColor:   document.getElementById('in-adv-hair-color')?.value || '#8B4513',
+                    eyes:        document.getElementById('in-eye_style')?.value || 'happy',
+                    adv_eyes:    document.getElementById('in-adv-eyes')?.value  || 'variant09',
+                    mouth:       document.getElementById('in-adv-mouth')?.value || 'variant01',
+                    adv_mouth:   document.getElementById('in-adv-mouth')?.value || 'variant01',
+                    clothesColor:'#667eea',
+                    accessory:   'none',
+                    clothes:     'shirtCrewNeck',
+                    facialHair:  '',
+                    body_shape:  body,
+                };
+            }
             return {
-                type:        document.getElementById('in-type').value,
+                style:       'classic',
+                type:        type,
                 skin:        document.getElementById('in-skin').value,
                 hair:        document.getElementById('in-hair_style').value,
                 hairColor:   document.getElementById('in-hair_color').value,
                 eyes:        document.getElementById('in-eye_style').value,
                 clothesColor:document.getElementById('in-outfit').value,
                 accessory:   document.getElementById('in-accessory').value,
-                body_shape:  document.getElementById('in-body_shape')?.value || 'average',
+                body_shape:  body,
                 facialHair:  document.getElementById('in-facialHair')?.value || '',
-                clothes:     document.getElementById('in-clothes')?.value || 'shirtCrewNeck',
-                mouth:       document.getElementById('in-mouth')?.value   || 'smile',
+                clothes:     'shirtCrewNeck',
+                mouth:       'smile',
             };
+        }
+
+        // Cambiar entre estilo clásico y aventura
+        function avStyleSwitch(style) {
+            document.getElementById('av-classic-controls').style.display  = style === 'classic'   ? '' : 'none';
+            document.getElementById('av-adventure-controls').style.display = style === 'adventure' ? '' : 'none';
+            avRefreshPreview();
+        }
+
+        // Skin para modo aventura
+        function avAdvSkin(el) {
+            document.querySelectorAll('#adv-skins-wrap .av-skin-btn').forEach(b => b.classList.remove('sel'));
+            el.classList.add('sel');
+            document.getElementById('in-adv-skin').value = el.dataset.val;
+            avRefreshPreview();
+        }
+
+        // Color de cabello en aventura
+        function avAdvHairColor(el) {
+            document.querySelectorAll('#adv-hair-colors .av-color-dot').forEach(d => d.classList.remove('sel'));
+            el.classList.add('sel');
+            document.getElementById('in-adv-hair-color').value = el.dataset.val;
+            document.getElementById('av-adv-hair-custom').value = el.dataset.val;
+            avRefreshPreview();
+        }
+        function avAdvHairColorCustom(val) {
+            document.querySelectorAll('#adv-hair-colors .av-color-dot').forEach(d => d.classList.remove('sel'));
+            document.getElementById('in-adv-hair-color').value = val;
+            avRefreshPreview();
         }
 
         function avRefreshPreview() {

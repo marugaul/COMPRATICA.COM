@@ -65,13 +65,69 @@ const AV_MOUTH = [
     'concerned'=> '😟 Preocupado',
 ];
 
-// '' = sin accesorios (accessoriesProbability=0)
+// Accesorios clásicos (avataaars)
+// 'glasses/sunglasses/wayfarers' → accessories[]; 'hat/bow/cap/crown' → top[]
 const AV_ACCESSORIES = [
-    ''               => '🚫 Ninguno',
-    'sunglasses'     => '😎 Gafas de sol',
-    'round'          => '🔵 Gafas redondas',
-    'prescription01' => '👓 Gafas clásicas',
-    'wayfarers'      => '😎 Wayfarers',
+    'none'       => '🚫 Ninguno',
+    'glasses'    => '👓 Gafas',
+    'sunglasses' => '😎 Sol',
+    'wayfarers'  => '🕶️ Wayfarers',
+    'hat'        => '🎩 Sombrero',
+    'bow'        => '🎀 Moño',
+    'cap'        => '🧢 Gorra',
+    'crown'      => '👑 Corona',
+];
+
+// ── Constantes para estilo Aventura (DiceBear adventurer) ────────────────────
+const AV_ADV_HAIR = [
+    'long01' => '💇 Largo liso',
+    'long02' => '💇 Largo ondulado',
+    'long03' => '💇 Largo voluminoso',
+    'long04' => '💇 Largo natural',
+    'long05' => '💇 Largo fluido',
+    'long06' => '💇 Largo espeso',
+    'short01'=> '💈 Corto liso',
+    'short02'=> '💈 Corto estilizado',
+    'short03'=> '💈 Corto natural',
+    'short04'=> '💈 Corto clásico',
+    'short05'=> '💈 Corto ondulado',
+];
+
+const AV_ADV_EYES = [
+    'variant01' => '😊 Alegre',
+    'variant02' => '😐 Neutral',
+    'variant03' => '😮 Sorprendido',
+    'variant04' => '🌟 Estrella',
+    'variant05' => '😍 Enamorado',
+    'variant06' => '😉 Guiño',
+    'variant07' => '😴 Cansado',
+    'variant08' => '😳 Asombrado',
+    'variant09' => '🥰 Feliz',
+    'variant10' => '😌 Sereno',
+    'variant11' => '🤩 Brillante',
+    'variant12' => '😆 Animado',
+];
+
+const AV_ADV_MOUTH = [
+    'variant01' => '😊 Sonrisa',
+    'variant02' => '😀 Amplia',
+    'variant03' => '😐 Serio',
+    'variant04' => '🙂 Leve',
+    'variant05' => '😄 Grande',
+    'variant06' => '😗 Tranquilo',
+];
+
+// Tonos de piel para aventura (incluye colores fantásticos)
+const AV_ADV_SKIN = [
+    '#f2d3b1' => '🧑 Claro',
+    '#ecad80' => '🧑 Durazno',
+    '#d78774' => '🧑 Moreno',
+    '#ae5d29' => '🧑 Oscuro',
+    '#2A1300' => '🧑 Muy oscuro',
+    '#c0aafa' => '🐉 Lila',
+    '#7dcfb6' => '🐉 Menta',
+    '#f4a261' => '🐉 Naranja',
+    '#2a9d8f' => '🐉 Turquesa',
 ];
 
 // Valores v9 para clothing (param correcto es "clothing", no "clothes")
@@ -96,67 +152,113 @@ const AV_FACIAL_HAIR = [
 
 // ── Función principal: URL de DiceBear ────────────────────────────────────────
 
+// ── Helper: obtener hex de piel (acepta clave AV_SKIN o hex directo) ─────────
+function avSkinHex(string $skin): string {
+    if (preg_match('/^#?[0-9a-fA-F]{6}$/i', $skin)) {
+        return preg_match('/^#/', $skin) ? $skin : '#' . $skin;
+    }
+    return (AV_SKIN[$skin] ?? AV_SKIN['light'])['hex'];
+}
+
 function avatarUrl(array $cfg, int $size = 100): string {
-    // Cabello — clave interna → valor v9
-    $hairKey = $cfg['hair'] ?? 'short_flat';
-    $hair    = AV_HAIR[$hairKey] ?? 'shortFlat';
+    // Ruta al estilo aventura si corresponde
+    if (($cfg['style'] ?? 'classic') === 'adventure') {
+        return avatarUrlAdventure($cfg, $size);
+    }
 
-    // Piel — usar hex directamente (v9 usa skinColor=hex, no nombres)
-    $skinHex = ltrim((AV_SKIN[$cfg['skin'] ?? 'light'] ?? AV_SKIN['light'])['hex'], '#');
+    // ── Cabello ───────────────────────────────────────────────────────────────
+    $hairKey = $cfg['hair'] ?? 'long_straight';
+    $hair    = AV_HAIR[$hairKey] ?? 'straight01';
 
-    // Colores (limpiar #)
-    $hairHex  = ltrim($cfg['hairColor']    ?? '4a312c', '#');
-    $clothHex = ltrim($cfg['clothesColor'] ?? '667eea', '#');
+    // ── Piel: acepta clave AV_SKIN ('light') o hex directo ('#EDB98A') ────────
+    $skinHex = ltrim(avSkinHex($cfg['skin'] ?? 'light'), '#');
 
-    // Ojos/boca — ya son valores v9 camelCase
-    $eyes   = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['eyes']  ?? 'default');
-    $mouth  = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['mouth'] ?? 'smile');
+    // ── Colores ───────────────────────────────────────────────────────────────
+    $hairHex  = ltrim($cfg['hairColor']    ?? '#4a312c', '#');
+    $clothHex = ltrim($cfg['clothesColor'] ?? '#667eea', '#');
 
-    // Accesorio — '' = ninguno
-    $acc    = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['accessory']  ?? '');
+    // ── Expresión ─────────────────────────────────────────────────────────────
+    $eyes  = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['eyes']  ?? 'happy');
+    $mouth = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['mouth'] ?? 'smile');
 
-    // Ropa — v9 usa "clothing" con nombres camelCase nuevos
+    // ── Ropa ──────────────────────────────────────────────────────────────────
     $clothes = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['clothes'] ?? 'shirtCrewNeck');
 
-    // Barba — '' = ninguna
+    // ── Barba ─────────────────────────────────────────────────────────────────
     $facial = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['facialHair'] ?? '');
 
+    // ── Accesorio: algunos son "de cabeza" (top[]), otros "faciales" (accessories[]) ─
+    $accVal = $cfg['accessory'] ?? 'none';
+    // Accesorios que reemplazan el estilo de cabello en top[]
+    $HEAD_ACC = ['hat' => 'hat', 'bow' => 'froBand', 'cap' => 'winterHat1', 'crown' => 'turban'];
+    // Accesorios faciales (gafas) → accessories[]
+    $FACE_ACC = ['glasses' => 'prescription01', 'sunglasses' => 'sunglasses',
+                 'wayfarers' => 'wayfarers', 'round' => 'round',
+                 'prescription01' => 'prescription01', 'prescription02' => 'prescription02',
+                 'kurt' => 'kurt', 'eyepatch' => 'eyepatch'];
+    $headAcc = $HEAD_ACC[$accVal] ?? null;
+    $faceAcc = $FACE_ACC[$accVal] ?? null;
+
+    // ── Build URL ─────────────────────────────────────────────────────────────
     $url  = 'https://api.dicebear.com/9.x/avataaars/svg?backgroundColor=transparent';
     $url .= '&size=' . $size;
 
-    // Cabello
-    if ($hair !== '') {
+    // Top: accesorio de cabeza tiene prioridad sobre estilo de cabello
+    if ($headAcc !== null) {
+        $url .= '&top[]=' . rawurlencode($headAcc);
+    } elseif ($hair !== '') {
         $url .= '&top[]=' . rawurlencode($hair);
     } else {
-        $url .= '&topProbability=0'; // calvo
+        $url .= '&topProbability=0';
     }
 
-    // Piel, color cabello
     $url .= '&skinColor[]='  . rawurlencode($skinHex);
     $url .= '&hairColor[]='  . rawurlencode($hairHex);
+    $url .= '&eyes[]='       . rawurlencode($eyes);
+    $url .= '&mouth[]='      . rawurlencode($mouth);
 
-    // Expresión
-    $url .= '&eyes[]='  . rawurlencode($eyes);
-    $url .= '&mouth[]=' . rawurlencode($mouth);
-
-    // Accesorios (v9: "clothing" para ropa, "accessories" para gafas)
-    if ($acc !== '') {
-        $url .= '&accessories[]=' . rawurlencode($acc);
+    if ($faceAcc !== null) {
+        $url .= '&accessories[]=' . rawurlencode($faceAcc);
     } else {
         $url .= '&accessoriesProbability=0';
     }
 
-    // Ropa: v9 usa "clothing" (no "clothes")
-    $url .= '&clothing[]=' . rawurlencode($clothes);
+    $url .= '&clothing[]='    . rawurlencode($clothes);
     $url .= '&clothesColor[]=' . rawurlencode($clothHex);
 
-    // Barba
     if ($facial !== '') {
         $url .= '&facialHair[]=' . rawurlencode($facial);
     } else {
         $url .= '&facialHairProbability=0';
     }
 
+    return $url;
+}
+
+// ── URL para estilo Aventura (DiceBear adventurer) ───────────────────────────
+
+function avatarUrlAdventure(array $cfg, int $size = 100): string {
+    $skinHex  = ltrim(avSkinHex($cfg['skin'] ?? '#ecad80'), '#');
+    $hair     = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['hair'] ?? 'long01');
+    // adv_eyes/adv_mouth tienen prioridad sobre eyes/mouth genéricos
+    $eyes     = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['adv_eyes']  ?? $cfg['eyes']  ?? 'variant01');
+    $mouth    = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['adv_mouth'] ?? $cfg['mouth'] ?? 'variant01');
+    $eyebrows = preg_replace('/[^a-zA-Z0-9]/', '', $cfg['eyebrows'] ?? 'variant01');
+    $hairHex  = ltrim($cfg['hairColor'] ?? '#4a312c', '#');
+
+    // Validar que hair/eyes/mouth son opciones conocidas
+    if (!isset(AV_ADV_HAIR[$hair]))   $hair  = 'long01';
+    if (!isset(AV_ADV_EYES[$eyes]))   $eyes  = 'variant01';
+    if (!isset(AV_ADV_MOUTH[$mouth])) $mouth = 'variant01';
+
+    $url  = 'https://api.dicebear.com/9.x/adventurer/svg?backgroundColor=transparent';
+    $url .= '&size=' . $size;
+    $url .= '&skinColor[]='  . rawurlencode($skinHex);
+    $url .= '&hair[]='       . rawurlencode($hair);
+    $url .= '&hairColor[]='  . rawurlencode($hairHex);
+    $url .= '&eyes[]='       . rawurlencode($eyes);
+    $url .= '&mouth[]='      . rawurlencode($mouth);
+    $url .= '&eyebrows[]='   . rawurlencode($eyebrows);
     return $url;
 }
 
@@ -183,13 +285,22 @@ function avatarImg(array $cfg, int $size = 72, string $extra = '', string $title
 // ── Avatar compuesto: cara circular DiceBear + cuerpo SVG completo (con brazos) ─
 
 function avatarFull(array $cfg, int $w = 160): string {
+    // Estilo aventura: retornar el SVG de DiceBear adventurer como retrato
+    if (($cfg['style'] ?? 'classic') === 'adventure') {
+        $imgUrl = htmlspecialchars(avatarProxyUrl($cfg, $w));
+        return "<div style='width:{$w}px;height:{$w}px;display:inline-block;vertical-align:bottom;"
+             . "border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.2);'>"
+             . "<img src='{$imgUrl}' width='{$w}' height='{$w}' alt='avatar' loading='eager' "
+             . "style='width:100%;height:100%;object-fit:cover;'>"
+             . "</div>";
+    }
+
     $type      = $cfg['type']       ?? 'woman';
     $isSkirt   = in_array($type, ['woman', 'girl']);
     $shape     = AV_BODY[$cfg['body_shape'] ?? 'average'] ?? AV_BODY['average'];
     $clothHex  = _avHex($cfg['clothesColor'] ?? '#667eea');
     $clothDark = _avDarken($clothHex, 30);
-    $skinKey   = $cfg['skin'] ?? 'light';
-    $skinHex   = (AV_SKIN[$skinKey] ?? AV_SKIN['light'])['hex'];
+    $skinHex   = avSkinHex($cfg['skin'] ?? 'light');
     $skinDark  = _avDarken($skinHex, 15);
 
     $hw = $shape['hw'];
@@ -332,31 +443,38 @@ function avatarFull(array $cfg, int $w = 160): string {
 // ── Defaults por tipo de personaje ───────────────────────────────────────────
 
 function avatarDefaults(string $type = 'woman'): array {
-    // Valores en formato v9 (camelCase, '' para "ninguno")
     $d = [
         'woman' => [
-            'hair' => 'long_straight', 'hairColor' => '#8B4513', 'skin' => 'light',
-            'eyes' => 'happy',   'mouth' => 'smile',   'accessory' => '',
+            'style' => 'classic',
+            'hair' => 'long_straight', 'hairColor' => '#8B4513', 'skin' => '#EDB98A',
+            'eyes' => 'happy',   'mouth' => 'smile',   'accessory' => 'none',
             'clothes' => 'blazerAndShirt', 'clothesColor' => '#ec4899',
             'facialHair' => '', 'body_shape' => 'average',
+            'adv_eyes' => 'variant09', 'adv_mouth' => 'variant01',
         ],
         'man' => [
-            'hair' => 'short_flat', 'hairColor' => '#1a1a1a', 'skin' => 'light',
-            'eyes' => 'default', 'mouth' => 'default', 'accessory' => '',
+            'style' => 'classic',
+            'hair' => 'short_flat', 'hairColor' => '#1a1a1a', 'skin' => '#EDB98A',
+            'eyes' => 'default', 'mouth' => 'smile',   'accessory' => 'none',
             'clothes' => 'blazerAndShirt', 'clothesColor' => '#2563eb',
             'facialHair' => '', 'body_shape' => 'athletic',
+            'adv_eyes' => 'variant02', 'adv_mouth' => 'variant03',
         ],
         'girl' => [
-            'hair' => 'long_curly', 'hairColor' => '#D4A843', 'skin' => 'pale',
-            'eyes' => 'happy',   'mouth' => 'smile',   'accessory' => 'round',
+            'style' => 'classic',
+            'hair' => 'long_curly', 'hairColor' => '#D4A843', 'skin' => '#FDDBB4',
+            'eyes' => 'happy',   'mouth' => 'smile',   'accessory' => 'glasses',
             'clothes' => 'shirtCrewNeck', 'clothesColor' => '#f97316',
             'facialHair' => '', 'body_shape' => 'slim',
+            'adv_eyes' => 'variant09', 'adv_mouth' => 'variant02',
         ],
         'boy' => [
-            'hair' => 'short_curly', 'hairColor' => '#2c1a0e', 'skin' => 'tanned',
-            'eyes' => 'squint',  'mouth' => 'twinkle', 'accessory' => '',
+            'style' => 'classic',
+            'hair' => 'short_curly', 'hairColor' => '#2c1a0e', 'skin' => '#D08B5B',
+            'eyes' => 'squint',  'mouth' => 'smile',   'accessory' => 'none',
             'clothes' => 'hoodie', 'clothesColor' => '#16a34a',
             'facialHair' => '', 'body_shape' => 'slim',
+            'adv_eyes' => 'variant07', 'adv_mouth' => 'variant04',
         ],
     ];
     $def = $d[$type] ?? $d['woman'];
