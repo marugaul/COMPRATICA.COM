@@ -196,6 +196,7 @@ try {
           }
 
           // 3) Notificar (texto actualizado a "En Revisión") — AHORA por SMTP
+          // Traer TODOS los ítems de la orden para mostrarlos en el correo
           $stmt = $pdo->prepare("
             SELECT o.*, p.name as product_name, s.title as sale_title,
                    a.name as affiliate_name, a.email as affiliate_email
@@ -204,32 +205,41 @@ try {
             JOIN sales s ON o.sale_id = s.id
             JOIN affiliates a ON s.affiliate_id = a.id
             WHERE o.order_number = ?
-            LIMIT 1
+            ORDER BY o.id ASC
           ");
           $stmt->execute([$orderNumber]);
-          $orderDetails = $stmt->fetch(PDO::FETCH_ASSOC);
+          $allItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+          $orderDetails = $allItems[0] ?? null;
 
           if ($orderDetails) {
-            debug_log("ORDER_DETAILS_FETCHED", ['buyer'=>$orderDetails['buyer_email'],'seller'=>$orderDetails['affiliate_email']]);
+            debug_log("ORDER_DETAILS_FETCHED", ['buyer'=>$orderDetails['buyer_email'],'seller'=>$orderDetails['affiliate_email'],'items'=>count($allItems)]);
 
             $site_url   = defined('SITE_URL') ? SITE_URL : 'https://compratica.com';
             $app_name   = defined('APP_NAME') ? APP_NAME : 'VentaGaraje Online';
 
-            // Email al comprador (mantenemos el mismo texto, pero lo enviamos como HTML con nl2br)
+            // Construir lista de productos agrupada
+            $items_lines = "";
+            $grand_total = 0;
+            foreach ($allItems as $item) {
+              $items_lines .= "- {$item['product_name']} x{$item['qty']} — ₡" . number_format((float)$item['subtotal'], 2) . "\n";
+              $grand_total += (float)$item['grand_total'];
+            }
+            // grand_total es el mismo para todos los rows (total de la orden), tomar del primero
+            $order_grand_total = (float)$orderDetails['grand_total'];
+
+            // Email al comprador
             $buyer_subject = "Comprobante recibido - En Revisión - {$orderDetails['sale_title']}";
             $buyer_message = "Hola {$orderDetails['buyer_name']},\n\n";
             $buyer_message .= "Hemos recibido tu comprobante de pago para la orden {$orderNumber}.\n";
             $buyer_message .= "Tu pedido está en estado: EN REVISIÓN por el vendedor.\n\n";
             $buyer_message .= "Detalles de tu orden:\n";
-            $buyer_message .= "- Producto: {$orderDetails['product_name']}\n";
-            $buyer_message .= "- Cantidad: {$orderDetails['qty']}\n";
-            $buyer_message .= "- Total: ₡" . number_format((float)$orderDetails['grand_total'], 2) . "\n\n";
+            $buyer_message .= $items_lines;
+            $buyer_message .= "- Total: ₡" . number_format($order_grand_total, 2) . "\n\n";
             $buyer_message .= "Gracias por tu compra!\n{$app_name}";
             $buyer_html = nl2br(htmlspecialchars($buyer_message, ENT_QUOTES, 'UTF-8'));
-            // Reply-To al afiliado (igual que antes en headers)
             @send_email($orderDetails['buyer_email'], $buyer_subject, $buyer_html, $orderDetails['affiliate_email'] ?? null, $orderDetails['affiliate_name'] ?? null);
 
-            // Email al vendedor/afiliado (mismo contenido, vía SMTP)
+            // Email al vendedor/afiliado
             $seller_subject  = "Comprobante recibido - En Revisión - {$orderDetails['sale_title']}";
             $seller_message  = "Hola {$orderDetails['affiliate_name']},\n\n";
             $seller_message .= "El comprador ha subido el comprobante para la orden {$orderNumber}.\n";
@@ -238,13 +248,12 @@ try {
             $seller_message .= "- Comprador: {$orderDetails['buyer_name']}\n";
             $seller_message .= "- Email: {$orderDetails['buyer_email']}\n";
             $seller_message .= "- Teléfono: {$orderDetails['buyer_phone']}\n";
-            $seller_message .= "- Producto: {$orderDetails['product_name']}\n";
-            $seller_message .= "- Cantidad: {$orderDetails['qty']}\n";
-            $seller_message .= "- Total: ₡" . number_format((float)$orderDetails['grand_total'], 2) . "\n\n";
+            $seller_message .= "Productos:\n";
+            $seller_message .= $items_lines;
+            $seller_message .= "- Total: ₡" . number_format($order_grand_total, 2) . "\n\n";
             $seller_message .= "Comprobante: {$site_url}/uploads/proofs/{$filename}\n\n";
             $seller_message .= "Saludos,\n{$app_name}";
             $seller_html = nl2br(htmlspecialchars($seller_message, ENT_QUOTES, 'UTF-8'));
-            // Reply-To al comprador
             @send_email($orderDetails['affiliate_email'], $seller_subject, $seller_html, $orderDetails['buyer_email'] ?? null, $orderDetails['buyer_name'] ?? null);
           }
 
