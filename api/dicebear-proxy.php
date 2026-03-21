@@ -4,11 +4,16 @@
  */
 require_once __DIR__ . '/../includes/avatar_builder.php';
 
-$cfg  = json_decode($_GET['cfg'] ?? '{}', true);
+$cfg      = json_decode($_GET['cfg'] ?? '{}', true);
 if (!is_array($cfg)) $cfg = [];
-$size = min(400, max(32, (int)($_GET['size'] ?? 100)));
+$size     = min(400, max(32, (int)($_GET['size'] ?? 100)));
+$faceOnly = !empty($_GET['face']);
 
 $url = avatarUrl($cfg, $size);
+// face=1 → solo cara circular (sin cuerpo/brazos de DiceBear)
+if ($faceOnly) {
+    $url .= '&style[]=circle';
+}
 
 // Intenta con curl, cae en file_get_contents si no está disponible
 $svg = false;
