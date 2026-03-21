@@ -71,6 +71,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       throw new Exception('No se encontraron productos en los espacios seleccionados.');
     }
 
+    // Filtrar store_links solo a los espacios seleccionados
+    $selected_ids_int = array_map('intval', $selected_sales);
+    $store_links = array_values(array_filter($store_links, function($sl) use ($selected_ids_int, $app_url_base) {
+      // Extraer el sale_id del URL guardado en store_links
+      parse_str(parse_url($sl['url'], PHP_URL_QUERY) ?? '', $qs);
+      return in_array((int)($qs['sale_id'] ?? 0), $selected_ids_int);
+    }));
+
     // Generar según el tipo de acción
     if ($action === 'pdf') {
       generatePDF($products, $aff_data, $aff_pm, $aff_sh, $store_links);
