@@ -223,6 +223,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
     if ($previous_status !== $new_status) {
       error_log("[affiliate/orders.php] Notificación estado '{$previous_status}' → '{$new_status}' order {$order_number} buyer='{$buyerEmail}'");
 
+      $buyer_email_lower = strtolower($buyerEmail);
+      $admin_email_str   = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
+      $admin_email_lower = strtolower($admin_email_str);
+
+      // Obtener email del afiliado
+      $aff_email_str = '';
+      try {
+        $st_aff = $pdo->prepare("SELECT email FROM affiliates WHERE id = ? LIMIT 1");
+        $st_aff->execute([$aff_id]);
+        $aff_email_str = strtolower(trim((string)($st_aff->fetchColumn() ?: '')));
+      } catch (Throwable $e) {
+        error_log("[affiliate/orders.php] Error obteniendo email afiliado: ".$e->getMessage());
+      }
+
       // Enviar al cliente
       if ($buyerEmail !== '') {
         try {
@@ -233,15 +247,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
         }
       }
 
-      // Aviso al admin (solo si su email es distinto al del comprador para evitar duplicado visual)
-      try {
-        $admin = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
-        if ($admin !== '' && strtolower($admin) !== strtolower($buyerEmail)) {
-          $okAdm = send_email($admin, "[Afiliado] Pedido {$order_number} → {$new_status}", $body);
+      // Aviso al admin (solo si su email es distinto al del comprador)
+      if ($admin_email_str !== '' && $admin_email_lower !== $buyer_email_lower) {
+        try {
+          $okAdm = send_email($admin_email_str, "[Afiliado] Pedido {$order_number} → {$new_status}", $body);
           error_log("[affiliate/orders.php] send_email admin ".($okAdm ? 'OK' : 'FAIL')." (order {$order_number})");
+        } catch (Throwable $e) {
+          error_log("[affiliate/orders.php] Excepción email admin: ".$e->getMessage());
         }
-      } catch (Throwable $e) {
-        error_log("[affiliate/orders.php] Excepción email admin: ".$e->getMessage());
+      }
+
+      // Aviso al afiliado/vendedor (solo si es distinto al comprador y al admin)
+      if ($aff_email_str !== '' && $aff_email_str !== $buyer_email_lower && $aff_email_str !== $admin_email_lower) {
+        try {
+          $okAff = send_email($aff_email_str, "[Vendedor] Pedido {$order_number} → {$new_status}", $body);
+          error_log("[affiliate/orders.php] send_email afiliado ".($okAff ? 'OK' : 'FAIL')." (order {$order_number})");
+        } catch (Throwable $e) {
+          error_log("[affiliate/orders.php] Excepción email afiliado: ".$e->getMessage());
+        }
       }
     } else {
       error_log("[affiliate/orders.php] Estado '{$new_status}' ya era el mismo; no se envían emails (order {$order_number})");
