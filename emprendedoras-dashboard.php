@@ -162,11 +162,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     $avSkin      = in_array($_POST['av_skin'] ?? '', array_keys(AV_SKIN)) ? $_POST['av_skin'] : 'light';
     $avHStyle    = in_array($_POST['av_hair_style'] ?? '', array_keys(AV_HAIR)) ? $_POST['av_hair_style'] : 'short_flat';
     $avHColor    = preg_match('/^#[0-9a-fA-F]{6}$/i', $_POST['av_hair_color'] ?? '') ? $_POST['av_hair_color'] : '#4a312c';
-    $avEStyle    = in_array($_POST['av_eye_style']   ?? '', array_keys(AV_EYES))   ? $_POST['av_eye_style']   : 'Default';
+    $avEStyle    = in_array($_POST['av_eye_style']   ?? '', array_keys(AV_EYES))   ? $_POST['av_eye_style']   : 'happy';
     $avOutfit    = preg_match('/^#[0-9a-fA-F]{6}$/i', $_POST['av_outfit']      ?? '') ? $_POST['av_outfit']   : '#667eea';
-    $avAcc       = in_array($_POST['av_accessory']   ?? '', array_keys(AV_ACCESSORIES)) ? $_POST['av_accessory'] : 'Blank';
-    $avClothes   = in_array($_POST['av_clothes']     ?? '', array_keys(AV_CLOTHES)) ? $_POST['av_clothes']     : 'ShirtCrewNeck';
-    $avFacial    = in_array($_POST['av_facialHair']  ?? '', array_keys(AV_FACIAL_HAIR)) ? $_POST['av_facialHair'] : 'Blank';
+    $avAcc       = in_array($_POST['av_accessory']   ?? '', array_keys(AV_ACCESSORIES)) ? $_POST['av_accessory'] : '';
+    $avClothes   = in_array($_POST['av_clothes']     ?? '', array_keys(AV_CLOTHES)) ? $_POST['av_clothes']     : 'shirtCrewNeck';
+    $avFacial    = in_array($_POST['av_facialHair']  ?? '', array_keys(AV_FACIAL_HAIR)) ? $_POST['av_facialHair'] : '';
     $avBodyShape = in_array($_POST['av_body_shape']  ?? '', array_keys(AV_BODY)) ? $_POST['av_body_shape'] : 'average';
     $avatarCfgSave = [
         'type'        => $avType,
@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         'clothes'     => $avClothes,
         'facialHair'  => $avFacial,
         'body_shape'  => $avBodyShape,
-        'mouth'       => 'Smile',
+        'mouth'       => 'smile',
     ];
     try {
         $pdo->prepare("UPDATE users SET store_avatar=?, seller_type=? WHERE id=?")
@@ -1683,11 +1683,12 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         var _avDebounce = null;
 
         function avApplyTypeDefaults(type) {
+            // Valores alineados con claves v9 de AV_HAIR y AV_EYES
             const defs = {
-                woman: { hair_style:'long',    hair_color:'#4a2040', outfit:'#ec4899', eye_style:'happy',  accessory:'none', blush:true  },
-                man:   { hair_style:'short',   hair_color:'#2c1a0e', outfit:'#2563eb', eye_style:'normal', accessory:'none', blush:false },
-                girl:  { hair_style:'ponytail',hair_color:'#c0392b', outfit:'#f97316', eye_style:'star',   accessory:'bow',  blush:true  },
-                boy:   { hair_style:'spiky',   hair_color:'#1a1a1a', outfit:'#16a34a', eye_style:'wink',   accessory:'cap',  blush:false },
+                woman: { hair_style:'long_straight', hair_color:'#8B4513', outfit:'#ec4899', eye_style:'happy',   accessory:'', blush:true  },
+                man:   { hair_style:'short_flat',    hair_color:'#1a1a1a', outfit:'#2563eb', eye_style:'default', accessory:'', blush:false },
+                girl:  { hair_style:'long_curly',    hair_color:'#D4A843', outfit:'#f97316', eye_style:'happy',   accessory:'round', blush:true  },
+                boy:   { hair_style:'short_curly',   hair_color:'#2c1a0e', outfit:'#16a34a', eye_style:'squint',  accessory:'', blush:false },
             };
             const d = defs[type];
             if (!d) return;
@@ -1781,9 +1782,9 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                 clothesColor:document.getElementById('in-outfit').value,
                 accessory:   document.getElementById('in-accessory').value,
                 body_shape:  document.getElementById('in-body_shape')?.value || 'average',
-                facialHair:  document.getElementById('in-facialHair')?.value || 'Blank',
-                clothes:     'ShirtCrewNeck',
-                mouth:       'Smile',
+                facialHair:  document.getElementById('in-facialHair')?.value || '',
+                clothes:     document.getElementById('in-clothes')?.value || 'shirtCrewNeck',
+                mouth:       document.getElementById('in-mouth')?.value   || 'smile',
             };
         }
 
