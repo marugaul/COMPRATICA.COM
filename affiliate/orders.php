@@ -861,6 +861,7 @@ document.querySelectorAll('form.status-form, form[method="post"]').forEach(funct
   });
 });
 // Verificar que los forms existen al cargar
+console.log('[ORDERS] SESSION aff_id del PHP = <?= (int)($aff_id ?? 0) ?>');
 var forms = document.querySelectorAll('form[method="post"]');
 console.log('[ORDERS] Forumularios POST encontrados en la pagina: ' + forms.length);
 forms.forEach(function(f, i) {
