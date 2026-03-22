@@ -56,8 +56,15 @@ function whatsappLink(string $phone, int $orderId, string $product): string {
 
 /** Verifica que el pedido pertenezca a este afiliado */
 function load_aff_order(PDO $pdo, int $order_id, int $aff_id) {
+  // DEBUG: ver qué hay en la orden sin filtro de afiliado
+  $st_raw = $pdo->prepare("SELECT o.id, o.order_number, o.status, o.affiliate_id, o.product_id, p.sale_id, s.affiliate_id AS sale_aff FROM orders o JOIN products p ON p.id=o.product_id LEFT JOIN sales s ON s.id=p.sale_id WHERE o.id=? LIMIT 1");
+  $st_raw->execute([$order_id]);
+  $raw = $st_raw->fetch(PDO::FETCH_ASSOC);
+  error_log("[load_aff_order] DEBUG order_id={$order_id} aff_id={$aff_id} raw=" . json_encode($raw));
+  ordlog("LOAD_AFF_ORDER_DEBUG", ['order_id' => $order_id, 'aff_id' => $aff_id, 'raw_row' => $raw ?: 'NO ROW']);
+
   $sql = "
-    SELECT 
+    SELECT
       o.*,
       p.name AS product_name,
       p.id   AS product_id,
@@ -72,7 +79,9 @@ function load_aff_order(PDO $pdo, int $order_id, int $aff_id) {
   ";
   $st = $pdo->prepare($sql);
   $st->execute([$order_id, $aff_id, $aff_id]);
-  return $st->fetch(PDO::FETCH_ASSOC);
+  $result = $st->fetch(PDO::FETCH_ASSOC);
+  error_log("[load_aff_order] WITH filter result=" . ($result ? 'FOUND' : 'NOT FOUND'));
+  return $result;
 }
 
 /** Chequea si orders tiene columna updated_at para no romper el UPDATE */
@@ -663,7 +672,16 @@ $orders = array_values($orders_grouped);
 
 <div class="container">
   <?php if (!empty($msg)): ?>
-    <div class="success"><?= htmlspecialchars($msg) ?></div>
+    <?php $isError = str_starts_with($msg, 'Error:'); ?>
+    <div class="<?= $isError ? 'error' : 'success' ?>" id="page-msg" style="scroll-margin-top: 80px;">
+      <?= htmlspecialchars($msg) ?>
+    </div>
+    <script>
+      <?php if ($isError): ?>
+        alert('Error al guardar:\n<?= addslashes(htmlspecialchars($msg)) ?>');
+      <?php endif; ?>
+      document.getElementById('page-msg').scrollIntoView({behavior:'smooth', block:'start'});
+    </script>
   <?php endif; ?>
 
   <div class="card">
