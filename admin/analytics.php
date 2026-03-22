@@ -58,20 +58,20 @@ $visits_by_hour = safeq($pdo, "SELECT strftime('%H',created_at) as hour, COUNT(*
 $recent_visitors = safeq($pdo, "SELECT ip, page, referrer, created_at FROM site_visits ORDER BY created_at DESC LIMIT 20");
 
 // ─── Pedidos ──────────────────────────────────────────────────────────────────
-$orders_today  = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE date(created_at)=date('now')");
-$orders_week   = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE created_at > datetime('now','-7 days')");
-$orders_month  = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE created_at > datetime('now','-30 days')");
+$orders_today  = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE date(created_at)=date('now','-6 hours')");
+$orders_week   = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE created_at > datetime('now','-6 hours','-7 days')");
+$orders_month  = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE created_at > datetime('now','-6 hours','-30 days')");
 $orders_total  = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders");
 $orders_pending= (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE status='Pendiente'");
 $orders_paid   = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE status='Pagado'");
 
 // ─── Ingresos ─────────────────────────────────────────────────────────────────
-$revenue_today = (float)safeqv($pdo, "SELECT COALESCE(SUM(total_crc),0) FROM orders WHERE date(created_at)=date('now') AND status NOT IN ('Cancelado')");
-$revenue_week  = (float)safeqv($pdo, "SELECT COALESCE(SUM(total_crc),0) FROM orders WHERE created_at > datetime('now','-7 days') AND status NOT IN ('Cancelado')");
-$revenue_month = (float)safeqv($pdo, "SELECT COALESCE(SUM(total_crc),0) FROM orders WHERE created_at > datetime('now','-30 days') AND status NOT IN ('Cancelado')");
+$revenue_today = (float)safeqv($pdo, "SELECT COALESCE(SUM(total_crc),0) FROM orders WHERE date(created_at)=date('now','-6 hours') AND status NOT IN ('Cancelado')");
+$revenue_week  = (float)safeqv($pdo, "SELECT COALESCE(SUM(total_crc),0) FROM orders WHERE created_at > datetime('now','-6 hours','-7 days') AND status NOT IN ('Cancelado')");
+$revenue_month = (float)safeqv($pdo, "SELECT COALESCE(SUM(total_crc),0) FROM orders WHERE created_at > datetime('now','-6 hours','-30 days') AND status NOT IN ('Cancelado')");
 
 // ─── Pedidos por día (últimos 14 días) ────────────────────────────────────────
-$orders_by_day = safeq($pdo, "SELECT date(created_at) as day, COUNT(*) as total FROM orders WHERE created_at > datetime('now','-14 days') GROUP BY day ORDER BY day ASC");
+$orders_by_day = safeq($pdo, "SELECT date(created_at) as day, COUNT(*) as total FROM orders WHERE created_at > datetime('now','-6 hours','-14 days') GROUP BY day ORDER BY day ASC");
 
 // ─── Afiliados ────────────────────────────────────────────────────────────────
 $aff_total    = (int)safeqv($pdo, "SELECT COUNT(*) FROM affiliates");
@@ -91,7 +91,7 @@ $products_nostock = (int)safeqv($pdo, "SELECT COUNT(*) FROM products WHERE stock
 $top_affiliates = safeq($pdo, "
     SELECT a.name, a.email, COUNT(o.id) as orders, COALESCE(SUM(o.total_crc),0) as revenue
     FROM orders o JOIN affiliates a ON a.id=o.affiliate_id
-    WHERE o.created_at > datetime('now','-30 days')
+    WHERE o.created_at > datetime('now','-6 hours','-30 days')
     GROUP BY a.id ORDER BY orders DESC LIMIT 10
 ");
 
@@ -106,7 +106,7 @@ $latest_orders = safeq($pdo, "
 // ─── Productos más vendidos ───────────────────────────────────────────────────
 $top_products = safeq($pdo, "
     SELECT product_name, COUNT(*) as orders, SUM(qty) as units, COALESCE(SUM(total_crc),0) as revenue
-    FROM orders WHERE created_at > datetime('now','-30 days')
+    FROM orders WHERE created_at > datetime('now','-6 hours','-30 days')
     GROUP BY product_name ORDER BY orders DESC LIMIT 10
 ");
 
