@@ -86,13 +86,14 @@ function get_or_create_cart_id() {
     
     $cartId = null;
     if ($uid > 0) {
-        $st = $pdo->prepare("SELECT id FROM carts WHERE user_id=? ORDER BY id DESC LIMIT 1");
+        // updated_at DESC: el cart recién migrado (al hacer login) siempre tiene updated_at más reciente
+        $st = $pdo->prepare("SELECT id FROM carts WHERE user_id=? ORDER BY updated_at DESC, id DESC LIMIT 1");
         $st->execute([$uid]);
         $cartId = $st->fetchColumn();
     }
-    
+
     if (!$cartId && $guest_sid !== '') {
-        $st = $pdo->prepare("SELECT id FROM carts WHERE guest_sid=? ORDER BY id DESC LIMIT 1");
+        $st = $pdo->prepare("SELECT id FROM carts WHERE guest_sid=? ORDER BY updated_at DESC, id DESC LIMIT 1");
         $st->execute([$guest_sid]);
         $cartId = $st->fetchColumn();
     }

@@ -59,42 +59,22 @@ require_once __DIR__ . '/includes/db.php';
 
 /**
  * Migra el carrito invitado al usuario recién autenticado.
- * Si el usuario ya tiene un carrito con id más alto (caso: admin con historial),
- * mueve los items del carrito invitado al carrito del usuario y elimina el invitado.
- * Así get_or_create_cart_id() siempre encuentra el carrito correcto con items.
+ * La selección del cart correcto se resuelve en get_or_create_cart_id() por updated_at DESC.
  */
 function migrate_guest_cart_to_user(PDO $pdo, int $uid, string $guest_sid): void {
     if ($uid <= 0 || $guest_sid === '') return;
     try {
-        // Buscar carrito invitado
+        // Buscar carrito invitado y asignarlo al usuario
         $s = $pdo->prepare("SELECT id FROM carts WHERE guest_sid = ? LIMIT 1");
         $s->execute([$guest_sid]);
         $guestCartId = (int)($s->fetchColumn() ?: 0);
         if ($guestCartId <= 0) return;
 
-        // Buscar carrito más reciente del usuario (puede ser más nuevo = id más alto)
-        $s = $pdo->prepare("SELECT id FROM carts WHERE user_id = ? ORDER BY id DESC LIMIT 1");
-        $s->execute([$uid]);
-        $userCartId = (int)($s->fetchColumn() ?: 0);
-
-        if ($userCartId > 0 && $userCartId !== $guestCartId) {
-            if ($userCartId > $guestCartId) {
-                // Carrito del usuario tiene id más alto → mover items del guest al usuario
-                $pdo->prepare("UPDATE OR IGNORE cart_items SET cart_id = ? WHERE cart_id = ?")
-                    ->execute([$userCartId, $guestCartId]);
-                $pdo->prepare("DELETE FROM cart_items WHERE cart_id = ?")->execute([$guestCartId]);
-                $pdo->prepare("DELETE FROM carts WHERE id = ?")->execute([$guestCartId]);
-            } else {
-                // Carrito invitado es más reciente → asignarlo al usuario y eliminar carrito viejo vacío
-                $pdo->prepare("UPDATE carts SET user_id = ? WHERE id = ?")->execute([$uid, $guestCartId]);
-                // Eliminar el carrito viejo (vacío) del usuario para evitar confusión
-                $pdo->prepare("DELETE FROM carts WHERE id = ? AND NOT EXISTS (SELECT 1 FROM cart_items WHERE cart_id = ?)")
-                    ->execute([$userCartId, $userCartId]);
-            }
-        } elseif ($userCartId <= 0) {
-            // Usuario no tiene carrito propio → simplemente migrar el invitado
-            $pdo->prepare("UPDATE carts SET user_id = ? WHERE id = ?")->execute([$uid, $guestCartId]);
-        }
+        // Asignar el carrito invitado al usuario Y actualizar updated_at para que
+        // get_or_create_cart_id() (ORDER BY updated_at DESC) lo encuentre primero
+        $pdo->prepare("UPDATE carts SET user_id = ?, updated_at = datetime('now') WHERE id = ?")
+            ->execute([$uid, $guestCartId]);
+        error_log("[login] migrated cart_id={$guestCartId} to uid={$uid}");
     } catch (Throwable $e) {
         error_log("[login.php] migrate_guest_cart_to_user error: " . $e->getMessage());
     }

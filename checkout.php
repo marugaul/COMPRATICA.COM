@@ -124,7 +124,8 @@ $has_pickup_location = !empty($pickup_location);
 $cart_id = 0;
 $guest_sid = (string)($_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? ''));
 
-$st = $pdo->prepare("SELECT id FROM carts WHERE user_id = ? ORDER BY id DESC LIMIT 1");
+// updated_at DESC: el cart recién migrado al hacer login tiene updated_at más reciente
+$st = $pdo->prepare("SELECT id FROM carts WHERE user_id = ? ORDER BY updated_at DESC, id DESC LIMIT 1");
 $st->execute([$user_id]);
 $cart_id = (int)$st->fetchColumn();
 
