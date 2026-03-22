@@ -114,11 +114,17 @@ if (!$sale) {
 }
 $affiliate_id = (int)$sale['affiliate_id'];
 
-// ⭐ Obtener ubicación de pickup del espacio
-$st = $pdo->prepare("SELECT * FROM sale_pickup_locations WHERE sale_id = ? AND is_active = 1 LIMIT 1");
-$st->execute([$sale_id]);
-$pickup_location = $st->fetch(PDO::FETCH_ASSOC);
-$has_pickup_location = !empty($pickup_location);
+// Obtener ubicación de pickup del espacio (tabla Uber, puede no existir aún)
+$pickup_location = null;
+$has_pickup_location = false;
+try {
+    $st = $pdo->prepare("SELECT * FROM sale_pickup_locations WHERE sale_id = ? AND is_active = 1 LIMIT 1");
+    $st->execute([$sale_id]);
+    $pickup_location = $st->fetch(PDO::FETCH_ASSOC) ?: null;
+    $has_pickup_location = !empty($pickup_location);
+} catch (Throwable $e) {
+    // Tabla no creada aún — Uber no disponible
+}
 
 // cart_id del usuario — busca primero por user_id, luego por guest_sid y migra
 $cart_id = 0;
@@ -264,18 +270,23 @@ $pm = $st->fetch(PDO::FETCH_ASSOC) ?: [];
 $has_paypal = (!empty($pm['active_paypal']) && !empty($pm['paypal_email']));
 $has_sinpe  = (!empty($pm['active_sinpe'])  && !empty($pm['sinpe_phone']));
 
-// Opciones de envío del afiliado
-$st = $pdo->prepare("
-    SELECT enable_pickup, enable_free_shipping, enable_uber,
-           pickup_instructions, free_shipping_min_amount
-    FROM affiliate_shipping_options
-    WHERE affiliate_id = ?
-    LIMIT 1
-");
-$st->execute([$affiliate_id]);
-$shipping_opts = $st->fetch(PDO::FETCH_ASSOC);
+// Opciones de envío del afiliado (affiliate_shipping_options puede no existir aún)
+$shipping_opts = null;
+try {
+    $st = $pdo->prepare("
+        SELECT enable_pickup, enable_free_shipping, enable_uber,
+               pickup_instructions, free_shipping_min_amount
+        FROM affiliate_shipping_options
+        WHERE affiliate_id = ?
+        LIMIT 1
+    ");
+    $st->execute([$affiliate_id]);
+    $shipping_opts = $st->fetch(PDO::FETCH_ASSOC) ?: null;
+} catch (Throwable $e) {
+    // Tabla no creada aún
+}
 if (!$shipping_opts) {
-    // Si no tiene configuración, usar valores por defecto (solo pickup)
+    // Si no tiene configuración o la tabla no existe, usar valores por defecto (solo pickup, sin Uber)
     $shipping_opts = [
         'enable_pickup' => 1,
         'enable_free_shipping' => 0,
