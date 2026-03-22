@@ -37,9 +37,10 @@ function email_html(string $body): string {
           <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg,#b71c1c 0%,#e53935 100%);padding:28px 32px;text-align:center;">
-              <span style="font-size:26px;font-weight:700;color:#ffffff;letter-spacing:1px;text-transform:uppercase;">
-                Compra<span style="color:#ffcc80;">Tica</span>
-              </span>
+              <img src="https://compratica.com/logoCompratica.jpg"
+                   alt="CompraTica"
+                   width="auto"
+                   style="display:block;margin:0 auto;max-height:52px;width:auto;height:52px;" />
               <br />
               <span style="font-size:12px;color:rgba(255,255,255,.8);letter-spacing:2px;text-transform:uppercase;">
                 Marketplace Costarricense
