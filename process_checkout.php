@@ -482,8 +482,17 @@ $paypal_client_id = defined('PAYPAL_CLIENT_ID') ? PAYPAL_CLIENT_ID : '';
       })
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        if (!data.id) throw new Error(data.error || 'Error al crear la orden PayPal');
+        if (!data.id) {
+          showError(data.error || 'No se pudo iniciar el pago. Intenta de nuevo.');
+          // Devolver promesa que nunca resuelve para que el SDK de PayPal
+          // no muestre su propio mensaje de error genérico encima del nuestro
+          return new Promise(function() {});
+        }
         return data.id;
+      })
+      .catch(function(e) {
+        showError('No se pudo conectar con PayPal. Verifica tu conexión e intenta de nuevo.');
+        return new Promise(function() {});
       });
     },
 
