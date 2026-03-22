@@ -178,14 +178,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
     $previous_status = (string)($ord['status'] ?? '');
 
     // UPDATE TODOS los items de la misma orden (mismo order_number)
+    // NOTA: se omite AND affiliate_id=? porque la propiedad ya fue validada por load_aff_order().
+    // Los pedidos pueden estar vinculados al afiliado vía sales.affiliate_id (no siempre en orders.affiliate_id).
     $hasUpdatedAt = orders_has_updated_at($pdo);
     if ($order_number !== '') {
       if ($hasUpdatedAt) {
-        $upd = $pdo->prepare("UPDATE orders SET status=?, updated_at=datetime('now') WHERE order_number=? AND affiliate_id=?");
-        $upd->execute([$new_status, $order_number, $aff_id]);
+        $upd = $pdo->prepare("UPDATE orders SET status=?, updated_at=datetime('now') WHERE order_number=?");
+        $upd->execute([$new_status, $order_number]);
       } else {
-        $upd = $pdo->prepare("UPDATE orders SET status=? WHERE order_number=? AND affiliate_id=?");
-        $upd->execute([$new_status, $order_number, $aff_id]);
+        $upd = $pdo->prepare("UPDATE orders SET status=? WHERE order_number=?");
+        $upd->execute([$new_status, $order_number]);
       }
     } else {
       // Fallback: actualizar solo este id
@@ -197,6 +199,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
         $upd->execute([$new_status, $order_id]);
       }
     }
+    $rows_updated = $upd->rowCount();
+    error_log("[affiliate/orders.php] UPDATE status='{$new_status}' order_number='{$order_number}' order_id={$order_id} rows_affected={$rows_updated}");
 
     // Obtener TODOS los items de esta orden para el email unificado
     $all_items = [];
