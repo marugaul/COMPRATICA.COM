@@ -211,13 +211,36 @@ function smart_sync_cart($cart_id) {
     }
 }
 
+// ============= CLEANUP PROBABILÍSTICO (2% de los GETs) =============
+function cleanup_old_carts(): void {
+    // Carritos invitados sin actividad por más de 30 días
+    // Carritos de usuario vacíos sin actividad por más de 60 días
+    try {
+        $pdo = db();
+        $pdo->exec("DELETE FROM cart_items WHERE cart_id IN (
+            SELECT id FROM carts WHERE user_id IS NULL AND updated_at < datetime('now', '-30 days')
+        )");
+        $pdo->exec("DELETE FROM carts WHERE user_id IS NULL AND updated_at < datetime('now', '-30 days')");
+        $pdo->exec("DELETE FROM carts WHERE user_id IS NOT NULL AND updated_at < datetime('now', '-60 days')
+            AND NOT EXISTS (SELECT 1 FROM cart_items WHERE cart_id = carts.id)");
+        logCart('CLEANUP_DONE');
+    } catch (Throwable $e) {
+        logCart('CLEANUP_ERROR', ['err' => $e->getMessage()]);
+    }
+}
+
 // ============= GET =============
 if (($_GET['action'] ?? '') === 'get') {
     logCart('GET_CART_START');
-    
+
+    // Limpieza probabilística: ~2% de los requests
+    if (mt_rand(1, 50) === 1) {
+        cleanup_old_carts();
+    }
+
     try {
         $cart_id = get_or_create_cart_id();
-        
+
         // ✅ SIEMPRE hacer sincronización inteligente
         smart_sync_cart($cart_id);
         

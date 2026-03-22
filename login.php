@@ -57,6 +57,49 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
 
+/**
+ * Migra el carrito invitado al usuario recién autenticado.
+ * Si el usuario ya tiene un carrito con id más alto (caso: admin con historial),
+ * mueve los items del carrito invitado al carrito del usuario y elimina el invitado.
+ * Así get_or_create_cart_id() siempre encuentra el carrito correcto con items.
+ */
+function migrate_guest_cart_to_user(PDO $pdo, int $uid, string $guest_sid): void {
+    if ($uid <= 0 || $guest_sid === '') return;
+    try {
+        // Buscar carrito invitado
+        $s = $pdo->prepare("SELECT id FROM carts WHERE guest_sid = ? LIMIT 1");
+        $s->execute([$guest_sid]);
+        $guestCartId = (int)($s->fetchColumn() ?: 0);
+        if ($guestCartId <= 0) return;
+
+        // Buscar carrito más reciente del usuario (puede ser más nuevo = id más alto)
+        $s = $pdo->prepare("SELECT id FROM carts WHERE user_id = ? ORDER BY id DESC LIMIT 1");
+        $s->execute([$uid]);
+        $userCartId = (int)($s->fetchColumn() ?: 0);
+
+        if ($userCartId > 0 && $userCartId !== $guestCartId) {
+            if ($userCartId > $guestCartId) {
+                // Carrito del usuario tiene id más alto → mover items del guest al usuario
+                $pdo->prepare("UPDATE OR IGNORE cart_items SET cart_id = ? WHERE cart_id = ?")
+                    ->execute([$userCartId, $guestCartId]);
+                $pdo->prepare("DELETE FROM cart_items WHERE cart_id = ?")->execute([$guestCartId]);
+                $pdo->prepare("DELETE FROM carts WHERE id = ?")->execute([$guestCartId]);
+            } else {
+                // Carrito invitado es más reciente → asignarlo al usuario y eliminar carrito viejo vacío
+                $pdo->prepare("UPDATE carts SET user_id = ? WHERE id = ?")->execute([$uid, $guestCartId]);
+                // Eliminar el carrito viejo (vacío) del usuario para evitar confusión
+                $pdo->prepare("DELETE FROM carts WHERE id = ? AND NOT EXISTS (SELECT 1 FROM cart_items WHERE cart_id = ?)")
+                    ->execute([$userCartId, $userCartId]);
+            }
+        } elseif ($userCartId <= 0) {
+            // Usuario no tiene carrito propio → simplemente migrar el invitado
+            $pdo->prepare("UPDATE carts SET user_id = ? WHERE id = ?")->execute([$uid, $guestCartId]);
+        }
+    } catch (Throwable $e) {
+        error_log("[login.php] migrate_guest_cart_to_user error: " . $e->getMessage());
+    }
+}
+
 // OAuth Config
 $GOOGLE_CLIENT_ID = defined('GOOGLE_CLIENT_ID') ? GOOGLE_CLIENT_ID : '';
 $GOOGLE_CLIENT_SECRET = defined('GOOGLE_CLIENT_SECRET') ? GOOGLE_CLIENT_SECRET : '';
@@ -184,12 +227,9 @@ if (isset($_GET['oauth']) && isset($_GET['code'])) {
         }
         
         if ($result && isset($result['success'])) {
-            // Usar guest_sid de sesión (token propio del carrito) para migrar artículos
+            // Migrar carrito invitado al usuario (merge si el usuario ya tiene carrito)
             $guest_sid_cart = $_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? '');
-            try {
-                $stmt = $pdo->prepare("UPDATE carts SET user_id = ? WHERE guest_sid = ?");
-                $stmt->execute([$result['user_id'], $guest_sid_cart]);
-            } catch (Exception $e) {}
+            migrate_guest_cart_to_user($pdo, (int)$result['user_id'], $guest_sid_cart);
 
             // Set all session variables (both legacy and standardized)
             $_SESSION['uid'] = $result['user_id'];
@@ -234,10 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                 if ($user && $ok) {
                     $guest_sid_cart = $_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? '');
-                    try {
-                        $stmt = $pdo->prepare("UPDATE carts SET user_id = ? WHERE guest_sid = ?");
-                        $stmt->execute([$user['id'], $guest_sid_cart]);
-                    } catch (Exception $e) {}
+                    migrate_guest_cart_to_user($pdo, (int)$user['id'], $guest_sid_cart);
 
                     // Set all session variables (both legacy and standardized)
                     $_SESSION['uid'] = (int)$user['id'];
@@ -283,10 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $newUid = (int)$pdo->lastInsertId();
 
                         $guest_sid_cart = $_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? '');
-                        try {
-                            $stmt = $pdo->prepare("UPDATE carts SET user_id = ? WHERE guest_sid = ?");
-                            $stmt->execute([$newUid, $guest_sid_cart]);
-                        } catch (Exception $e) {}
+                        migrate_guest_cart_to_user($pdo, $newUid, $guest_sid_cart);
 
                         // Set all session variables (both legacy and standardized)
                         $_SESSION['uid'] = $newUid;
