@@ -539,7 +539,13 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
   
   <div class="card">
     <h3><i class="fas fa-plus-circle"></i> Crear Nuevo Espacio</h3>
-    <?php $fee_crc_display = (float)get_setting('SALE_FEE_CRC', 2000); ?>
+    <?php
+      $fee_crc_display = 3000;
+      try {
+        $v = $pdo->query("SELECT sale_fee_crc FROM settings LIMIT 1")->fetchColumn();
+        if ($v !== false && $v !== null) $fee_crc_display = (float)$v;
+      } catch (Throwable $e) {}
+    ?>
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:0.9rem 1.1rem;margin-bottom:1.25rem;">
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
         <i class="fas fa-tag" style="color:#059669;font-size:1rem;"></i>

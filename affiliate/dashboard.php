@@ -14,9 +14,9 @@ $stats = [
 ];
 
 // Costo de crear un espacio
-$sale_fee_crc = 2000; // default
+$sale_fee_crc = 3000; // default
 try {
-    $v = $pdo->query("SELECT sale_fee_crc FROM settings WHERE id=1 LIMIT 1")->fetchColumn();
+    $v = $pdo->query("SELECT sale_fee_crc FROM settings LIMIT 1")->fetchColumn();
     if ($v !== false && $v !== null) $sale_fee_crc = (float)$v;
 } catch (Throwable $e) {}
 
