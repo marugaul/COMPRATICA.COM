@@ -157,18 +157,52 @@ function build_status_email_unified(string $estado, string $order_number, array 
   return [$subject, $body];
 }
 
+/** Log a archivo en /logs/ para diagnostico */
+function ordlog(string $tag, array $data = []): void {
+  $logDir  = __DIR__ . '/../logs';
+  $logFile = $logDir . '/affiliate_orders_debug.log';
+  if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+  $line = '[' . date('Y-m-d H:i:s') . '] ' . $tag;
+  if ($data) $line .= ' | ' . json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+  @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
+}
+
 /** POST: actualizar estado y notificar */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status'])) {
+  ordlog("GUARDAR_CLICK", [
+    'post_order_id'          => $_POST['order_id'] ?? '(vacio)',
+    'post_status'            => $_POST['status'] ?? '(vacio)',
+    'post_update_order_status' => $_POST['update_order_status'] ?? '(vacio)',
+    'aff_id_en_sesion'       => $aff_id,
+    'session_keys'           => array_keys($_SESSION),
+    'todos_los_post'         => array_keys($_POST),
+  ]);
   try {
     $order_id   = (int)($_POST['order_id'] ?? 0);
     $new_status = trim((string)($_POST['status'] ?? 'Pendiente'));
 
+    ordlog("VALORES_RECIBIDOS", [
+      'order_id'   => $order_id,
+      'new_status' => $new_status,
+      'es_valido'  => in_array($new_status, allowed_statuses(), true) ? 'SI' : 'NO - RECHAZADO',
+      'validos'    => allowed_statuses(),
+    ]);
+
     if (!in_array($new_status, allowed_statuses(), true)) {
-      throw new RuntimeException('Estado inválido.');
+      throw new RuntimeException('Estado inválido: ' . $new_status);
     }
 
     // Cargar pedido y validar pertenencia al afiliado
     $ord = load_aff_order($pdo, $order_id, $aff_id);
+    ordlog("LOAD_ORDER_RESULT", [
+      'order_id'    => $order_id,
+      'aff_id'      => $aff_id,
+      'encontrado'  => $ord ? 'SI' : 'NO - falla aqui',
+      'order_number'=> $ord['order_number'] ?? '(no encontrado)',
+      'status_actual'=> $ord['status'] ?? '(no encontrado)',
+      'affiliate_id_en_orden' => $ord['affiliate_id'] ?? '(null)',
+      'sale_affiliate_id'     => $ord['sale_affiliate_id'] ?? '(null)',
+    ]);
     if (!$ord) {
       throw new RuntimeException('Pedido no encontrado o no pertenece a este afiliado.');
     }
@@ -200,7 +234,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
       }
     }
     $rows_updated = $upd->rowCount();
-    error_log("[affiliate/orders.php] UPDATE status='{$new_status}' order_number='{$order_number}' order_id={$order_id} rows_affected={$rows_updated}");
+    ordlog("UPDATE_RESULT", [
+      'new_status'    => $new_status,
+      'order_number'  => $order_number,
+      'order_id'      => $order_id,
+      'filas_afectadas' => $rows_updated,
+      'ok' => $rows_updated > 0 ? 'SI - status cambiado en BD' : 'CERO FILAS - status NO se guardo en BD',
+    ]);
 
     // Obtener TODOS los items de esta orden para el email unificado
     $all_items = [];
@@ -280,6 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
     exit;
   } catch (Throwable $e) {
     $msg = 'Error: ' . $e->getMessage();
+    ordlog("EXCEPCION", ['error' => $e->getMessage(), 'linea' => $e->getLine(), 'archivo' => basename($e->getFile())]);
     error_log("[affiliate/orders.php] ERROR al actualizar estado: ".$e->getMessage());
   }
 }
