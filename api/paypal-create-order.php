@@ -153,8 +153,16 @@ sdk_log("CREATE_RESP", [
 // PayPal retorna 201+CREATED para el flujo de botones
 if ($http_code !== 201 || $pp_id === '') {
     $err = $order_data['message'] ?? $order_data['error_description'] ?? 'Error al crear orden en PayPal';
+
+    // Detectar error de cuenta del vendedor restringida y dar mensaje claro
+    $details  = $order_data['details'] ?? [];
+    $issues   = array_column($details, 'issue');
+    if (in_array('PAYEE_ACCOUNT_RESTRICTED', $issues, true)) {
+        $err = 'El vendedor tiene su cuenta PayPal restringida. Por favor contáctalo para coordinar otro método de pago.';
+    }
+
     sdk_log("CREATE_ERROR", ['http' => $http_code, 'err' => $err, 'curl_err' => $curl_err, 'resp' => $order_data]);
-    http_response_code(500);
+    http_response_code(422);
     echo json_encode(['error' => $err]);
     exit;
 }
