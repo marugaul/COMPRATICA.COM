@@ -120,23 +120,30 @@ $st->execute([$sale_id]);
 $pickup_location = $st->fetch(PDO::FETCH_ASSOC);
 $has_pickup_location = !empty($pickup_location);
 
-// cart_id del usuario
+// cart_id del usuario — busca primero por user_id, luego por guest_sid y migra
 $cart_id = 0;
+$guest_sid = (string)($_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? ''));
+
 $st = $pdo->prepare("SELECT id FROM carts WHERE user_id = ? ORDER BY id DESC LIMIT 1");
 $st->execute([$user_id]);
 $cart_id = (int)$st->fetchColumn();
-if ($cart_id <= 0) {
-    $guest_sid = (string)($_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? ''));
-    if ($guest_sid !== '') {
-        $st = $pdo->prepare("SELECT id FROM carts WHERE guest_sid = ? ORDER BY id DESC LIMIT 1");
-        $st->execute([$guest_sid]);
-        $cart_id = (int)$st->fetchColumn();
+
+if ($cart_id <= 0 && $guest_sid !== '') {
+    $st = $pdo->prepare("SELECT id FROM carts WHERE guest_sid = ? ORDER BY id DESC LIMIT 1");
+    $st->execute([$guest_sid]);
+    $cart_id = (int)$st->fetchColumn();
+    // Migrar el carrito anónimo al usuario si login.php no lo hizo
+    if ($cart_id > 0) {
+        $pdo->prepare("UPDATE carts SET user_id = ? WHERE id = ? AND (user_id IS NULL OR user_id = 0)")
+            ->execute([$user_id, $cart_id]);
     }
 }
 
+$store_url = 'store?sale_id=' . $sale_id;
+
 if ($cart_id <= 0) {
-    $_SESSION['error'] = "Carrito no encontrado";
-    header('Location: cart.php');
+    $_SESSION['error'] = "No encontramos tu carrito. Agrega productos primero.";
+    header('Location: ' . $store_url);
     exit;
 }
 
@@ -163,8 +170,8 @@ $st->execute([$cart_id, $sale_id, $sale_id]);
 $items = $st->fetchAll(PDO::FETCH_ASSOC);
 
 if (empty($items)) {
-    $_SESSION['error'] = "No hay productos en el carrito para este espacio";
-    header('Location: cart.php');
+    $_SESSION['error'] = "No hay productos en el carrito para este espacio. Agrega productos primero.";
+    header('Location: ' . $store_url);
     exit;
 }
 
