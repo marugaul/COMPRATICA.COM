@@ -26,6 +26,7 @@ function cap_log(string $msg, $data = null): void {
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/mailer.php';
+require_once __DIR__ . '/../includes/email_template.php';
 
 header('Content-Type: application/json');
 
@@ -264,59 +265,56 @@ try {
         $sale_title = (string)($st->fetchColumn() ?: '');
     } catch (Throwable $e) {}
 
-    // Construir tabla de productos
-    $list_html = '';
-    $total_line = 0.0;
+    // Construir items para el template de email
+    $email_items_paypal = [];
     foreach ($items as $it) {
         $qty  = (float)($it['quantity'] ?? 1);
         $unit = isset($it['unit_price']) && $it['unit_price'] !== null
             ? (float)$it['unit_price'] : (float)($it['price'] ?? 0);
-        $line = $qty * $unit;
-        $total_line += $line;
-        $list_html .= '<tr>'
-            . '<td style="padding:6px;border:1px solid #ddd">' . htmlspecialchars((string)($it['name'] ?? 'Producto'), ENT_QUOTES, 'UTF-8') . '</td>'
-            . '<td style="padding:6px;border:1px solid #ddd;text-align:right">' . number_format($qty, 2) . '</td>'
-            . '<td style="padding:6px;border:1px solid #ddd;text-align:right">' . number_format($line, 2) . ' ' . $currency . '</td>'
-            . '</tr>';
+        $email_items_paypal[] = ['name' => $it['name'] ?? 'Producto', 'qty' => $qty, 'unit_price' => $unit, 'line_total' => $qty * $unit];
     }
 
-    $order_table = '<table width="100%" cellspacing="0" style="border-collapse:collapse;margin:16px 0">'
-        . '<thead><tr>'
-        . '<th style="padding:6px;border:1px solid #ddd;background:#f5f5f5;text-align:left">Producto</th>'
-        . '<th style="padding:6px;border:1px solid #ddd;background:#f5f5f5;text-align:right">Cant.</th>'
-        . '<th style="padding:6px;border:1px solid #ddd;background:#f5f5f5;text-align:right">Total línea</th>'
-        . '</tr></thead><tbody>' . $list_html . '</tbody></table>';
-
     $buyer_email_lower = strtolower($user_email);
+    $order_no_safe_pp  = htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8');
+    $txn_safe          = htmlspecialchars($txn_id, ENT_QUOTES, 'UTF-8');
 
     // --- Correo al comprador ---
     if ($user_email !== '') {
-        $html_buyer = '<div style="font-family:Arial,sans-serif;max-width:600px">'
-            . '<h2 style="color:#27ae60">✅ Pago confirmado</h2>'
-            . '<p>Hola <strong>' . htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8') . '</strong>,</p>'
-            . '<p>Tu pago fue <strong>confirmado exitosamente</strong>'
-            . ($sale_title ? ' para <strong>' . htmlspecialchars($sale_title, ENT_QUOTES, 'UTF-8') . '</strong>' : '') . '.</p>'
-            . '<p><strong>Orden:</strong> ' . htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8') . '</p>'
-            . $order_table
-            . '<p><strong>Total pagado:</strong> ' . number_format($grand_total, 2) . ' ' . $currency . '</p>'
-            . '<p style="color:#888;font-size:.9em">TXN PayPal: ' . htmlspecialchars($txn_id, ENT_QUOTES, 'UTF-8') . '</p>'
-            . '</div>';
-        @send_mail($user_email, '✅ Pago confirmado — Orden ' . $order_number, $html_buyer);
+        $sale_tag = $sale_title ? ' &mdash; <em>' . htmlspecialchars($sale_title, ENT_QUOTES, 'UTF-8') . '</em>' : '';
+        $body_buyer_pp = '
+          <div style="text-align:center;margin-bottom:24px;">
+            <span style="font-size:40px;">&#10003;</span>
+            <h2 style="margin:8px 0 4px;font-size:22px;color:#2e7d32;">Pago confirmado</h2>
+            <p style="margin:0;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $order_no_safe_pp . '</strong>' . $sale_tag . '</p>
+          </div>
+          <p style="font-size:15px;margin:0 0 16px;">Hola <strong>' . htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8') . '</strong>,</p>
+          <p style="font-size:15px;margin:0 0 20px;color:#555;">Tu pago fue procesado exitosamente. Aquí está el resumen de tu compra:</p>
+          ' . email_product_table($email_items_paypal, $currency) . '
+          ' . email_total_block($grand_total, 0, $grand_total, $currency) . '
+          <p style="margin:20px 0 0;font-size:13px;color:#999;">Estado: ' . email_status_badge('Pagado') . '</p>
+          <p style="margin:8px 0 0;font-size:12px;color:#bbb;">TXN PayPal: ' . $txn_safe . '</p>
+        ';
+        @send_mail($user_email, 'Pago confirmado — Orden ' . $order_number, email_html($body_buyer_pp));
         cap_log("EMAIL_BUYER", ['to' => $user_email]);
     }
 
     // --- Correo al vendedor (afiliado) ---
     if ($aff_email !== '' && $aff_email !== $buyer_email_lower) {
-        $html_aff = '<div style="font-family:Arial,sans-serif;max-width:600px">'
-            . '<h2>💰 Pago recibido en tu tienda</h2>'
-            . '<p>Hola <strong>' . htmlspecialchars($aff_name, ENT_QUOTES, 'UTF-8') . '</strong>,</p>'
-            . '<p>Se confirmó el pago de la orden <strong>' . htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8') . '</strong>'
-            . ' de ' . htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8') . ' (' . htmlspecialchars($user_email, ENT_QUOTES, 'UTF-8') . ').</p>'
-            . $order_table
-            . '<p><strong>Total:</strong> ' . number_format($grand_total, 2) . ' ' . $currency . '</p>'
-            . '<p style="color:#888;font-size:.9em">TXN PayPal: ' . htmlspecialchars($txn_id, ENT_QUOTES, 'UTF-8') . '</p>'
-            . '</div>';
-        @send_mail($aff_email, '[COMPRATICA] 💰 Pago recibido — Orden ' . $order_number, $html_aff);
+        $body_aff_pp = '
+          <h2 style="margin:0 0 4px;font-size:22px;color:#333;">Pago recibido en tu tienda</h2>
+          <p style="margin:0 0 20px;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $order_no_safe_pp . '</strong></p>
+          <p style="font-size:15px;margin:0 0 16px;">Hola <strong>' . htmlspecialchars($aff_name, ENT_QUOTES, 'UTF-8') . '</strong>,</p>
+          <p style="font-size:15px;margin:0 0 20px;color:#555;">
+            Se confirmó el pago de
+            <strong>' . htmlspecialchars($user_name, ENT_QUOTES, 'UTF-8') . '</strong>
+            (<a href="mailto:' . htmlspecialchars($user_email, ENT_QUOTES, 'UTF-8') . '" style="color:#e53935;">' . htmlspecialchars($user_email, ENT_QUOTES, 'UTF-8') . '</a>).
+          </p>
+          ' . email_product_table($email_items_paypal, $currency) . '
+          ' . email_total_block($grand_total, 0, $grand_total, $currency) . '
+          <p style="margin:20px 0 0;font-size:13px;color:#999;">Estado: ' . email_status_badge('Pagado') . '</p>
+          <p style="margin:8px 0 0;font-size:12px;color:#bbb;">TXN PayPal: ' . $txn_safe . '</p>
+        ';
+        @send_mail($aff_email, '[COMPRATICA] Pago recibido — Orden ' . $order_number, email_html($body_aff_pp));
         cap_log("EMAIL_AFFILIATE", ['to' => $aff_email]);
     }
 
@@ -326,12 +324,15 @@ try {
         && strtolower($admin_email) !== $buyer_email_lower
         && strtolower($admin_email) !== $aff_email
     ) {
-        $html_admin = '<h2>Pago PayPal confirmado — ' . $order_number . '</h2>'
-            . '<p>Comprador: ' . htmlspecialchars($user_email, ENT_QUOTES, 'UTF-8') . '</p>'
-            . $order_table
-            . '<p><strong>Total:</strong> ' . number_format($grand_total, 2) . ' ' . $currency . '</p>'
-            . '<p>TXN: ' . htmlspecialchars($txn_id, ENT_QUOTES, 'UTF-8') . '</p>';
-        @send_mail($admin_email, '[COMPRATICA] Pago PayPal — ' . $order_number, $html_admin);
+        $body_admin_pp = '
+          <h2 style="margin:0 0 4px;font-size:20px;color:#333;">Pago PayPal confirmado</h2>
+          <p style="margin:0 0 20px;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $order_no_safe_pp . '</strong></p>
+          <p style="font-size:14px;margin:0 0 8px;"><strong>Comprador:</strong> ' . htmlspecialchars($user_email, ENT_QUOTES, 'UTF-8') . '</p>
+          ' . email_product_table($email_items_paypal, $currency) . '
+          ' . email_total_block($grand_total, 0, $grand_total, $currency) . '
+          <p style="margin:20px 0 0;font-size:12px;color:#bbb;">TXN: ' . $txn_safe . '</p>
+        ';
+        @send_mail($admin_email, '[COMPRATICA] Pago PayPal — ' . $order_number, email_html($body_admin_pp));
     }
 } catch (Throwable $e) {
     cap_log("EMAIL_ERROR", ['err' => $e->getMessage()]);

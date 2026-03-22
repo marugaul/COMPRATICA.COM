@@ -9,6 +9,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/mailer.php'; // <-- agregado para usar SMTP
+require_once __DIR__ . '/includes/email_template.php';
 
 // ============================================
 // SESIÓN (evitar ini_set cuando ya está activa)
@@ -217,66 +218,120 @@ try {
             $site_url   = defined('SITE_URL') ? SITE_URL : 'https://compratica.com';
             $app_name   = defined('APP_NAME') ? APP_NAME : 'VentaGaraje Online';
 
-            // Construir lista de productos agrupada
-            $items_lines = "";
-            $grand_total = 0;
-            foreach ($allItems as $item) {
-              $items_lines .= "- {$item['product_name']} x{$item['qty']} — ₡" . number_format((float)$item['subtotal'], 2) . "\n";
-              $grand_total += (float)$item['grand_total'];
-            }
-            // grand_total es el mismo para todos los rows (total de la orden), tomar del primero
+            // Construir items para email template
+            $proof_email_items = [];
             $order_grand_total = (float)$orderDetails['grand_total'];
+            foreach ($allItems as $item) {
+              $unit  = (float)($item['unit_price'] ?? $item['price'] ?? 0);
+              $qty   = (int)($item['qty'] ?? 1);
+              $proof_email_items[] = [
+                'name'       => $item['product_name'] ?? 'Producto',
+                'qty'        => $qty,
+                'unit_price' => $unit,
+                'line_total' => (float)($item['subtotal'] ?? $qty * $unit),
+              ];
+            }
 
-            $buyer_email_lower    = strtolower(trim($orderDetails['buyer_email'] ?? ''));
+            $buyer_email_lower     = strtolower(trim($orderDetails['buyer_email'] ?? ''));
             $affiliate_email_lower = strtolower(trim($orderDetails['affiliate_email'] ?? ''));
-            $admin_email_lower    = strtolower(defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '');
+            $admin_email_lower     = strtolower(defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '');
+            $proof_url             = $site_url . '/uploads/proofs/' . $filename;
+            $sale_title_safe       = htmlspecialchars($orderDetails['sale_title'] ?? '', ENT_QUOTES, 'UTF-8');
+            $order_no_safe_up      = htmlspecialchars($orderNumber, ENT_QUOTES, 'UTF-8');
 
             // Email al comprador
-            $buyer_subject = "Comprobante recibido - En Revisión - {$orderDetails['sale_title']}";
-            $buyer_message = "Hola {$orderDetails['buyer_name']},\n\n";
-            $buyer_message .= "Hemos recibido tu comprobante de pago para la orden {$orderNumber}.\n";
-            $buyer_message .= "Tu pedido está en estado: EN REVISIÓN por el vendedor.\n\n";
-            $buyer_message .= "Detalles de tu orden:\n";
-            $buyer_message .= $items_lines;
-            $buyer_message .= "- Total: ₡" . number_format($order_grand_total, 2) . "\n\n";
-            $buyer_message .= "Gracias por tu compra!\n{$app_name}";
-            $buyer_html = nl2br(htmlspecialchars($buyer_message, ENT_QUOTES, 'UTF-8'));
+            $buyer_subject = "Comprobante recibido — {$orderDetails['sale_title']}";
+            $buyer_html_up = '
+              <h2 style="margin:0 0 4px;font-size:22px;color:#333;">Comprobante recibido</h2>
+              <p style="margin:0 0 20px;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $order_no_safe_up . '</strong>
+                ' . ($sale_title_safe ? '&mdash; ' . $sale_title_safe : '') . '
+              </p>
+              <p style="font-size:15px;margin:0 0 16px;">
+                Hola <strong>' . htmlspecialchars($orderDetails['buyer_name'] ?? 'Cliente', ENT_QUOTES, 'UTF-8') . '</strong>,
+              </p>
+              <p style="font-size:15px;margin:0 0 20px;color:#555;">
+                Hemos recibido tu comprobante de pago SINPE. Tu pedido está siendo revisado por el vendedor.
+              </p>
+              ' . email_product_table($proof_email_items, 'CRC') . '
+              ' . email_total_block($order_grand_total, 0, $order_grand_total, 'CRC') . '
+              <div style="margin-top:20px;padding:14px 16px;background:#e8f5e9;border-left:4px solid #43a047;border-radius:4px;">
+                <p style="margin:0;font-size:14px;color:#1b5e20;">
+                  Estado actual: ' . email_status_badge('En Revisión') . '
+                </p>
+              </div>
+            ';
             if ($buyer_email_lower !== '') {
-              @send_email($orderDetails['buyer_email'], $buyer_subject, $buyer_html, $orderDetails['affiliate_email'] ?? null, $orderDetails['affiliate_name'] ?? null);
+              @send_email($orderDetails['buyer_email'], $buyer_subject, email_html($buyer_html_up), $orderDetails['affiliate_email'] ?? null, $orderDetails['affiliate_name'] ?? null);
             }
 
             // Email al vendedor/afiliado
-            $seller_subject  = "Comprobante recibido - En Revisión - {$orderDetails['sale_title']}";
-            $seller_message  = "Hola {$orderDetails['affiliate_name']},\n\n";
-            $seller_message .= "El comprador ha subido el comprobante para la orden {$orderNumber}.\n";
-            $seller_message .= "Estado actual: EN REVISIÓN.\n\n";
-            $seller_message .= "Detalles del pedido:\n";
-            $seller_message .= "- Comprador: {$orderDetails['buyer_name']}\n";
-            $seller_message .= "- Email: {$orderDetails['buyer_email']}\n";
-            $seller_message .= "- Teléfono: {$orderDetails['buyer_phone']}\n";
-            $seller_message .= "Productos:\n";
-            $seller_message .= $items_lines;
-            $seller_message .= "- Total: ₡" . number_format($order_grand_total, 2) . "\n\n";
-            $seller_message .= "Comprobante: {$site_url}/uploads/proofs/{$filename}\n\n";
-            $seller_message .= "Saludos,\n{$app_name}";
-            $seller_html = nl2br(htmlspecialchars($seller_message, ENT_QUOTES, 'UTF-8'));
+            $seller_subject = "Nuevo comprobante SINPE — Orden {$orderNumber}";
+            $seller_html_up = '
+              <h2 style="margin:0 0 4px;font-size:22px;color:#333;">Comprobante de pago recibido</h2>
+              <p style="margin:0 0 20px;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $order_no_safe_up . '</strong></p>
+              <p style="font-size:15px;margin:0 0 8px;">
+                Hola <strong>' . htmlspecialchars($orderDetails['affiliate_name'] ?? 'Vendedor', ENT_QUOTES, 'UTF-8') . '</strong>,
+              </p>
+              <p style="font-size:15px;margin:0 0 20px;color:#555;">
+                El cliente ha subido su comprobante SINPE. Por favor revisa y confirma el pedido.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+                <tr>
+                  <td style="padding:6px 0;font-size:14px;color:#666;"><strong>Comprador:</strong></td>
+                  <td style="padding:6px 0;font-size:14px;color:#333;">' . htmlspecialchars($orderDetails['buyer_name'] ?? '', ENT_QUOTES, 'UTF-8') . '</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;font-size:14px;color:#666;"><strong>Email:</strong></td>
+                  <td style="padding:6px 0;font-size:14px;">
+                    <a href="mailto:' . htmlspecialchars($orderDetails['buyer_email'] ?? '', ENT_QUOTES, 'UTF-8') . '" style="color:#e53935;">'
+                    . htmlspecialchars($orderDetails['buyer_email'] ?? '', ENT_QUOTES, 'UTF-8') . '</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;font-size:14px;color:#666;"><strong>Teléfono:</strong></td>
+                  <td style="padding:6px 0;font-size:14px;color:#333;">' . htmlspecialchars($orderDetails['buyer_phone'] ?? 'N/D', ENT_QUOTES, 'UTF-8') . '</td>
+                </tr>
+              </table>
+              ' . email_product_table($proof_email_items, 'CRC') . '
+              ' . email_total_block($order_grand_total, 0, $order_grand_total, 'CRC') . '
+              <div style="margin-top:24px;text-align:center;">
+                <a href="' . htmlspecialchars($proof_url, ENT_QUOTES, 'UTF-8') . '"
+                   style="display:inline-block;padding:12px 28px;background:#b71c1c;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:6px;">
+                  Ver comprobante de pago
+                </a>
+              </div>
+              <p style="margin:20px 0 0;font-size:13px;color:#999;">Estado: ' . email_status_badge('En Revisión') . '</p>
+            ';
             if ($affiliate_email_lower !== '' && $affiliate_email_lower !== $buyer_email_lower) {
-              @send_email($orderDetails['affiliate_email'], $seller_subject, $seller_html, $orderDetails['buyer_email'] ?? null, $orderDetails['buyer_name'] ?? null);
+              @send_email($orderDetails['affiliate_email'], $seller_subject, email_html($seller_html_up), $orderDetails['buyer_email'] ?? null, $orderDetails['buyer_name'] ?? null);
             }
 
-            // Email al admin (si es diferente al comprador y al afiliado)
+            // Email al admin
             if ($admin_email_lower !== '' && $admin_email_lower !== $buyer_email_lower && $admin_email_lower !== $affiliate_email_lower) {
-              $admin_subject  = "[Admin] Comprobante SINPE recibido - {$orderNumber}";
-              $admin_message  = "Se ha recibido un comprobante de pago SINPE.\n\n";
-              $admin_message .= "Orden: {$orderNumber}\n";
-              $admin_message .= "Comprador: {$orderDetails['buyer_name']} ({$orderDetails['buyer_email']})\n";
-              $admin_message .= "Vendedor: {$orderDetails['affiliate_name']} ({$orderDetails['affiliate_email']})\n\n";
-              $admin_message .= "Productos:\n";
-              $admin_message .= $items_lines;
-              $admin_message .= "- Total: ₡" . number_format($order_grand_total, 2) . "\n\n";
-              $admin_message .= "Comprobante: {$site_url}/uploads/proofs/{$filename}";
-              $admin_html = nl2br(htmlspecialchars($admin_message, ENT_QUOTES, 'UTF-8'));
-              @send_email(ADMIN_EMAIL, $admin_subject, $admin_html);
+              $admin_subject = "[Admin] Comprobante SINPE recibido — {$orderNumber}";
+              $admin_html_up = '
+                <h2 style="margin:0 0 4px;font-size:20px;color:#333;">Comprobante SINPE recibido</h2>
+                <p style="margin:0 0 20px;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $order_no_safe_up . '</strong></p>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
+                  <tr>
+                    <td style="padding:5px 0;font-size:14px;color:#666;"><strong>Comprador:</strong></td>
+                    <td style="padding:5px 0;font-size:14px;color:#333;">' . htmlspecialchars(($orderDetails['buyer_name'] ?? '') . ' (' . ($orderDetails['buyer_email'] ?? '') . ')', ENT_QUOTES, 'UTF-8') . '</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:5px 0;font-size:14px;color:#666;"><strong>Vendedor:</strong></td>
+                    <td style="padding:5px 0;font-size:14px;color:#333;">' . htmlspecialchars(($orderDetails['affiliate_name'] ?? '') . ' (' . ($orderDetails['affiliate_email'] ?? '') . ')', ENT_QUOTES, 'UTF-8') . '</td>
+                  </tr>
+                </table>
+                ' . email_product_table($proof_email_items, 'CRC') . '
+                ' . email_total_block($order_grand_total, 0, $order_grand_total, 'CRC') . '
+                <div style="margin-top:20px;text-align:center;">
+                  <a href="' . htmlspecialchars($proof_url, ENT_QUOTES, 'UTF-8') . '"
+                     style="display:inline-block;padding:12px 24px;background:#b71c1c;color:#fff;font-size:14px;font-weight:600;text-decoration:none;border-radius:6px;">
+                    Ver comprobante
+                  </a>
+                </div>
+              ';
+              @send_email(ADMIN_EMAIL, $admin_subject, email_html($admin_html_up));
             }
           }
 

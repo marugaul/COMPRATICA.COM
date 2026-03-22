@@ -7,6 +7,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/mailer.php';
+require_once __DIR__ . '/../includes/email_template.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -82,20 +83,50 @@ try {
   // Enviar emails solo si el estado cambió
   if ($previous_status !== $new_status) {
     $on      = $order_number ?: '#' . $order_id;
-    $subject = "Actualización del pedido {$on}: {$new_status}";
-    $body    = "Hola,<br><br>Tu pedido <strong>" . htmlspecialchars($on, ENT_QUOTES, 'UTF-8')
-             . "</strong> ha cambiado a estado: <strong>" . htmlspecialchars($new_status, ENT_QUOTES, 'UTF-8')
-             . "</strong>.<br><br>" . (defined('APP_NAME') ? APP_NAME : 'COMPRATICA');
+    $subject = "Actualización de tu pedido {$on}: {$new_status}";
+
+    $status_messages = [
+        'Pendiente'  => 'Tu pedido está pendiente de confirmación.',
+        'Pagado'     => 'Tu pago ha sido confirmado. El vendedor preparará tu pedido.',
+        'Empacado'   => 'Tu pedido ha sido empacado y está listo para ser enviado.',
+        'En camino'  => 'Tu pedido está en camino. Pronto lo recibirás.',
+        'Entregado'  => '¡Tu pedido fue entregado exitosamente! Gracias por tu compra.',
+        'Cancelado'  => 'Tu pedido ha sido cancelado. Contáctanos si tienes alguna duda.',
+    ];
+    $status_msg = $status_messages[$new_status] ?? 'El estado de tu pedido ha cambiado.';
+    $on_safe = htmlspecialchars($on, ENT_QUOTES, 'UTF-8');
+
+    $body_buyer_status = '
+      <h2 style="margin:0 0 4px;font-size:22px;color:#333;">Actualización de tu pedido</h2>
+      <p style="margin:0 0 20px;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $on_safe . '</strong></p>
+      <p style="font-size:15px;margin:0 0 16px;color:#555;">' . htmlspecialchars($status_msg, ENT_QUOTES, 'UTF-8') . '</p>
+      <div style="margin:20px 0;padding:20px;background:#f9f9f9;border-radius:8px;text-align:center;">
+        <p style="margin:0 0 8px;font-size:14px;color:#888;">Nuevo estado</p>
+        ' . email_status_badge($new_status) . '
+      </div>
+      <p style="font-size:13px;color:#999;margin:0;">Si tienes preguntas sobre tu pedido, contáctanos respondiendo este correo.</p>
+    ';
+
+    $body_seller_status = '
+      <h2 style="margin:0 0 4px;font-size:20px;color:#333;">Confirmación de cambio de estado</h2>
+      <p style="margin:0 0 20px;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $on_safe . '</strong></p>
+      <p style="font-size:14px;margin:0 0 16px;color:#555;">
+        El pedido <strong>' . $on_safe . '</strong> fue actualizado al siguiente estado:
+      </p>
+      <div style="margin:20px 0;padding:20px;background:#f9f9f9;border-radius:8px;text-align:center;">
+        ' . email_status_badge($new_status) . '
+      </div>
+    ';
 
     $admin_email = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
 
     if ($buyerEmail !== '') {
-      try { send_email($buyerEmail, $subject, $body); } catch (Throwable $e) {
+      try { send_email($buyerEmail, $subject, email_html($body_buyer_status)); } catch (Throwable $e) {
         error_log("[update_order_status] email comprador falló: " . $e->getMessage());
       }
     }
     if ($admin_email !== '' && strtolower($admin_email) !== strtolower($buyerEmail)) {
-      try { send_email($admin_email, "[Afiliado] Pedido {$on} → {$new_status}", $body); } catch (Throwable $e) {
+      try { send_email($admin_email, "[Afiliado] Pedido {$on} → {$new_status}", email_html($body_seller_status)); } catch (Throwable $e) {
         error_log("[update_order_status] email admin falló: " . $e->getMessage());
       }
     }
@@ -104,7 +135,7 @@ try {
       $sa->execute([$aff_id]);
       $aff_email = strtolower(trim((string)($sa->fetchColumn() ?: '')));
       if ($aff_email && $aff_email !== strtolower($buyerEmail) && $aff_email !== strtolower($admin_email)) {
-        send_email($aff_email, "[Vendedor] Pedido {$on} → {$new_status}", $body);
+        send_email($aff_email, "[Vendedor] Pedido {$on} → {$new_status}", email_html($body_seller_status));
       }
     } catch (Throwable $e) {
       error_log("[update_order_status] email afiliado falló: " . $e->getMessage());
