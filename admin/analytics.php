@@ -66,9 +66,10 @@ $orders_pending= (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE status='Pe
 $orders_paid   = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE status='Pagado'");
 
 // ─── Ingresos ─────────────────────────────────────────────────────────────────
-$revenue_today = (float)safeqv($pdo, "SELECT COALESCE(SUM(total_crc),0) FROM orders WHERE date(created_at)=date('now','-6 hours') AND status NOT IN ('Cancelado')");
-$revenue_week  = (float)safeqv($pdo, "SELECT COALESCE(SUM(total_crc),0) FROM orders WHERE created_at > datetime('now','-6 hours','-7 days') AND status NOT IN ('Cancelado')");
-$revenue_month = (float)safeqv($pdo, "SELECT COALESCE(SUM(total_crc),0) FROM orders WHERE created_at > datetime('now','-6 hours','-30 days') AND status NOT IN ('Cancelado')");
+// Algunos pedidos usan total_crc (buy_affiliate), otros grand_total (process_checkout)
+$revenue_today = (float)safeqv($pdo, "SELECT COALESCE(SUM(COALESCE(grand_total, total_crc, 0)),0) FROM orders WHERE date(created_at)=date('now','-6 hours') AND status NOT IN ('Cancelado')");
+$revenue_week  = (float)safeqv($pdo, "SELECT COALESCE(SUM(COALESCE(grand_total, total_crc, 0)),0) FROM orders WHERE created_at > datetime('now','-6 hours','-7 days') AND status NOT IN ('Cancelado')");
+$revenue_month = (float)safeqv($pdo, "SELECT COALESCE(SUM(COALESCE(grand_total, total_crc, 0)),0) FROM orders WHERE created_at > datetime('now','-6 hours','-30 days') AND status NOT IN ('Cancelado')");
 
 // ─── Pedidos por día (últimos 14 días) ────────────────────────────────────────
 $orders_by_day = safeq($pdo, "SELECT date(created_at) as day, COUNT(*) as total FROM orders WHERE created_at > datetime('now','-6 hours','-14 days') GROUP BY day ORDER BY day ASC");
@@ -89,7 +90,8 @@ $products_nostock = (int)safeqv($pdo, "SELECT COUNT(*) FROM products WHERE stock
 
 // ─── Top afiliados ────────────────────────────────────────────────────────────
 $top_affiliates = safeq($pdo, "
-    SELECT a.name, a.email, COUNT(o.id) as orders, COALESCE(SUM(o.total_crc),0) as revenue
+    SELECT a.name, a.email, COUNT(o.id) as orders,
+           COALESCE(SUM(COALESCE(o.grand_total, o.total_crc, 0)),0) as revenue
     FROM orders o JOIN affiliates a ON a.id=o.affiliate_id
     WHERE o.created_at > datetime('now','-6 hours','-30 days')
     GROUP BY a.id ORDER BY orders DESC LIMIT 10
@@ -97,17 +99,25 @@ $top_affiliates = safeq($pdo, "
 
 // ─── Últimas órdenes ──────────────────────────────────────────────────────────
 $latest_orders = safeq($pdo, "
-    SELECT o.id, o.buyer_email, o.product_name, o.qty, o.total_crc, o.status, o.created_at,
-           a.name as affiliate_name
-    FROM orders o LEFT JOIN affiliates a ON a.id=o.affiliate_id
+    SELECT o.id, o.order_number, o.buyer_email, o.buyer_name,
+           COALESCE(p.name, o.note, 'Producto') as product_name,
+           o.qty, COALESCE(o.grand_total, o.total_crc, 0) as monto,
+           o.status, o.created_at, a.name as affiliate_name
+    FROM orders o
+    LEFT JOIN products p ON p.id = o.product_id
+    LEFT JOIN affiliates a ON a.id = o.affiliate_id
     ORDER BY o.created_at DESC LIMIT 10
 ");
 
 // ─── Productos más vendidos ───────────────────────────────────────────────────
 $top_products = safeq($pdo, "
-    SELECT product_name, COUNT(*) as orders, SUM(qty) as units, COALESCE(SUM(total_crc),0) as revenue
-    FROM orders WHERE created_at > datetime('now','-6 hours','-30 days')
-    GROUP BY product_name ORDER BY orders DESC LIMIT 10
+    SELECT COALESCE(p.name, 'Sin nombre') as product_name,
+           COUNT(*) as orders, SUM(o.qty) as units,
+           COALESCE(SUM(COALESCE(o.grand_total, o.total_crc, 0)),0) as revenue
+    FROM orders o
+    LEFT JOIN products p ON p.id = o.product_id
+    WHERE o.created_at > datetime('now','-6 hours','-30 days')
+    GROUP BY o.product_id ORDER BY orders DESC LIMIT 10
 ");
 
 // ─── Conversión ───────────────────────────────────────────────────────────────
@@ -389,10 +399,10 @@ foreach ($visits_by_hour as $r) {
         elseif ($st === 'Entregado') $pill = 'pill-blue';
       ?>
         <tr>
-          <td><?= (int)($o['id'] ?? 0) ?></td>
+          <td><?= htmlspecialchars((string)($o['order_number'] ?? '#'.(int)($o['id'] ?? 0))) ?></td>
           <td><?= htmlspecialchars((string)($o['product_name'] ?? '—')) ?></td>
-          <td style="font-size:.78rem"><?= htmlspecialchars((string)($o['buyer_email'] ?? '—')) ?></td>
-          <td>₡<?= number_format((float)($o['total_crc'] ?? 0), 0, '.', ',') ?></td>
+          <td style="font-size:.78rem"><?= htmlspecialchars((string)($o['buyer_email'] ?? $o['buyer_name'] ?? '—')) ?></td>
+          <td>₡<?= number_format((float)($o['monto'] ?? 0), 0, '.', ',') ?></td>
           <td style="font-size:.78rem"><?= htmlspecialchars((string)($o['affiliate_name'] ?? '—')) ?></td>
           <td><span class="pill <?= $pill ?>"><?= htmlspecialchars($st) ?></span></td>
           <td style="font-size:.78rem"><?= htmlspecialchars(substr((string)($o['created_at'] ?? ''), 0, 16)) ?></td>
