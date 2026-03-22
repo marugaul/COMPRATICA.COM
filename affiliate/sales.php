@@ -539,6 +539,26 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
   
   <div class="card">
     <h3><i class="fas fa-plus-circle"></i> Crear Nuevo Espacio</h3>
+    <?php $fee_crc_display = (float)get_setting('SALE_FEE_CRC', 2000); ?>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:0.9rem 1.1rem;margin-bottom:1.25rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+        <i class="fas fa-tag" style="color:#059669;font-size:1rem;"></i>
+        <span style="font-size:0.95rem;color:#065f46;font-weight:600;">
+          Costo de activación: ₡<?= number_format($fee_crc_display, 0, '.', ',') ?> por espacio
+        </span>
+      </div>
+      <div style="font-size:0.83rem;color:#374151;margin-bottom:0.35rem;">
+        Se cobra al crear o re-activar un espacio. Puedes pagar con:
+      </div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:0.3rem;background:white;border:1px solid #d1d5db;border-radius:6px;padding:0.25rem 0.65rem;font-size:0.82rem;color:#1f2937;">
+          <img src="../assets/sinpe.jpg" alt="SINPE" style="height:16px;vertical-align:middle;"> SINPE Móvil
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:0.3rem;background:white;border:1px solid #d1d5db;border-radius:6px;padding:0.25rem 0.65rem;font-size:0.82rem;color:#1f2937;">
+          <img src="../assets/paypal.png" alt="PayPal" style="height:14px;vertical-align:middle;"> PayPal
+        </span>
+      </div>
+    </div>
     <form class="form" method="post" enctype="multipart/form-data" id="saleForm">
       <label>
         <i class="fas fa-tag"></i> Título del Espacio
