@@ -781,7 +781,7 @@ $orders = array_values($orders_grouped);
                 </span>
               </td>
               <td>
-                <form method="post" class="status-form">
+                <form method="post" action="orders.php" class="status-form">
                   <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
                   <select name="status" class="input">
                     <?php foreach (allowed_statuses() as $st): ?>
@@ -794,7 +794,7 @@ $orders = array_values($orders_grouped);
                   </button>
                 </form>
                 <?php if (!empty($o['proof_file']) && $o['status'] !== 'Pagado'): ?>
-                  <form method="post" style="margin-top: 0.5rem;">
+                  <form method="post" action="orders.php" style="margin-top: 0.5rem;">
                     <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
                     <input type="hidden" name="status" value="Pagado">
                     <button class="btn primary" name="update_order_status" value="1">
@@ -827,12 +827,27 @@ $orders = array_values($orders_grouped);
   </div>
 </div>
 <script>
-// Deshabilitar botones de submit al primer clic para evitar doble envío
-document.querySelectorAll('form[method="post"] button[name="update_order_status"]').forEach(function(btn) {
-  btn.closest('form').addEventListener('submit', function() {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+document.querySelectorAll('form.status-form, form[method="post"]').forEach(function(form) {
+  form.addEventListener('submit', function(e) {
+    var orderIdInput = form.querySelector('[name="order_id"]');
+    var statusInput  = form.querySelector('[name="status"]') || form.querySelector('[name="status"][type="hidden"]');
+    var orderId = orderIdInput ? orderIdInput.value : '?';
+    var status  = statusInput  ? statusInput.value  : '?';
+    console.log('[ORDERS] Form submit → order_id=' + orderId + ' status=' + status + ' action=' + (form.action || 'orders.php'));
+    // Confirmar visualmente que el submit se disparó
+    var btn = form.querySelector('button[name="update_order_status"]');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    }
   });
+});
+// Verificar que los forms existen al cargar
+var forms = document.querySelectorAll('form[method="post"]');
+console.log('[ORDERS] Forumularios POST encontrados en la pagina: ' + forms.length);
+forms.forEach(function(f, i) {
+  var oid = f.querySelector('[name="order_id"]');
+  console.log('  Form #' + i + ' order_id=' + (oid ? oid.value : 'NO ENCONTRADO'));
 });
 </script>
 </body>
