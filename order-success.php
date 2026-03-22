@@ -67,6 +67,7 @@ require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
 if (is_file(__DIR__ . '/includes/mailer.php')) {
   require_once __DIR__ . '/includes/mailer.php';
+  require_once __DIR__ . '/includes/email_template.php';
   os_log('MAILER_INCLUDED', ['send_email_exists'=>function_exists('send_email')], $RID);
 } else {
   os_log('MAILER_MISSING', null, $RID);
@@ -379,32 +380,34 @@ if ($order) {
     foreach ($targets as $t) {
       $to = $t['email']; $aname = $t['name'] ?? 'Afiliado';
 
-      ob_start(); ?>
-      <div style="font-family:Arial,Helvetica,sans-serif">
-        <h2>Pedido en revisión #<?= (int)$orderId ?></h2>
-        <p><b>Afiliado:</b> <?= htmlspecialchars($aname) ?></p>
-        <p><b>Estado:</b> <?= htmlspecialchars($status ?: 'En Revisión') ?></p>
-        <p><b>Cliente:</b> <?= htmlspecialchars($custName ?: $custMail ?: 'Cliente Compratica') ?></p>
-        <hr>
-        <table cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse">
-          <tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th></tr>
-          <?php foreach ($items as $itx): ?>
-            <tr>
-              <td><?= htmlspecialchars((string)($itx['product_name'] ?? 'Producto')) ?></td>
-              <td align="right"><?= (int)($itx['qty'] ?? 1) ?></td>
-              <td align="right"><?= number_format((float)($itx['unit_price'] ?? 0), 2) ?></td>
-              <td align="right"><?= number_format((float)($itx['line_total'] ?? 0), 2) ?></td>
-            </tr>
-          <?php endforeach; ?>
-        </table>
-        <p>
-          <a href="<?= htmlspecialchars((string)($_SERVER['REQUEST_SCHEME'] ?? ($__isHttps ? 'https' : 'http'))) ?>://<?= htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'compratica.com') ?>/admin/order.php?id=<?= (int)$orderId ?>">
+      $os_order_url = htmlspecialchars(
+          (string)($_SERVER['REQUEST_SCHEME'] ?? ($__isHttps ? 'https' : 'http'))
+          . '://' . ($_SERVER['HTTP_HOST'] ?? 'compratica.com')
+          . '/admin/order.php?id=' . (int)$orderId,
+          ENT_QUOTES, 'UTF-8'
+      );
+      $os_order_total = array_sum(array_column($items, 'line_total'));
+      $body_reseller = '
+        <h2 style="margin:0 0 4px;font-size:22px;color:#333;">Nuevo pedido en revisión</h2>
+        <p style="margin:0 0 20px;font-size:13px;color:#999;">Pedido: <strong style="color:#333;">#' . (int)$orderId . '</strong></p>
+        <p style="font-size:15px;margin:0 0 8px;">Hola <strong>' . htmlspecialchars($aname, ENT_QUOTES, 'UTF-8') . '</strong>,</p>
+        <p style="font-size:15px;margin:0 0 20px;color:#555;">
+          El cliente <strong>' . htmlspecialchars($custName ?: $custMail ?: 'Cliente Compratica', ENT_QUOTES, 'UTF-8') . '</strong>
+          ha realizado un pedido que está pendiente de tu revisión.
+        </p>
+        <div style="margin:0 0 20px;padding:12px 16px;background:#f9f9f9;border-radius:6px;font-size:14px;color:#555;">
+          <strong>Estado actual:</strong> ' . email_status_badge($status ?: 'En Revisión') . '
+        </div>
+        ' . email_product_table($items, 'CRC') . '
+        ' . ($os_order_total > 0 ? email_total_block($os_order_total, 0, $os_order_total, 'CRC') : '') . '
+        <div style="margin-top:24px;text-align:center;">
+          <a href="' . $os_order_url . '"
+             style="display:inline-block;padding:12px 28px;background:#b71c1c;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:6px;">
             Ver pedido en el panel
           </a>
-        </p>
-      </div>
-      <?php
-      $html = ob_get_clean();
+        </div>
+      ';
+      $html = email_html($body_reseller);
       $hasFn = function_exists('send_email');
       os_log('MAIL_TRY', ['to'=>$to,'replyTo'=>$custMail ?: null,'replyName'=>$custName ?: null,'fn_exists'=>$hasFn], $RID);
 

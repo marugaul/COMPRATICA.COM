@@ -70,6 +70,7 @@ checkout_log("SESSION", [
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/mailer.php'; // usa send_mail($to,$subject,$html)
+require_once __DIR__ . '/includes/email_template.php';
 
 // ===== CSRF =====
 $csrf_ok = (isset($_POST['csrf_token'], $_SESSION['csrf_token'])
@@ -320,22 +321,46 @@ if ($payment_method === 'sinpe') {
                 . '<td style="text-align:right">' . number_format($qty, 2) . '</td>'
                 . '<td style="text-align:right">' . number_format($line, 2) . '</td></tr>';
         }
-        $html_buyer = '<h2>Confirmación de pedido</h2>'
-            . '<p>Hola ' . htmlspecialchars($user['name'] ?? 'Cliente', ENT_QUOTES, 'UTF-8') . ',</p>'
-            . '<p>Hemos recibido tu pedido <strong>' . htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8') . '</strong>.</p>'
-            . '<table width="100%" cellspacing="0" cellpadding="6" border="1" style="border-collapse:collapse">'
-            . '<thead><tr><th>Producto</th><th>Cant.</th><th>Total línea</th></tr></thead>'
-            . '<tbody>' . $detalle . '</tbody></table>'
-            . '<p><strong>Total:</strong> ' . number_format($grand_total, 2) . ' ' . $currency . '</p>'
-            . '<p>Estado: <strong>Pendiente de pago (SINPE)</strong>.</p>';
+        // Build items array for the template helper
+        $email_items = [];
+        foreach ($items as $it) {
+            $qty  = (float)($it['quantity'] ?? 1);
+            $unit = isset($it['unit_price']) && $it['unit_price'] !== null ? (float)$it['unit_price'] : (float)($it['price'] ?? 0);
+            $email_items[] = ['name' => $it['name'] ?? 'Producto', 'qty' => $qty, 'unit_price' => $unit, 'line_total' => $qty * $unit];
+        }
+        $client_name = htmlspecialchars($user['name'] ?? 'Cliente', ENT_QUOTES, 'UTF-8');
+        $order_no_safe = htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8');
+        $body_buyer = '
+          <h2 style="margin:0 0 4px;font-size:22px;color:#333;">Confirmación de pedido</h2>
+          <p style="margin:0 0 20px;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $order_no_safe . '</strong></p>
+          <p style="font-size:15px;margin:0 0 16px;">Hola <strong>' . $client_name . '</strong>,</p>
+          <p style="font-size:15px;margin:0 0 20px;color:#555;">
+            Hemos recibido tu pedido. A continuación el detalle:
+          </p>
+          ' . email_product_table($email_items, $currency) . '
+          ' . email_total_block($grand_total, 0, $grand_total, $currency) . '
+          <div style="margin-top:24px;padding:16px;background:#fff8e1;border-left:4px solid #f59e0b;border-radius:4px;">
+            <p style="margin:0;font-size:14px;color:#78350f;">
+              <strong>Siguiente paso:</strong> Realiza el pago por SINPE Móvil y sube tu comprobante para que podamos confirmar tu pedido.
+            </p>
+          </div>
+          <p style="margin:24px 0 0;font-size:13px;color:#999;">Estado actual: ' . email_status_badge('Pendiente de pago') . '</p>
+        ';
+        $html_buyer = email_html($body_buyer);
         @send_mail((string)$user['email'], 'Pedido recibido — ' . $order_number, $html_buyer);
 
         $admin_email      = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
         $buyer_email_lower = strtolower((string)($user['email'] ?? ''));
         if ($admin_email !== '' && strtolower($admin_email) !== $buyer_email_lower) {
-            @send_mail($admin_email, '[COMPRATICA] Pedido SINPE — ' . $order_number,
-                '<h2>Pedido SINPE pendiente</h2><p>De: ' . htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8')
-                . '</p><p>Total: ' . number_format($grand_total, 2) . ' ' . $currency . '</p>');
+            $body_admin = '
+              <h2 style="margin:0 0 4px;font-size:20px;color:#333;">Pedido SINPE pendiente</h2>
+              <p style="margin:0 0 20px;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $order_no_safe . '</strong></p>
+              <p style="font-size:14px;margin:0 0 8px;"><strong>Comprador:</strong> ' . htmlspecialchars((string)($user['email'] ?? ''), ENT_QUOTES, 'UTF-8') . '</p>
+              ' . email_product_table($email_items, $currency) . '
+              ' . email_total_block($grand_total, 0, $grand_total, $currency) . '
+              <p style="margin:20px 0 0;font-size:13px;color:#999;">Estado: ' . email_status_badge('Pendiente de pago') . '</p>
+            ';
+            @send_mail($admin_email, '[COMPRATICA] Pedido SINPE — ' . $order_number, email_html($body_admin));
         }
     } catch (Throwable $e) {
         checkout_log("SINPE_EMAIL_ERROR", ['err' => $e->getMessage()]);
