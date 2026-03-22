@@ -220,15 +220,17 @@ try {
 
             // Construir items para email template
             $proof_email_items = [];
-            $order_grand_total = (float)$orderDetails['grand_total'];
+            $order_grand_total = 0.0;
             foreach ($allItems as $item) {
-              $unit  = (float)($item['unit_price'] ?? $item['price'] ?? 0);
-              $qty   = (int)($item['qty'] ?? 1);
+              $qty       = max(1, (int)($item['qty'] ?? 1));
+              $line      = (float)($item['grand_total'] ?? $item['subtotal'] ?? 0);
+              $unit      = $qty > 0 ? $line / $qty : $line;
+              $order_grand_total += $line;
               $proof_email_items[] = [
                 'name'       => $item['product_name'] ?? 'Producto',
                 'qty'        => $qty,
                 'unit_price' => $unit,
-                'line_total' => (float)($item['subtotal'] ?? $qty * $unit),
+                'line_total' => $line,
               ];
             }
 
