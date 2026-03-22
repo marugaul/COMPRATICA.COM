@@ -1,5 +1,6 @@
 <?php
 // affiliate/orders.php — UTF-8 (sin BOM) — Notifica por CUALQUIER cambio de estado
+ob_start(); // Captura cualquier output accidental para que header() siempre funcione
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -677,9 +678,7 @@ $orders = array_values($orders_grouped);
       <?= htmlspecialchars($msg) ?>
     </div>
     <script>
-      <?php if ($isError): ?>
-        alert('Error al guardar:\n<?= addslashes(htmlspecialchars($msg)) ?>');
-      <?php endif; ?>
+      alert('<?= $isError ? "ERROR" : "EXITO" ?>: <?= addslashes(htmlspecialchars($msg)) ?>');
       document.getElementById('page-msg').scrollIntoView({behavior:'smooth', block:'start'});
     </script>
   <?php endif; ?>
