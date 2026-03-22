@@ -787,14 +787,54 @@ $orders = array_values($orders_grouped);
   </div>
 </div>
 <script>
-// Deshabilitar botón al hacer submit para evitar doble envío
 document.querySelectorAll('form[method="post"]').forEach(function(form) {
-  form.addEventListener('submit', function() {
+  // Solo interceptar forms de cambio de estado (tienen select[name=status])
+  if (!form.querySelector('select[name="status"], input[name="status"]')) return;
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+
     var btn = form.querySelector('button[name="update_order_status"]');
+    var originalLabel = btn ? btn.innerHTML : '';
     if (btn) {
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
     }
+
+    // Quitar mensaje previo en este form
+    var prev = form.parentElement.querySelector('.ajax-status-msg');
+    if (prev) prev.remove();
+
+    var data = new FormData(form);
+    // Incluir el name del botón submit manualmente (no se incluye al hacer e.preventDefault)
+    data.append('update_order_status', '1');
+
+    fetch('update_order_status.php', {
+      method: 'POST',
+      body: data,
+      credentials: 'same-origin'
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      var div = document.createElement('div');
+      div.className = 'ajax-status-msg ' + (res.ok ? 'success' : 'error');
+      div.style.cssText = 'margin-top:8px;padding:8px 12px;border-radius:6px;font-size:0.9rem;';
+      div.textContent = res.msg;
+      form.parentElement.appendChild(div);
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalLabel;
+      }
+    })
+    .catch(function(err) {
+      var div = document.createElement('div');
+      div.className = 'ajax-status-msg error';
+      div.style.cssText = 'margin-top:8px;padding:8px 12px;border-radius:6px;font-size:0.9rem;';
+      div.textContent = 'Error de red: ' + err.message;
+      form.parentElement.appendChild(div);
+      if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
+    });
   });
 });
 </script>
