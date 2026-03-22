@@ -826,6 +826,43 @@ document.querySelectorAll('form[method="post"]').forEach(function(form) {
         btn.disabled = false;
         btn.innerHTML = originalLabel;
       }
+
+      // Actualizar badge de estado en pantalla
+      if (res.ok) {
+        var newStatus = data.get ? data.get('status') : (function(){
+          var s = form.querySelector('select[name="status"], input[name="status"]');
+          return s ? s.value : null;
+        })();
+        if (newStatus) {
+          var iconMap = {
+            'Pendiente':  'clock',
+            'Pagado':     'check-circle',
+            'Empacado':   'box',
+            'En camino':  'shipping-fast',
+            'Entregado':  'check-double',
+            'Cancelado':  'times-circle'
+          };
+          var row = form.closest('tr');
+          if (row) {
+            var badge = row.querySelector('.status-badge');
+            if (badge) {
+              // Quitar clases de status anteriores
+              badge.className = badge.className.replace(/\bstatus-\S+/g, '').trim();
+              badge.classList.add('status-badge', 'status-' + newStatus.replace(/ /g, '-'));
+              var iconName = iconMap[newStatus] || 'circle';
+              badge.innerHTML = '<i class="fas fa-' + iconName + '"></i> ' + newStatus;
+            }
+            // Ocultar botón "Validar pago" si ya está Pagado
+            if (newStatus === 'Pagado') {
+              var validateForm = row.querySelector('form button.primary');
+              if (validateForm) validateForm.closest('form').style.display = 'none';
+            }
+          }
+          // Actualizar el select para reflejar el nuevo estado
+          var sel = form.querySelector('select[name="status"]');
+          if (sel) sel.value = newStatus;
+        }
+      }
     })
     .catch(function(err) {
       var div = document.createElement('div');
