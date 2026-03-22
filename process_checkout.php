@@ -418,148 +418,109 @@ if ($paypal_email === '') {
     exit;
 }
 
-// URLs
-$scheme = $__isHttps ? 'https' : 'http';
-$host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$base   = $scheme.'://'.$host;
+// Calcular total en USD para el SDK de PayPal
+$total_usd_sdk = ($currency === 'CRC' && $exchange_rate > 0)
+    ? round($grand_total / $exchange_rate, 2)
+    : round($grand_total, 2);
+if ($total_usd_sdk < 0.01) $total_usd_sdk = 0.01;
 
-
-$paypal_url = (PAYPAL_MODE === 'live')
-    ? 'https://www.paypal.com/cgi-bin/webscr'
-    : 'https://www.sandbox.paypal.com/cgi-bin/webscr';
-
-$paypal_return = $base . '/order-success.php?' . http_build_query([
-    'order_id' => $first_order_id,
-    'reauth'   => $reauth
-], '', '&', PHP_QUERY_RFC3986);
-
-$paypal_cancel = $base . '/checkout.php?' . http_build_query([
-    'sale_id' => $sale_id
-], '', '&', PHP_QUERY_RFC3986);
-
-$paypal_notify = $base . '/paypal_ipn.php';
-
-checkout_log("PAYPAL_URLS", [
-    'base' => $base,
-    'return' => $paypal_return,
-    'cancel' => $paypal_cancel,
-    'notify' => $paypal_notify,
-    'paypal_url' => $paypal_url
-]);
-
-// Cargar líneas para el carrito PayPal
-$st = $pdo->prepare("
-    SELECT o.id, o.qty, o.grand_total, o.currency, p.name
-    FROM orders o
-    JOIN products p ON p.id = o.product_id
-    WHERE o.order_number = ?
-    ORDER BY o.id ASC
-");
-$st->execute([$order_number]);
-$rows = $st->fetchAll(PDO::FETCH_ASSOC);
-
-checkout_log("PAYPAL_ITEMS", [
+// Guardar datos en sesión para los endpoints del SDK
+$_SESSION['pending_paypal'] = [
+    'order_number'   => $order_number,
+    'first_order_id' => $first_order_id,
+    'sale_id'        => $sale_id,
+    'cart_id'        => $cart_id,
+    'user_id'        => $user_id,
+    'paypal_email'   => $paypal_email,
+    'total_usd'      => $total_usd_sdk,
+    'currency'       => $currency,
+    'reauth'         => $reauth,
+];
+checkout_log("PAYPAL_SDK_READY", [
     'order_number' => $order_number,
-    'items_count' => count($rows),
-    'items' => $rows
+    'total_usd'    => $total_usd_sdk,
+    'paypal_email' => $paypal_email,
 ]);
 
-// Form auto-submit (IMPORTANTE: rm=1 para volver por GET y que SameSite=Lax envíe cookie)
+$paypal_client_id = defined('PAYPAL_CLIENT_ID') ? PAYPAL_CLIENT_ID : '';
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Redirigiendo a PayPal...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Completar pago — Compratica</title>
+  <script src="https://www.paypal.com/sdk/js?client-id=<?= htmlspecialchars($paypal_client_id, ENT_QUOTES, 'UTF-8') ?>&currency=USD&intent=capture&enable-funding=card&disable-funding=paylater,venmo" data-namespace="paypal_sdk"></script>
   <style>
-    body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f5f5}
-    .loader{text-align:center}
-    .spinner{border:4px solid #f3f3f3;border-top:4px solid #0070ba;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;margin:0 auto 20px}
-    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;margin:0;background:#f5f5f5;padding:20px}
+    .card{background:#fff;border-radius:8px;padding:30px;max-width:460px;width:100%;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+    h2{margin:0 0 8px;color:#333;font-size:1.4em}
+    .order-ref{font-size:.85em;color:#888;margin:0 0 18px}
+    .total{font-size:1.2em;font-weight:bold;color:#0070ba;margin:0 0 24px;padding:12px;background:#f0f7ff;border-radius:6px}
+    #paypal-button-container{min-height:50px}
+    #sdk-error{color:#c0392b;padding:10px 14px;background:#fdf0f0;border:1px solid #f5c6cb;border-radius:6px;display:none;margin-top:14px;font-size:.95em}
+    .tip{font-size:.8em;color:#aaa;margin-top:16px;text-align:center}
   </style>
 </head>
 <body>
-  <div class="loader">
-    <div class="spinner"></div>
-    <p>Redirigiendo a PayPal...</p>
-    <p style="color:#666;font-size:14px">Por favor espera...</p>
+  <div class="card">
+    <h2>Completar pago</h2>
+    <p class="order-ref">Orden: <?= htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8') ?></p>
+    <p class="total">Total: $<?= number_format($total_usd_sdk, 2) ?> USD</p>
+    <div id="paypal-button-container"></div>
+    <div id="sdk-error"></div>
+    <p class="tip">Puedes pagar con tu cuenta PayPal o directamente con tarjeta de crédito/débito.</p>
   </div>
-  <form id="paypal_form" action="<?= htmlspecialchars($paypal_url, ENT_QUOTES, 'UTF-8') ?>" method="post">
-    <input type="hidden" name="cmd" value="_cart">
-    <input type="hidden" name="upload" value="1">
-    <input type="hidden" name="business" value="<?= htmlspecialchars($paypal_email, ENT_QUOTES, 'UTF-8') ?>">
-    <input type="hidden" name="currency_code" value="USD">
-    <input type="hidden" name="return" value="<?= htmlspecialchars($paypal_return, ENT_QUOTES, 'UTF-8') ?>">
-    <input type="hidden" name="cancel_return" value="<?= htmlspecialchars($paypal_cancel, ENT_QUOTES, 'UTF-8') ?>">
-    <input type="hidden" name="notify_url" value="<?= htmlspecialchars($paypal_notify, ENT_QUOTES, 'UTF-8') ?>">
-    <input type="hidden" name="rm" value="1"><!-- GET: mantiene cookie con SameSite=Lax -->
-    <input type="hidden" name="landing_page" value="Billing"><!-- Muestra formulario de tarjeta a usuarios sin cuenta PayPal -->
-    <?php
-    $custom_data = [
-        'order_id'     => (int)$first_order_id,
-        'order_number' => $order_number,
-        'affiliate_id' => (int)$affiliate_id,
-        'cart_id'      => (int)$cart_id,
-        'sale_id'      => (int)$sale_id,
-        'uid'          => (int)$user_id
-    ];
-    $custom_json = json_encode($custom_data, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
-    checkout_log("PAYPAL_CUSTOM_FIELD", [
-        'data' => $custom_data,
-        'json' => $custom_json,
-        'length' => strlen($custom_json)
-    ]);
-    ?>
-    <input type="hidden" name="custom" value="<?= htmlspecialchars($custom_json, ENT_QUOTES, 'UTF-8') ?>">
-<?php
-$i = 1;
-$paypal_items_log = [];
-foreach ($rows as $r) {
-    $qty        = (float)($r['qty'] ?? 1);
-    $line_total = (float)($r['grand_total'] ?? 0);
-    $cur_line   = strtoupper((string)($r['currency'] ?? $currency));
-    if ($cur_line !== 'CRC' && $cur_line !== 'USD') $cur_line = 'CRC';
+  <script>
+  paypal_sdk.Buttons({
+    style: { layout: 'vertical', label: 'pay', shape: 'rect', color: 'blue' },
 
-    // Convertir a USD
-    $total_usd = ($cur_line === 'USD') ? $line_total : ($line_total / $exchange_rate);
-    
-    // PayPal requiere mínimo $0.01 USD total por línea
-    $original_usd = $total_usd;
-    if ($total_usd < 0.01) {
-        $total_usd = 0.01;
-        checkout_log("PAYPAL_AMOUNT_ADJUSTED", [
-            'item' => $i,
-            'product' => $r['name'] ?? 'Item '.$i,
-            'original_crc' => $line_total,
-            'original_usd' => number_format($original_usd, 4),
-            'adjusted_usd' => 0.01
-        ]);
+    createOrder: function() {
+      return fetch('/api/paypal-create-order.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.id) throw new Error(data.error || 'Error al crear la orden PayPal');
+        return data.id;
+      });
+    },
+
+    onApprove: function(data) {
+      return fetch('/api/paypal-capture-order.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderID: data.orderID })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+        if (res.success) {
+          window.location.href = res.redirect_url;
+        } else {
+          showError(res.error || 'Error al procesar el pago. Intenta de nuevo.');
+        }
+      })
+      .catch(function(e) { showError('Error inesperado: ' + e.message); });
+    },
+
+    onCancel: function() {
+      showError('Pago cancelado. Puedes intentarlo de nuevo cuando quieras.');
+    },
+
+    onError: function(err) {
+      showError('Error de PayPal: ' + (err.message || String(err)));
     }
-    
-    // Calcular precio unitario
-    $amount_usd = $total_usd / $qty;
-    $amount_usd_formatted = number_format($amount_usd, 2, '.', '');
-    
-    $paypal_items_log[] = [
-        'item_number' => $i,
-        'name' => $r['name'] ?? 'Item '.$i,
-        'qty' => $qty,
-        'original_total_crc' => $line_total,
-        'original_total_usd' => number_format($original_usd, 4),
-        'final_total_usd' => number_format($total_usd, 4),
-        'unit_price_usd' => $amount_usd_formatted
-    ];
-?>
-    <input type="hidden" name="item_name_<?= $i ?>" value="<?= htmlspecialchars((string)($r['name'] ?? ('Item '.$i)), ENT_QUOTES, 'UTF-8') ?>">
-    <input type="hidden" name="item_number_<?= $i ?>" value="<?= (int)$i ?>">
-    <input type="hidden" name="amount_<?= $i ?>" value="<?= $amount_usd_formatted ?>">
-    <input type="hidden" name="quantity_<?= $i ?>" value="<?= $qty ?>">
-<?php
-    $i++;
-}
-checkout_log("PAYPAL_FORM_ITEMS_FINAL", $paypal_items_log);
-?>
-  </form>
-  <script>document.getElementById("paypal_form").submit();</script>
+  }).render('#paypal-button-container');
+
+  function showError(msg) {
+    var el = document.getElementById('sdk-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  </script>
 </body>
 </html>
