@@ -165,6 +165,22 @@ try {
     $order_ids = [];
     foreach ($items as $it) {
         $qty  = (float)($it['quantity'] ?? 1);
+        $pid  = (int)($it['product_id'] ?? 0);
+
+        // Verificar stock disponible antes de crear la orden (dentro de la transacción)
+        if ($pid > 0 && $qty > 0) {
+            $stk = $pdo->prepare("SELECT stock FROM products WHERE id = ?");
+            $stk->execute([$pid]);
+            $availableStock = (float)($stk->fetchColumn() ?? 0);
+            if ($availableStock < $qty) {
+                $pdo->rollBack();
+                $productName = htmlspecialchars($it['name'] ?? 'producto');
+                cap_log("STOCK_INSUFICIENTE", ['product_id' => $pid, 'stock' => $availableStock, 'qty' => $qty]);
+                echo json_encode(['success' => false, 'error' => "Lo sentimos, el producto \"$productName\" ya no tiene suficiente stock disponible."]);
+                exit;
+            }
+        }
+
         $unit = isset($it['unit_price']) && $it['unit_price'] !== null
             ? (float)$it['unit_price']
             : (float)($it['price'] ?? 0);
@@ -180,7 +196,7 @@ try {
 
         $ins->execute([
             $order_number,
-            (int)$it['product_id'],
+            $pid,
             $affiliate_id,
             $sale_id,
             $user_email,
@@ -201,15 +217,14 @@ try {
         ]);
         $order_ids[] = (int)$pdo->lastInsertId();
 
-        // Descontar stock
-        $pid = (int)$it['product_id'];
+        // Descontar stock de forma atómica (solo si hay suficiente)
         if ($pid > 0 && $qty > 0) {
             $pdo->prepare("
                 UPDATE products
-                   SET stock = CASE WHEN stock >= ? THEN stock - ? ELSE 0 END,
+                   SET stock = stock - ?,
                        updated_at = datetime('now')
-                 WHERE id = ?
-            ")->execute([$qty, $qty, $pid]);
+                 WHERE id = ? AND stock >= ?
+            ")->execute([$qty, $pid, $qty]);
         }
     }
 
