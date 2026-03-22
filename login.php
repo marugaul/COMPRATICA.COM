@@ -108,24 +108,41 @@ $success = '';
 $redirect = $_GET['redirect'] ?? '';
 
 // Si viene el callback de OAuth, recuperar redirect guardado en sesión
-if (empty($redirect) && !empty($_SESSION['pending_redirect'])) {
+$redirect_source = 'ninguno';
+if (!empty($redirect)) {
+    $redirect_source = 'GET[redirect]';
+} elseif (!empty($_SESSION['pending_redirect'])) {
     $redirect = $_SESSION['pending_redirect'];
+    $redirect_source = 'sesion[pending_redirect]';
 }
 if (empty($redirect)) {
     $redirect = 'index.php';
+    $redirect_source = 'default(index.php)';
 }
 
 // Sanitize redirect to prevent open redirect vulnerability
 if (strpos($redirect, 'http') === 0 || strpos($redirect, '//') === 0) {
+    logDebug("REDIRECT_BLOQUEADO", ['redirect_original' => $redirect, 'razon' => 'URL externa bloqueada por seguridad, se usa index.php']);
     $redirect = 'index.php';
+    $redirect_source = 'seguridad_bloqueada';
 }
+
+logDebug("REDIRECT_DESTINO", [
+    'destino' => $redirect,
+    'origen'  => $redirect_source,
+    'pending_redirect_en_sesion' => $_SESSION['pending_redirect'] ?? '(vacio)',
+    'guest_sid_en_sesion' => $_SESSION['guest_sid'] ?? '(vacio)',
+    'guest_sid_en_cookie'  => $_COOKIE['vg_guest'] ?? '(vacio)',
+]);
 
 // Guardar redirect en sesión para que sobreviva el callback OAuth
 if (!empty($_GET['redirect'])) {
     $_SESSION['pending_redirect'] = $redirect;
+    logDebug("PENDING_REDIRECT_GUARDADO", ['redirect' => $redirect, 'nota' => 'Se guarda en sesion para sobrevivir el callback de OAuth']);
 }
 
 if (isset($_SESSION['uid']) && $_SESSION['uid'] > 0 && empty($_GET['reset']) && empty($_GET['oauth'])) {
+    logDebug("YA_AUTENTICADO", ['uid' => $_SESSION['uid'], 'redirige_a' => $redirect, 'nota' => 'Usuario ya tenia sesion activa, redirige sin pedir login']);
     header('Location: ' . $redirect);
     exit;
 }
@@ -223,6 +240,13 @@ if (isset($_GET['oauth']) && isset($_GET['code'])) {
         if ($result && isset($result['success'])) {
             // Migrar carrito invitado al usuario (merge si el usuario ya tiene carrito)
             $guest_sid_cart = $_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? '');
+            logDebug("OAUTH_ANTES_MIGRAR_CARRITO", [
+                'uid'                  => $result['user_id'],
+                'guest_sid_en_sesion'  => $_SESSION['guest_sid'] ?? '(vacio - PROBLEMA: no hay carrito que migrar)',
+                'guest_sid_en_cookie'  => $_COOKIE['vg_guest'] ?? '(vacio)',
+                'guest_sid_que_se_usa' => $guest_sid_cart ?: '(VACIO - la migracion fallara)',
+                'nota'                 => 'Si guest_sid esta vacio, el carrito no se migra y checkout vera carrito vacio',
+            ]);
             migrate_guest_cart_to_user($pdo, (int)$result['user_id'], $guest_sid_cart);
 
             // Set all session variables (both legacy and standardized)
@@ -235,14 +259,22 @@ if (isset($_GET['oauth']) && isset($_GET['code'])) {
             $_SESSION['role'] = 'active';
             unset($_SESSION['pending_redirect']);
 
-            logDebug("OAUTH_LOGIN_OK", ['provider' => $_GET['oauth'], 'uid' => $result['user_id']]);
+            logDebug("OAUTH_LOGIN_OK", [
+                'provider'    => $_GET['oauth'],
+                'uid'         => $result['user_id'],
+                'email'       => $result['email'],
+                'redirige_a'  => $redirect,
+                'nota'        => 'Login exitoso via OAuth. Se redirige a: ' . $redirect,
+            ]);
 
             header('Location: ' . $redirect);
             exit;
         } elseif ($result && isset($result['error'])) {
+            logDebug("OAUTH_LOGIN_FALLO", ['error' => $result['error'], 'provider' => $_GET['oauth'] ?? '']);
             $error = $result['error'];
         }
     } catch (Exception $e) {
+        logDebug("OAUTH_EXCEPTION", ['error' => $e->getMessage()]);
         $error = 'Error en autenticación';
     }
 }
@@ -268,6 +300,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                 if ($user && $ok) {
                     $guest_sid_cart = $_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? '');
+                    logDebug("PASSWORD_ANTES_MIGRAR_CARRITO", [
+                        'uid'                  => $user['id'],
+                        'email'                => $email,
+                        'guest_sid_en_sesion'  => $_SESSION['guest_sid'] ?? '(vacio - PROBLEMA: no hay carrito que migrar)',
+                        'guest_sid_en_cookie'  => $_COOKIE['vg_guest'] ?? '(vacio)',
+                        'guest_sid_que_se_usa' => $guest_sid_cart ?: '(VACIO - la migracion fallara)',
+                    ]);
                     migrate_guest_cart_to_user($pdo, (int)$user['id'], $guest_sid_cart);
 
                     // Set all session variables (both legacy and standardized)
@@ -279,6 +318,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $_SESSION['user_name'] = $user['name'] ?? '';
                     $_SESSION['role'] = $user['status'] ?? 'active';
                     unset($_SESSION['pending_redirect']);
+
+                    logDebug("PASSWORD_LOGIN_OK", [
+                        'uid'        => $user['id'],
+                        'email'      => $email,
+                        'redirige_a' => $redirect,
+                        'nota'       => 'Login con contraseña exitoso. Se redirige a: ' . $redirect,
+                    ]);
 
                     header('Location: ' . $redirect);
                     exit;
