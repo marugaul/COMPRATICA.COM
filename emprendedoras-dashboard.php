@@ -1724,19 +1724,28 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         <div class="section">
             <div class="section-header">
                 <h2><i class="fas fa-box"></i> Mis Productos</h2>
-                <?php if ($isPending): ?>
+                <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                    <?php if (!$isPending && !empty($products)): ?>
+                    <a href="emprendedoras-bulk-prices.php"
+                       style="background:rgba(102,126,234,.1);color:#667eea;padding:10px 18px;border-radius:25px;text-decoration:none;font-weight:600;font-size:.875rem;display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(102,126,234,.3);transition:all .2s;"
+                       onmouseover="this.style.background='rgba(102,126,234,.18)'" onmouseout="this.style.background='rgba(102,126,234,.1)'">
+                        <i class="fas fa-percentage"></i> Ajuste de Precios
+                    </a>
+                    <?php endif; ?>
+                    <?php if ($isPending): ?>
                     <button class="btn-primary" style="opacity: 0.5; cursor: not-allowed;" disabled>
                         <i class="fas fa-lock"></i> Cuenta pendiente
                     </button>
-                <?php elseif ($canAddProducts): ?>
+                    <?php elseif ($canAddProducts): ?>
                     <a href="emprendedoras-producto-crear.php" class="btn-primary">
                         <i class="fas fa-plus"></i> Agregar Producto
                     </a>
-                <?php else: ?>
+                    <?php else: ?>
                     <button class="btn-primary" style="opacity: 0.5; cursor: not-allowed;" disabled>
                         <i class="fas fa-plus"></i> Agregar Producto
                     </button>
-                <?php endif; ?>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <?php if ($isPending): ?>
