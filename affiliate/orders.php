@@ -57,13 +57,6 @@ function whatsappLink(string $phone, int $orderId, string $product): string {
 
 /** Verifica que el pedido pertenezca a este afiliado */
 function load_aff_order(PDO $pdo, int $order_id, int $aff_id) {
-  // DEBUG: ver qué hay en la orden sin filtro de afiliado
-  $st_raw = $pdo->prepare("SELECT o.id, o.order_number, o.status, o.affiliate_id, o.product_id, p.sale_id, s.affiliate_id AS sale_aff FROM orders o JOIN products p ON p.id=o.product_id LEFT JOIN sales s ON s.id=p.sale_id WHERE o.id=? LIMIT 1");
-  $st_raw->execute([$order_id]);
-  $raw = $st_raw->fetch(PDO::FETCH_ASSOC);
-  error_log("[load_aff_order] DEBUG order_id={$order_id} aff_id={$aff_id} raw=" . json_encode($raw));
-  ordlog("LOAD_AFF_ORDER_DEBUG", ['order_id' => $order_id, 'aff_id' => $aff_id, 'raw_row' => $raw ?: 'NO ROW']);
-
   $sql = "
     SELECT
       o.*,
@@ -80,9 +73,7 @@ function load_aff_order(PDO $pdo, int $order_id, int $aff_id) {
   ";
   $st = $pdo->prepare($sql);
   $st->execute([$order_id, $aff_id, $aff_id]);
-  $result = $st->fetch(PDO::FETCH_ASSOC);
-  error_log("[load_aff_order] WITH filter result=" . ($result ? 'FOUND' : 'NOT FOUND'));
-  return $result;
+  return $st->fetch(PDO::FETCH_ASSOC);
 }
 
 /** Chequea si orders tiene columna updated_at para no romper el UPDATE */
@@ -171,43 +162,12 @@ function build_status_email_unified(string $estado, string $order_number, array 
   return [$subject, $body];
 }
 
-/** Log a archivo en /logs/ Y al error_log del servidor para diagnostico */
-function ordlog(string $tag, array $data = []): void {
-  $line = '[' . date('Y-m-d H:i:s') . '] [ORDERS] ' . $tag;
-  if ($data) $line .= ' | ' . json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-  // Siempre al error_log del servidor (funciona aunque no exista /logs)
-  error_log($line);
-  // Intentar también al archivo /logs/
-  $dirs = [__DIR__ . '/../logs', sys_get_temp_dir()];
-  foreach ($dirs as $logDir) {
-    if (is_dir($logDir) && is_writable($logDir)) {
-      @file_put_contents($logDir . '/affiliate_orders_debug.log', $line . PHP_EOL, FILE_APPEND);
-      break;
-    }
-    @mkdir($logDir, 0755, true);
-  }
-}
 
 /** POST: actualizar estado y notificar */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status'])) {
-  ordlog("GUARDAR_CLICK", [
-    'post_order_id'          => $_POST['order_id'] ?? '(vacio)',
-    'post_status'            => $_POST['status'] ?? '(vacio)',
-    'post_update_order_status' => $_POST['update_order_status'] ?? '(vacio)',
-    'aff_id_en_sesion'       => $aff_id,
-    'session_keys'           => array_keys($_SESSION),
-    'todos_los_post'         => array_keys($_POST),
-  ]);
   try {
     $order_id   = (int)($_POST['order_id'] ?? 0);
     $new_status = trim((string)($_POST['status'] ?? 'Pendiente'));
-
-    ordlog("VALORES_RECIBIDOS", [
-      'order_id'   => $order_id,
-      'new_status' => $new_status,
-      'es_valido'  => in_array($new_status, allowed_statuses(), true) ? 'SI' : 'NO - RECHAZADO',
-      'validos'    => allowed_statuses(),
-    ]);
 
     if (!in_array($new_status, allowed_statuses(), true)) {
       throw new RuntimeException('Estado inválido: ' . $new_status);
@@ -215,15 +175,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
 
     // Cargar pedido y validar pertenencia al afiliado
     $ord = load_aff_order($pdo, $order_id, $aff_id);
-    ordlog("LOAD_ORDER_RESULT", [
-      'order_id'    => $order_id,
-      'aff_id'      => $aff_id,
-      'encontrado'  => $ord ? 'SI' : 'NO - falla aqui',
-      'order_number'=> $ord['order_number'] ?? '(no encontrado)',
-      'status_actual'=> $ord['status'] ?? '(no encontrado)',
-      'affiliate_id_en_orden' => $ord['affiliate_id'] ?? '(null)',
-      'sale_affiliate_id'     => $ord['sale_affiliate_id'] ?? '(null)',
-    ]);
     if (!$ord) {
       throw new RuntimeException('Pedido no encontrado o no pertenece a este afiliado.');
     }
@@ -255,13 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
       }
     }
     $rows_updated = $upd->rowCount();
-    ordlog("UPDATE_RESULT", [
-      'new_status'    => $new_status,
-      'order_number'  => $order_number,
-      'order_id'      => $order_id,
-      'filas_afectadas' => $rows_updated,
-      'ok' => $rows_updated > 0 ? 'SI - status cambiado en BD' : 'CERO FILAS - status NO se guardo en BD',
-    ]);
+    error_log("[affiliate/orders.php] UPDATE status='{$new_status}' order_number='{$order_number}' order_id={$order_id} rows_affected={$rows_updated}");
 
     // Obtener TODOS los items de esta orden para el email unificado
     $all_items = [];
@@ -341,7 +286,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
     exit;
   } catch (Throwable $e) {
     $msg = 'Error: ' . $e->getMessage();
-    ordlog("EXCEPCION", ['error' => $e->getMessage(), 'linea' => $e->getLine(), 'archivo' => basename($e->getFile())]);
     error_log("[affiliate/orders.php] ERROR al actualizar estado: ".$e->getMessage());
   }
 }
@@ -678,7 +622,6 @@ $orders = array_values($orders_grouped);
       <?= htmlspecialchars($msg) ?>
     </div>
     <script>
-      alert('<?= $isError ? "ERROR" : "EXITO" ?>: <?= addslashes(htmlspecialchars($msg)) ?>');
       document.getElementById('page-msg').scrollIntoView({behavior:'smooth', block:'start'});
     </script>
   <?php endif; ?>
@@ -844,28 +787,15 @@ $orders = array_values($orders_grouped);
   </div>
 </div>
 <script>
-document.querySelectorAll('form.status-form, form[method="post"]').forEach(function(form) {
-  form.addEventListener('submit', function(e) {
-    var orderIdInput = form.querySelector('[name="order_id"]');
-    var statusInput  = form.querySelector('[name="status"]') || form.querySelector('[name="status"][type="hidden"]');
-    var orderId = orderIdInput ? orderIdInput.value : '?';
-    var status  = statusInput  ? statusInput.value  : '?';
-    console.log('[ORDERS] Form submit → order_id=' + orderId + ' status=' + status + ' action=' + (form.action || 'orders.php'));
-    // Confirmar visualmente que el submit se disparó
+// Deshabilitar botón al hacer submit para evitar doble envío
+document.querySelectorAll('form[method="post"]').forEach(function(form) {
+  form.addEventListener('submit', function() {
     var btn = form.querySelector('button[name="update_order_status"]');
     if (btn) {
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
     }
   });
-});
-// Verificar que los forms existen al cargar
-console.log('[ORDERS] SESSION aff_id del PHP = <?= (int)($aff_id ?? 0) ?>');
-var forms = document.querySelectorAll('form[method="post"]');
-console.log('[ORDERS] Forumularios POST encontrados en la pagina: ' + forms.length);
-forms.forEach(function(f, i) {
-  var oid = f.querySelector('[name="order_id"]');
-  console.log('  Form #' + i + ' order_id=' + (oid ? oid.value : 'NO ENCONTRADO'));
 });
 </script>
 </body>
