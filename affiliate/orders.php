@@ -11,8 +11,12 @@ if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
 
+// Log inmediato - antes de cualquier check
+error_log('[ORDERS] REQUEST method=' . $_SERVER['REQUEST_METHOD'] . ' aff_id_session=' . ($_SESSION['aff_id'] ?? 'NO_SET') . ' POST_keys=' . implode(',', array_keys($_POST)));
+
 $aff_id = (int)($_SESSION['aff_id'] ?? 0); // misma clave que setea affiliate/login.php
 if ($aff_id <= 0) {
+  error_log('[ORDERS] REDIRECT a login porque aff_id=' . $aff_id . ' SESSION=' . json_encode(array_keys($_SESSION)));
   header('Location: login.php');
   exit;
 }
@@ -157,14 +161,21 @@ function build_status_email_unified(string $estado, string $order_number, array 
   return [$subject, $body];
 }
 
-/** Log a archivo en /logs/ para diagnostico */
+/** Log a archivo en /logs/ Y al error_log del servidor para diagnostico */
 function ordlog(string $tag, array $data = []): void {
-  $logDir  = __DIR__ . '/../logs';
-  $logFile = $logDir . '/affiliate_orders_debug.log';
-  if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
-  $line = '[' . date('Y-m-d H:i:s') . '] ' . $tag;
+  $line = '[' . date('Y-m-d H:i:s') . '] [ORDERS] ' . $tag;
   if ($data) $line .= ' | ' . json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-  @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
+  // Siempre al error_log del servidor (funciona aunque no exista /logs)
+  error_log($line);
+  // Intentar también al archivo /logs/
+  $dirs = [__DIR__ . '/../logs', sys_get_temp_dir()];
+  foreach ($dirs as $logDir) {
+    if (is_dir($logDir) && is_writable($logDir)) {
+      @file_put_contents($logDir . '/affiliate_orders_debug.log', $line . PHP_EOL, FILE_APPEND);
+      break;
+    }
+    @mkdir($logDir, 0755, true);
+  }
 }
 
 /** POST: actualizar estado y notificar */
