@@ -428,7 +428,9 @@ $paypal_client_id = defined('PAYPAL_CLIENT_ID') ? PAYPAL_CLIENT_ID : '';
     .total{font-size:1.2em;font-weight:bold;color:#0070ba;margin:0 0 24px;padding:12px;background:#f0f7ff;border-radius:6px}
     #paypal-button-container{min-height:50px}
     #sdk-error{color:#c0392b;padding:10px 14px;background:#fdf0f0;border:1px solid #f5c6cb;border-radius:6px;display:none;margin-top:14px;font-size:.95em}
-    .tip{font-size:.8em;color:#aaa;margin-top:16px;text-align:center}
+    .tip{font-size:.8em;color:#aaa;margin-top:12px;text-align:center}
+    .back-link{display:block;text-align:center;margin-top:18px;padding:10px;border:1px solid #ddd;border-radius:6px;color:#555;text-decoration:none;font-size:.95em;transition:background .15s}
+    .back-link:hover{background:#f5f5f5}
   </style>
 </head>
 <body>
@@ -439,8 +441,11 @@ $paypal_client_id = defined('PAYPAL_CLIENT_ID') ? PAYPAL_CLIENT_ID : '';
     <div id="paypal-button-container"></div>
     <div id="sdk-error"></div>
     <p class="tip">Puedes pagar con tu cuenta PayPal o directamente con tarjeta de crédito/débito.</p>
+    <a href="checkout.php?sale_id=<?= (int)$sale_id ?>" class="back-link">← Volver al checkout / elegir otro método de pago</a>
   </div>
   <script>
+  var checkoutUrl = 'checkout.php?sale_id=<?= (int)$sale_id ?>';
+
   paypal_sdk.Buttons({
     style: { layout: 'vertical', label: 'pay', shape: 'rect', color: 'blue' },
 
@@ -476,7 +481,7 @@ $paypal_client_id = defined('PAYPAL_CLIENT_ID') ? PAYPAL_CLIENT_ID : '';
     },
 
     onCancel: function() {
-      showError('Pago cancelado. Puedes intentarlo de nuevo cuando quieras.');
+      window.location.href = checkoutUrl;
     },
 
     onError: function(err) {
