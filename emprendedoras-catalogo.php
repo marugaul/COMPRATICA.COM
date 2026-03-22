@@ -709,11 +709,6 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
             <div class="puesto-info">
                 <div class="puesto-name">
                     <?= $name ?>
-                    <?php if ($sellerType === 'emprendedor'): ?>
-                        <span class="seller-type-pill hombre">👨 Emprendedor</span>
-                    <?php else: ?>
-                        <span class="seller-type-pill mujer">👩 Emprendedora</span>
-                    <?php endif; ?>
                 </div>
                 <div class="puesto-meta">
                     <?= $pCount ?> producto<?= $pCount !== 1 ? 's' : '' ?>
