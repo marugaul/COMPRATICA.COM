@@ -13,6 +13,13 @@ $stats = [
   'orders'   => $pdo->query("SELECT COUNT(1) FROM orders WHERE affiliate_id={$aff_id}")->fetchColumn(),
 ];
 
+// Costo de crear un espacio
+$sale_fee_crc = 2000; // default
+try {
+    $v = $pdo->query("SELECT sale_fee_crc FROM settings WHERE id=1 LIMIT 1")->fetchColumn();
+    if ($v !== false && $v !== null) $sale_fee_crc = (float)$v;
+} catch (Throwable $e) {}
+
 // ⭐ Nuevas estadísticas de ubicaciones Uber
 $uber_stats = [];
 try {
@@ -384,7 +391,12 @@ if (function_exists('mb_internal_encoding')) {
         </div>
       </div>
       <div class="stat-value"><?= (int)$stats['sales'] ?></div>
-      <div class="stat-subtitle">Espacios de venta creados</div>
+      <div class="stat-subtitle">
+        Espacios de venta creados
+        <span style="display:block;margin-top:0.35rem;font-size:0.78rem;color:#6b7280;">
+          Costo por espacio: <strong style="color:#059669;">₡<?= number_format($sale_fee_crc, 0, '.', ',') ?></strong>
+        </span>
+      </div>
     </div>
     
     <div class="stat-card">
