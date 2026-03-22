@@ -129,15 +129,20 @@ $st = $pdo->prepare("SELECT id FROM carts WHERE user_id = ? ORDER BY updated_at 
 $st->execute([$user_id]);
 $cart_id = (int)$st->fetchColumn();
 
-if ($cart_id <= 0 && $guest_sid !== '') {
-    $st = $pdo->prepare("SELECT id FROM carts WHERE guest_sid = ? ORDER BY id DESC LIMIT 1");
+// Fallback por guest_sid si no hay cart del usuario o si el cart del usuario está vacío para este sale_id
+// IMPORTANTE: incluso si cart_id > 0, puede ser un cart viejo vacío; por eso revisamos guest_sid también
+$guest_cart_id = 0;
+if ($guest_sid !== '') {
+    $st = $pdo->prepare("SELECT id FROM carts WHERE guest_sid = ? ORDER BY updated_at DESC, id DESC LIMIT 1");
     $st->execute([$guest_sid]);
-    $cart_id = (int)$st->fetchColumn();
+    $guest_cart_id = (int)$st->fetchColumn();
+}
+
+if ($cart_id <= 0 && $guest_cart_id > 0) {
+    $cart_id = $guest_cart_id;
     // Migrar el carrito anónimo al usuario si login.php no lo hizo
-    if ($cart_id > 0) {
-        $pdo->prepare("UPDATE carts SET user_id = ? WHERE id = ? AND (user_id IS NULL OR user_id = 0)")
-            ->execute([$user_id, $cart_id]);
-    }
+    $pdo->prepare("UPDATE carts SET user_id = ?, updated_at = datetime('now') WHERE id = ? AND (user_id IS NULL OR user_id = 0)")
+        ->execute([$user_id, $cart_id]);
 }
 
 $store_url = 'store?sale_id=' . $sale_id;
@@ -169,6 +174,20 @@ $sqlItems = "
 $st = $pdo->prepare($sqlItems);
 $st->execute([$cart_id, $sale_id, $sale_id]);
 $items = $st->fetchAll(PDO::FETCH_ASSOC);
+
+// Si el cart del usuario está vacío para este sale_id pero hay un cart de guest_sid con items, usar ese
+if (empty($items) && $guest_cart_id > 0 && $guest_cart_id !== $cart_id) {
+    $st = $pdo->prepare($sqlItems);
+    $st->execute([$guest_cart_id, $sale_id, $sale_id]);
+    $guest_items = $st->fetchAll(PDO::FETCH_ASSOC);
+    if (!empty($guest_items)) {
+        // Migrar el carrito del guest al usuario y usar ese
+        $pdo->prepare("UPDATE carts SET user_id = ?, updated_at = datetime('now') WHERE id = ?")
+            ->execute([$user_id, $guest_cart_id]);
+        $cart_id = $guest_cart_id;
+        $items = $guest_items;
+    }
+}
 
 if (empty($items)) {
     $_SESSION['error'] = "No hay productos en el carrito para este espacio. Agrega productos primero.";

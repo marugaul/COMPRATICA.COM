@@ -62,20 +62,34 @@ require_once __DIR__ . '/includes/db.php';
  * La selección del cart correcto se resuelve en get_or_create_cart_id() por updated_at DESC.
  */
 function migrate_guest_cart_to_user(PDO $pdo, int $uid, string $guest_sid): void {
-    if ($uid <= 0 || $guest_sid === '') return;
+    if ($uid <= 0 || $guest_sid === '') {
+        logDebug("MIGRATE_SKIP", ['reason' => 'uid_or_guest_sid_empty', 'uid' => $uid, 'guest_sid' => $guest_sid]);
+        return;
+    }
     try {
         // Buscar carrito invitado y asignarlo al usuario
         $s = $pdo->prepare("SELECT id FROM carts WHERE guest_sid = ? LIMIT 1");
         $s->execute([$guest_sid]);
         $guestCartId = (int)($s->fetchColumn() ?: 0);
-        if ($guestCartId <= 0) return;
+        if ($guestCartId <= 0) {
+            logDebug("MIGRATE_NO_CART", ['guest_sid' => $guest_sid, 'uid' => $uid]);
+            return;
+        }
+
+        // Contar items para log
+        $itemCount = (int)$pdo->prepare("SELECT COUNT(*) FROM cart_items WHERE cart_id = ?")->execute([$guestCartId]) ? 0 : 0;
+        $ic = $pdo->prepare("SELECT COUNT(*) FROM cart_items WHERE cart_id = ?");
+        $ic->execute([$guestCartId]);
+        $itemCount = (int)$ic->fetchColumn();
 
         // Asignar el carrito invitado al usuario Y actualizar updated_at para que
         // get_or_create_cart_id() (ORDER BY updated_at DESC) lo encuentre primero
         $pdo->prepare("UPDATE carts SET user_id = ?, updated_at = datetime('now') WHERE id = ?")
             ->execute([$uid, $guestCartId]);
-        error_log("[login] migrated cart_id={$guestCartId} to uid={$uid}");
+        logDebug("MIGRATE_OK", ['cart_id' => $guestCartId, 'uid' => $uid, 'guest_sid' => $guest_sid, 'items' => $itemCount]);
+        error_log("[login] migrated cart_id={$guestCartId} to uid={$uid} items={$itemCount}");
     } catch (Throwable $e) {
+        logDebug("MIGRATE_ERROR", ['error' => $e->getMessage(), 'uid' => $uid, 'guest_sid' => $guest_sid]);
         error_log("[login.php] migrate_guest_cart_to_user error: " . $e->getMessage());
     }
 }
