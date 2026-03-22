@@ -518,7 +518,7 @@ $isLoggedIn = true;
         $paypalClientId = defined('PAYPAL_CLIENT_ID') ? PAYPAL_CLIENT_ID : '';
         $paypalMode     = defined('PAYPAL_MODE') ? PAYPAL_MODE : 'sandbox';
         $sdkUrl = 'https://www.paypal.com/sdk/js?client-id=' . urlencode($paypalClientId)
-                . '&currency=USD&enable-funding=applepay,googlepay,venmo&components=buttons';
+                . '&currency=USD&enable-funding=applepay,googlepay,venmo,card&components=buttons';
         if ($paypalMode !== 'live') {
             $sdkUrl .= '&buyer-country=US';
         }

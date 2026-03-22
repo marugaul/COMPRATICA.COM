@@ -58,7 +58,7 @@ $has_paypal = in_array('paypal', $payment_methods);
   <title>Pago de Publicación — <?php echo APP_NAME; ?></title>
   <?php if (defined('PAYPAL_CLIENT_ID') && PAYPAL_CLIENT_ID): ?>
   <!-- PayPal SDK -->
-  <script src="https://www.paypal.com/sdk/js?client-id=<?= PAYPAL_CLIENT_ID ?>&currency=USD"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=<?= PAYPAL_CLIENT_ID ?>&currency=USD&enable-funding=card"></script>
   <?php endif; ?>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">

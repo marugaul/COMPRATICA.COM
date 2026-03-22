@@ -61,7 +61,7 @@ $has_paypal = in_array('paypal', $payment_methods);
 
   <?php if (defined('PAYPAL_CLIENT_ID') && PAYPAL_CLIENT_ID): ?>
   <!-- PayPal SDK -->
-  <script src="https://www.paypal.com/sdk/js?client-id=<?= PAYPAL_CLIENT_ID ?>&currency=USD"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=<?= PAYPAL_CLIENT_ID ?>&currency=USD&enable-funding=card"></script>
   <?php endif; ?>
   <style>
     :root {

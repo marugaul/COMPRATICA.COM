@@ -493,6 +493,7 @@ checkout_log("PAYPAL_ITEMS", [
     <input type="hidden" name="cancel_return" value="<?= htmlspecialchars($paypal_cancel, ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="notify_url" value="<?= htmlspecialchars($paypal_notify, ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="rm" value="1"><!-- GET: mantiene cookie con SameSite=Lax -->
+    <input type="hidden" name="landing_page" value="Billing"><!-- Muestra formulario de tarjeta a usuarios sin cuenta PayPal -->
     <?php
     $custom_data = [
         'order_id'     => (int)$first_order_id,
