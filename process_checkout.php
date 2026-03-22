@@ -215,12 +215,26 @@ if ($exchange_rate<=0) {
 }
 if ($exchange_rate<=0) $exchange_rate = 510.0;
 
-// ===== INSERTAR ÓRDENES =====
-$order_number = 'ORD-'.date('Ymd').'-'.strtoupper(substr(md5(uniqid('', true)), 0, 6));
+// ===== TOKEN reauth =====
+function b64url(string $bin): string { return rtrim(strtr(base64_encode($bin), '+/', '-_'), '='); }
+function sign_token(string $payloadJson, string $secret): string {
+    return b64url(hash_hmac('sha256', $payloadJson, $secret, true));
+}
+function build_reauth(int $uid): string {
+    $secret = defined('APP_KEY') ? (string)APP_KEY : 'supersecret_cambiar';
+    $payload = ['uid' => $uid, 'exp' => time() + 1800];
+    $pj = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    return b64url($pj) . '.' . sign_token($pj, $secret);
+}
 
-try {
-    $pdo->beginTransaction();
-
+// ===== HELPER: insertar órdenes en BD =====
+function insert_orders(
+    PDO $pdo, string $order_number, array $items,
+    int $affiliate_id, int $sale_id,
+    string $buyer_email, string $buyer_name, string $buyer_phone,
+    string $payment_method, string $status,
+    string $delivery_notes, string $currency, float $exchange_rate
+): array {
     $ins = $pdo->prepare("
       INSERT INTO orders (
         order_number, product_id, affiliate_id, sale_id,
@@ -234,166 +248,108 @@ try {
     $order_ids = [];
     foreach ($items as $it) {
         $qty  = (float)($it['quantity'] ?? 1);
-        $unit = isset($it['unit_price']) && $it['unit_price'] !== null ? (float)$it['unit_price'] : (float)($it['price'] ?? 0);
+        $unit = isset($it['unit_price']) && $it['unit_price'] !== null
+            ? (float)$it['unit_price']
+            : (float)($it['price'] ?? 0);
         $line = $qty * $unit;
 
         $raw = (float)($it['eff_tax_rate'] ?? 0);
         $tr  = 0.0;
-        if ($raw > 1.0 && $raw <= 100.0) $tr = $raw/100.0;
-        elseif ($raw >= 0.0 && $raw <= 1.0) $tr = $raw;
+        if ($raw > 1.0 && $raw <= 100.0)      $tr = $raw / 100.0;
+        elseif ($raw >= 0.0 && $raw <= 1.0)   $tr = $raw;
 
         $line_tax = $line * $tr;
         $line_tot = $line + $line_tax;
 
         $ins->execute([
-            $order_number,
-            (int)$it['product_id'],
-            (int)$affiliate_id,
-            (int)$sale_id,
-            (string)$user['email'],
-            (string)$user['name'],
-            (string)$buyer_phone,
-            $qty,
-            $line,
-            $line_tax,
-            $line_tot,
-            $payment_method,
-            'Pendiente',
-            $delivery_notes,
-            $currency,
-            $exchange_rate,
-            date('Y-m-d H:i:s'),
-            date('Y-m-d H:i:s')
+            $order_number, (int)$it['product_id'], $affiliate_id, $sale_id,
+            $buyer_email, $buyer_name, $buyer_phone,
+            $qty, $line, $line_tax, $line_tot,
+            $payment_method, $status,
+            $delivery_notes, $currency, $exchange_rate,
+            date('Y-m-d H:i:s'), date('Y-m-d H:i:s')
         ]);
-
         $order_ids[] = (int)$pdo->lastInsertId();
 
-        // Descontar inventario inmediatamente al crear la orden (dentro de la transacción)
+        // Descontar stock
         $pid = (int)$it['product_id'];
         if ($pid > 0 && $qty > 0) {
-            $pdo->prepare(
-                "UPDATE products
-                    SET stock = CASE WHEN stock >= ? THEN stock - ? ELSE 0 END,
-                        updated_at = datetime('now')
-                  WHERE id = ?"
-            )->execute([$qty, $qty, $pid]);
+            $pdo->prepare("
+                UPDATE products
+                   SET stock = CASE WHEN stock >= ? THEN stock - ? ELSE 0 END,
+                       updated_at = datetime('now')
+                 WHERE id = ?
+            ")->execute([$qty, $qty, $pid]);
         }
     }
-
-    $pdo->commit();
-    checkout_log("ORDERS_CREATED", ['order_number'=>$order_number,'ids'=>$order_ids]);
-} catch (Throwable $e) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
-    checkout_log("ORDERS_TX_ERROR", ['err'=>$e->getMessage(),'trace'=>$e->getTraceAsString()]);
-    $_SESSION['error'] = "Error al procesar la orden: " . $e->getMessage();
-    header('Location: checkout.php?sale_id='.$sale_id);
-    exit;
+    return $order_ids;
 }
 
-$first_order_id = $order_ids[0] ?? 0;
-
-// ===== EMAIL CONFIRMACIÓN DE PEDIDO (Pendiente) =====
-try {
-    $detalle = '';
-    foreach ($items as $it) {
-        $qty  = (float)($it['quantity'] ?? 1);
-        $unit = isset($it['unit_price']) && $it['unit_price'] !== null ? (float)$it['unit_price'] : (float)($it['price'] ?? 0);
-        $line = $qty * $unit;
-        $detalle .= '<tr>'.
-            '<td>'.htmlspecialchars($it['name'] ?? 'Producto', ENT_QUOTES, 'UTF-8').'</td>'.
-            '<td style="text-align:right">'.number_format($qty,2).'</td>'.
-            '<td style="text-align:right">'.number_format($line,2).'</td>'.
-            '</tr>';
+// ===== SINPE: crear orden y redirigir a comprobante =====
+if ($payment_method === 'sinpe') {
+    $order_number = 'ORD-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid('', true)), 0, 6));
+    try {
+        $pdo->beginTransaction();
+        $order_ids = insert_orders(
+            $pdo, $order_number, $items,
+            $affiliate_id, $sale_id,
+            (string)$user['email'], (string)$user['name'], $buyer_phone,
+            'sinpe', 'Pendiente',
+            $delivery_notes, $currency, $exchange_rate
+        );
+        $pdo->commit();
+        checkout_log("SINPE_ORDERS_CREATED", ['order_number' => $order_number, 'ids' => $order_ids]);
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        checkout_log("SINPE_TX_ERROR", ['err' => $e->getMessage()]);
+        $_SESSION['error'] = "Error al procesar la orden: " . $e->getMessage();
+        header('Location: checkout.php?sale_id=' . $sale_id);
+        exit;
     }
-    $html = '
-        <h2>Confirmación de pedido</h2>
-        <p>Hola '.htmlspecialchars($user['name'] ?? 'Cliente', ENT_QUOTES, 'UTF-8').',</p>
-        <p>Hemos recibido tu pedido con número <strong>'.htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8').'</strong>.</p>
-        <table width="100%" cellspacing="0" cellpadding="6" border="1" style="border-collapse:collapse">
-            <thead><tr><th>Producto</th><th>Cant.</th><th>Total línea</th></tr></thead>
-            <tbody>'.$detalle.'</tbody>
-        </table>
-        <p><strong>Subtotal:</strong> '.number_format($subtotal,2).' '.$currency.'<br>
-           <strong>Impuestos:</strong> '.number_format($tax_total,2).' '.$currency.'<br>
-           <strong>Total:</strong> '.number_format($grand_total,2).' '.$currency.'</p>
-        <p>Estado actual: <strong>Pendiente de pago</strong>.</p>
-    ';
-    @send_mail((string)$user['email'], 'Confirmación de pedido '.$order_number, $html);
-    checkout_log("EMAIL_SENT_ORDER_CONFIRM", ['to'=>$user['email'] ?? '']);
 
-    // Notificación al administrador
-    $admin_email = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
-    $buyer_email_lower = strtolower((string)($user['email'] ?? ''));
+    $first_order_id = $order_ids[0] ?? 0;
 
-    if ($admin_email !== '' && strtolower($admin_email) !== $buyer_email_lower) {
-        $html_admin = '<h2>Nuevo pedido recibido</h2>'
-            . '<p>Se ha recibido el pedido <strong>' . htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8') . '</strong> de '
-            . htmlspecialchars($user['name'] ?? '', ENT_QUOTES, 'UTF-8') . ' ('
-            . htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') . ').</p>'
-            . '<p><strong>Método de pago:</strong> ' . htmlspecialchars($payment_method, ENT_QUOTES, 'UTF-8') . '</p>'
+    // Email "Pendiente de pago" al comprador
+    try {
+        $detalle = '';
+        foreach ($items as $it) {
+            $qty  = (float)($it['quantity'] ?? 1);
+            $unit = isset($it['unit_price']) && $it['unit_price'] !== null ? (float)$it['unit_price'] : (float)($it['price'] ?? 0);
+            $line = $qty * $unit;
+            $detalle .= '<tr><td>' . htmlspecialchars($it['name'] ?? 'Producto', ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td style="text-align:right">' . number_format($qty, 2) . '</td>'
+                . '<td style="text-align:right">' . number_format($line, 2) . '</td></tr>';
+        }
+        $html_buyer = '<h2>Confirmación de pedido</h2>'
+            . '<p>Hola ' . htmlspecialchars($user['name'] ?? 'Cliente', ENT_QUOTES, 'UTF-8') . ',</p>'
+            . '<p>Hemos recibido tu pedido <strong>' . htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8') . '</strong>.</p>'
             . '<table width="100%" cellspacing="0" cellpadding="6" border="1" style="border-collapse:collapse">'
             . '<thead><tr><th>Producto</th><th>Cant.</th><th>Total línea</th></tr></thead>'
-            . '<tbody>' . $detalle . '</tbody>'
-            . '</table>'
-            . '<p><strong>Total:</strong> ' . number_format($grand_total, 2) . ' ' . $currency . '</p>';
-        @send_mail($admin_email, '[COMPRATICA] Nuevo pedido '.$order_number, $html_admin);
-        checkout_log("EMAIL_SENT_ADMIN", ['to' => $admin_email]);
-    }
+            . '<tbody>' . $detalle . '</tbody></table>'
+            . '<p><strong>Total:</strong> ' . number_format($grand_total, 2) . ' ' . $currency . '</p>'
+            . '<p>Estado: <strong>Pendiente de pago (SINPE)</strong>.</p>';
+        @send_mail((string)$user['email'], 'Pedido recibido — ' . $order_number, $html_buyer);
 
-    // Notificación al afiliado (vendedor)
-    if ($affiliate_id > 0) {
-        try {
-            $st_aff = $pdo->prepare("SELECT email, name FROM affiliates WHERE id = ? LIMIT 1");
-            $st_aff->execute([$affiliate_id]);
-            $aff_row = $st_aff->fetch(PDO::FETCH_ASSOC);
-            $aff_email = strtolower(trim((string)($aff_row['email'] ?? '')));
-            if ($aff_email !== '' && $aff_email !== $buyer_email_lower && $aff_email !== strtolower($admin_email)) {
-                $html_aff = '<h2>Nuevo pedido recibido en tu tienda</h2>'
-                    . '<p>Hola ' . htmlspecialchars($aff_row['name'] ?? '', ENT_QUOTES, 'UTF-8') . ',</p>'
-                    . '<p>Has recibido el pedido <strong>' . htmlspecialchars($order_number, ENT_QUOTES, 'UTF-8') . '</strong> de '
-                    . htmlspecialchars($user['name'] ?? '', ENT_QUOTES, 'UTF-8') . ' ('
-                    . htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') . ').</p>'
-                    . '<p><strong>Método de pago:</strong> ' . htmlspecialchars($payment_method, ENT_QUOTES, 'UTF-8') . '</p>'
-                    . '<table width="100%" cellspacing="0" cellpadding="6" border="1" style="border-collapse:collapse">'
-                    . '<thead><tr><th>Producto</th><th>Cant.</th><th>Total línea</th></tr></thead>'
-                    . '<tbody>' . $detalle . '</tbody>'
-                    . '</table>'
-                    . '<p><strong>Total:</strong> ' . number_format($grand_total, 2) . ' ' . $currency . '</p>';
-                @send_mail($aff_email, '[COMPRATICA] Nuevo pedido '.$order_number, $html_aff);
-                checkout_log("EMAIL_SENT_AFFILIATE", ['to' => $aff_email]);
-            }
-        } catch (Throwable $e) {
-            checkout_log("EMAIL_AFFILIATE_ERROR", ['err' => $e->getMessage()]);
+        $admin_email      = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
+        $buyer_email_lower = strtolower((string)($user['email'] ?? ''));
+        if ($admin_email !== '' && strtolower($admin_email) !== $buyer_email_lower) {
+            @send_mail($admin_email, '[COMPRATICA] Pedido SINPE — ' . $order_number,
+                '<h2>Pedido SINPE pendiente</h2><p>De: ' . htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8')
+                . '</p><p>Total: ' . number_format($grand_total, 2) . ' ' . $currency . '</p>');
         }
+    } catch (Throwable $e) {
+        checkout_log("SINPE_EMAIL_ERROR", ['err' => $e->getMessage()]);
     }
-} catch (Throwable $e) {
-    checkout_log("EMAIL_ERROR", ['err'=>$e->getMessage()]);
-}
 
-// ===== TOKEN reauth para order-success.php =====
-function b64url(string $bin): string { return rtrim(strtr(base64_encode($bin), '+/', '-_'), '='); }
-function sign_token(string $payloadJson, string $secret): string {
-    return b64url(hash_hmac('sha256', $payloadJson, $secret, true));
-}
-$secret = defined('APP_KEY') ? (string)APP_KEY : (string)($GLOBALS['APP_KEY'] ?? 'supersecret_cambiar');
-$payload = ['uid'=>$user_id, 'exp'=> time()+900];
-$payloadJson = json_encode($payload, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
-$reauth = b64url($payloadJson) . '.' . sign_token($payloadJson, $secret);
-checkout_log("REAUTH_TOKEN_BUILT", ['payload'=>['uid'=>$user_id,'exp'=>$payload['exp']]]);
-
-// ===== REDIRECCIONES =====
-if ($payment_method === 'sinpe') {
-    $url = 'upload-proof.php?' . http_build_query([
-        'order_id' => $first_order_id,
-    ], '', '&', PHP_QUERY_RFC3986);
-    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Redirigiendo...</title></head><body>
-    <p>Redirigiendo a página de comprobante SINPE...</p>
-    <script>location.href="'.htmlspecialchars($url, ENT_QUOTES, 'UTF-8').'";</script>
-    </body></html>';
+    $url = 'upload-proof.php?' . http_build_query(['order_id' => $first_order_id], '', '&', PHP_QUERY_RFC3986);
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Redirigiendo...</title></head><body>'
+        . '<p>Redirigiendo a página de comprobante SINPE...</p>'
+        . '<script>location.href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '";</script>'
+        . '</body></html>';
     exit;
 }
 
-// PayPal
+// ===== PAYPAL: validar email del vendedor =====
 checkout_log("PAYPAL_FLOW_START", ['affiliate_id' => $affiliate_id]);
 
 $st = $pdo->prepare("
@@ -414,27 +370,39 @@ checkout_log("PAYPAL_EMAIL_QUERY", [
 if ($paypal_email === '') {
     checkout_log("PAYPAL_ERROR_NO_EMAIL", ['affiliate_id' => $affiliate_id]);
     $_SESSION['error'] = "El vendedor no tiene configurado PayPal";
-    header('Location: checkout.php?sale_id='.(int)$sale_id);
+    header('Location: checkout.php?sale_id=' . (int)$sale_id);
     exit;
 }
 
-// Calcular total en USD para el SDK de PayPal
+// Pre-generar order_number (se insertará a BD solo tras captura exitosa)
+$order_number = 'ORD-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid('', true)), 0, 6));
+
+// Total en USD para PayPal
 $total_usd_sdk = ($currency === 'CRC' && $exchange_rate > 0)
     ? round($grand_total / $exchange_rate, 2)
     : round($grand_total, 2);
 if ($total_usd_sdk < 0.01) $total_usd_sdk = 0.01;
 
-// Guardar datos en sesión para los endpoints del SDK
-$_SESSION['pending_paypal'] = [
+// Guardar todos los datos necesarios en sesión para los endpoints del SDK
+$_SESSION['checkout_paypal'] = [
     'order_number'   => $order_number,
-    'first_order_id' => $first_order_id,
+    'user_id'        => $user_id,
+    'user_name'      => (string)($user['name'] ?? ''),
+    'user_email'     => (string)($user['email'] ?? ''),
+    'user_phone'     => $buyer_phone,
+    'items'          => $items,
+    'subtotal'       => $subtotal,
+    'tax_total'      => $tax_total,
+    'grand_total'    => $grand_total,
+    'currency'       => $currency,
+    'exchange_rate'  => $exchange_rate,
+    'affiliate_id'   => $affiliate_id,
     'sale_id'        => $sale_id,
     'cart_id'        => $cart_id,
-    'user_id'        => $user_id,
+    'delivery_notes' => $delivery_notes,
     'paypal_email'   => $paypal_email,
     'total_usd'      => $total_usd_sdk,
-    'currency'       => $currency,
-    'reauth'         => $reauth,
+    'reauth'         => build_reauth($user_id),
 ];
 checkout_log("PAYPAL_SDK_READY", [
     'order_number' => $order_number,
