@@ -35,7 +35,7 @@ try {
 $searchQuery = trim($_GET['search'] ?? '');
 $filterType  = in_array($_GET['filter'] ?? '', ['emprendedora','emprendedor']) ? $_GET['filter'] : 'all';
 
-// Buscar vendedores con productos activos
+// Buscar vendedores con productos activos y suscripción vigente
 $sellersSql  = "
     SELECT u.id AS seller_id, u.name AS seller_name,
            COALESCE(u.is_live, 0) AS is_live,
@@ -52,6 +52,14 @@ $sellersSql  = "
     FROM entrepreneur_products p
     JOIN users u ON u.id = p.user_id
     WHERE p.is_active = 1
+      AND (
+          NOT EXISTS (SELECT 1 FROM entrepreneur_subscriptions WHERE user_id = u.id)
+          OR (
+              SELECT status FROM entrepreneur_subscriptions
+              WHERE user_id = u.id
+              ORDER BY id DESC LIMIT 1
+          ) = 'active'
+      )
 ";
 $sellerParams = [];
 if ($searchQuery !== '') {
