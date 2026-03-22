@@ -153,6 +153,7 @@ try {
     if (!in_array('store_logo',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_logo TEXT");
     if (!in_array('seller_type',       $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedora'");
     if (!in_array('store_avatar',      $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_avatar TEXT");
+    if (!in_array('store_name',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_name TEXT");
 } catch (Throwable $_e) {}
 
 // ── Manejar guardado de avatar ────────────────────────────────────────────────
@@ -238,17 +239,18 @@ try {
 // ── Manejar guardado de diseño del puesto ────────────────────────────────────
 $designMsg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_store_design') {
-    $color1  = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['store_color1'] ?? '') ? $_POST['store_color1'] : '#667eea';
-    $color2  = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['store_color2'] ?? '') ? $_POST['store_color2'] : '#764ba2';
-    $bStyle  = in_array($_POST['store_banner_style'] ?? '', ['stripes','gradient','solid','wave']) ? $_POST['store_banner_style'] : 'stripes';
-    $sType   = in_array($_POST['seller_type'] ?? '', ['emprendedora','emprendedor']) ? $_POST['seller_type'] : 'emprendedora';
-    $logo    = trim($_POST['store_logo'] ?? '');
+    $color1      = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['store_color1'] ?? '') ? $_POST['store_color1'] : '#667eea';
+    $color2      = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['store_color2'] ?? '') ? $_POST['store_color2'] : '#764ba2';
+    $bStyle      = in_array($_POST['store_banner_style'] ?? '', ['stripes','gradient','solid','wave']) ? $_POST['store_banner_style'] : 'stripes';
+    $sType       = in_array($_POST['seller_type'] ?? '', ['emprendedora','emprendedor']) ? $_POST['seller_type'] : 'emprendedora';
+    $logo        = trim($_POST['store_logo'] ?? '');
+    $storeName   = mb_substr(trim($_POST['store_name'] ?? ''), 0, 80);
     // Validar que la URL del logo sea segura
     if ($logo && !preg_match('/^https?:\/\//i', $logo)) $logo = '';
 
     try {
-        $pdo->prepare("UPDATE users SET store_color1=?, store_color2=?, store_banner_style=?, store_logo=?, seller_type=? WHERE id=?")
-            ->execute([$color1, $color2, $bStyle, $logo ?: null, $sType, $userId]);
+        $pdo->prepare("UPDATE users SET store_color1=?, store_color2=?, store_banner_style=?, store_logo=?, seller_type=?, store_name=? WHERE id=?")
+            ->execute([$color1, $color2, $bStyle, $logo ?: null, $sType, $storeName ?: null, $userId]);
         $designMsg = ['ok', '✅ Diseño de tu puesto guardado correctamente.'];
     } catch (Exception $e) {
         $designMsg = ['err', '❌ Error al guardar: ' . $e->getMessage()];
@@ -256,9 +258,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 }
 
 // ── Cargar configuración de diseño actual del usuario ─────────────────────────
-$storeDesign = ['store_color1'=>'#667eea','store_color2'=>'#764ba2','store_banner_style'=>'stripes','store_logo'=>'','seller_type'=>'emprendedora'];
+$storeDesign = ['store_color1'=>'#667eea','store_color2'=>'#764ba2','store_banner_style'=>'stripes','store_logo'=>'','seller_type'=>'emprendedora','store_name'=>''];
 try {
-    $sd = $pdo->prepare("SELECT store_color1, store_color2, store_banner_style, store_logo, seller_type FROM users WHERE id=?");
+    $sd = $pdo->prepare("SELECT store_color1, store_color2, store_banner_style, store_logo, seller_type, store_name FROM users WHERE id=?");
     $sd->execute([$userId]);
     $row = $sd->fetch(PDO::FETCH_ASSOC);
     if ($row) $storeDesign = array_merge($storeDesign, array_filter($row, fn($v) => $v !== null));
@@ -1428,6 +1430,20 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                             </div>
                         </div>
 
+                        <!-- Nombre del puesto -->
+                        <div class="design-block" style="margin-bottom:16px;">
+                            <h4><i class="fas fa-store-alt"></i> Nombre de tu puesto / tienda</h4>
+                            <input type="text" name="store_name" id="store-name-input"
+                                   value="<?= htmlspecialchars($storeDesign['store_name'] ?? '') ?>"
+                                   placeholder="Ej: Artesanías Ticas, Café del Valle, Moda Sofía…"
+                                   maxlength="80"
+                                   oninput="updatePreview()"
+                                   style="width:100%;padding:10px 12px;border:2px solid #e5e7eb;border-radius:10px;font-size:.9rem;box-sizing:border-box;">
+                            <p style="font-size:.78rem;color:#9ca3af;margin-top:6px;">
+                                <i class="fas fa-info-circle"></i> Si lo dejas vacío se usará tu nombre de cuenta.
+                            </p>
+                        </div>
+
                         <!-- Colores -->
                         <div class="design-block" style="margin-bottom:16px;">
                             <h4><i class="fas fa-fill-drip"></i> Colores del toldo</h4>
@@ -1530,7 +1546,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                                             <?php endif; ?>
                                         </div>
                                         <div>
-                                            <div style="font-weight:800;font-size:.88rem;color:#2c2416;"><?= htmlspecialchars(mb_substr($userName, 0, 20)) ?></div>
+                                            <div id="mini-store-name" style="font-weight:800;font-size:.88rem;color:#2c2416;"><?= htmlspecialchars(mb_substr($storeDesign['store_name'] ?: $userName, 0, 24)) ?></div>
                                             <div style="font-size:.75rem;color:#6b5d4f;">Mis productos</div>
                                         </div>
                                     </div>
@@ -2078,6 +2094,14 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
 
             // Botón
             btn.style.background = `linear-gradient(135deg,${c1},${c2})`;
+
+            // Nombre del puesto en preview
+            const nameEl = document.getElementById('mini-store-name');
+            const nameInput = document.getElementById('store-name-input');
+            if (nameEl && nameInput) {
+                const raw = nameInput.value.trim();
+                nameEl.textContent = raw ? raw.substring(0, 24) : '<?= addslashes(mb_substr($userName, 0, 24)) ?>';
+            }
 
             // Actualizar CSS vars de los presets
             updateStylePresets(c1, c2);

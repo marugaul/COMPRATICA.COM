@@ -29,6 +29,7 @@ try {
     if (!in_array('store_logo',        $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_logo TEXT");
     if (!in_array('seller_type',       $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedora'");
     if (!in_array('store_avatar',      $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_avatar TEXT");
+    if (!in_array('store_name',        $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_name TEXT");
 } catch (Throwable $_e) {}
 
 // Filtros de búsqueda
@@ -37,7 +38,7 @@ $filterType  = in_array($_GET['filter'] ?? '', ['emprendedora','emprendedor']) ?
 
 // Buscar vendedores con productos activos y suscripción vigente
 $sellersSql  = "
-    SELECT u.id AS seller_id, u.name AS seller_name,
+    SELECT u.id AS seller_id, COALESCE(NULLIF(u.store_name,''), u.name) AS seller_name,
            COALESCE(u.is_live, 0) AS is_live,
            u.live_title, u.live_link,
            COALESCE(u.live_type,'link') AS live_type,
