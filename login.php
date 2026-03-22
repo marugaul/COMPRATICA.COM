@@ -84,7 +84,7 @@ function migrate_guest_cart_to_user(PDO $pdo, int $uid, string $guest_sid): void
 
         // Asignar el carrito invitado al usuario Y actualizar updated_at para que
         // get_or_create_cart_id() (ORDER BY updated_at DESC) lo encuentre primero
-        $pdo->prepare("UPDATE carts SET user_id = ?, updated_at = datetime('now') WHERE id = ?")
+        $pdo->prepare("UPDATE carts SET user_id = ?, updated_at = datetime('now') WHERE id = ? AND (user_id IS NULL OR user_id = 0)")
             ->execute([$uid, $guestCartId]);
         logDebug("MIGRATE_OK", ['cart_id' => $guestCartId, 'uid' => $uid, 'guest_sid' => $guest_sid, 'items' => $itemCount]);
         error_log("[login] migrated cart_id={$guestCartId} to uid={$uid} items={$itemCount}");

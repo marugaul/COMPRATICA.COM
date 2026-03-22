@@ -182,8 +182,13 @@ if (empty($items) && $guest_cart_id > 0 && $guest_cart_id !== $cart_id) {
     $guest_items = $st->fetchAll(PDO::FETCH_ASSOC);
     if (!empty($guest_items)) {
         // Migrar el carrito del guest al usuario y usar ese
-        $pdo->prepare("UPDATE carts SET user_id = ?, updated_at = datetime('now') WHERE id = ?")
-            ->execute([$user_id, $guest_cart_id]);
+        // Si falla por UNIQUE constraint (user ya tiene otro cart), igualmente usamos los items del guest
+        try {
+            $pdo->prepare("UPDATE carts SET user_id = ?, updated_at = datetime('now') WHERE id = ? AND (user_id IS NULL OR user_id = 0)")
+                ->execute([$user_id, $guest_cart_id]);
+        } catch (Throwable $e) {
+            error_log("[checkout] cart migration error: " . $e->getMessage());
+        }
         $cart_id = $guest_cart_id;
         $items = $guest_items;
     }
