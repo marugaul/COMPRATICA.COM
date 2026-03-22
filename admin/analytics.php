@@ -57,6 +57,25 @@ $top_pages = safeq($pdo, "SELECT page, COUNT(*) as views FROM site_visits WHERE 
 $visits_by_hour = safeq($pdo, "SELECT strftime('%H',created_at) as hour, COUNT(*) as views FROM site_visits WHERE date(created_at)=date('now') GROUP BY hour ORDER BY hour ASC");
 $recent_visitors = safeq($pdo, "SELECT ip, page, referrer, created_at FROM site_visits ORDER BY created_at DESC LIMIT 20");
 
+// ─── Detectar columna de monto en orders ──────────────────────────────────────
+$order_cols = [];
+foreach ($pdo->query("PRAGMA table_info(orders)")->fetchAll(PDO::FETCH_ASSOC) as $c) {
+    $order_cols[strtolower($c['name'])] = true;
+}
+// Expresión de monto en CRC según columnas disponibles
+if (isset($order_cols['grand_total'])) {
+    $monto_expr = 'COALESCE(grand_total, 0)';
+} elseif (isset($order_cols['total_crc'])) {
+    $monto_expr = 'COALESCE(total_crc, 0)';
+} elseif (isset($order_cols['paypal_amount']) && isset($order_cols['exrate_used'])) {
+    $monto_expr = 'COALESCE(paypal_amount * exrate_used, 0)';
+} else {
+    $monto_expr = '0';
+}
+$has_order_number  = isset($order_cols['order_number']);
+$has_buyer_name    = isset($order_cols['buyer_name']);
+$has_affiliate_id  = isset($order_cols['affiliate_id']);
+
 // ─── Pedidos ──────────────────────────────────────────────────────────────────
 $orders_today  = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE date(created_at)=date('now','-6 hours')");
 $orders_week   = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE created_at > datetime('now','-6 hours','-7 days')");
@@ -66,10 +85,9 @@ $orders_pending= (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE status='Pe
 $orders_paid   = (int)safeqv($pdo, "SELECT COUNT(*) FROM orders WHERE status='Pagado'");
 
 // ─── Ingresos ─────────────────────────────────────────────────────────────────
-// Algunos pedidos usan total_crc (buy_affiliate), otros grand_total (process_checkout)
-$revenue_today = (float)safeqv($pdo, "SELECT COALESCE(SUM(COALESCE(grand_total, total_crc, 0)),0) FROM orders WHERE date(created_at)=date('now','-6 hours') AND status NOT IN ('Cancelado')");
-$revenue_week  = (float)safeqv($pdo, "SELECT COALESCE(SUM(COALESCE(grand_total, total_crc, 0)),0) FROM orders WHERE created_at > datetime('now','-6 hours','-7 days') AND status NOT IN ('Cancelado')");
-$revenue_month = (float)safeqv($pdo, "SELECT COALESCE(SUM(COALESCE(grand_total, total_crc, 0)),0) FROM orders WHERE created_at > datetime('now','-6 hours','-30 days') AND status NOT IN ('Cancelado')");
+$revenue_today = (float)safeqv($pdo, "SELECT COALESCE(SUM({$monto_expr}),0) FROM orders WHERE date(created_at)=date('now','-6 hours') AND status NOT IN ('Cancelado')");
+$revenue_week  = (float)safeqv($pdo, "SELECT COALESCE(SUM({$monto_expr}),0) FROM orders WHERE created_at > datetime('now','-6 hours','-7 days') AND status NOT IN ('Cancelado')");
+$revenue_month = (float)safeqv($pdo, "SELECT COALESCE(SUM({$monto_expr}),0) FROM orders WHERE created_at > datetime('now','-6 hours','-30 days') AND status NOT IN ('Cancelado')");
 
 // ─── Pedidos por día (últimos 14 días) ────────────────────────────────────────
 $orders_by_day = safeq($pdo, "SELECT date(created_at) as day, COUNT(*) as total FROM orders WHERE created_at > datetime('now','-6 hours','-14 days') GROUP BY day ORDER BY day ASC");
@@ -89,23 +107,31 @@ $products_active  = (int)safeqv($pdo, "SELECT COUNT(*) FROM products WHERE activ
 $products_nostock = (int)safeqv($pdo, "SELECT COUNT(*) FROM products WHERE stock=0 AND active=1");
 
 // ─── Top afiliados ────────────────────────────────────────────────────────────
-$top_affiliates = safeq($pdo, "
-    SELECT a.name, a.email, COUNT(o.id) as orders,
-           COALESCE(SUM(COALESCE(o.grand_total, o.total_crc, 0)),0) as revenue
-    FROM orders o JOIN affiliates a ON a.id=o.affiliate_id
-    WHERE o.created_at > datetime('now','-6 hours','-30 days')
-    GROUP BY a.id ORDER BY orders DESC LIMIT 10
-");
+if ($has_affiliate_id) {
+    $top_affiliates = safeq($pdo, "
+        SELECT a.name, a.email, COUNT(o.id) as orders,
+               COALESCE(SUM({$monto_expr}),0) as revenue
+        FROM orders o JOIN affiliates a ON a.id=o.affiliate_id
+        WHERE o.created_at > datetime('now','-6 hours','-30 days')
+        GROUP BY a.id ORDER BY orders DESC LIMIT 10
+    ");
+} else {
+    $top_affiliates = [];
+}
 
 // ─── Últimas órdenes ──────────────────────────────────────────────────────────
+$sel_on   = $has_order_number ? 'o.order_number' : 'NULL';
+$sel_bn   = $has_buyer_name   ? 'o.buyer_name'   : 'NULL';
+$sel_aff  = $has_affiliate_id ? 'a.name' : 'NULL';
+$join_aff = $has_affiliate_id ? 'LEFT JOIN affiliates a ON a.id = o.affiliate_id' : '';
 $latest_orders = safeq($pdo, "
-    SELECT o.id, o.order_number, o.buyer_email, o.buyer_name,
-           COALESCE(p.name, o.note, 'Producto') as product_name,
-           o.qty, COALESCE(o.grand_total, o.total_crc, 0) as monto,
-           o.status, o.created_at, a.name as affiliate_name
+    SELECT o.id, {$sel_on} as order_number, o.buyer_email, {$sel_bn} as buyer_name,
+           COALESCE(p.name, 'Producto') as product_name,
+           o.qty, {$monto_expr} as monto,
+           o.status, o.created_at, {$sel_aff} as affiliate_name
     FROM orders o
     LEFT JOIN products p ON p.id = o.product_id
-    LEFT JOIN affiliates a ON a.id = o.affiliate_id
+    {$join_aff}
     ORDER BY o.created_at DESC LIMIT 10
 ");
 
@@ -113,7 +139,7 @@ $latest_orders = safeq($pdo, "
 $top_products = safeq($pdo, "
     SELECT COALESCE(p.name, 'Sin nombre') as product_name,
            COUNT(*) as orders, SUM(o.qty) as units,
-           COALESCE(SUM(COALESCE(o.grand_total, o.total_crc, 0)),0) as revenue
+           COALESCE(SUM({$monto_expr}),0) as revenue
     FROM orders o
     LEFT JOIN products p ON p.id = o.product_id
     WHERE o.created_at > datetime('now','-6 hours','-30 days')
