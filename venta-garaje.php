@@ -293,7 +293,68 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Venta de Garaje — <?php echo APP_NAME; ?></title>
+  <title>Venta de Garaje en Costa Rica — Artículos de Segunda Mano | CompraTica</title>
+
+  <!-- SEO -->
+  <meta name="description" content="Venta de garaje en Costa Rica. Compra y vende artículos de segunda mano: ropa, muebles, electrodomésticos, juguetes, tecnología y más a precios increíbles. ¡Publica gratis en CompraTica!">
+  <meta name="keywords" content="venta de garaje costa rica, venta garaje cr, segunda mano costa rica, artículos usados costa rica, ropa usada costa rica, muebles segunda mano costa rica, electrodomésticos baratos costa rica, compra venta usados cr, bazaar costa rica">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="author" content="CompraTica">
+  <link rel="canonical" href="https://compratica.com/venta-garaje">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://compratica.com/venta-garaje">
+  <meta property="og:title" content="Venta de Garaje en Costa Rica | CompraTica">
+  <meta property="og:description" content="Encuentra artículos de segunda mano en Costa Rica: ropa, muebles, electrodomésticos, juguetes y más. ¡Compra y vende fácil en CompraTica!">
+  <meta property="og:image" content="https://compratica.com/logo.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_CR">
+  <meta property="og:site_name" content="CompraTica">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://compratica.com/venta-garaje">
+  <meta name="twitter:title" content="Venta de Garaje en Costa Rica | CompraTica">
+  <meta name="twitter:description" content="Artículos de segunda mano en Costa Rica: ropa, muebles, electrónica y más. ¡Publica gratis!">
+  <meta name="twitter:image" content="https://compratica.com/logo.png">
+
+  <!-- Geo Tags -->
+  <meta name="geo.region" content="CR">
+  <meta name="geo.placename" content="Costa Rica">
+  <meta name="geo.position" content="9.7489;-83.7534">
+  <meta name="ICBM" content="9.7489, -83.7534">
+
+  <!-- Schema.org -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Venta de Garaje en Costa Rica",
+    "description": "Compra y vende artículos de segunda mano en Costa Rica: ropa, muebles, electrodomésticos y más.",
+    "url": "https://compratica.com/venta-garaje",
+    "inLanguage": "es-CR",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "CompraTica",
+      "url": "https://compratica.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": { "@type": "EntryPoint", "urlTemplate": "https://compratica.com/venta-garaje?busqueda={search_term_string}" },
+        "query-input": "required name=search_term_string"
+      }
+    },
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://compratica.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Venta de Garaje", "item": "https://compratica.com/venta-garaje" }
+      ]
+    }
+  }
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
@@ -1710,9 +1771,9 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <span>Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-catalogo.php" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-      <i class="fas fa-crown"></i>
-      <span>✨ Emprendedoras</span>
+    <a href="emprendedoras-catalogo" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+      <i class="fas fa-store"></i>
+      <span>✨ Emprendedoras y Emprendedores</span>
     </a>
 
     <div class="menu-divider"></div>
@@ -1738,8 +1799,8 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
     </a>
 
     <a href="emprendedoras-dashboard" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-      <i class="fas fa-crown"></i>
-      <span>Portal Emprendedoras</span>
+      <i class="fas fa-store"></i>
+      <span>Portal Emprendedoras/Emprendedores</span>
     </a>
 
     <a href="admin/login.php" class="menu-item">
@@ -2112,8 +2173,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <a href="servicios">Servicios</a>
       <a href="venta-garaje">Venta de Garaje</a>
       <a href="bienes-raices">Bienes Raíces</a>
-      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
-      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedoras (Muy Pronto)</span>
+      <a href="emprendedoras-catalogo">Emprendedoras y Emprendedores</a>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>

@@ -140,10 +140,36 @@ logDebug("RENDERING_PAGE");
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="google-site-verification" content="AdeaSmtzSb9lvmOfwaFt9QyFq5VzvkR8RdLaG_KGM5s" />
-  <meta name="description" content="Compratica es el marketplace de Costa Rica. Compra y vende productos online con pago seguro por SINPE QR y WhatsApp.">
-  <meta name="keywords" content="compratica, marketplace costa rica, compra venta costa rica, sinpe qr, tienda online costa rica">
+  <meta name="description" content="CompraTica es el marketplace de Costa Rica. Venta de garaje, empleos, bienes raíces, servicios profesionales y emprendedoras ticas. Compra y vende con pago seguro por SINPE.">
+  <meta name="keywords" content="compratica, marketplace costa rica, venta de garaje costa rica, empleos costa rica, bienes raices costa rica, servicios profesionales costa rica, emprendedoras costa rica, compra venta usados cr, sinpe costa rica">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="author" content="CompraTica">
   <link rel="canonical" href="https://compratica.com/">
-  <title><?php echo APP_NAME; ?> — Marketplace de Emprendedores</title>
+  <title>CompraTica — Venta de Garaje, Empleos, Servicios y Bienes Raíces en Costa Rica</title>
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://compratica.com/">
+  <meta property="og:title" content="CompraTica — Marketplace de Costa Rica">
+  <meta property="og:description" content="Venta de garaje, empleos, bienes raíces, servicios profesionales y emprendedoras ticas. ¡El marketplace #1 de Costa Rica!">
+  <meta property="og:image" content="https://compratica.com/logo.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_CR">
+  <meta property="og:site_name" content="CompraTica">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://compratica.com/">
+  <meta name="twitter:title" content="CompraTica — Marketplace de Costa Rica">
+  <meta name="twitter:description" content="Venta de garaje, empleos, bienes raíces y servicios profesionales en Costa Rica. ¡Compra y vende fácil!">
+  <meta name="twitter:image" content="https://compratica.com/logo.png">
+
+  <!-- Geo Tags -->
+  <meta name="geo.region" content="CR">
+  <meta name="geo.placename" content="Costa Rica">
+  <meta name="geo.position" content="9.7489;-83.7534">
+  <meta name="ICBM" content="9.7489, -83.7534">
 
   <!-- CSS crítico primero -->
   <link rel="stylesheet" href="/assets/css/main.css">
@@ -330,9 +356,9 @@ logDebug("RENDERING_PAGE");
       <span>Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-catalogo.php" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-      <i class="fas fa-crown"></i>
-      <span>✨ Emprendedoras</span>
+    <a href="emprendedoras-catalogo" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+      <i class="fas fa-store"></i>
+      <span>✨ Emprendedoras y Emprendedores</span>
     </a>
 
     <div class="menu-divider"></div>
@@ -358,8 +384,8 @@ logDebug("RENDERING_PAGE");
     </a>
 
     <a href="emprendedoras-dashboard" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-      <i class="fas fa-crown"></i>
-      <span>Portal Emprendedoras</span>
+      <i class="fas fa-store"></i>
+      <span>Portal Emprendedoras/Emprendedores</span>
     </a>
 
     <a href="admin/login.php" class="menu-item">
@@ -394,9 +420,9 @@ logDebug("RENDERING_PAGE");
         <i class="fas fa-compass"></i>
         Explorar Ahora
       </a>
-      <a href="emprendedoras.php" class="btn-hero btn-hero-secondary">
-        <i class="fas fa-rocket"></i>
-        Únete como Emprendedor
+      <a href="emprendedoras-catalogo" class="btn-hero btn-hero-secondary">
+        <i class="fas fa-store"></i>
+        Únete como Emprendedor/a
       </a>
     </div>
   </div>
@@ -454,25 +480,25 @@ logDebug("RENDERING_PAGE");
       </div>
     </a>
 
-    <!-- EMPRENDEDORES -->
-    <div class="category-card category-emprendedores" style="opacity: 0.6; cursor: not-allowed; position: relative;">
-      <div class="category-content">
-        <div class="category-icon">
-          <i class="fas fa-rocket"></i>
+    <!-- EMPRENDEDORAS Y EMPRENDEDORES -->
+    <a href="emprendedoras-catalogo" class="category-card category-emprendedoras" style="
+      position: relative;
+      overflow: hidden;
+      background-image: url('https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=500&fit=crop&auto=format');
+      background-size: cover;
+      background-position: center;
+      min-height: 200px;
+    ">
+      <div style="
+        position: absolute; inset: 0;
+        background: linear-gradient(135deg, rgba(102,126,234,0.85) 0%, rgba(118,75,162,0.88) 100%);
+      "></div>
+      <div class="category-content" style="position: relative; z-index: 1;">
+        <div class="category-icon" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(4px);">
+          <i class="fas fa-store" style="color: #fff;"></i>
         </div>
-        <h3 class="category-title">Emprendedores</h3>
-        <p class="category-description" style="font-weight: bold; color: #ff6b35;">Muy Pronto</p>
-      </div>
-    </div>
-
-    <!-- EMPRENDEDORAS -->
-    <a href="emprendedoras-catalogo.php" class="category-card category-emprendedoras">
-      <div class="category-content">
-        <div class="category-icon">
-          <i class="fas fa-crown"></i>
-        </div>
-        <h3 class="category-title">Emprendedoras</h3>
-        <p class="category-description">Marketplace exclusivo para emprendedoras ticas</p>
+        <h3 class="category-title" style="color: #fff;">Emprendedoras y Emprendedores</h3>
+        <p class="category-description" style="color: rgba(255,255,255,0.92);">Mercadito tico con mujeres y hombres emprendedores que venden directo a vos. ¡Apoyá el talento costarricense!</p>
       </div>
     </a>
   </div>
@@ -573,8 +599,7 @@ logDebug("RENDERING_PAGE");
       <a href="servicios">Servicios</a>
       <a href="venta-garaje">Venta de Garaje</a>
       <a href="bienes-raices">Bienes Raíces</a>
-      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
-      <a href="emprendedoras-catalogo.php">Emprendedoras</a>
+      <a href="emprendedoras-catalogo">Emprendedoras y Emprendedores</a>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>
