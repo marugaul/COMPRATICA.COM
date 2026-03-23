@@ -9,8 +9,6 @@
       <a href="/servicios">Servicios</a>
       <a href="/venta-garaje">Venta de Garaje</a>
       <a href="/bienes-raices">Bienes Raíces</a>
-      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
-      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedoras (Muy Pronto)</span>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>
@@ -23,8 +21,8 @@
       <a href="mailto:<?php echo defined('ADMIN_EMAIL') ? ADMIN_EMAIL : 'info@compratica.com'; ?>">
         <i class="fas fa-envelope"></i> Enviar Email
       </a>
-      <a href="tel:+50622222222">
-        <i class="fas fa-phone"></i> +506 2222-2222
+      <a href="tel:+50688902814">
+        <i class="fas fa-phone"></i> +506 8890-2814
       </a>
     </div>
   </div>
