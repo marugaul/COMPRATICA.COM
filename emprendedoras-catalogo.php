@@ -115,11 +115,11 @@ $awningPalette = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mercadito Emprendedoras de Costa Rica — Tiendas y Catálogos Online | CompraTica</title>
+    <title>Mercadito Emprendedoras y Emprendedores de Costa Rica — Tiendas Online | CompraTica</title>
 
     <!-- SEO -->
-    <meta name="description" content="Mercadito de emprendedoras costarricenses. Compra directamente a mujeres y emprendedores de Costa Rica: ropa, accesorios, alimentos, artesanías, belleza y más. ¡Apoya el emprendimiento tico!">
-    <meta name="keywords" content="emprendedoras costa rica, mercadito costa rica, tienda online costa rica, emprendimiento tico, artesanias costa rica, productos ticos, comprar local costa rica, mujeres emprendedoras cr, catalogo online costa rica">
+    <meta name="description" content="Mercadito de emprendedoras y emprendedores costarricenses. Compra directo a quienes venden: ropa, accesorios, alimentos, artesanías, belleza y más. ¡Apoya el talento tico!">
+    <meta name="keywords" content="emprendedoras costa rica, emprendedores costa rica, mercadito costa rica, tienda online costa rica, emprendimiento tico, artesanias costa rica, productos ticos, comprar local costa rica, mujeres emprendedoras cr, hombres emprendedores cr, catalogo online costa rica">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <meta name="author" content="CompraTica">
     <link rel="canonical" href="https://compratica.com/emprendedoras-catalogo">
@@ -127,8 +127,8 @@ $awningPalette = [
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://compratica.com/emprendedoras-catalogo">
-    <meta property="og:title" content="Mercadito Emprendedoras de Costa Rica | CompraTica">
-    <meta property="og:description" content="Compra directamente a emprendedoras costarricenses: ropa, accesorios, alimentos, artesanías y más. ¡Apoya el emprendimiento tico!">
+    <meta property="og:title" content="Mercadito Emprendedoras y Emprendedores de Costa Rica | CompraTica">
+    <meta property="og:description" content="Compra directo a emprendedoras y emprendedores costarricenses: ropa, accesorios, alimentos, artesanías y más. ¡Apoya el emprendimiento tico!">
     <meta property="og:image" content="https://compratica.com/logo.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -138,8 +138,8 @@ $awningPalette = [
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://compratica.com/emprendedoras-catalogo">
-    <meta name="twitter:title" content="Mercadito Emprendedoras de Costa Rica | CompraTica">
-    <meta name="twitter:description" content="Apoya a las emprendedoras ticas. Tiendas de ropa, accesorios, alimentos, artesanías y más en CompraTica.">
+    <meta name="twitter:title" content="Mercadito Emprendedoras y Emprendedores de Costa Rica | CompraTica">
+    <meta name="twitter:description" content="Apoya a las emprendedoras y emprendedores ticos. Tiendas de ropa, accesorios, alimentos, artesanías y más en CompraTica.">
     <meta name="twitter:image" content="https://compratica.com/logo.png">
 
     <!-- Geo Tags -->
@@ -153,8 +153,8 @@ $awningPalette = [
     {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      "name": "Mercadito Emprendedoras de Costa Rica",
-      "description": "Plataforma de emprendedoras costarricenses. Compra y apoya el emprendimiento local en Costa Rica.",
+      "name": "Mercadito Emprendedoras y Emprendedores de Costa Rica",
+      "description": "Plataforma de emprendedoras y emprendedores costarricenses. Compra y apoya el emprendimiento local en Costa Rica.",
       "url": "https://compratica.com/emprendedoras-catalogo",
       "inLanguage": "es-CR",
       "isPartOf": {
@@ -166,7 +166,7 @@ $awningPalette = [
         "@type": "BreadcrumbList",
         "itemListElement": [
           { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://compratica.com/" },
-          { "@type": "ListItem", "position": 2, "name": "Mercadito Emprendedoras", "item": "https://compratica.com/emprendedoras-catalogo" }
+          { "@type": "ListItem", "position": 2, "name": "Mercadito Emprendedoras y Emprendedores", "item": "https://compratica.com/emprendedoras-catalogo" }
         ]
       }
     }
@@ -583,8 +583,8 @@ $awningPalette = [
 <?php include __DIR__ . '/includes/header.php'; ?>
 
 <div class="hero">
-    <h1>🏪 Mercadito <span>Emprendedor</span></h1>
-    <p>Camina por cada puesto, conoce a quienes venden y compra directo a ellos.</p>
+    <h1>🏪 Mercadito <span>Emprendedoras y Emprendedores</span></h1>
+    <p>Caminá por cada puesto, conocé a quienes venden y comprá directo a ellos. ¡Apoyá el talento tico!</p>
     <?php if ($isLoggedIn): ?>
         <a href="emprendedoras-dashboard.php" class="hero-cta"><i class="fas fa-store"></i> Mi Tienda</a>
     <?php else: ?>
@@ -662,8 +662,8 @@ $awningPalette = [
 
 <!-- CTA bottom -->
 <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:60px 20px;text-align:center;">
-    <h2 style="font-size:2.2rem;margin-bottom:16px;">¿Eres emprendedora?</h2>
-    <p style="font-size:1.15rem;margin-bottom:28px;opacity:.9;">Abre tu puesto hoy y llega a miles de compradores costarricenses.</p>
+    <h2 style="font-size:2.2rem;margin-bottom:16px;">¿Sos emprendedora o emprendedor?</h2>
+    <p style="font-size:1.15rem;margin-bottom:28px;opacity:.9;">Abrí tu puesto hoy y llegá a miles de compradores costarricenses. ¡Todos son bienvenidos!</p>
     <a href="emprendedoras-planes.php" style="background:white;color:#667eea;padding:14px 38px;border-radius:50px;font-weight:700;text-decoration:none;display:inline-block;">
         <i class="fas fa-rocket"></i> Ver Planes
     </a>

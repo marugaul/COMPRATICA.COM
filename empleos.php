@@ -1782,9 +1782,9 @@ if (empty($categories)) {
       <span>Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-catalogo.php" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-      <i class="fas fa-crown"></i>
-      <span>✨ Emprendedoras</span>
+    <a href="emprendedoras-catalogo" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+      <i class="fas fa-store"></i>
+      <span>✨ Emprendedoras y Emprendedores</span>
     </a>
 
     <div class="menu-divider"></div>
@@ -1810,8 +1810,8 @@ if (empty($categories)) {
     </a>
 
     <a href="emprendedoras-dashboard" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-      <i class="fas fa-crown"></i>
-      <span>Portal Emprendedoras</span>
+      <i class="fas fa-store"></i>
+      <span>Portal Emprendedoras/Emprendedores</span>
     </a>
 
     <a href="admin/login.php" class="menu-item">

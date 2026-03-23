@@ -1771,9 +1771,9 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <span>Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-catalogo.php" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-      <i class="fas fa-crown"></i>
-      <span>✨ Emprendedoras</span>
+    <a href="emprendedoras-catalogo" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+      <i class="fas fa-store"></i>
+      <span>✨ Emprendedoras y Emprendedores</span>
     </a>
 
     <div class="menu-divider"></div>
@@ -1799,8 +1799,8 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
     </a>
 
     <a href="emprendedoras-dashboard" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-      <i class="fas fa-crown"></i>
-      <span>Portal Emprendedoras</span>
+      <i class="fas fa-store"></i>
+      <span>Portal Emprendedoras/Emprendedores</span>
     </a>
 
     <a href="admin/login.php" class="menu-item">
@@ -2173,8 +2173,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <a href="servicios">Servicios</a>
       <a href="venta-garaje">Venta de Garaje</a>
       <a href="bienes-raices">Bienes Raíces</a>
-      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedores (Muy Pronto)</span>
-      <span style="opacity: 0.5; cursor: not-allowed;">Emprendedoras (Muy Pronto)</span>
+      <a href="emprendedoras-catalogo">Emprendedoras y Emprendedores</a>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>
