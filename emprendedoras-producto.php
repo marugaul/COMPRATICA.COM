@@ -84,6 +84,25 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
     <title><?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedoras</title>
     <style>#cartButton{display:none!important;}</style>
     <meta name="description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 160)) ?>">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://compratica.com/emprendedoras-producto?id=<?= $productId ?>">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="product">
+    <meta property="og:url" content="https://compratica.com/emprendedoras-producto?id=<?= $productId ?>">
+    <meta property="og:title" content="<?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedoras">
+    <meta property="og:description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 200)) ?>">
+    <meta property="og:image" content="<?= $mainImage ? 'https://compratica.com/' . htmlspecialchars(ltrim($mainImage, '/')) : 'https://compratica.com/assets/img/og-emprendedoras.jpg' ?>">
+    <meta property="og:locale" content="es_CR">
+    <meta property="og:site_name" content="CompraTica">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://compratica.com/emprendedoras-producto?id=<?= $productId ?>">
+    <meta name="twitter:title" content="<?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedoras">
+    <meta name="twitter:description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 200)) ?>">
+    <meta name="twitter:image" content="<?= $mainImage ? 'https://compratica.com/' . htmlspecialchars(ltrim($mainImage, '/')) : 'https://compratica.com/assets/img/og-emprendedoras.jpg' ?>">
+
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/compratica-header.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
