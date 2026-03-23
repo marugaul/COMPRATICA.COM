@@ -138,76 +138,80 @@ if (PHP_VERSION_ID < 70300) {
 
 // Obtener parámetro de búsqueda
 $searchQuery = isset($_GET['q']) ? trim($_GET['q']) : '';
-logDebug("SEARCH_QUERY", ['q' => $searchQuery]);
+$categoryFilter = isset($_GET['cat']) ? trim($_GET['cat']) : '';
+logDebug("SEARCH_QUERY", ['q' => $searchQuery, 'cat' => $categoryFilter]);
 
 // Obtener servicios activos de ambos sistemas
 $pdo = db();
 $servicios = [];
+$availableCategories = [];
 
 try {
-    // UNION de servicios del sistema antiguo (affiliates) y nuevo (job_listings)
-    // Usando índices numéricos en ORDER BY para compatibilidad con SQLite UNION
+    // Obtener categorías disponibles para el filtro
+    $catStmt = $pdo->query("
+        SELECT DISTINCT jl.category
+        FROM job_listings jl
+        INNER JOIN users u ON u.id = jl.employer_id
+        WHERE jl.listing_type = 'service'
+          AND jl.is_active = 1
+          AND u.status = 'active'
+          AND jl.category IS NOT NULL
+          AND jl.category != ''
+        ORDER BY jl.category
+    ");
+    $availableCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
+
+    // Construir cláusulas WHERE dinámicas
+    $whereClauses = [
+        "jl.listing_type = 'service'",
+        "jl.is_active = 1",
+        "u.status = 'active'"
+    ];
+    $params = [];
 
     if ($searchQuery) {
-        // Con búsqueda: filtrar por título y descripción
+        $whereClauses[] = "(jl.title LIKE ? OR jl.description LIKE ?)";
         $searchLike = '%' . $searchQuery . '%';
-        $stmt = $pdo->prepare("
-            SELECT
-                jl.id,
-                jl.title,
-                jl.description,
-                jl.description as short_description,
-                jl.service_price,
-                jl.salary_currency,
-                jl.service_price_type,
-                NULL as slug,
-                u.name as provider_name,
-                COALESCE(u.company_name, u.name) as company_name,
-                jl.location,
-                jl.created_at,
-                jl.is_active,
-                jl.is_featured,
-                jl.image_1,
-                'job_listings' as source_table
-            FROM job_listings jl
-            INNER JOIN users u ON u.id = jl.employer_id
-            WHERE jl.listing_type = 'service'
-              AND jl.is_active = 1
-              AND u.status = 'active'
-              AND (jl.title LIKE ? OR jl.description LIKE ?)
-            ORDER BY jl.is_featured DESC, jl.created_at DESC
-        ");
-        $stmt->execute([$searchLike, $searchLike]);
-        $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } else {
-        // Sin búsqueda: mostrar todos
-        $stmt = $pdo->query("
-            SELECT
-                jl.id,
-                jl.title,
-                jl.description,
-                jl.description as short_description,
-                jl.service_price,
-                jl.salary_currency,
-                jl.service_price_type,
-                NULL as slug,
-                u.name as provider_name,
-                COALESCE(u.company_name, u.name) as company_name,
-                jl.location,
-                jl.created_at,
-                jl.is_active,
-                jl.is_featured,
-                jl.image_1,
-                'job_listings' as source_table
-            FROM job_listings jl
-            INNER JOIN users u ON u.id = jl.employer_id
-            WHERE jl.listing_type = 'service'
-              AND jl.is_active = 1
-              AND u.status = 'active'
-            ORDER BY jl.is_featured DESC, jl.created_at DESC
-        ");
-        $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $params[] = $searchLike;
+        $params[] = $searchLike;
     }
+
+    if ($categoryFilter) {
+        $whereClauses[] = "jl.category = ?";
+        $params[] = $categoryFilter;
+    }
+
+    $whereSQL = implode(' AND ', $whereClauses);
+
+    $sql = "
+        SELECT
+            jl.id,
+            jl.title,
+            jl.description,
+            jl.description as short_description,
+            jl.service_price,
+            jl.salary_currency,
+            jl.service_price_type,
+            jl.category,
+            NULL as slug,
+            u.name as provider_name,
+            COALESCE(u.company_name, u.name) as company_name,
+            jl.location,
+            jl.created_at,
+            jl.is_active,
+            jl.is_featured,
+            jl.image_1,
+            'job_listings' as source_table
+        FROM job_listings jl
+        INNER JOIN users u ON u.id = jl.employer_id
+        WHERE $whereSQL
+        ORDER BY jl.is_featured DESC, jl.created_at DESC
+    ";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
     logDebug("SERVICES_LOADED_SUCCESS", ['count' => count($servicios)]);
 } catch (Exception $e) {
     logDebug("ERROR_LOADING_SERVICES", ['error' => $e->getMessage()]);
@@ -772,6 +776,59 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
         font-size: 2rem;
       }
     }
+    /* Filtros por categoría */
+    .filter-section {
+      margin-bottom: 2rem;
+    }
+
+    .filter-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      border: 2px solid var(--gray-200);
+      background: var(--white);
+      color: var(--gray-700);
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .filter-chip:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(26, 115, 232, 0.06);
+    }
+
+    .filter-chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--white);
+      box-shadow: var(--shadow-md);
+    }
+
+    .filter-chip i {
+      font-size: 0.8rem;
+    }
+
     /* MENÚ HAMBURGUESA Y CARRITO - Estilos adicionales */
     #menu-overlay {
       position: fixed;
@@ -1320,9 +1377,68 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
     </form>
   </section>
 
+  <!-- Filtros por categoría -->
+  <?php if (!empty($availableCategories)): ?>
+    <div class="filter-section">
+      <span class="filter-label"><i class="fas fa-filter"></i> Filtrar por tipo de servicio:</span>
+      <div class="filter-chips">
+        <?php
+        $baseUrl = 'servicios';
+        $allParams = [];
+        if ($searchQuery) $allParams['q'] = $searchQuery;
+        $allUrl = $baseUrl . ($allParams ? '?' . http_build_query($allParams) : '');
+        ?>
+        <a href="<?php echo htmlspecialchars($allUrl); ?>"
+           class="filter-chip <?php echo $categoryFilter === '' ? 'active' : ''; ?>">
+          <i class="fas fa-th"></i> Todos
+        </a>
+        <?php foreach ($availableCategories as $cat):
+          $label = preg_replace('/^SERV:\s*/i', '', $cat);
+          $catParams = $allParams;
+          $catParams['cat'] = $cat;
+          $catUrl = $baseUrl . '?' . http_build_query($catParams);
+          $isActive = $categoryFilter === $cat;
+
+          // Icono por categoría
+          $icons = [
+            'Desarrollo Web' => 'fa-code',
+            'Diseño Gráfico' => 'fa-palette',
+            'Marketing Digital' => 'fa-bullhorn',
+            'Fotografía' => 'fa-camera',
+            'Consultoría' => 'fa-user-tie',
+            'Reparaciones' => 'fa-tools',
+            'Limpieza' => 'fa-broom',
+            'Belleza' => 'fa-cut',
+            'Eventos' => 'fa-calendar-alt',
+            'Clases' => 'fa-chalkboard-teacher',
+            'Traducción' => 'fa-language',
+            'Legal' => 'fa-balance-scale',
+          ];
+          $icon = 'fa-concierge-bell';
+          foreach ($icons as $keyword => $ico) {
+            if (stripos($label, $keyword) !== false) { $icon = $ico; break; }
+          }
+        ?>
+          <a href="<?php echo htmlspecialchars($catUrl); ?>"
+             class="filter-chip <?php echo $isActive ? 'active' : ''; ?>">
+            <i class="fas <?php echo $icon; ?>"></i>
+            <?php echo htmlspecialchars($label); ?>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  <?php endif; ?>
+
   <!-- Services Section -->
   <div class="section-header">
-    <?php if ($searchQuery): ?>
+    <?php if ($categoryFilter): ?>
+      <h2 class="section-title"><?php echo htmlspecialchars(preg_replace('/^SERV:\s*/i', '', $categoryFilter)); ?></h2>
+      <p class="section-subtitle">
+        <?php echo count($servicios); ?> servicio<?php echo count($servicios) !== 1 ? 's' : ''; ?> disponible<?php echo count($servicios) !== 1 ? 's' : ''; ?>
+        &nbsp;•&nbsp;
+        <a href="servicios<?php echo $searchQuery ? '?q=' . urlencode($searchQuery) : ''; ?>" style="color: var(--primary); text-decoration: underline;">Ver todos los servicios</a>
+      </p>
+    <?php elseif ($searchQuery): ?>
       <h2 class="section-title">Resultados de búsqueda para "<?php echo htmlspecialchars($searchQuery); ?>"</h2>
       <p class="section-subtitle">
         <?php echo count($servicios); ?> servicio<?php echo count($servicios) !== 1 ? 's' : ''; ?> encontrado<?php echo count($servicios) !== 1 ? 's' : ''; ?>
