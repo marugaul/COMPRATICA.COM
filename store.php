@@ -261,6 +261,26 @@ foreach ($_SESSION['cart'] as $it) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= h($sale['title']) ?> - <?= h($APP_NAME) ?></title>
+  <meta name="description" content="Venta de garaje de <?= h($sale['affiliate_name']) ?> en CompraTica. Encuentra productos usados y nuevos con pago por SINPE en Costa Rica.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://compratica.com/store?sale_id=<?= (int)$sale_id ?>">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://compratica.com/store?sale_id=<?= (int)$sale_id ?>">
+  <meta property="og:title" content="<?= h($sale['title']) ?> — CompraTica Venta de Garaje">
+  <meta property="og:description" content="Venta de garaje de <?= h($sale['affiliate_name']) ?> en CompraTica. Compra con SINPE desde Costa Rica.">
+  <meta property="og:image" content="https://compratica.com/assets/img/og-venta-garaje.jpg">
+  <meta property="og:locale" content="es_CR">
+  <meta property="og:site_name" content="CompraTica">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://compratica.com/store?sale_id=<?= (int)$sale_id ?>">
+  <meta name="twitter:title" content="<?= h($sale['title']) ?> — CompraTica Venta de Garaje">
+  <meta name="twitter:description" content="Venta de garaje de <?= h($sale['affiliate_name']) ?> en CompraTica. Compra con SINPE desde Costa Rica.">
+  <meta name="twitter:image" content="https://compratica.com/assets/img/og-venta-garaje.jpg">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">

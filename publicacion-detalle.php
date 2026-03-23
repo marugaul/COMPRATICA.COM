@@ -281,11 +281,11 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
   <meta name="keywords" content="<?php echo htmlspecialchars($publicacion['title']); ?>, empleo <?php echo htmlspecialchars($publicacion['category']); ?>, trabajo <?php echo htmlspecialchars($publicacion['location']); ?>, <?php echo htmlspecialchars($publicacion['company_name'] ?? ''); ?>">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="author" content="<?php echo htmlspecialchars($publicacion['company_name'] ?? 'CompraTica'); ?>">
-  <link rel="canonical" href="https://compratica.com/publicacion-detalle.php?id=<?php echo $id; ?>">
+  <link rel="canonical" href="https://compratica.com/publicacion-detalle?id=<?php echo $id; ?>">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="article">
-  <meta property="og:url" content="https://compratica.com/publicacion-detalle.php?id=<?php echo $id; ?>">
+  <meta property="og:url" content="https://compratica.com/publicacion-detalle?id=<?php echo $id; ?>">
   <meta property="og:title" content="<?php echo htmlspecialchars($publicacion['title']); ?> - <?php echo htmlspecialchars($publicacion['company_name'] ?? 'CompraTica'); ?>">
   <meta property="og:description" content="<?php echo htmlspecialchars(substr(strip_tags($publicacion['description']), 0, 200)); ?>">
   <?php if ($publicacion['company_logo']): ?>
@@ -302,7 +302,7 @@ $backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://compratica.com/publicacion-detalle.php?id=<?php echo $id; ?>">
+  <meta name="twitter:url" content="https://compratica.com/publicacion-detalle?id=<?php echo $id; ?>">
   <meta name="twitter:title" content="<?php echo htmlspecialchars($publicacion['title']); ?>">
   <meta name="twitter:description" content="<?php echo htmlspecialchars(substr(strip_tags($publicacion['description']), 0, 200)); ?>">
   <?php if ($publicacion['company_logo']): ?>

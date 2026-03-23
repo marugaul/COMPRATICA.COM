@@ -114,6 +114,25 @@ $fullLocation = implode(', ', $locationParts);
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($listing['title']) ?> — <?php echo APP_NAME; ?></title>
   <meta name="description" content="<?= htmlspecialchars(substr($listing['description'], 0, 160)) ?>">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://compratica.com/propiedad-detalle?id=<?= $listing['id'] ?>">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://compratica.com/propiedad-detalle?id=<?= $listing['id'] ?>">
+  <meta property="og:title" content="<?= htmlspecialchars($listing['title']) ?> — CompraTica Bienes Raíces">
+  <meta property="og:description" content="<?= htmlspecialchars(substr($listing['description'], 0, 200)) ?>">
+  <meta property="og:image" content="<?= !empty($images[0]) ? htmlspecialchars($images[0]) : 'https://compratica.com/assets/img/og-bienes-raices.jpg' ?>">
+  <meta property="og:locale" content="es_CR">
+  <meta property="og:site_name" content="CompraTica">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://compratica.com/propiedad-detalle?id=<?= $listing['id'] ?>">
+  <meta name="twitter:title" content="<?= htmlspecialchars($listing['title']) ?> — CompraTica Bienes Raíces">
+  <meta name="twitter:description" content="<?= htmlspecialchars(substr($listing['description'], 0, 200)) ?>">
+  <meta name="twitter:image" content="<?= !empty($images[0]) ? htmlspecialchars($images[0]) : 'https://compratica.com/assets/img/og-bienes-raices.jpg' ?>">
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
   <link rel="stylesheet" href="/assets/css/main.css">
