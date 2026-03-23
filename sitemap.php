@@ -9,7 +9,6 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
 
 header('Content-Type: application/xml; charset=UTF-8');
-header('X-Robots-Tag: noindex');
 
 $base  = 'https://compratica.com';
 $today = date('Y-m-d');
