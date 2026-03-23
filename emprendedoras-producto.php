@@ -30,7 +30,8 @@ if (!$productId) {
 
 // Cargar producto con info del vendedor
 $stmt = $pdo->prepare("
-    SELECT p.*, c.name AS category_name, u.name AS seller_name, u.email AS seller_email
+    SELECT p.*, c.name AS category_name, u.name AS seller_name, u.email AS seller_email,
+           COALESCE(u.seller_type, 'emprendedora') AS seller_type
     FROM entrepreneur_products p
     LEFT JOIN entrepreneur_categories c ON p.category_id = c.id
     LEFT JOIN users u ON p.user_id = u.id
@@ -274,7 +275,7 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
                 <div class="seller-avatar"><?= strtoupper(substr($product['seller_name'] ?? 'E', 0, 1)) ?></div>
                 <div>
                     <strong><?= htmlspecialchars($product['seller_name'] ?? 'Emprendedora') ?></strong>
-                    <div style="font-size:0.82rem;color:#999;">Vendedora verificada ✓</div>
+                    <div style="font-size:0.82rem;color:#999;"><?= ($product['seller_type'] ?? 'emprendedora') === 'emprendedor' ? 'Vendedor verificado' : 'Vendedora verificada' ?> ✓</div>
                 </div>
             </div>
 
