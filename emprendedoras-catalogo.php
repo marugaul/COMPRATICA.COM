@@ -115,7 +115,63 @@ $awningPalette = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mercadito Emprendedoras | CompraTica</title>
+    <title>Mercadito Emprendedoras de Costa Rica — Tiendas y Catálogos Online | CompraTica</title>
+
+    <!-- SEO -->
+    <meta name="description" content="Mercadito de emprendedoras costarricenses. Compra directamente a mujeres y emprendedores de Costa Rica: ropa, accesorios, alimentos, artesanías, belleza y más. ¡Apoya el emprendimiento tico!">
+    <meta name="keywords" content="emprendedoras costa rica, mercadito costa rica, tienda online costa rica, emprendimiento tico, artesanias costa rica, productos ticos, comprar local costa rica, mujeres emprendedoras cr, catalogo online costa rica">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="author" content="CompraTica">
+    <link rel="canonical" href="https://compratica.com/emprendedoras-catalogo">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://compratica.com/emprendedoras-catalogo">
+    <meta property="og:title" content="Mercadito Emprendedoras de Costa Rica | CompraTica">
+    <meta property="og:description" content="Compra directamente a emprendedoras costarricenses: ropa, accesorios, alimentos, artesanías y más. ¡Apoya el emprendimiento tico!">
+    <meta property="og:image" content="https://compratica.com/logo.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="es_CR">
+    <meta property="og:site_name" content="CompraTica">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://compratica.com/emprendedoras-catalogo">
+    <meta name="twitter:title" content="Mercadito Emprendedoras de Costa Rica | CompraTica">
+    <meta name="twitter:description" content="Apoya a las emprendedoras ticas. Tiendas de ropa, accesorios, alimentos, artesanías y más en CompraTica.">
+    <meta name="twitter:image" content="https://compratica.com/logo.png">
+
+    <!-- Geo Tags -->
+    <meta name="geo.region" content="CR">
+    <meta name="geo.placename" content="Costa Rica">
+    <meta name="geo.position" content="9.7489;-83.7534">
+    <meta name="ICBM" content="9.7489, -83.7534">
+
+    <!-- Schema.org -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Mercadito Emprendedoras de Costa Rica",
+      "description": "Plataforma de emprendedoras costarricenses. Compra y apoya el emprendimiento local en Costa Rica.",
+      "url": "https://compratica.com/emprendedoras-catalogo",
+      "inLanguage": "es-CR",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "CompraTica",
+        "url": "https://compratica.com"
+      },
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://compratica.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Mercadito Emprendedoras", "item": "https://compratica.com/emprendedoras-catalogo" }
+        ]
+      }
+    }
+    </script>
+
     <style>#cartButton{display:none!important;}</style>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/compratica-header.css">

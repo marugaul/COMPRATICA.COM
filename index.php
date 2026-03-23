@@ -140,10 +140,36 @@ logDebug("RENDERING_PAGE");
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="google-site-verification" content="AdeaSmtzSb9lvmOfwaFt9QyFq5VzvkR8RdLaG_KGM5s" />
-  <meta name="description" content="Compratica es el marketplace de Costa Rica. Compra y vende productos online con pago seguro por SINPE QR y WhatsApp.">
-  <meta name="keywords" content="compratica, marketplace costa rica, compra venta costa rica, sinpe qr, tienda online costa rica">
+  <meta name="description" content="CompraTica es el marketplace de Costa Rica. Venta de garaje, empleos, bienes raíces, servicios profesionales y emprendedoras ticas. Compra y vende con pago seguro por SINPE.">
+  <meta name="keywords" content="compratica, marketplace costa rica, venta de garaje costa rica, empleos costa rica, bienes raices costa rica, servicios profesionales costa rica, emprendedoras costa rica, compra venta usados cr, sinpe costa rica">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="author" content="CompraTica">
   <link rel="canonical" href="https://compratica.com/">
-  <title><?php echo APP_NAME; ?> — Marketplace de Emprendedores</title>
+  <title>CompraTica — Venta de Garaje, Empleos, Servicios y Bienes Raíces en Costa Rica</title>
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://compratica.com/">
+  <meta property="og:title" content="CompraTica — Marketplace de Costa Rica">
+  <meta property="og:description" content="Venta de garaje, empleos, bienes raíces, servicios profesionales y emprendedoras ticas. ¡El marketplace #1 de Costa Rica!">
+  <meta property="og:image" content="https://compratica.com/logo.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_CR">
+  <meta property="og:site_name" content="CompraTica">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://compratica.com/">
+  <meta name="twitter:title" content="CompraTica — Marketplace de Costa Rica">
+  <meta name="twitter:description" content="Venta de garaje, empleos, bienes raíces y servicios profesionales en Costa Rica. ¡Compra y vende fácil!">
+  <meta name="twitter:image" content="https://compratica.com/logo.png">
+
+  <!-- Geo Tags -->
+  <meta name="geo.region" content="CR">
+  <meta name="geo.placename" content="Costa Rica">
+  <meta name="geo.position" content="9.7489;-83.7534">
+  <meta name="ICBM" content="9.7489, -83.7534">
 
   <!-- CSS crítico primero -->
   <link rel="stylesheet" href="/assets/css/main.css">

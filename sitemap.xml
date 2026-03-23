@@ -1,76 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  sitemap.xml — CompraTica (páginas estáticas principales)
+  Para publicaciones individuales ver: https://compratica.com/sitemap
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Página Principal -->
+
+  <!-- Inicio -->
   <url>
     <loc>https://compratica.com/</loc>
-    <lastmod>2026-03-03</lastmod>
+    <lastmod>2026-03-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
-  <!-- Servicios -->
+  <!-- Servicios Profesionales -->
   <url>
-    <loc>https://compratica.com/servicios.php</loc>
-    <lastmod>2026-03-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <loc>https://compratica.com/servicios</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
   </url>
 
-  <!-- Shuttle Aeropuerto -->
+  <!-- Empleos -->
   <url>
-    <loc>https://compratica.com/shuttle_search.php</loc>
-    <lastmod>2026-03-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <loc>https://compratica.com/empleos</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
   </url>
 
-  <!-- Categorías de Servicios -->
+  <!-- Venta de Garaje -->
   <url>
-    <loc>https://compratica.com/services_list.php?category=abogados</loc>
-    <lastmod>2026-03-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://compratica.com/services_list.php?category=mantenimiento</loc>
-    <lastmod>2026-03-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://compratica.com/services_list.php?category=tutorias</loc>
-    <lastmod>2026-03-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://compratica.com/services_list.php?category=fletes</loc>
-    <lastmod>2026-03-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://compratica.com/venta-garaje</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
   </url>
 
-  <!-- Venta Garaje -->
+  <!-- Bienes Raíces -->
   <url>
-    <loc>https://compratica.com/venta-garaje.php</loc>
-    <lastmod>2026-03-03</lastmod>
+    <loc>https://compratica.com/bienes-raices</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <!-- Emprendedoras -->
+  <url>
+    <loc>https://compratica.com/emprendedoras-catalogo</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Shuttle / Transporte -->
+  <url>
+    <loc>https://compratica.com/shuttle_search</loc>
+    <lastmod>2026-03-23</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.80</priority>
   </url>
 
-  <!-- Carrito y Checkout -->
+  <!-- Ofertas de Servicios -->
   <url>
-    <loc>https://compratica.com/cart.php</loc>
-    <lastmod>2026-03-03</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <loc>https://compratica.com/ofertas-servicios</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
   </url>
 
-  <!-- Páginas Estáticas -->
-  <url>
-    <loc>https://compratica.com/index.html</loc>
-    <lastmod>2026-03-03</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
 </urlset>

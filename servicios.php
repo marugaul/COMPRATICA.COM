@@ -228,15 +228,16 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
   <title>Servicios Profesionales en Costa Rica - CompraTica</title>
 
   <!-- SEO -->
-  <meta name="description" content="Encuentra servicios profesionales de calidad en Costa Rica. Contrata profesionales ticos confiables para tus necesidades.">
-  <meta name="keywords" content="servicios costa rica, profesionales ticos, servicios profesionales, directorio servicios costa rica">
-  <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://compratica.com/servicios.php">
+  <meta name="description" content="Servicios profesionales en Costa Rica. Contrata abogados, técnicos, diseñadores, plomeros, electricistas, tutores, fotógrafos y más profesionales verificados. Reserva directamente online.">
+  <meta name="keywords" content="servicios profesionales costa rica, contratar profesionales cr, abogado costa rica, plomero costa rica, electricista costa rica, tutor costa rica, diseñador costa rica, servicios tecnologia cr, servicios legales costa rica, freelancer costa rica">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="author" content="CompraTica">
+  <link rel="canonical" href="https://compratica.com/servicios">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://compratica.com/servicios.php">
-  <meta property="og:title" content="Servicios Profesionales en Costa Rica">
+  <meta property="og:url" content="https://compratica.com/servicios">
+  <meta property="og:title" content="Servicios Profesionales en Costa Rica | CompraTica">
   <meta property="og:description" content="Encuentra servicios profesionales de calidad en Costa Rica. Contrata profesionales ticos confiables.">
   <meta property="og:image" content="https://compratica.com/logo.png">
 
@@ -247,7 +248,7 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
     "@type": "ItemList",
     "name": "Servicios Profesionales en Costa Rica",
     "description": "Directorio de servicios profesionales costarricenses",
-    "url": "https://compratica.com/servicios.php"
+    "url": "https://compratica.com/servicios"
   }
   </script>
 

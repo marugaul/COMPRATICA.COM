@@ -1,20 +1,41 @@
-# robots.txt for compratica.com
+# robots.txt — compratica.com
 User-agent: *
 Allow: /
 
-# Sitemap location
+# ── Sitemaps ──────────────────────────────────────────────────────────────────
+Sitemap: https://compratica.com/sitemap
 Sitemap: https://compratica.com/sitemap.xml
 
-# Disallow admin and private directories
+# ── Directorios privados (portales, admin, logs) ─────────────────────────────
 Disallow: /admin/
-Disallow: /logs/
-Disallow: /sessions/
+Disallow: /affiliate/
+Disallow: /jobs/
+Disallow: /services/
+Disallow: /real-estate/
+Disallow: /jobs_service/
 Disallow: /includes/
 Disallow: /config/
+Disallow: /logs/
+Disallow: /sessions/
 Disallow: /mysql-pendientes/
-Disallow: /*.log$
+Disallow: /tools/
+Disallow: /sql-scripts-etapas/
 
-# Allow search engines to crawl main content
-Allow: /servicios.php
-Allow: /venta-garaje.php
-Allow: /index.html
+# ── Páginas transaccionales (no indexar) ─────────────────────────────────────
+Disallow: /cart
+Disallow: /cart.php
+Disallow: /checkout
+Disallow: /checkout.php
+Disallow: /login
+Disallow: /login.php
+Disallow: /logout
+Disallow: /logout.php
+Disallow: /register
+Disallow: /register.php
+Disallow: /my_orders
+Disallow: /api/
+
+# ── Archivos de sistema ───────────────────────────────────────────────────────
+Disallow: /*.log$
+Disallow: /*.sql$
+Disallow: /php_error.log

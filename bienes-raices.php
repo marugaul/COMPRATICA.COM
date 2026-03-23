@@ -155,7 +155,68 @@ logDebug("RENDERING_PAGE", ['listings_count' => count($listings)]);
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bienes Raíces — <?php echo APP_NAME; ?></title>
+  <title>Bienes Raíces en Costa Rica — Casas, Apartamentos y Terrenos | CompraTica</title>
+
+  <!-- SEO -->
+  <meta name="description" content="Bienes raíces en Costa Rica. Encuentra casas en venta, apartamentos en alquiler, terrenos y propiedades comerciales. Las mejores propiedades en San José, Alajuela, Heredia, Guanacaste y todo el país.">
+  <meta name="keywords" content="bienes raices costa rica, casas en venta costa rica, apartamentos alquiler costa rica, terrenos costa rica, propiedades costa rica, casas san jose costa rica, alquiler apartamento cr, venta de casas cr, finca costa rica, locales comerciales costa rica">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="author" content="CompraTica">
+  <link rel="canonical" href="https://compratica.com/bienes-raices">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://compratica.com/bienes-raices">
+  <meta property="og:title" content="Bienes Raíces en Costa Rica — Casas, Apartamentos y Terrenos | CompraTica">
+  <meta property="og:description" content="Encuentra casas en venta, apartamentos en alquiler y terrenos en Costa Rica. Las mejores propiedades a los mejores precios.">
+  <meta property="og:image" content="https://compratica.com/logo.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_CR">
+  <meta property="og:site_name" content="CompraTica">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://compratica.com/bienes-raices">
+  <meta name="twitter:title" content="Bienes Raíces en Costa Rica | CompraTica">
+  <meta name="twitter:description" content="Casas, apartamentos, terrenos y locales comerciales en Costa Rica. Encuentra tu propiedad ideal.">
+  <meta name="twitter:image" content="https://compratica.com/logo.png">
+
+  <!-- Geo Tags -->
+  <meta name="geo.region" content="CR">
+  <meta name="geo.placename" content="Costa Rica">
+  <meta name="geo.position" content="9.7489;-83.7534">
+  <meta name="ICBM" content="9.7489, -83.7534">
+
+  <!-- Schema.org -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Bienes Raíces en Costa Rica",
+    "description": "Casas en venta, apartamentos en alquiler, terrenos y propiedades comerciales en Costa Rica.",
+    "url": "https://compratica.com/bienes-raices",
+    "inLanguage": "es-CR",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "CompraTica",
+      "url": "https://compratica.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": { "@type": "EntryPoint", "urlTemplate": "https://compratica.com/bienes-raices?busqueda={search_term_string}" },
+        "query-input": "required name=search_term_string"
+      }
+    },
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://compratica.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Bienes Raíces", "item": "https://compratica.com/bienes-raices" }
+      ]
+    }
+  }
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">

@@ -316,11 +316,11 @@ if (empty($categories)) {
   <meta name="keywords" content="empleos costa rica, trabajo costa rica, ofertas empleo, bolsa trabajo cr, empleos san jose, empleos alajuela, empleos heredia, empleos remotos costa rica, trabajos tecnologia, empleos linkedin costa rica, stem jobs cr">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <meta name="author" content="CompraTica">
-  <link rel="canonical" href="https://compratica.com/empleos.php">
+  <link rel="canonical" href="https://compratica.com/empleos">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://compratica.com/empleos.php">
+  <meta property="og:url" content="https://compratica.com/empleos">
   <meta property="og:title" content="Empleos en Costa Rica y Otros Países 🌎 | Bolsa de Trabajo - CompraTica">
   <meta property="og:description" content="Encuentra empleos en Costa Rica y otros países. Ofertas de trabajo remotas, presenciales e híbridas en tecnología, administración, ventas, salud y más.">
   <meta property="og:image" content="https://compratica.com/assets/img/og-empleos.jpg">
@@ -331,7 +331,7 @@ if (empty($categories)) {
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://compratica.com/empleos.php">
+  <meta name="twitter:url" content="https://compratica.com/empleos">
   <meta name="twitter:title" content="Empleos en Costa Rica y Otros Países 🌎 | Bolsa de Trabajo">
   <meta name="twitter:description" content="Encuentra empleos en Costa Rica y otros países. Ofertas remotas, presenciales e híbridas en tecnología, administración, ventas y más. ¡Aplica ya!">
   <meta name="twitter:image" content="https://compratica.com/assets/img/og-empleos.jpg">
@@ -1624,7 +1624,7 @@ if (empty($categories)) {
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": "https://compratica.com/empleos.php?search={search_term_string}"
+        "urlTemplate": "https://compratica.com/empleos?search={search_term_string}"
       },
       "query-input": "required name=search_term_string"
     }
@@ -1637,7 +1637,7 @@ if (empty($categories)) {
     "@type": "CollectionPage",
     "name": "Empleos en Costa Rica",
     "description": "Bolsa de empleos en Costa Rica. Encuentra trabajo en tecnología, finanzas, salud, educación y más áreas.",
-    "url": "https://compratica.com/empleos.php",
+    "url": "https://compratica.com/empleos",
     "inLanguage": "es-CR",
     "about": {
       "@type": "Thing",
