@@ -29,6 +29,7 @@ foreach ($cartItems as $item) {
             'seller_id'     => $sid,
             'seller_name'   => $item['seller_name'],
             'seller_email'  => $item['seller_email'],
+            'seller_type'   => $item['seller_type'] ?? 'emprendedora',
             'sinpe_phone'   => $item['sinpe_phone'],
             'paypal_email'  => $item['paypal_email'],
             'accepts_sinpe' => $item['accepts_sinpe'],
@@ -404,7 +405,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
             <div class="seller-avatar"><?= strtoupper(substr($group['seller_name'], 0, 1)) ?></div>
             <div>
                 <h2><?= htmlspecialchars($group['seller_name']) ?></h2>
-                <div style="font-size:0.85rem;opacity:0.9;">Emprendedora verificada ✓</div>
+                <div style="font-size:0.85rem;opacity:0.9;"><?= $group['seller_type'] === 'emprendedor' ? 'Emprendedor verificado' : 'Emprendedora verificada' ?> ✓</div>
             </div>
             <div class="subtotal-badge">₡<?= number_format($group['total'], 0) ?></div>
         </div>

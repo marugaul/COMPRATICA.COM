@@ -48,7 +48,8 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             SELECT p.id, p.name, p.price, p.stock, p.image_1,
                    p.accepts_sinpe, p.accepts_paypal, p.sinpe_phone, p.paypal_email,
                    p.user_id AS seller_id,
-                   u.name AS seller_name, u.email AS seller_email
+                   u.name AS seller_name, u.email AS seller_email,
+                   COALESCE(u.seller_type, 'emprendedora') AS seller_type
             FROM entrepreneur_products p
             LEFT JOIN users u ON u.id = p.user_id
             WHERE p.id = ? AND p.is_active = 1
@@ -73,8 +74,9 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'price'         => (float)$prod['price'],
             'image'         => $prod['image_1'] ?? '',
             'seller_id'     => (int)$prod['seller_id'],
-            'seller_name'   => $prod['seller_name'] ?? 'Emprendedora',
+            'seller_name'   => $prod['seller_name'] ?? 'Emprendedor/a',
             'seller_email'  => $prod['seller_email'] ?? '',
+            'seller_type'   => $prod['seller_type'] ?? 'emprendedora',
             'sinpe_phone'   => $prod['sinpe_phone'] ?? '',
             'paypal_email'  => $prod['paypal_email'] ?? '',
             'accepts_sinpe' => (int)$prod['accepts_sinpe'],
