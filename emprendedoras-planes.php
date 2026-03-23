@@ -268,7 +268,7 @@ if ($isLoggedIn) {
             <div style="padding: 30px;">
                 <i class="fas fa-shield-alt" style="font-size: 3rem; color: #667eea; margin-bottom: 15px;"></i>
                 <h3 style="color: #333; margin-bottom: 10px;">Pagos Seguros</h3>
-                <p style="color: #666;">SIMPE y PayPal integrados</p>
+                <p style="color: #666;">SINPE y PayPal integrados</p>
             </div>
             <div style="padding: 30px;">
                 <i class="fas fa-chart-line" style="font-size: 3rem; color: #667eea; margin-bottom: 15px;"></i>

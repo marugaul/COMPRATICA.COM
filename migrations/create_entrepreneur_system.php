@@ -217,7 +217,7 @@ try {
             0,
             5,
             0.10,
-            json_encode(['Hasta 5 productos', 'Comisión 10%', 'Pagos SIMPE y PayPal', 'Soporte básico']),
+            json_encode(['Hasta 5 productos', 'Comisión 10%', 'Pagos SINPE y PayPal', 'Soporte básico']),
             1
         ],
         [
@@ -227,7 +227,7 @@ try {
             50000,
             20,
             0.05,
-            json_encode(['Hasta 20 productos', 'Comisión 5%', 'Pagos SIMPE y PayPal', 'Productos destacados', 'Soporte prioritario']),
+            json_encode(['Hasta 20 productos', 'Comisión 5%', 'Pagos SINPE y PayPal', 'Productos destacados', 'Soporte prioritario']),
             2
         ],
         [
@@ -237,7 +237,7 @@ try {
             100000,
             -1,
             0.03,
-            json_encode(['Productos ilimitados', 'Comisión 3%', 'Pagos SIMPE y PayPal', 'Destacados ilimitados', 'Soporte VIP', 'Estadísticas avanzadas']),
+            json_encode(['Productos ilimitados', 'Comisión 3%', 'Pagos SINPE y PayPal', 'Destacados ilimitados', 'Soporte VIP', 'Estadísticas avanzadas']),
             3
         ]
     ];
