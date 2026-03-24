@@ -22,7 +22,7 @@ $ok  = false;
 // Cargar categorías de servicios
 $categories = [];
 try {
-    $catStmt = $pdo->query("SELECT id, name, icon FROM categories WHERE active=1 AND name LIKE 'SERV:%' ORDER BY display_order ASC");
+    $catStmt = $pdo->query("SELECT id, name, '' AS icon FROM job_categories WHERE active=1 AND name LIKE 'SERV:%' ORDER BY display_order ASC");
     $categories = $catStmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     error_log('[services/create-listing.php] Error al cargar categorías: ' . $e->getMessage());

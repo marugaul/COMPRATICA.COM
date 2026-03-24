@@ -1560,6 +1560,8 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
             'Clases' => 'fa-chalkboard-teacher',
             'Traducción' => 'fa-language',
             'Legal' => 'fa-balance-scale',
+            'Transporte' => 'fa-shuttle-van',
+            'Turismo' => 'fa-shuttle-van',
           ];
           $icon = 'fa-concierge-bell';
           foreach ($icons as $keyword => $ico) {
