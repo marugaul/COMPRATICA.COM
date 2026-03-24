@@ -484,21 +484,40 @@ logDebug("RENDERING_PAGE");
     <a href="emprendedoras-catalogo" class="category-card category-emprendedoras" style="
       position: relative;
       overflow: hidden;
-      background-image: url('https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=500&fit=crop&auto=format');
-      background-size: cover;
-      background-position: center;
+      background: #0f172a;
       min-height: 200px;
     ">
+      <!-- Fondo fotográfico difuminado -->
       <div style="
         position: absolute; inset: 0;
-        background: linear-gradient(135deg, rgba(102,126,234,0.85) 0%, rgba(118,75,162,0.88) 100%);
+        background-image: url('https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=500&fit=crop&auto=format');
+        background-size: cover; background-position: center;
+        opacity: 0.18;
       "></div>
-      <div class="category-content" style="position: relative; z-index: 1;">
-        <div class="category-icon" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(4px);">
+      <!-- Overlay degradado profesional -->
+      <div style="
+        position: absolute; inset: 0;
+        background: linear-gradient(135deg,
+          rgba(15,23,42,0.95) 0%,
+          rgba(30,41,59,0.88) 50%,
+          rgba(51,65,85,0.82) 100%);
+      "></div>
+      <!-- Acento de color lateral -->
+      <div style="
+        position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+        background: linear-gradient(to bottom, #f472b6, #60a5fa);
+        z-index: 2;
+      "></div>
+      <div class="category-content" style="position: relative; z-index: 3;">
+        <div class="category-icon" style="
+          background: rgba(255,255,255,0.08);
+          border: 1.5px solid rgba(255,255,255,0.15);
+          backdrop-filter: blur(6px);
+        ">
           <i class="fas fa-store" style="color: #fff;"></i>
         </div>
         <h3 class="category-title" style="color: #fff;">Emprendedoras y Emprendedores</h3>
-        <p class="category-description" style="color: rgba(255,255,255,0.92);">Mercadito tico con mujeres y hombres emprendedores que venden directo a vos. ¡Apoyá el talento costarricense!</p>
+        <p class="category-description" style="color: rgba(255,255,255,0.72);">Mercadito tico: comprá directo a quienes venden. Apoyá el talento costarricense.</p>
       </div>
     </a>
   </div>
