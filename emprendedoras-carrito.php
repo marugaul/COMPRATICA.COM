@@ -44,123 +44,279 @@ foreach ($shippingChoices as $sid => $choice) {
     <link rel="stylesheet" href="assets/css/compratica-header.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .page-wrap { max-width: 900px; margin: 40px auto; padding: 0 20px; }
-        h1 { font-size: 1.8rem; font-weight: 800; color: #333; margin-bottom: 8px; }
-        .back-link { color: #667eea; text-decoration: none; font-size: 0.9rem; }
-        .back-link:hover { text-decoration: underline; }
+        /* ── VARIABLES (mismo sistema que checkout) ── */
+        :root {
+            --primary: #1e293b;
+            --primary-light: #334155;
+            --accent: #3b82f6;
+            --accent-green: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --purple: #8b5cf6;
+            --gray-50:  #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-700: #334155;
+            --gray-900: #0f172a;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.10);
+            --radius: 10px;
+            --transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+        }
 
+        body { background: var(--gray-50); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+        /* ── PAGE ── */
+        .page-wrap { max-width: 960px; margin: 0 auto; padding: 28px 20px 80px; }
+
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: var(--gray-500); text-decoration: none; font-size: 0.875rem;
+            padding: 6px 0; transition: var(--transition); margin-bottom: 20px;
+        }
+        .back-link:hover { color: var(--accent); }
+
+        .cart-title {
+            font-size: 1.55rem; font-weight: 800; color: var(--gray-900);
+            display: flex; align-items: center; gap: 10px; margin-bottom: 4px;
+        }
+        .cart-title i { color: var(--accent); }
+        .cart-subtitle { color: var(--gray-500); font-size: 0.9rem; margin-bottom: 28px; }
+
+        /* ── LAYOUT ── */
+        .cart-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 24px;
+            align-items: start;
+        }
+        @media (max-width: 780px) {
+            .cart-layout { grid-template-columns: 1fr; }
+        }
+
+        /* ── SELLER GROUP ── */
         .seller-group {
-            background: white; border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 24px; overflow: hidden;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: 14px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 20px;
+            overflow: hidden;
         }
         .seller-header {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white; padding: 14px 20px; display: flex; align-items: center; gap: 10px;
+            background: var(--primary);
+            color: var(--white);
+            padding: 14px 20px;
+            display: flex; align-items: center; gap: 12px;
+            position: relative;
+        }
+        .seller-header::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 4px; background: var(--accent);
         }
         .seller-avatar {
-            width: 36px; height: 36px; background: rgba(255,255,255,0.3);
-            border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,0.15);
+            border: 1.5px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.95rem; flex-shrink: 0;
         }
-        .seller-header h3 { margin: 0; font-size: 1rem; }
+        .seller-header h3 { margin: 0; font-size: 0.95rem; font-weight: 700; }
 
+        /* ── CART ITEMS ── */
         .cart-item {
-            display: grid; grid-template-columns: 80px 1fr auto auto;
-            gap: 16px; align-items: center; padding: 16px 20px;
-            border-bottom: 1px solid #f0f0f0;
+            display: grid;
+            grid-template-columns: 72px 1fr auto auto;
+            gap: 16px; align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--gray-100);
+            transition: background .15s;
         }
         .cart-item:last-child { border-bottom: none; }
-        .cart-item img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; background: #f5f5f5; }
-        .item-name { font-weight: 700; color: #333; margin-bottom: 4px; }
-        .item-price { color: #667eea; font-weight: 700; font-size: 1.05rem; }
-        .qty-control { display: flex; align-items: center; gap: 8px; }
-        .qty-btn {
-            width: 30px; height: 30px; border: 2px solid #e0e0e0; background: white;
-            border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 700;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
+        .cart-item:hover { background: var(--gray-50); }
+        .cart-item img {
+            width: 72px; height: 72px; object-fit: cover;
+            border-radius: var(--radius);
+            border: 1px solid var(--gray-200);
         }
-        .qty-btn:hover { border-color: #667eea; color: #667eea; }
-        .qty-val { min-width: 28px; text-align: center; font-weight: 700; }
-        .remove-btn { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 4px 8px; }
-        .remove-btn:hover { opacity: 0.7; }
-        .group-subtotal { text-align: right; padding: 12px 20px; color: #555; font-size: 0.95rem; border-top: 1px solid #f0f0f0; }
-        .group-subtotal strong { color: #667eea; font-size: 1.1rem; }
+        .item-img-placeholder {
+            width: 72px; height: 72px; background: var(--gray-100);
+            border-radius: var(--radius); display: flex; align-items: center;
+            justify-content: center; color: var(--gray-400); font-size: 1.5rem;
+            border: 1px solid var(--gray-200);
+        }
+        .item-name  { font-weight: 700; color: var(--gray-900); font-size: 0.93rem; margin-bottom: 4px; }
+        .item-price { color: var(--gray-500); font-size: 0.82rem; }
+        .item-line-total { font-weight: 700; color: var(--gray-700); font-size: 0.95rem; white-space: nowrap; }
 
-        /* ── Shipping selector ── */
+        .qty-control { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+        .qty-btn {
+            width: 28px; height: 28px;
+            border: 1.5px solid var(--gray-200); background: var(--white);
+            border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            transition: var(--transition); color: var(--gray-700);
+        }
+        .qty-btn:hover { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
+        .qty-val { min-width: 26px; text-align: center; font-weight: 700; font-size: 0.9rem; color: var(--gray-900); }
+        .remove-btn {
+            color: var(--gray-400); background: none; border: none; cursor: pointer;
+            font-size: 1rem; padding: 6px; border-radius: 6px; transition: var(--transition);
+        }
+        .remove-btn:hover { color: var(--danger); background: #fef2f2; }
+
+        .group-subtotal {
+            text-align: right; padding: 10px 20px;
+            color: var(--gray-500); font-size: 0.875rem;
+            border-top: 1px solid var(--gray-100);
+            background: var(--gray-50);
+        }
+        .group-subtotal strong { color: var(--gray-900); font-size: 0.95rem; }
+
+        /* ── SHIPPING SECTION ── */
         .shipping-section {
             padding: 16px 20px;
-            border-top: 2px solid #f0f0f0;
-            background: #fafbff;
+            border-top: 1px solid var(--gray-200);
         }
         .shipping-section h4 {
-            margin: 0 0 12px; font-size: .9rem; color: #374151; font-weight: 700;
-            display: flex; align-items: center; gap: 7px;
+            margin: 0 0 12px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.07em; color: var(--gray-400);
+            display: flex; align-items: center; gap: 6px;
         }
-        .ship-options { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+        .ship-options { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
         .ship-option {
-            display: flex; align-items: center; gap: 8px;
-            border: 2px solid #e5e7eb; border-radius: 10px; padding: 9px 14px;
-            cursor: pointer; font-size: .88rem; font-weight: 600; color: #374151;
-            background: white; transition: all .18s; user-select: none;
+            display: flex; align-items: center; gap: 7px;
+            border: 1.5px solid var(--gray-200); border-radius: var(--radius);
+            padding: 9px 14px; cursor: pointer;
+            font-size: 0.85rem; font-weight: 600; color: var(--gray-700);
+            background: var(--white); transition: var(--transition); user-select: none;
         }
-        .ship-option:hover { border-color: #667eea; background: #f5f3ff; }
-        .ship-option.selected { border-color: #667eea; background: #f0f0ff; color: #4f46e5; }
-        .ship-option input[type=radio] { accent-color: #667eea; width: 16px; height: 16px; }
+        .ship-option:hover { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+        .ship-option.selected { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+        .ship-option input[type=radio] { accent-color: var(--accent); width: 15px; height: 15px; }
+        .ship-option .ship-badge {
+            font-size: 0.72rem; font-weight: 400; color: var(--gray-400);
+        }
 
         .express-detail {
-            background: white; border: 2px solid #e5e7eb; border-radius: 12px;
-            padding: 14px 16px; margin-top: 10px;
+            background: var(--gray-50); border: 1.5px solid var(--gray-200);
+            border-radius: var(--radius); padding: 14px 16px; margin-top: 10px;
         }
-        .express-detail label { display: block; font-size: .82rem; font-weight: 600; color: #555; margin-bottom: 4px; }
+        .express-detail label {
+            display: block; font-size: 0.8rem; font-weight: 600;
+            color: var(--gray-700); margin-bottom: 4px;
+        }
         .express-detail input, .express-detail select {
-            width: 100%; padding: 9px 13px; border: 2px solid #e0e0e0; border-radius: 8px;
-            font-size: .9rem; box-sizing: border-box; margin-bottom: 10px;
+            width: 100%; padding: 9px 13px;
+            border: 1.5px solid var(--gray-200); border-radius: 8px;
+            font-size: 0.88rem; box-sizing: border-box;
+            background: var(--white); color: var(--gray-900);
+            margin-bottom: 10px; transition: var(--transition);
         }
-        .express-detail input:focus, .express-detail select:focus { border-color: #667eea; outline: none; }
+        .express-detail input:focus, .express-detail select:focus {
+            border-color: var(--accent); outline: none;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        }
         .express-cost-badge {
             display: inline-flex; align-items: center; gap: 6px;
             background: #fef3c7; color: #92400e; border-radius: 8px;
-            padding: 5px 12px; font-size: .85rem; font-weight: 700;
+            padding: 5px 12px; font-size: 0.82rem; font-weight: 700;
         }
         .locate-btn {
-            background: #f0f4ff; color: #667eea; border: 2px solid #c7d2fe;
-            border-radius: 8px; padding: 7px 14px; font-size: .82rem; font-weight: 600;
+            background: var(--gray-100); color: var(--gray-700);
+            border: 1.5px solid var(--gray-200); border-radius: 8px;
+            padding: 7px 14px; font-size: 0.8rem; font-weight: 600;
             cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
-            transition: background .2s; margin-bottom: 10px;
+            transition: var(--transition); margin-bottom: 10px;
         }
-        .locate-btn:hover { background: #e0e7ff; }
-        .shipping-row {
-            display: flex; justify-content: space-between; margin-bottom: 6px;
-            color: #555; font-size: .92rem;
-        }
-        .shipping-row.envio-cost { color: #f59e0b; font-weight: 600; }
+        .locate-btn:hover { background: #eff6ff; border-color: var(--accent); color: var(--accent); }
 
-        .summary-box {
-            background: white; border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 24px; margin-top: 10px;
+        .pickup-info {
+            background: #f0fdf4; border: 1px solid #86efac;
+            border-radius: 8px; padding: 10px 14px;
+            font-size: 0.83rem; color: #166534; margin-top: 8px;
         }
-        .summary-box h3 { margin: 0 0 16px; font-size: 1.1rem; color: #333; }
-        .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; color: #555; }
-        .summary-row.total { font-weight: 800; font-size: 1.2rem; color: #333; border-top: 2px solid #f0f0f0; padding-top: 12px; margin-top: 4px; }
+
+        /* ── SUMMARY CARD (sticky) ── */
+        .summary-card {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: 14px;
+            box-shadow: var(--shadow-md);
+            padding: 22px;
+            position: sticky;
+            top: 80px;
+        }
+        .summary-title {
+            font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 16px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .summary-row {
+            display: flex; justify-content: space-between;
+            padding: 7px 0; color: var(--gray-500); font-size: 0.875rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .summary-row:last-of-type { border-bottom: none; }
+        .summary-row.ship-row { font-size: 0.82rem; color: var(--gray-400); }
+        .summary-total {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 0 0;
+            margin-top: 10px;
+            border-top: 2px solid var(--gray-200);
+        }
+        .summary-total-label { font-weight: 700; font-size: 0.93rem; color: var(--gray-700); }
+        .summary-total-amount { font-weight: 800; font-size: 1.35rem; color: var(--gray-900); }
+
         .btn-checkout {
-            display: block; width: 100%; margin-top: 20px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white; padding: 16px; border-radius: 12px; border: none;
-            font-size: 1.1rem; font-weight: 700; cursor: pointer; text-align: center;
-            text-decoration: none; transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; margin-top: 18px;
+            background: var(--primary); color: var(--white);
+            padding: 15px; border-radius: var(--radius); border: none;
+            font-size: 1rem; font-weight: 700; cursor: pointer;
+            text-align: center; text-decoration: none;
+            transition: var(--transition);
         }
-        .btn-checkout:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
-        .btn-checkout:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-        .empty-state { text-align: center; padding: 80px 20px; }
-        .empty-state i { font-size: 5rem; color: #ddd; margin-bottom: 20px; display: block; }
-        .note { font-size: 0.82rem; color: #888; margin-top: 10px; text-align: center; }
+        .btn-checkout:hover { background: var(--primary-light); box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+        .btn-checkout:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+        .checkout-note {
+            font-size: 0.75rem; color: var(--gray-400); margin-top: 10px;
+            text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+
+        /* ── EMPTY STATE ── */
+        .empty-state {
+            text-align: center; padding: 80px 20px;
+            background: var(--white); border-radius: 14px;
+            border: 1px solid var(--gray-200); box-shadow: var(--shadow-md);
+        }
+        .empty-state .empty-icon {
+            width: 80px; height: 80px; background: var(--gray-100);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px; font-size: 2rem; color: var(--gray-400);
+        }
+        .empty-state h3 { color: var(--gray-700); margin-bottom: 8px; }
+        .empty-state p { color: var(--gray-400); margin-bottom: 24px; font-size: 0.9rem; }
+        .btn-go-shop {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--primary); color: var(--white);
+            padding: 12px 28px; border-radius: var(--radius);
+            text-decoration: none; font-weight: 700; font-size: 0.93rem;
+            transition: var(--transition);
+        }
+        .btn-go-shop:hover { background: var(--primary-light); }
 
         @media (max-width: 600px) {
-            .cart-item { grid-template-columns: 60px 1fr; }
-            .cart-item img { width: 60px; height: 60px; }
-            .qty-control, .remove-btn { grid-column: 2; justify-self: start; }
+            .cart-item { grid-template-columns: 62px 1fr; gap: 12px; }
+            .cart-item img, .item-img-placeholder { width: 62px; height: 62px; }
+            .qty-control, .remove-btn { grid-column: 2; }
             .ship-options { flex-direction: column; }
+            .summary-card { position: static; }
         }
     </style>
 </head>
@@ -168,20 +324,20 @@ foreach ($shippingChoices as $sid => $choice) {
 <?php include __DIR__ . '/includes/header.php'; ?>
 
 <div class="page-wrap">
-    <p><a href="emprendedoras-catalogo.php" class="back-link"><i class="fas fa-arrow-left"></i> Seguir comprando</a></p>
-    <h1><i class="fas fa-shopping-bag" style="color:#667eea;"></i> Mi Carrito del Mercadito</h1>
+    <a href="emprendedoras-catalogo.php" class="back-link"><i class="fas fa-arrow-left"></i> Seguir comprando</a>
+    <h1 class="cart-title"><i class="fas fa-shopping-bag"></i> Mi Carrito</h1>
+    <p class="cart-subtitle">Revisá tus productos antes de proceder al pago.</p>
 
     <?php if (empty($groups)): ?>
     <div class="empty-state">
-        <i class="fas fa-shopping-bag"></i>
-        <h3 style="color:#555;">Tu carrito está vacío</h3>
-        <p style="color:#999;">Explora el mercadito y agrega productos de las emprendedoras.</p>
-        <a href="emprendedoras-catalogo.php" style="display:inline-block;margin-top:16px;background:#667eea;color:white;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:700;">
-            <i class="fas fa-store"></i> Ir al Mercadito
-        </a>
+        <div class="empty-icon"><i class="fas fa-shopping-bag"></i></div>
+        <h3>Tu carrito está vacío</h3>
+        <p>Explorá el mercadito y agregá productos de vendedores ticos.</p>
+        <a href="emprendedoras-catalogo.php" class="btn-go-shop"><i class="fas fa-store"></i> Ir al Mercadito</a>
     </div>
     <?php else: ?>
 
+    <div class="cart-layout">
     <div id="cart-groups">
     <?php foreach ($groups as $sid => $group):
         $sc   = $sellerShipping[$sid] ?? [];
@@ -191,14 +347,14 @@ foreach ($shippingChoices as $sid => $choice) {
         <div class="seller-group" data-seller="<?= $sid ?>">
             <div class="seller-header">
                 <div class="seller-avatar"><?= strtoupper(substr($group['seller_name'], 0, 1)) ?></div>
-                <h3><i class="fas fa-store"></i> <?= htmlspecialchars($group['seller_name']) ?></h3>
+                <h3><?= htmlspecialchars($group['seller_name']) ?></h3>
             </div>
             <?php foreach ($group['items'] as $item): ?>
             <div class="cart-item" data-pid="<?= $item['product_id'] ?>">
                 <?php if ($item['image']): ?>
                     <img src="<?= htmlspecialchars($item['image']) ?>" alt="<?= htmlspecialchars($item['name']) ?>">
                 <?php else: ?>
-                    <div style="width:80px;height:80px;background:#f5f5f5;border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-image" style="color:#ccc;font-size:1.8rem;"></i></div>
+                    <div class="item-img-placeholder"><i class="fas fa-image"></i></div>
                 <?php endif; ?>
                 <div>
                     <div class="item-name"><?= htmlspecialchars($item['name']) ?></div>
@@ -209,27 +365,23 @@ foreach ($shippingChoices as $sid => $choice) {
                         <button class="qty-btn" onclick="changeQty(<?= $item['product_id'] ?>, 1)">+</button>
                     </div>
                 </div>
-                <div style="text-align:right;">
-                    <div style="font-weight:800;color:#333;" id="line-<?= $item['product_id'] ?>">₡<?= number_format($item['qty'] * $item['price'], 0) ?></div>
-                </div>
-                <div>
-                    <button class="remove-btn" onclick="removeItem(<?= $item['product_id'] ?>)" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
-                </div>
+                <div class="item-line-total" id="line-<?= $item['product_id'] ?>">₡<?= number_format($item['qty'] * $item['price'], 0) ?></div>
+                <button class="remove-btn" onclick="removeItem(<?= $item['product_id'] ?>)" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
             </div>
             <?php endforeach; ?>
 
             <?php if ($hasMethods): ?>
             <!-- ── Selector de envío para este vendedor ── -->
             <div class="shipping-section">
-                <h4><i class="fas fa-truck" style="color:#667eea;"></i> Método de entrega</h4>
+                <h4><i class="fas fa-truck"></i> Método de entrega</h4>
                 <div class="ship-options" id="ship-opts-<?= $sid ?>">
                     <?php if (!empty($sc['enable_pickup'])): ?>
                     <label class="ship-option <?= ($chosen['method']??'') === 'pickup' ? 'selected' : '' ?>"
                            onclick="selectShipping(<?= $sid ?>, 'pickup', this)">
                         <input type="radio" name="ship_<?= $sid ?>" value="pickup"
                                <?= ($chosen['method']??'') === 'pickup' ? 'checked' : '' ?>>
-                        <i class="fas fa-store" style="color:#667eea;"></i> Retiro en local
-                        <span style="font-weight:400;color:#9ca3af;font-size:.82rem;">(Gratis)</span>
+                        <i class="fas fa-store"></i> Retiro en local
+                        <span class="ship-badge">(Gratis)</span>
                     </label>
                     <?php endif; ?>
 
@@ -272,8 +424,7 @@ foreach ($shippingChoices as $sid => $choice) {
                 </div>
 
                 <?php if (!empty($sc['enable_pickup']) && !empty($sc['pickup_instructions'])): ?>
-                <div id="pickup-info-<?= $sid ?>" style="<?= ($chosen['method']??'') !== 'pickup' ? 'display:none;' : '' ?>
-                     background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;font-size:.85rem;color:#166534;margin-top:8px;">
+                <div id="pickup-info-<?= $sid ?>" class="pickup-info" style="<?= ($chosen['method']??'') !== 'pickup' ? 'display:none;' : '' ?>">
                     <i class="fas fa-map-marker-alt"></i>
                     <?= htmlspecialchars($sc['pickup_instructions']) ?>
                 </div>
@@ -340,49 +491,52 @@ foreach ($shippingChoices as $sid => $choice) {
             <?php endif; /* hasMethods */ ?>
 
             <div class="group-subtotal">
-                Subtotal de <strong><?= htmlspecialchars($group['seller_name']) ?></strong>:
-                <strong>₡<?= number_format($group['subtotal'], 0) ?></strong>
+                Subtotal: <strong>₡<?= number_format($group['subtotal'], 0) ?></strong>
             </div>
         </div>
     <?php endforeach; ?>
+    </div><!-- /.cart-groups -->
+
+    <!-- SUMMARY STICKY CARD -->
+    <div>
+        <div class="summary-card">
+            <div class="summary-title"><i class="fas fa-receipt"></i> Resumen del pedido</div>
+            <?php foreach ($groups as $sid => $group): ?>
+            <div class="summary-row">
+                <span><?= htmlspecialchars($group['seller_name']) ?></span>
+                <span id="subtotal-<?= $sid ?>">₡<?= number_format($group['subtotal'], 0) ?></span>
+            </div>
+            <?php
+                $ch = $shippingChoices[$sid] ?? null;
+                if ($ch):
+            ?>
+            <div class="summary-row ship-row" id="ship-summary-<?= $sid ?>">
+                <span>
+                    <i class="fas fa-<?= $ch['method']==='pickup'?'store':($ch['method']==='free'?'gift':'shipping-fast') ?>"></i>
+                    <?= $ch['method']==='pickup' ? 'Retiro en local' : ($ch['method']==='free' ? 'Envío gratis' : 'Envío express'.($ch['zone_name'] ? ' ('.$ch['zone_name'].')' : '')) ?>
+                </span>
+                <span id="ship-cost-<?= $sid ?>" style="color:<?= $ch['zone_price']>0?'var(--warning)':'var(--accent-green)' ?>">
+                    <?= $ch['zone_price']>0 ? '₡'.number_format($ch['zone_price'],0) : 'Gratis' ?>
+                </span>
+            </div>
+            <?php else: ?>
+            <div class="summary-row ship-row" id="ship-summary-<?= $sid ?>" style="display:none;">
+                <span></span><span id="ship-cost-<?= $sid ?>"></span>
+            </div>
+            <?php endif; ?>
+            <?php endforeach; ?>
+            <div class="summary-total">
+                <span class="summary-total-label">Total</span>
+                <span class="summary-total-amount" id="grand-total">₡<?= number_format($grandTotal + $shippingTotal, 0) ?></span>
+            </div>
+            <a href="emprendedoras-checkout.php" class="btn-checkout" id="btn-checkout">
+                <i class="fas fa-lock"></i> Proceder al Pago
+            </a>
+            <p class="checkout-note"><i class="fas fa-shield-alt"></i> Pago directo a cada vendedor/a</p>
+        </div>
     </div>
 
-    <div class="summary-box">
-        <h3><i class="fas fa-receipt"></i> Resumen</h3>
-        <?php foreach ($groups as $sid => $group): ?>
-        <div class="summary-row">
-            <span><?= htmlspecialchars($group['seller_name']) ?></span>
-            <span id="subtotal-<?= $sid ?>">₡<?= number_format($group['subtotal'], 0) ?></span>
-        </div>
-        <?php
-            $ch = $shippingChoices[$sid] ?? null;
-            if ($ch):
-        ?>
-        <div class="summary-row" id="ship-summary-<?= $sid ?>" style="color:#6b7280;font-size:.9rem;">
-            <span>
-                <i class="fas fa-<?= $ch['method']==='pickup'?'store':($ch['method']==='free'?'gift':'shipping-fast') ?>"></i>
-                <?= $ch['method']==='pickup' ? 'Retiro en local' : ($ch['method']==='free' ? 'Envío gratis' : 'Envío express'.($ch['zone_name'] ? ' ('.$ch['zone_name'].')' : '')) ?>
-            </span>
-            <span id="ship-cost-<?= $sid ?>" style="color:<?= $ch['zone_price']>0?'#f59e0b':'#10b981' ?>">
-                <?= $ch['zone_price']>0 ? '₡'.number_format($ch['zone_price'],0) : 'Gratis' ?>
-            </span>
-        </div>
-        <?php else: ?>
-        <div class="summary-row" id="ship-summary-<?= $sid ?>" style="display:none;color:#6b7280;font-size:.9rem;">
-            <span></span><span id="ship-cost-<?= $sid ?>"></span>
-        </div>
-        <?php endif; ?>
-        <?php endforeach; ?>
-        <div class="summary-row total">
-            <span>Total</span>
-            <span id="grand-total">₡<?= number_format($grandTotal + $shippingTotal, 0) ?></span>
-        </div>
-        <p class="note"><i class="fas fa-info-circle"></i> El pago se realiza por separado a cada emprendedora</p>
-        <a href="emprendedoras-checkout.php" class="btn-checkout" id="btn-checkout">
-            <i class="fas fa-lock"></i> Proceder al Pago
-        </a>
-    </div>
-
+    </div><!-- /.cart-layout -->
     <?php endif; ?>
 </div>
 
