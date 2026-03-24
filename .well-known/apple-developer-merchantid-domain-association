@@ -1,0 +1,7 @@
+PLACEHOLDER - Replace this file with the real domain association file downloaded from PayPal Developer Dashboard.
+Steps:
+1. Go to https://developer.paypal.com/developer/applications
+2. Select your LIVE app
+3. Features > Accept payments > Advanced Credit and Debit Card Payments > Apple Pay > Manage
+4. Download the domain association file
+5. Replace THIS file with that downloaded file (keep same filename, no extension)

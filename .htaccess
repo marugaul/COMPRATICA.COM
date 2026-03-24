@@ -2,6 +2,22 @@
 # .htaccess - Basico y seguro
 # ================================
 
+# ── Apple Pay domain verification ──────────────────────────────────────────────
+# File must be served as binary (application/octet-stream), no redirect, no compression
+<IfModule mod_rewrite.c>
+  RewriteRule ^\.well-known/apple-developer-merchantid-domain-association$ - [L]
+</IfModule>
+<Files "apple-developer-merchantid-domain-association">
+    ForceType application/octet-stream
+    <IfModule mod_headers.c>
+        Header set Content-Disposition "inline"
+    </IfModule>
+    <IfModule mod_deflate.c>
+        SetEnv no-gzip 1
+    </IfModule>
+</Files>
+# ──────────────────────────────────────────────────────────────────────────────
+
 # Fuerza UTF-8
 AddDefaultCharset utf-8
 
