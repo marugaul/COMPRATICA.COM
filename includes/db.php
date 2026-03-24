@@ -693,6 +693,25 @@ function db() {
                 ");
             }
 
+            // ── Tabla de afiliados (Venta de Garaje) - SEPARADA de users ───
+            if(!in_array('affiliates', $tables)){
+                $pdo->exec("
+                    CREATE TABLE affiliates (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL UNIQUE,
+                        phone TEXT DEFAULT '',
+                        password_hash TEXT NOT NULL,
+                        oauth_provider TEXT DEFAULT NULL,
+                        oauth_id TEXT DEFAULT NULL,
+                        is_active INTEGER DEFAULT 1,
+                        created_at TEXT DEFAULT (datetime('now')),
+                        updated_at TEXT DEFAULT (datetime('now'))
+                    )
+                ");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_affiliates_email ON affiliates(email)");
+            }
+
             // ── Crear usuario-bot para importaciones si no existe ───────────
             $botEmail = 'bot@compratica.com';
             $hasBot = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
