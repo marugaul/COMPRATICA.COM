@@ -177,13 +177,27 @@ $awningPalette = [
     <link rel="stylesheet" href="assets/css/compratica-header.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* ── FONDO SEGÚN FILTRO ── */
+        body {
+            transition: background-color 0.5s ease;
+        }
+        body.filter-emprendedora {
+            background: linear-gradient(160deg, #fff0f6 0%, #fce7f3 40%, #f5f3ff 100%);
+        }
+        body.filter-emprendedor {
+            background: linear-gradient(160deg, #eff6ff 0%, #dbeafe 40%, #ede9fe 100%);
+        }
+        body.filter-all {
+            background: #f8f9fa;
+        }
+
         /* ── HERO — anular bandera de main.css ── */
         .hero::before,
         .hero::after { content: none !important; display: none !important; }
 
         /* ── HERO ── */
         .hero {
-            background: #ffffff;
+            background: transparent;
             padding: 48px 20px 80px;
             text-align: center;
             border-bottom: 1px solid #f0f0f0;
@@ -207,9 +221,10 @@ $awningPalette = [
         /* ── SEARCH ── */
         .search-wrap {
             max-width: 600px; margin: -32px auto 48px;
-            background: white; border-radius: 50px;
+            background: rgba(255,255,255,0.92); border-radius: 50px;
             box-shadow: 0 8px 32px rgba(0,0,0,.13);
             display: flex; overflow: hidden; position: relative; z-index: 10;
+            backdrop-filter: blur(8px);
         }
         .search-wrap input {
             flex: 1; border: none; padding: 16px 24px; font-size: 1rem; outline: none;
@@ -579,7 +594,7 @@ $awningPalette = [
         .seller-type-pill.hombre { background: #dbeafe; color: #1d4ed8; }
     </style>
 </head>
-<body>
+<body class="filter-<?= htmlspecialchars($filterType) ?>">
 <?php include __DIR__ . '/includes/header.php'; ?>
 
 <div class="hero">
