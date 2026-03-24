@@ -454,7 +454,7 @@ $paypal_client_id = defined('PAYPAL_CLIENT_ID') ? PAYPAL_CLIENT_ID : '';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Completar pago — Compratica</title>
-  <script src="https://www.paypal.com/sdk/js?client-id=<?= htmlspecialchars($paypal_client_id, ENT_QUOTES, 'UTF-8') ?>&currency=USD&intent=capture&enable-funding=card&disable-funding=paylater,venmo" data-namespace="paypal_sdk"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=<?= htmlspecialchars($paypal_client_id, ENT_QUOTES, 'UTF-8') ?>&currency=USD&intent=capture&enable-funding=googlepay,applepay,card&disable-funding=paylater,venmo" data-namespace="paypal_sdk"></script>
   <style>
     *{box-sizing:border-box}
     body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;margin:0;background:#f5f5f5;padding:20px}

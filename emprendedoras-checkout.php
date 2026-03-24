@@ -237,6 +237,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
         }
     }
 }
+
+// ─── Exchange rate + session PayPal pending ───────────────────────────────────
+$emp_exchange_rate = 650.0;
+if (!empty(array_filter(array_column($groups, 'accepts_paypal')))) {
+    try {
+        $pdo_er = db();
+        $row_er = $pdo_er->query("SELECT exchange_rate FROM settings ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+        if ($row_er && (float)$row_er['exchange_rate'] > 0) $emp_exchange_rate = (float)$row_er['exchange_rate'];
+    } catch (Throwable $e) {}
+}
+
+foreach ($groups as $sid => $group) {
+    if ($group['accepts_paypal'] && $group['paypal_email']) {
+        $total_crc_pp = (int)$group['total'];
+        $total_usd_pp = round($total_crc_pp / $emp_exchange_rate, 2);
+        if ($total_usd_pp < 0.01) $total_usd_pp = 0.01;
+        $items_for_pp = [];
+        foreach ($group['items'] as $it) {
+            $items_for_pp[] = ['name' => $it['name'], 'qty' => $it['qty'], 'price' => $it['price']];
+        }
+        $_SESSION['emp_paypal_pending'][$sid] = [
+            'seller_name'  => $group['seller_name'],
+            'seller_email' => $group['seller_email'],
+            'paypal_email' => $group['paypal_email'],
+            'buyer_name'   => $buyerName,
+            'buyer_email'  => $buyerEmail,
+            'total_crc'    => $total_crc_pp,
+            'total_usd'    => $total_usd_pp,
+            'items'        => $items_for_pp,
+            'order_ref'    => 'EMP-' . $sid,
+        ];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -248,6 +281,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/compratica-header.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <?php if (defined('PAYPAL_CLIENT_ID') && PAYPAL_CLIENT_ID): ?>
+    <script src="https://www.paypal.com/sdk/js?client-id=<?= htmlspecialchars(PAYPAL_CLIENT_ID, ENT_QUOTES) ?>&currency=USD&intent=capture&enable-funding=googlepay,applepay,card&disable-funding=paylater,venmo" data-namespace="paypal_sdk"></script>
+    <?php endif; ?>
     <style>
         /* ── VARIABLES ── */
         :root {
@@ -739,26 +775,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
         </div>
         <?php endif; ?>
 
-        <!-- Panel PayPal -->
+        <!-- Panel PayPal SDK -->
         <?php if ($hasPaypal): ?>
-        <?php
-            $ppAmount = number_format($group['total'] / 650, 2, '.', '');
-            $ppEmail  = $group['paypal_email'];
-            $ppItems  = implode(', ', array_map(fn($i) => $i['name'], $group['items']));
-        ?>
+        <?php $ppAmountUsd = number_format(round($group['total'] / $emp_exchange_rate, 2), 2); ?>
         <div class="pay-panel <?= $defaultTab === 'paypal' && !$hasSinpe ? 'active' : '' ?>" id="tab-<?= $sid ?>-paypal">
             <div class="paypal-panel">
                 <p class="paypal-desc">
-                    Serás redirigido a PayPal para pagar <strong>US$<?= $ppAmount ?></strong>
-                    (≈ ₡<?= number_format($group['total'], 0) ?>).
+                    Pago seguro — tarjeta, Google Pay, Apple Pay o cuenta PayPal.<br>
+                    <strong>US$<?= $ppAmountUsd ?></strong> (≈ ₡<?= number_format($group['total'], 0) ?>)
                 </p>
-                <a href="https://www.paypal.com/paypalme/<?= urlencode($ppEmail) ?>/<?= $ppAmount ?>USD"
-                   target="_blank" rel="noopener" class="btn-paypal">
-                    <i class="fab fa-paypal"></i> Pagar con PayPal
-                </a>
-                <p style="color:var(--gray-400);font-size:0.82rem;margin-top:14px;">
-                    Después de pagar, envía la captura por WhatsApp o correo al vendedor/a.
-                </p>
+                <div id="paypal-buttons-<?= $sid ?>"></div>
+                <div id="paypal-error-<?= $sid ?>" style="display:none;color:#991b1b;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:.88rem;"></div>
+                <div id="paypal-success-<?= $sid ?>" style="display:none;text-align:center;padding:20px 0;">
+                    <div style="color:#166534;font-size:1.1rem;font-weight:700;"><i class="fas fa-check-circle"></i> ¡Pago completado!</div>
+                    <p style="color:#64748b;font-size:.9rem;margin-top:8px;">Recibirás un correo de confirmación. ¡Gracias!</p>
+                </div>
             </div>
         </div>
         <?php endif; ?>
@@ -828,6 +859,72 @@ function handleDrop(event, sid) {
         showPreview(input, sid);
     }
 }
+
+function showPaypalError(sid, msg) {
+    var el = document.getElementById('paypal-error-' + sid);
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
 </script>
+
+<?php if (defined('PAYPAL_CLIENT_ID') && PAYPAL_CLIENT_ID): ?>
+<script>
+<?php foreach ($groups as $sid => $group): ?>
+<?php if ($group['accepts_paypal'] && $group['paypal_email']): ?>
+(function(sid) {
+    if (typeof paypal_sdk === 'undefined') {
+        var c = document.getElementById('paypal-buttons-' + sid);
+        if (c) c.innerHTML = '<p style="color:#64748b;font-size:.85rem;text-align:center;">PayPal no disponible en este momento.</p>';
+        return;
+    }
+    paypal_sdk.Buttons({
+        style: { layout: 'vertical', label: 'pay', shape: 'rect', color: 'blue' },
+        createOrder: function() {
+            return fetch('/api/paypal-create-order-emp.php?sid=' + sid, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.id) {
+                    showPaypalError(sid, data.error || 'No se pudo iniciar el pago. Intenta de nuevo.');
+                    return new Promise(function() {});
+                }
+                return data.id;
+            })
+            .catch(function() {
+                showPaypalError(sid, 'No se pudo conectar con PayPal. Verifica tu conexión.');
+                return new Promise(function() {});
+            });
+        },
+        onApprove: function(data) {
+            return fetch('/api/paypal-capture-order-emp.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderID: data.orderID, sid: sid })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.success) {
+                    var btns = document.getElementById('paypal-buttons-' + sid);
+                    if (btns) btns.style.display = 'none';
+                    var ok = document.getElementById('paypal-success-' + sid);
+                    if (ok) ok.style.display = 'block';
+                } else {
+                    showPaypalError(sid, res.error || 'Error al procesar el pago. Intenta de nuevo.');
+                }
+            })
+            .catch(function(e) { showPaypalError(sid, 'Error inesperado: ' + e.message); });
+        },
+        onError: function(err) {
+            showPaypalError(sid, 'Error de PayPal: ' + (err.message || String(err)));
+        }
+    }).render('#paypal-buttons-' + sid);
+})(<?= (int)$sid ?>);
+<?php endif; ?>
+<?php endforeach; ?>
+</script>
+<?php endif; ?>
 </body>
 </html>
