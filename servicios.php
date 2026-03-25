@@ -563,6 +563,152 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
       margin: 0 auto;
     }
 
+    /* Transporte Premium de Turismo - Featured Section */
+    .premium-transport-section {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      border-radius: var(--radius-xl);
+      padding: 3rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .premium-transport-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .premium-transport-section::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -5%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(26, 115, 232, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .premium-transport-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 2rem;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .premium-transport-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #f59e0b;
+      padding: 0.35rem 0.9rem;
+      border-radius: 50px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .premium-transport-title {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.2;
+      margin-bottom: 0.75rem;
+    }
+
+    .premium-transport-title span {
+      color: #f59e0b;
+    }
+
+    .premium-transport-desc {
+      color: rgba(255, 255, 255, 0.75);
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+      max-width: 560px;
+    }
+
+    .premium-transport-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .premium-feature-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 0.35rem 0.8rem;
+      border-radius: 50px;
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    .premium-feature-tag i {
+      color: #f59e0b;
+      font-size: 0.75rem;
+    }
+
+    .premium-transport-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #1a1a2e;
+      padding: 0.9rem 2rem;
+      border-radius: var(--radius);
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: var(--transition);
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    }
+
+    .premium-transport-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+      color: #1a1a2e;
+    }
+
+    .premium-transport-icon-large {
+      font-size: 7rem;
+      color: rgba(245, 158, 11, 0.2);
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+      .premium-transport-inner {
+        grid-template-columns: 1fr;
+      }
+      .premium-transport-icon-large {
+        display: none;
+      }
+      .premium-transport-title {
+        font-size: 1.4rem;
+      }
+      .premium-transport-section {
+        padding: 2rem 1.5rem;
+      }
+    }
+
     .categories-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1414,6 +1560,8 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
             'Clases' => 'fa-chalkboard-teacher',
             'Traducción' => 'fa-language',
             'Legal' => 'fa-balance-scale',
+            'Transporte' => 'fa-shuttle-van',
+            'Turismo' => 'fa-shuttle-van',
           ];
           $icon = 'fa-concierge-bell';
           foreach ($icons as $keyword => $ico) {
@@ -1429,6 +1577,39 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
       </div>
     </div>
   <?php endif; ?>
+
+  <!-- Transporte Premium de Turismo - Sección Destacada -->
+  <section class="premium-transport-section">
+    <div class="premium-transport-inner">
+      <div>
+        <div class="premium-transport-badge">
+          <i class="fas fa-star"></i> Servicio Destacado
+        </div>
+        <h2 class="premium-transport-title">
+          Transporte <span>Premium</span> de Turismo
+        </h2>
+        <p class="premium-transport-desc">
+          Explorá Costa Rica con comodidad y estilo. Ofrecemos transporte privado para traslados al aeropuerto,
+          tours por playas, volcanes y destinos turísticos. Choferes bilingües, vehículos modernos y servicio puntual.
+        </p>
+        <div class="premium-transport-features">
+          <span class="premium-feature-tag"><i class="fas fa-plane"></i> Traslados al aeropuerto</span>
+          <span class="premium-feature-tag"><i class="fas fa-map-marked-alt"></i> Tours privados</span>
+          <span class="premium-feature-tag"><i class="fas fa-language"></i> Choferes bilingües</span>
+          <span class="premium-feature-tag"><i class="fas fa-wifi"></i> WiFi a bordo</span>
+          <span class="premium-feature-tag"><i class="fas fa-snowflake"></i> Aire acondicionado</span>
+          <span class="premium-feature-tag"><i class="fas fa-clock"></i> Disponible 24/7</span>
+        </div>
+        <a href="shuttle_search.php" class="premium-transport-cta">
+          <i class="fas fa-shuttle-van"></i>
+          Ver disponibilidad y reservar
+        </a>
+      </div>
+      <div class="premium-transport-icon-large">
+        <i class="fas fa-shuttle-van"></i>
+      </div>
+    </div>
+  </section>
 
   <!-- Services Section -->
   <div class="section-header">

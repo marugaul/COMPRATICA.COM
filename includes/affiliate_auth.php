@@ -1,5 +1,114 @@
 <?php
+/**
+ * Autenticación de Afiliados (Venta de Garaje)
+ * Sistema SEPARADO de emprendedoras/usuarios — usa tabla affiliates, no users.
+ */
 if (session_status() === PHP_SESSION_NONE) session_start();
-function aff_logged_in(){ return !empty($_SESSION['aff_id']); }
-function aff_require_login(){ if (!aff_logged_in()){ header('Location: login.php'); exit; } }
+
+require_once __DIR__ . '/db.php';
+
+function aff_logged_in() {
+    return !empty($_SESSION['aff_id']);
+}
+
+function aff_require_login() {
+    if (!aff_logged_in()) {
+        header('Location: login.php');
+        exit;
+    }
+}
+
+/**
+ * Autenticar afiliado con email y contraseña (tabla affiliates, NO users).
+ */
+function authenticate_affiliate(string $email, string $password) {
+    $pdo = db();
+    $stmt = $pdo->prepare("SELECT * FROM affiliates WHERE email = ? LIMIT 1");
+    $stmt->execute([$email]);
+    $aff = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$aff) return false;
+    if (!password_verify($password, $aff['password_hash'])) return false;
+    if ((int)($aff['is_active'] ?? 1) !== 1) {
+        throw new RuntimeException('Tu cuenta de afiliado no está activa.');
+    }
+    return $aff;
+}
+
+/**
+ * Obtener o crear afiliado via OAuth (tabla affiliates, NO users).
+ */
+function get_or_create_oauth_affiliate(string $email, string $name, string $provider, string $oauthId) {
+    $pdo = db();
+
+    // Buscar por oauth_id + provider primero
+    $stmt = $pdo->prepare("SELECT * FROM affiliates WHERE oauth_provider = ? AND oauth_id = ? LIMIT 1");
+    $stmt->execute([$provider, $oauthId]);
+    $aff = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($aff) return $aff;
+
+    // Buscar por email
+    $stmt = $pdo->prepare("SELECT * FROM affiliates WHERE email = ? LIMIT 1");
+    $stmt->execute([$email]);
+    $aff = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($aff) {
+        // Actualizar datos oauth
+        $pdo->prepare("UPDATE affiliates SET oauth_provider=?, oauth_id=?, name=?, updated_at=datetime('now') WHERE id=?")
+            ->execute([$provider, $oauthId, $name, $aff['id']]);
+        $aff['oauth_provider'] = $provider;
+        $aff['oauth_id'] = $oauthId;
+        return $aff;
+    }
+
+    // Crear nuevo afiliado
+    $hash = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
+    $pdo->prepare("
+        INSERT INTO affiliates (name, email, phone, password_hash, oauth_provider, oauth_id, is_active, created_at, updated_at)
+        VALUES (?, ?, '', ?, ?, ?, 1, datetime('now'), datetime('now'))
+    ")->execute([$name, $email, $hash, $provider, $oauthId]);
+
+    $newId = (int)$pdo->lastInsertId();
+    $stmt = $pdo->prepare("SELECT * FROM affiliates WHERE id = ? LIMIT 1");
+    $stmt->execute([$newId]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Iniciar sesión como afiliado (solo sets aff_id/aff_name/aff_email — NO user_id).
+ */
+function login_affiliate(array $aff): void {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    session_regenerate_id(true);
+
+    $_SESSION['aff_id']    = (int)$aff['id'];
+    $_SESSION['aff_name']  = (string)$aff['name'];
+    $_SESSION['aff_email'] = (string)$aff['email'];
+
+    // Limpiar variables de otros sistemas para evitar confusión de sesión
+    unset($_SESSION['user_id'], $_SESSION['uid'], $_SESSION['agent_id'], $_SESSION['employer_id']);
+
+    session_write_close();
+}
+
+/**
+ * Obtener afiliado actual de sesión.
+ */
+function get_session_affiliate(): ?array {
+    if (!aff_logged_in()) return null;
+    $pdo = db();
+    $stmt = $pdo->prepare("SELECT * FROM affiliates WHERE id = ? LIMIT 1");
+    $stmt->execute([$_SESSION['aff_id']]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+}
+
+/**
+ * Cerrar sesión de afiliado.
+ */
+function logout_affiliate(): void {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    unset($_SESSION['aff_id'], $_SESSION['aff_name'], $_SESSION['aff_email']);
+    session_write_close();
+}
 ?>

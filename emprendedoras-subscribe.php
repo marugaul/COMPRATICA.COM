@@ -30,6 +30,20 @@ $step      = $_GET['step'] ?? 'select';
 
 $pdo = db();
 
+// Verificar identidad de emprendedora
+if (empty($_SESSION['entrepreneur_id'])) {
+    $stmtEnt = $pdo->prepare("SELECT id FROM entrepreneurs WHERE user_id = ?");
+    $stmtEnt->execute([$userId]);
+    $entId = (int)($stmtEnt->fetchColumn() ?: 0);
+    if ($entId > 0) {
+        $_SESSION['entrepreneur_id'] = $entId;
+    } else {
+        session_destroy();
+        header('Location: emprendedoras-login.php?error=not_entrepreneur');
+        exit;
+    }
+}
+
 // Obtener plan
 $stmt = $pdo->prepare("SELECT * FROM entrepreneur_plans WHERE id = ? AND is_active = 1");
 $stmt->execute([$planId]);
@@ -845,12 +859,14 @@ $isLoggedIn = true;
                             <div><strong>PayPal / Apple Pay / Google Pay</strong></div>
                             <div style="font-size:0.85rem;color:#666;margin-top:4px;">Cuenta PayPal o wallet</div>
                         </label>
+                        <!-- Tarjeta Stripe: deshabilitado temporalmente
                         <label class="payment-option" onclick="selectPayment(this, 'stripe')">
                             <input type="radio" name="payment_method" value="stripe" required>
                             <div class="icon"><i class="fas fa-credit-card" style="color:#635bff;"></i></div>
                             <div><strong>Tarjeta de crédito / débito</strong></div>
                             <div style="font-size:0.85rem;color:#666;margin-top:4px;">Visa, Mastercard, Amex</div>
                         </label>
+                        -->
                     </div>
                 </div>
                 <?php else: ?>

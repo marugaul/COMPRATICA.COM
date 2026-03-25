@@ -97,7 +97,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 require_once __DIR__ . '/../includes/affiliate_auth.php';
-require_once __DIR__ . '/../includes/user_auth.php';
+// user_auth.php NO se usa aquí — afiliados tienen su propia tabla y sesión separada
 
 $pdo = db();
 $msg = '';
@@ -121,7 +121,6 @@ if (isset($_GET['clear_cache'])) {
   }
   // Invalidar archivos específicos
   $filesToInvalidate = [
-    __DIR__ . '/../includes/user_auth.php',
     __DIR__ . '/../includes/affiliate_auth.php',
     __DIR__ . '/../includes/config.php'
   ];
@@ -135,13 +134,10 @@ if (isset($_GET['clear_cache'])) {
 
 // Si ya tiene sesión de afiliado, redirigir al dashboard
 $isAffLoggedIn = aff_logged_in();
-$isUserLoggedIn = is_user_logged_in();
 
 logDebug("AUTH_CHECK", [
     'aff_logged_in' => $isAffLoggedIn,
-    'user_logged_in' => $isUserLoggedIn,
     'aff_id' => $_SESSION['aff_id'] ?? null,
-    'user_id' => $_SESSION['user_id'] ?? null,
     'session_keys' => array_keys($_SESSION)
 ]);
 
@@ -219,16 +215,15 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
 
     logDebug("OAUTH_USER_INFO", ['email' => $email, 'name' => $name, 'oauth_id' => $oauthId]);
 
-    // Usar la función unificada para obtener o crear usuario
-    $user = get_or_create_oauth_user($email, $name, 'google', $oauthId);
+    // Usar función exclusiva de afiliados (tabla affiliates, NO users)
+    $aff = get_or_create_oauth_affiliate($email, $name, 'google', $oauthId);
 
-    logDebug("OAUTH_USER_OBTAINED", ['user_id' => $user['id'], 'email' => $user['email']]);
+    logDebug("OAUTH_AFF_OBTAINED", ['aff_id' => $aff['id'], 'email' => $aff['email']]);
 
-    // Iniciar sesión usando la función unificada
-    login_user($user);
+    // Iniciar sesión como afiliado (solo aff_id, no user_id)
+    login_affiliate($aff);
 
     logDebug("OAUTH_LOGIN_SUCCESS", [
-        'user_id' => $_SESSION['user_id'] ?? null,
         'aff_id' => $_SESSION['aff_id'] ?? null,
         'session_keys' => array_keys($_SESSION)
     ]);
@@ -253,20 +248,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       throw new RuntimeException('Por favor ingresa tu correo y contraseña.');
     }
 
-    logDebug("AUTHENTICATING_USER", ['email' => $email]);
-    $user = authenticate_user($email, $pass);
+    logDebug("AUTHENTICATING_AFFILIATE", ['email' => $email]);
+    $aff = authenticate_affiliate($email, $pass);
 
-    if (!$user) {
+    if (!$aff) {
       logDebug("AUTHENTICATION_FAILED", ['email' => $email]);
-      throw new RuntimeException('Credenciales inválidas.');
+      throw new RuntimeException('Correo o contraseña incorrectos.');
     }
 
-    logDebug("AUTHENTICATION_SUCCESS", ['user_id' => $user['id'], 'email' => $user['email']]);
+    logDebug("AUTHENTICATION_SUCCESS", ['aff_id' => $aff['id'], 'email' => $aff['email']]);
 
-    login_user($user);
+    login_affiliate($aff);
 
     logDebug("POST_LOGIN_SUCCESS", [
-        'user_id' => $_SESSION['user_id'] ?? null,
         'aff_id' => $_SESSION['aff_id'] ?? null,
         'session_keys' => array_keys($_SESSION)
     ]);

@@ -677,6 +677,32 @@ function db() {
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_ent_orders_status ON entrepreneur_orders(status)");
             }
 
+            // ── Tabla de identidad de emprendedoras ────────────────────────
+            // Separa emprendedoras (vendedoras) de clientes finales en users.
+            if(!in_array('entrepreneurs', $tables)){
+                $pdo->exec("
+                    CREATE TABLE entrepreneurs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL UNIQUE,
+                        status TEXT NOT NULL DEFAULT 'active',
+                        created_at TEXT DEFAULT (datetime('now')),
+                        updated_at TEXT DEFAULT (datetime('now')),
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                    )
+                ");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_entrepreneurs_user ON entrepreneurs(user_id)");
+
+                // Migrar datos existentes: cualquier user_id en entrepreneur_subscriptions o entrepreneur_products
+                $pdo->exec("
+                    INSERT OR IGNORE INTO entrepreneurs (user_id)
+                    SELECT DISTINCT user_id FROM entrepreneur_subscriptions
+                ");
+                $pdo->exec("
+                    INSERT OR IGNORE INTO entrepreneurs (user_id)
+                    SELECT DISTINCT user_id FROM entrepreneur_products
+                ");
+            }
+
             // ── Tabla de log de importaciones ──────────────────────────────
             if(!in_array('job_import_log', $tables)){
                 $pdo->exec("
@@ -691,6 +717,25 @@ function db() {
                         message  TEXT
                     )
                 ");
+            }
+
+            // ── Tabla de afiliados (Venta de Garaje) - SEPARADA de users ───
+            if(!in_array('affiliates', $tables)){
+                $pdo->exec("
+                    CREATE TABLE affiliates (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL UNIQUE,
+                        phone TEXT DEFAULT '',
+                        password_hash TEXT NOT NULL,
+                        oauth_provider TEXT DEFAULT NULL,
+                        oauth_id TEXT DEFAULT NULL,
+                        is_active INTEGER DEFAULT 1,
+                        created_at TEXT DEFAULT (datetime('now')),
+                        updated_at TEXT DEFAULT (datetime('now'))
+                    )
+                ");
+                $pdo->exec("CREATE INDEX IF NOT EXISTS idx_affiliates_email ON affiliates(email)");
             }
 
             // ── Crear usuario-bot para importaciones si no existe ───────────
