@@ -1,6 +1,6 @@
 <?php
 // Número de WhatsApp para soporte humano (editar aquí)
-$support_whatsapp = '50688902814';
+$support_whatsapp = '50683010305';
 $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
 ?>
 <!-- ═══════════════════════════════════════════
