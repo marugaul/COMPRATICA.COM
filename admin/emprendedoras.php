@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <p>Nos complace informarte que tu suscripción al plan <strong>" . h($row['plan_name']) . "</strong> ha sido <strong>aprobada</strong>.</p>
                                 <p>Ya puedes acceder a tu dashboard y comenzar a publicar tus productos.</p>
                                 <div style='text-align:center;margin:30px 0;'>
-                                    <a href='" . SITE_URL . "/emprendedoras-dashboard' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ir a mi Dashboard</a>
+                                    <a href='" . SITE_URL . "/emprendedores-dashboard' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ir a mi Dashboard</a>
                                 </div>
                             </div>
                             <div style='background:#f9fafb;padding:20px;text-align:center;border-radius:0 0 16px 16px;color:#666;font-size:0.85rem;'>
@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <p>Lamentablemente no pudimos verificar tu comprobante de pago para el plan <strong>" . h($row['plan_name']) . "</strong>.</p>
                                 <p>Por favor contáctanos por WhatsApp o correo para resolver esta situación, o intenta enviar nuevamente tu comprobante.</p>
                                 <div style='text-align:center;margin:30px 0;'>
-                                    <a href='" . SITE_URL . "/emprendedoras-planes' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ver planes</a>
+                                    <a href='" . SITE_URL . "/emprendedores-planes' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ver planes</a>
                                 </div>
                             </div>
                             <div style='background:#f9fafb;padding:20px;text-align:center;border-radius:0 0 16px 16px;color:#666;font-size:0.85rem;'>
@@ -180,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <p>Tu suscripción al plan <strong>" . h($row['plan_name']) . "</strong> ha sido <strong>reactivada</strong>.</p>
                             <p>Ya puedes acceder nuevamente a tu dashboard y seguir publicando tus productos.</p>
                             <div style='text-align:center;margin:30px 0;'>
-                                <a href='" . SITE_URL . "/emprendedoras-dashboard' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ir a mi Dashboard</a>
+                                <a href='" . SITE_URL . "/emprendedores-dashboard' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ir a mi Dashboard</a>
                             </div>
                         </div>
                         <div style='background:#f9fafb;padding:20px;text-align:center;border-radius:0 0 16px 16px;color:#666;font-size:0.85rem;'>
@@ -246,7 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <p>Tu suscripción al plan <strong>" . h($row['plan_name']) . "</strong> ha sido <strong>desactivada</strong>.</p>
                             <p>Si crees que esto es un error o deseas reactivar tu cuenta, por favor contáctanos.</p>
                             <div style='text-align:center;margin:30px 0;'>
-                                <a href='" . SITE_URL . "/emprendedoras-planes' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ver planes</a>
+                                <a href='" . SITE_URL . "/emprendedores-planes' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ver planes</a>
                             </div>
                         </div>
                         <div style='background:#f9fafb;padding:20px;text-align:center;border-radius:0 0 16px 16px;color:#666;font-size:0.85rem;'>
@@ -378,7 +378,7 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
     <div class="logo"><i class="fas fa-crown"></i> Emprendedoras — Admin</div>
     <nav>
         <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        <a href="../emprendedoras-dashboard"><i class="fas fa-store"></i> Portal Emprendedoras</a>
+        <a href="../emprendedores-dashboard"><i class="fas fa-store"></i> Portal Emprendedoras</a>
         <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Salir</a>
     </nav>
 </header>

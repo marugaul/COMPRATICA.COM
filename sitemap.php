@@ -22,7 +22,7 @@ $staticPages = [
     ['loc' => '/empleos',                 'priority' => '0.95', 'changefreq' => 'daily'],
     ['loc' => '/venta-garaje',            'priority' => '0.90', 'changefreq' => 'daily'],
     ['loc' => '/bienes-raices',           'priority' => '0.90', 'changefreq' => 'daily'],
-    ['loc' => '/emprendedoras-catalogo',  'priority' => '0.85', 'changefreq' => 'daily'],
+    ['loc' => '/emprendedores-catalogo',  'priority' => '0.85', 'changefreq' => 'daily'],
     ['loc' => '/shuttle_search',          'priority' => '0.80', 'changefreq' => 'weekly'],
     ['loc' => '/ofertas-servicios',       'priority' => '0.75', 'changefreq' => 'weekly'],
 ];
@@ -108,7 +108,7 @@ try {
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $urls[] = [
-            'loc'        => $base . '/emprendedoras-producto?id=' . (int)$row['id'],
+            'loc'        => $base . '/emprendedores-producto?id=' . (int)$row['id'],
             'lastmod'    => date('Y-m-d', strtotime($row['lastmod'])),
             'changefreq' => 'weekly',
             'priority'   => '0.65',

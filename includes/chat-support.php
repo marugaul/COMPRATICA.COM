@@ -186,6 +186,22 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
   color: #6b7280;
   font-weight: 500;
 }
+/* Botón de link dentro de respuesta */
+.ct-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 7px 13px;
+  background: #312e81;
+  color: #fff !important;
+  border-radius: 8px;
+  font-size: .8rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .15s;
+}
+.ct-link-btn:hover { background: #1e1b4b; }
 
 /* Typing indicator */
 .ct-typing { display: flex; gap: 4px; padding: 12px 14px; }
@@ -235,7 +251,8 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
     clientes: [
       {
         q: '¿Cómo compro un producto?',
-        a: 'Navegá en el catálogo, elegí el producto y hacé clic en <strong>Comprar</strong>. Podés pagar con SINPE Móvil, PayPal o tarjeta. Recibirás una confirmación por correo. 📦'
+        a: 'Navegá en el catálogo, elegí el producto y hacé clic en <strong>Comprar</strong>. Podés pagar con SINPE Móvil, PayPal o tarjeta. Recibirás una confirmación por correo. 📦',
+        link: '/emprendedores-catalogo', linkLabel: '🛍️ Ver catálogo'
       },
       {
         q: '¿Cómo pago con SINPE Móvil?',
@@ -247,25 +264,30 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
       },
       {
         q: '¿Cómo contacto a un vendedor?',
-        a: 'En la página de cada producto hay un botón de <strong>WhatsApp</strong> o correo para contactar directamente al vendedor. También podés enviarle un mensaje desde su tienda. 💬'
+        a: 'En la página de cada producto hay un botón de <strong>WhatsApp</strong> o correo para contactar directamente al vendedor. También podés enviarle un mensaje desde su tienda. 💬',
+        link: '/emprendedores-catalogo', linkLabel: '🏪 Ver tiendas'
       },
       {
         q: '¿Cómo reporto un problema con mi compra?',
-        a: 'Si tuviste un problema, podés reportarlo respondiendo el correo de confirmación, contactando al vendedor directamente, o escribiéndonos a soporte. ¡Estamos para ayudarte! ✅'
+        a: 'Si tuviste un problema, podés reportarlo respondiendo el correo de confirmación, contactando al vendedor directamente, o escribiéndonos a soporte. ¡Estamos para ayudarte! ✅',
+        link: '/my_orders.php', linkLabel: '📦 Mis pedidos'
       },
     ],
     vendedores: [
       {
         q: '¿Cómo me registro como Emprendedor/a?',
-        a: 'Hacé clic en <strong>Emprendedores</strong> en el menú, creá tu cuenta y elegí un plan. En menos de 24 horas tu cuenta estará activa. 🌟'
+        a: 'Hacé clic en <strong>Emprendedores</strong> en el menú, creá tu cuenta y elegí un plan. En menos de 24 horas tu cuenta estará activa. 🌟',
+        link: '/emprendedores-login', linkLabel: '🚀 Registrarme ahora'
       },
       {
         q: '¿Cuáles son los planes disponibles?',
-        a: 'Tenemos planes <strong>Gratuito, Básico y Premium</strong>. Cada plan varía en cantidad de productos, comisión y funciones. Visitá la página de planes para ver todos los detalles. 📋'
+        a: 'Tenemos planes <strong>Gratuito, Básico y Premium</strong>. Cada plan varía en cantidad de productos, comisión y funciones. Visitá la página de planes para ver todos los detalles. 📋',
+        link: '/emprendedores-planes', linkLabel: '📋 Ver planes y precios'
       },
       {
         q: '¿Cómo publico un producto?',
-        a: 'Desde tu <strong>Dashboard</strong> hacé clic en <em>Agregar Producto</em>, completá el nombre, descripción, precio, fotos y stock. Tu producto aparecerá en el catálogo de inmediato. 🛍️'
+        a: 'Desde tu <strong>Dashboard</strong> hacé clic en <em>Agregar Producto</em>, completá el nombre, descripción, precio, fotos y stock. Tu producto aparecerá en el catálogo de inmediato. 🛍️',
+        link: '/emprendedores-dashboard', linkLabel: '📊 Ir a mi Dashboard'
       },
       {
         q: '¿Cómo recibo los pagos?',
@@ -273,17 +295,20 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
       },
       {
         q: '¿Qué comisión cobra CompraTica?',
-        a: 'Depende de tu plan. El plan gratuito tiene una comisión del <strong>10%</strong>, el Básico <strong>7%</strong> y el Premium <strong>5%</strong>. La comisión se aplica solo a ventas realizadas. 📊'
+        a: 'Depende de tu plan. El plan gratuito tiene una comisión del <strong>10%</strong>, el Básico <strong>7%</strong> y el Premium <strong>5%</strong>. La comisión se aplica solo a ventas realizadas. 📊',
+        link: '/emprendedores-planes', linkLabel: '📋 Ver todos los planes'
       },
     ],
     inmobiliario: [
       {
         q: '¿Cómo publico una propiedad?',
-        a: 'Ingresá a tu cuenta, elegí la sección de <strong>Bienes Raíces</strong> y completá el formulario con fotos, descripción, precio y ubicación. Tu anuncio quedará visible de inmediato. 🏠'
+        a: 'Ingresá a tu cuenta, elegí la sección de <strong>Bienes Raíces</strong> y completá el formulario con fotos, descripción, precio y ubicación. Tu anuncio quedará visible de inmediato. 🏠',
+        link: '/bienes-raices', linkLabel: '🏠 Ir a Bienes Raíces'
       },
       {
         q: '¿Qué tipos de propiedades puedo anunciar?',
-        a: 'Podés publicar <strong>casas, apartamentos, lotes, locales comerciales, bodegas y fincas</strong> en venta o en alquiler. CompraTica cubre todo el territorio de Costa Rica. 🇨🇷'
+        a: 'Podés publicar <strong>casas, apartamentos, lotes, locales comerciales, bodegas y fincas</strong> en venta o en alquiler. CompraTica cubre todo el territorio de Costa Rica. 🇨🇷',
+        link: '/bienes-raices', linkLabel: '🔍 Ver propiedades'
       },
       {
         q: '¿Cómo me contactan los interesados?',
@@ -291,25 +316,30 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
       },
       {
         q: '¿Cuánto cuesta publicar una propiedad?',
-        a: 'Contamos con planes <strong>gratuitos y de pago</strong>. Los anuncios de pago tienen mayor visibilidad y aparecen destacados en las búsquedas. Consultanos para ver las opciones actuales. 💼'
+        a: 'Contamos con planes <strong>gratuitos y de pago</strong>. Los anuncios de pago tienen mayor visibilidad y aparecen destacados en las búsquedas. Consultanos para ver las opciones actuales. 💼',
+        link: '/bienes-raices', linkLabel: '🏡 Ver opciones'
       },
       {
         q: '¿Cómo destaco mi anuncio?',
-        a: 'Podés destacar tu propiedad con fotos de alta calidad, descripción detallada y eligiendo un <strong>plan Premium</strong> que la posiciona en los primeros lugares del catálogo. ⭐'
+        a: 'Podés destacar tu propiedad con fotos de alta calidad, descripción detallada y eligiendo un <strong>plan Premium</strong> que la posiciona en los primeros lugares del catálogo. ⭐',
+        link: '/bienes-raices', linkLabel: '⭐ Ver planes Premium'
       },
     ],
     servicios: [
       {
         q: '¿Cómo ofrezco mis servicios?',
-        a: 'Registrate como proveedor de servicios en CompraTica, completá tu perfil con fotos, descripción, precios y área de cobertura. Tu perfil aparecerá en el catálogo de servicios. 🔧'
+        a: 'Registrate como proveedor de servicios en CompraTica, completá tu perfil con fotos, descripción, precios y área de cobertura. Tu perfil aparecerá en el catálogo de servicios. 🔧',
+        link: '/servicios', linkLabel: '🔧 Ir a Servicios'
       },
       {
         q: '¿Qué tipo de servicios puedo publicar?',
-        a: 'Podés publicar cualquier servicio profesional: <strong>plomería, electricidad, diseño, fotografía, clases, limpieza, reparaciones, salud, belleza</strong> y mucho más. 🛠️'
+        a: 'Podés publicar cualquier servicio profesional: <strong>plomería, electricidad, diseño, fotografía, clases, limpieza, reparaciones, salud, belleza</strong> y mucho más. 🛠️',
+        link: '/servicios', linkLabel: '🛠️ Ver catálogo de servicios'
       },
       {
         q: '¿Cómo gestionan las reservas y citas?',
-        a: 'Los clientes pueden solicitarte una cita o reserva directamente desde tu perfil. Recibirás una notificación y podés confirmar o rechazar desde tu panel de control. 📅'
+        a: 'Los clientes pueden solicitarte una cita o reserva directamente desde tu perfil. Recibirás una notificación y podés confirmar o rechazar desde tu panel de control. 📅',
+        link: '/servicios', linkLabel: '📅 Ver mis servicios'
       },
       {
         q: '¿Cómo recibo los pagos?',
@@ -317,25 +347,30 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
       },
       {
         q: '¿Cómo consigo más clientes?',
-        a: 'Mantené tu perfil completo y actualizado, pedí a tus clientes que dejen <strong>reseñas</strong> y considerá un plan Premium para aparecer destacado en las búsquedas. 🌟'
+        a: 'Mantené tu perfil completo y actualizado, pedí a tus clientes que dejen <strong>reseñas</strong> y considerá un plan Premium para aparecer destacado en las búsquedas. 🌟',
+        link: '/servicios', linkLabel: '🌟 Ver catálogo'
       },
     ],
     empleos: [
       {
         q: '¿Cómo busco empleo en CompraTica?',
-        a: 'Ingresá a la sección de <strong>Empleos</strong>, usá los filtros de categoría, ubicación y tipo de jornada para encontrar la oferta que mejor se adapte a tu perfil. 🔍'
+        a: 'Ingresá a la sección de <strong>Empleos</strong>, usá los filtros de categoría, ubicación y tipo de jornada para encontrar la oferta que mejor se adapte a tu perfil. 🔍',
+        link: '/empleos', linkLabel: '🔍 Buscar empleos'
       },
       {
         q: '¿Cómo postulo a un empleo?',
-        a: 'En cada oferta hay un botón de <strong>Postularme</strong> o podés contactar directamente a la empresa por WhatsApp o correo indicados en el anuncio. 📩'
+        a: 'En cada oferta hay un botón de <strong>Postularme</strong> o podés contactar directamente a la empresa por WhatsApp o correo indicados en el anuncio. 📩',
+        link: '/empleos', linkLabel: '📩 Ver ofertas de empleo'
       },
       {
         q: '¿Cómo publico una oferta de trabajo?',
-        a: 'Si sos empleador, registrate y publicá tu oferta indicando el puesto, requisitos, salario y forma de contacto. Las ofertas aparecen en el catálogo de inmediato. 📋'
+        a: 'Si sos empleador, registrate y publicá tu oferta indicando el puesto, requisitos, salario y forma de contacto. Las ofertas aparecen en el catálogo de inmediato. 📋',
+        link: '/empleos', linkLabel: '📋 Publicar oferta'
       },
       {
         q: '¿Es gratuito publicar empleos?',
-        a: 'Sí, <strong>publicar ofertas de trabajo es gratuito</strong>. Contamos además con planes de pago para destacar tu aviso y llegar a más candidatos. 🆓'
+        a: 'Sí, <strong>publicar ofertas de trabajo es gratuito</strong>. Contamos además con planes de pago para destacar tu aviso y llegar a más candidatos. 🆓',
+        link: '/empleos', linkLabel: '🆓 Publicar gratis'
       },
       {
         q: '¿Cómo me contacta la empresa?',
@@ -345,11 +380,13 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
     garaje: [
       {
         q: '¿Cómo creo mi venta de garaje?',
-        a: 'Registrate como vendedor, ingresá a <strong>Venta de Garaje</strong>, creá tu espacio con título, fechas, fotos y publicalo. Los compradores podrán ver tus artículos en tiempo real. 🏷️'
+        a: 'Registrate como vendedor, ingresá a <strong>Venta de Garaje</strong>, creá tu espacio con título, fechas, fotos y publicalo. Los compradores podrán ver tus artículos en tiempo real. 🏷️',
+        link: '/venta-garaje', linkLabel: '🏷️ Ir a Venta de Garaje'
       },
       {
         q: '¿Qué puedo vender en mi venta de garaje?',
-        a: 'Podés vender <strong>ropa, muebles, electrodomésticos, juguetes, libros, electrónica</strong> y cualquier artículo de segunda mano en buen estado. ¡Dale nueva vida a lo que ya no usás! 🛋️'
+        a: 'Podés vender <strong>ropa, muebles, electrodomésticos, juguetes, libros, electrónica</strong> y cualquier artículo de segunda mano en buen estado. ¡Dale nueva vida a lo que ya no usás! 🛋️',
+        link: '/venta-garaje', linkLabel: '🛋️ Ver ventas activas'
       },
       {
         q: '¿Cómo acceden los compradores a mi espacio?',
@@ -361,7 +398,8 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
       },
       {
         q: '¿Puedo hacer mi venta de garaje en vivo?',
-        a: 'Sí. Podés activar el modo <strong>En Vivo</strong> desde tu espacio para que los compradores vean los artículos en tiempo real y puedan comprar durante la transmisión. 🔴'
+        a: 'Sí. Podés activar el modo <strong>En Vivo</strong> desde tu espacio para que los compradores vean los artículos en tiempo real y puedan comprar durante la transmisión. 🔴',
+        link: '/venta-garaje', linkLabel: '🔴 Ver ventas en vivo'
       },
     ],
   };
@@ -459,7 +497,16 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
     const item = FAQS[type][i];
     addMsg(item.q, 'user');
     typing(() => {
-      addMsg(item.a, 'bot');
+      const bub = addMsg(item.a, 'bot');
+      if (item.link) {
+        const a = document.createElement('a');
+        a.href = item.link;
+        a.target = '_blank';
+        a.className = 'ct-link-btn';
+        a.innerHTML = item.linkLabel;
+        bub.appendChild(document.createElement('br'));
+        bub.appendChild(a);
+      }
       clearOptions();
       typing(() => {
         addMsg('¿Puedo ayudarte con algo más?', 'bot');
