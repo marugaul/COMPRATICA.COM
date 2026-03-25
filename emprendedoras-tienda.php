@@ -93,7 +93,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($seller['name']) ?> | Mercadito Emprendedoras</title>
+    <title><?= htmlspecialchars($seller['name']) ?> | Mercadito Emprendedores</title>
     <style>#cartButton{display:none!important;}</style>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/compratica-header.css">

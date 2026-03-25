@@ -232,7 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
         try {
             send_email(
                 $userEmail,
-                '📋 Comprobante recibido - CompraTica Emprendedoras',
+                '📋 Comprobante recibido - CompraTica Emprendedores',
                 _email_cliente_sinpe($userName, $plan['name'], $billingPeriod, $price, $empGender)
             );
         } catch (Throwable $e) {
@@ -272,7 +272,7 @@ function _emp_label(string $gender): string {
     return $gender === 'M' ? 'Emprendedor' : 'Emprendedora';
 }
 function _emp_header_title(string $gender): string {
-    return $gender === 'M' ? '💼 CompraTica Emprendedores' : '🌸 CompraTica Emprendedoras';
+    return $gender === 'M' ? '💼 CompraTica Emprendedores' : '💼 CompraTica Emprendedores';
 }
 
 function _email_cliente_activado(string $nombre, string $plan, string $periodo, float $precio, string $gender = 'F'): string {

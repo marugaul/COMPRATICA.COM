@@ -39,7 +39,7 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
     <?php if ($active): ?>
     <meta http-equiv="refresh" content="3;url=emprendedoras-dashboard.php">
     <?php endif; ?>
-    <title>Pago Recibido | CompraTica Emprendedoras</title>
+    <title>Pago Recibido | CompraTica Emprendedores</title>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/compratica-header.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

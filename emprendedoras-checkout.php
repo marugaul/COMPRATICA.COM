@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
                             </div>
                             <p style='margin-top:20px;color:#555;'>Verifica el comprobante en tu SINPE Móvil y coordina la entrega con tu cliente.</p>
                             <hr style='border:none;border-top:1px solid #e0e0e0;margin:20px 0;'>
-                            <p style='color:#999;font-size:0.85rem;text-align:center;'>CompraTica — El Mercadito de Emprendedoras Costarricenses</p>
+                            <p style='color:#999;font-size:0.85rem;text-align:center;'>CompraTica — El Mercadito de Emprendedores Costarricenses</p>
                         </div>
                     </div>";
                     try {
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
                 // ── Email al ADMIN ───────────────────────────────────────────
                 $htmlAdmin = "
                 <div style='font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;'>
-                    <h2 style='color:#667eea;'>[Emprendedoras] Nuevo comprobante SINPE</h2>
+                    <h2 style='color:#667eea;'>[Emprendedores] Nuevo comprobante SINPE</h2>
                     <p><strong>Vendedora:</strong> {$group['seller_name']} ({$group['seller_email']})</p>
                     <p><strong>Comprador:</strong> {$buyerNameP} | {$buyerEmailP} | {$buyerPhone}</p>
                     <p><strong>Total:</strong> {$subtotalFmt}</p>
@@ -193,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
                     <p><a href='{$receiptUrl}'>Ver comprobante</a></p>
                 </div>";
                 try {
-                    send_email(ADMIN_EMAIL, "[Emprendedoras] SINPE - {$group['seller_name']} / {$buyerNameP}", $htmlAdmin);
+                    send_email(ADMIN_EMAIL, "[Emprendedores] SINPE - {$group['seller_name']} / {$buyerNameP}", $htmlAdmin);
                 } catch (Throwable $e) { /* log silencioso */ }
 
                 // ── Email de confirmación al COMPRADOR ───────────────────────
@@ -213,11 +213,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
                             </table>
                             <p style='color:#555;'>La emprendedora revisará tu comprobante y te contactará para coordinar la entrega. ¡Gracias por apoyar a las emprendedoras costarricenses! ❤️</p>
                             <hr style='border:none;border-top:1px solid #e0e0e0;margin:20px 0;'>
-                            <p style='color:#999;font-size:0.85rem;text-align:center;'>CompraTica — El Mercadito de Emprendedoras Costarricenses</p>
+                            <p style='color:#999;font-size:0.85rem;text-align:center;'>CompraTica — El Mercadito de Emprendedores Costarricenses</p>
                         </div>
                     </div>";
                     try {
-                        send_email($buyerEmailP, '✅ Comprobante recibido - CompraTica Emprendedoras', $htmlBuyer);
+                        send_email($buyerEmailP, '✅ Comprobante recibido - CompraTica Emprendedores', $htmlBuyer);
                     } catch (Throwable $e) { /* log silencioso */ }
                 }
 
@@ -276,7 +276,7 @@ foreach ($groups as $sid => $group) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout | CompraTica Emprendedoras</title>
+    <title>Checkout | CompraTica Emprendedores</title>
     <style>#cartButton{display:none!important;}</style>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/compratica-header.css">

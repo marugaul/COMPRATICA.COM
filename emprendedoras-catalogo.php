@@ -115,7 +115,7 @@ $awningPalette = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mercadito Emprendedoras y Emprendedores de Costa Rica — Tiendas Online | CompraTica</title>
+    <title>Mercadito Emprendedores y Emprendedores de Costa Rica — Tiendas Online | CompraTica</title>
 
     <!-- SEO -->
     <meta name="description" content="Mercadito de emprendedoras y emprendedores costarricenses. Compra directo a quienes venden: ropa, accesorios, alimentos, artesanías, belleza y más. ¡Apoya el talento tico!">
@@ -127,7 +127,7 @@ $awningPalette = [
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://compratica.com/emprendedores-catalogo">
-    <meta property="og:title" content="Mercadito Emprendedoras y Emprendedores de Costa Rica | CompraTica">
+    <meta property="og:title" content="Mercadito Emprendedores y Emprendedores de Costa Rica | CompraTica">
     <meta property="og:description" content="Compra directo a emprendedoras y emprendedores costarricenses: ropa, accesorios, alimentos, artesanías y más. ¡Apoya el emprendimiento tico!">
     <meta property="og:image" content="https://compratica.com/logo.png">
     <meta property="og:image:width" content="1200">
@@ -138,7 +138,7 @@ $awningPalette = [
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://compratica.com/emprendedores-catalogo">
-    <meta name="twitter:title" content="Mercadito Emprendedoras y Emprendedores de Costa Rica | CompraTica">
+    <meta name="twitter:title" content="Mercadito Emprendedores y Emprendedores de Costa Rica | CompraTica">
     <meta name="twitter:description" content="Apoya a las emprendedoras y emprendedores ticos. Tiendas de ropa, accesorios, alimentos, artesanías y más en CompraTica.">
     <meta name="twitter:image" content="https://compratica.com/logo.png">
 
@@ -153,7 +153,7 @@ $awningPalette = [
     {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      "name": "Mercadito Emprendedoras y Emprendedores de Costa Rica",
+      "name": "Mercadito Emprendedores y Emprendedores de Costa Rica",
       "description": "Plataforma de emprendedoras y emprendedores costarricenses. Compra y apoya el emprendimiento local en Costa Rica.",
       "url": "https://compratica.com/emprendedores-catalogo",
       "inLanguage": "es-CR",
@@ -166,7 +166,7 @@ $awningPalette = [
         "@type": "BreadcrumbList",
         "itemListElement": [
           { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://compratica.com/" },
-          { "@type": "ListItem", "position": 2, "name": "Mercadito Emprendedoras y Emprendedores", "item": "https://compratica.com/emprendedores-catalogo" }
+          { "@type": "ListItem", "position": 2, "name": "Mercadito Emprendedores y Emprendedores", "item": "https://compratica.com/emprendedores-catalogo" }
         ]
       }
     }

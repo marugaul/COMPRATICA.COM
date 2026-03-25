@@ -38,7 +38,7 @@ foreach ($shippingChoices as $sid => $choice) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Carrito | CompraTica Emprendedoras</title>
+    <title>Mi Carrito | CompraTica Emprendedores</title>
     <style>#cartButton{display:none!important;}</style>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/compratica-header.css">
