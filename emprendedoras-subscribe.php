@@ -23,14 +23,14 @@ if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
 }
 
 $userId    = (int)$_SESSION['uid'];
-$userName  = $_SESSION['name']  ?? 'Emprendedora';
+$userName  = $_SESSION['name']  ?? '';
 $userEmail = $_SESSION['email'] ?? '';
 $planId    = isset($_GET['plan_id']) ? (int)$_GET['plan_id'] : 0;
 $step      = $_GET['step'] ?? 'select';
 
 $pdo = db();
 
-// Verificar identidad de emprendedora
+// Verificar identidad de emprendedor/a
 if (empty($_SESSION['entrepreneur_id'])) {
     $stmtEnt = $pdo->prepare("SELECT id FROM entrepreneurs WHERE user_id = ?");
     $stmtEnt->execute([$userId]);
@@ -43,6 +43,13 @@ if (empty($_SESSION['entrepreneur_id'])) {
         exit;
     }
 }
+
+// Leer seller_type desde users (guardado en "Personalizar mi Puesto" del dashboard)
+$stmtST = $pdo->prepare("SELECT seller_type FROM users WHERE id = ?");
+$stmtST->execute([$userId]);
+$sellerType = $stmtST->fetchColumn() ?: 'emprendedora';
+$empGender  = $sellerType === 'emprendedor' ? 'M' : 'F';
+if (empty($userName)) $userName = $sellerType === 'emprendedor' ? 'Emprendedor' : 'Emprendedora';
 
 // Obtener plan
 $stmt = $pdo->prepare("SELECT * FROM entrepreneur_plans WHERE id = ? AND is_active = 1");
@@ -90,13 +97,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'selec
             if (!is_dir(dirname($logFile))) @mkdir(dirname($logFile), 0755, true);
             try {
                 send_email($userEmail, '✅ Tu Plan Gratuito en CompraTica está activo',
-                    _email_cliente_activado($userName, $plan['name'], $billingPeriod, 0));
+                    _email_cliente_activado($userName, $plan['name'], $billingPeriod, 0, $empGender));
             } catch (Throwable $e) {
                 @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] EMAIL_FREE_CLIENTE | ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
             }
             try {
-                send_email(ADMIN_EMAIL, "[Emprendedoras] Nueva suscripción gratuita - {$userName}",
-                    _email_admin_nueva_sub($userName, $userEmail, $plan['name'], $billingPeriod, 0, 'Gratuito'));
+                send_email(ADMIN_EMAIL, "[Emprendedores] Nueva suscripción gratuita - {$userName}",
+                    _email_admin_nueva_sub($userName, $userEmail, $plan['name'], $billingPeriod, 0, 'Gratuito', $empGender));
             } catch (Throwable $e) {
                 @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] EMAIL_FREE_ADMIN | ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
             }
@@ -226,7 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
             send_email(
                 $userEmail,
                 '📋 Comprobante recibido - CompraTica Emprendedoras',
-                _email_cliente_sinpe($userName, $plan['name'], $billingPeriod, $price)
+                _email_cliente_sinpe($userName, $plan['name'], $billingPeriod, $price, $empGender)
             );
         } catch (Throwable $e) {
             @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] EMAIL_CLIENTE_ERR | ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
@@ -235,8 +242,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
         try {
             send_email(
                 ADMIN_EMAIL,
-                "[Emprendedoras] Nuevo comprobante SINPE - {$userName}",
-                _email_admin_sinpe($userName, $userEmail, $plan['name'], $billingPeriod, $price, $adminReceiptLink)
+                "[Emprendedores] Nuevo comprobante SINPE - {$userName}",
+                _email_admin_sinpe($userName, $userEmail, $plan['name'], $billingPeriod, $price, $adminReceiptLink, $empGender)
             );
         } catch (Throwable $e) {
             @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] EMAIL_ADMIN_ERR | ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
@@ -261,13 +268,21 @@ if ($step === 'done' && isset($_SESSION['ent_sub_success'])) {
 // ============================================================
 // FUNCIONES DE EMAIL
 // ============================================================
-function _email_cliente_activado(string $nombre, string $plan, string $periodo, float $precio): string {
+function _emp_label(string $gender): string {
+    return $gender === 'M' ? 'Emprendedor' : 'Emprendedora';
+}
+function _emp_header_title(string $gender): string {
+    return $gender === 'M' ? '💼 CompraTica Emprendedores' : '🌸 CompraTica Emprendedoras';
+}
+
+function _email_cliente_activado(string $nombre, string $plan, string $periodo, float $precio, string $gender = 'F'): string {
     $periodoLabel = $periodo === 'annual' ? 'Anual' : 'Mensual';
     $precioLabel  = $precio == 0 ? 'Gratuito' : '₡' . number_format($precio, 0);
+    $headerTitle  = _emp_header_title($gender);
     return "
     <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
         <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:40px;text-align:center;border-radius:16px 16px 0 0;'>
-            <h1 style='color:#fff;margin:0;font-size:1.8rem;'>🌸 CompraTica Emprendedoras</h1>
+            <h1 style='color:#fff;margin:0;font-size:1.8rem;'>$headerTitle</h1>
         </div>
         <div style='background:#fff;padding:40px;border:1px solid #e0e0e0;'>
             <h2 style='color:#27ae60;'>✅ ¡Tu plan está activo!</h2>
@@ -289,12 +304,13 @@ function _email_cliente_activado(string $nombre, string $plan, string $periodo, 
     </div>";
 }
 
-function _email_cliente_sinpe(string $nombre, string $plan, string $periodo, float $precio): string {
+function _email_cliente_sinpe(string $nombre, string $plan, string $periodo, float $precio, string $gender = 'F'): string {
     $periodoLabel = $periodo === 'annual' ? 'Anual' : 'Mensual';
+    $headerTitle  = _emp_header_title($gender);
     return "
     <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
         <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:40px;text-align:center;border-radius:16px 16px 0 0;'>
-            <h1 style='color:#fff;margin:0;font-size:1.8rem;'>🌸 CompraTica Emprendedoras</h1>
+            <h1 style='color:#fff;margin:0;font-size:1.8rem;'>$headerTitle</h1>
         </div>
         <div style='background:#fff;padding:40px;border:1px solid #e0e0e0;'>
             <h2 style='color:#2c3e50;'>📋 Comprobante recibido</h2>
@@ -315,12 +331,13 @@ function _email_cliente_sinpe(string $nombre, string $plan, string $periodo, flo
     </div>";
 }
 
-function _email_admin_nueva_sub(string $nombre, string $email, string $plan, string $periodo, float $precio, string $metodo): string {
+function _email_admin_nueva_sub(string $nombre, string $email, string $plan, string $periodo, float $precio, string $metodo, string $gender = 'F'): string {
+    $empLabel = _emp_label($gender);
     return "
     <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>
-        <h2 style='color:#27ae60;'>✅ Nueva Suscripción Emprendedora</h2>
+        <h2 style='color:#27ae60;'>✅ Nueva Suscripción $empLabel</h2>
         <table style='width:100%;border-collapse:collapse;'>
-            <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Emprendedora:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($nombre) . "</td></tr>
+            <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>$empLabel:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($nombre) . "</td></tr>
             <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Email:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($email) . "</td></tr>
             <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Plan:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($plan) . "</td></tr>
             <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Período:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . ($periodo === 'annual' ? 'Anual' : 'Mensual') . "</td></tr>
@@ -330,12 +347,13 @@ function _email_admin_nueva_sub(string $nombre, string $email, string $plan, str
     </div>";
 }
 
-function _email_admin_sinpe(string $nombre, string $email, string $plan, string $periodo, float $precio, string $receiptLink): string {
+function _email_admin_sinpe(string $nombre, string $email, string $plan, string $periodo, float $precio, string $receiptLink, string $gender = 'F'): string {
+    $empLabel = _emp_label($gender);
     return "
     <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>
         <h2 style='color:#e67e22;'>🧾 Nuevo Comprobante SINPE - Verificación Requerida</h2>
         <table style='width:100%;border-collapse:collapse;'>
-            <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Emprendedora:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($nombre) . "</td></tr>
+            <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>$empLabel:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($nombre) . "</td></tr>
             <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Email:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($email) . "</td></tr>
             <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Plan:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($plan) . "</td></tr>
             <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Período:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . ($periodo === 'annual' ? 'Anual' : 'Mensual') . "</td></tr>

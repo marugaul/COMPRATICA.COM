@@ -1,22 +1,9 @@
 <?php
-ini_set('display_errors', '0');
-ini_set('log_errors', '1');
-ini_set('error_log', __DIR__ . '/php_error.log');
-error_reporting(E_ALL);
-
-// ============= LOG DE DEBUG =============
-$logDir = __DIR__ . '/logs';
-if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
-$logFile = $logDir . '/emprendedoras_debug.log';
-
-function logDebug($msg, $data = null) {
-    global $logFile;
-    $line = '[' . date('Y-m-d H:i:s') . '] ' . $msg;
-    if ($data) $line .= ' | ' . json_encode($data);
-    @file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND);
-}
-
-logDebug("EMPRENDEDORAS_START", ['uri' => $_SERVER['REQUEST_URI'] ?? '']);
+// Esta página fue unificada con /emprendedores
+// Redirigir al catálogo unificado de emprendedores/as
+header('HTTP/1.1 301 Moved Permanently');
+header('Location: /emprendedoras-catalogo');
+exit;
 
 // ============= CONFIGURACIÓN DE SESIONES =============
 $__sessPath = __DIR__ . '/sessions';

@@ -1,4 +1,10 @@
 <?php
+// Esta página fue unificada con /emprendedoras
+// Redirigir al catálogo unificado de emprendedores/as
+header('HTTP/1.1 301 Moved Permanently');
+header('Location: /emprendedoras-catalogo');
+exit;
+
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/php_error.log');

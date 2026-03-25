@@ -162,13 +162,19 @@ unset($_SESSION['ent_sub_plan_id'], $_SESSION['ent_sub_billing'], $_SESSION['ent
 // ============================================================
 // Enviar correos
 // ============================================================
+$stmtST3 = $pdo->prepare("SELECT seller_type FROM users WHERE id = ?");
+$stmtST3->execute([$userId]);
+$sellerType3  = $stmtST3->fetchColumn() ?: 'emprendedora';
+$empLabel3    = $sellerType3 === 'emprendedor' ? 'Emprendedor' : 'Emprendedora';
+$empHeader3   = $sellerType3 === 'emprendedor' ? '💼 CompraTica Emprendedores' : '🌸 CompraTica Emprendedoras';
+
 $price        = $billingPeriod === 'annual' ? (float)$planData['price_annual'] : (float)$planData['price_monthly'];
 $periodoLabel = $billingPeriod === 'annual' ? 'Anual' : 'Mensual';
 
 $emailCliente = "
 <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
     <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:40px;text-align:center;border-radius:16px 16px 0 0;'>
-        <h1 style='color:#fff;margin:0;font-size:1.8rem;'>CompraTica Emprendedoras</h1>
+        <h1 style='color:#fff;margin:0;font-size:1.8rem;'>$empHeader3</h1>
     </div>
     <div style='background:#fff;padding:40px;border:1px solid #e0e0e0;'>
         <h2 style='color:#27ae60;'>✅ ¡Tu plan está activo!</h2>
@@ -191,9 +197,9 @@ $emailCliente = "
 
 $emailAdmin = "
 <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>
-    <h2 style='color:#27ae60;'>✅ Nueva Suscripción Emprendedora (Stripe)</h2>
+    <h2 style='color:#27ae60;'>✅ Nueva Suscripción $empLabel3 (Stripe)</h2>
     <table style='width:100%;border-collapse:collapse;'>
-        <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Emprendedora:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($userName) . "</td></tr>
+        <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>$empLabel3:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($userName) . "</td></tr>
         <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Email:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($userEmail) . "</td></tr>
         <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Plan:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>" . htmlspecialchars($planData['name']) . "</td></tr>
         <tr><td style='padding:8px;border-bottom:1px solid #eee;'><strong>Período:</strong></td><td style='padding:8px;border-bottom:1px solid #eee;'>$periodoLabel</td></tr>
@@ -208,7 +214,7 @@ try {
     _log_stripe('EMAIL_CLIENTE_ERR | ' . $e->getMessage());
 }
 try {
-    send_email(ADMIN_EMAIL, "[Emprendedoras] Nueva suscripción Stripe - $userName", $emailAdmin);
+    send_email(ADMIN_EMAIL, "[Emprendedores] Nueva suscripción Stripe - $userName", $emailAdmin);
 } catch (Throwable $e) {
     _log_stripe('EMAIL_ADMIN_ERR | ' . $e->getMessage());
 }
