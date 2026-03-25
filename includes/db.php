@@ -528,7 +528,7 @@ function db() {
                 $pdo->exec("
                     INSERT INTO entrepreneur_plans (name, description, price_monthly, price_annual, max_products, commission_rate, features, is_active, display_order)
                     VALUES (
-                        'Plan Emprendedora',
+                        'Plan Emprendedor/a',
                         'Para emprendedoras que quieren crecer',
                         9900, 99000, 50, 0,
                         '[\"Hasta 50 productos\",\"Estadísticas avanzadas\",\"Soporte prioritario\",\"Sin comisiones\"]',

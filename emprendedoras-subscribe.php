@@ -18,7 +18,7 @@ require_once __DIR__ . '/includes/mailer.php';
 
 // Verificar login
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
-    header('Location: emprendedoras-login.php');
+    header('Location: emprendedores-login.php');
     exit;
 }
 
@@ -39,7 +39,7 @@ if (empty($_SESSION['entrepreneur_id'])) {
         $_SESSION['entrepreneur_id'] = $entId;
     } else {
         session_destroy();
-        header('Location: emprendedoras-login.php?error=not_entrepreneur');
+        header('Location: emprendedores-login.php?error=not_entrepreneur');
         exit;
     }
 }
@@ -57,7 +57,7 @@ $stmt->execute([$planId]);
 $plan = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$plan) {
-    header('Location: emprendedoras-planes.php');
+    header('Location: emprendedores-planes.php');
     exit;
 }
 
@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'selec
                 @file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] EMAIL_FREE_ADMIN | ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
             }
 
-            header('Location: emprendedoras-dashboard.php?suscrita=1');
+            header('Location: emprendedores-dashboard.php?suscrita=1');
             exit;
         }
 
@@ -117,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'selec
             $_SESSION['ent_sub_plan_id']       = $planId;
             $_SESSION['ent_sub_billing']        = $billingPeriod;
             $_SESSION['ent_sub_price']          = $price;
-            header("Location: emprendedoras-subscribe.php?plan_id={$planId}&step=sinpe");
+            header("Location: emprendedores-subscribe.php?plan_id={$planId}&step=sinpe");
             exit;
         }
 
@@ -126,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'selec
             $_SESSION['ent_sub_plan_id']   = $planId;
             $_SESSION['ent_sub_billing']   = $billingPeriod;
             $_SESSION['ent_sub_price']     = $price;
-            header("Location: emprendedoras-subscribe.php?plan_id={$planId}&step=wallet");
+            header("Location: emprendedores-subscribe.php?plan_id={$planId}&step=wallet");
             exit;
         }
 
@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'selec
             $_SESSION['ent_sub_plan_id']   = $planId;
             $_SESSION['ent_sub_billing']   = $billingPeriod;
             $_SESSION['ent_sub_price']     = $price;
-            header("Location: emprendedoras-subscribe.php?plan_id={$planId}&step=stripe");
+            header("Location: emprendedores-subscribe.php?plan_id={$planId}&step=stripe");
             exit;
         }
     }
@@ -251,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
 
         // PRG: redirigir para evitar re-submit y página en blanco
         $_SESSION['ent_sub_success'] = '¡Comprobante enviado! Activaremos tu cuenta en un máximo de 24 horas hábiles.';
-        header("Location: emprendedoras-subscribe.php?plan_id={$planId}&step=done");
+        header("Location: emprendedores-subscribe.php?plan_id={$planId}&step=done");
         exit;
 
     } while (false);
@@ -295,7 +295,7 @@ function _email_cliente_activado(string $nombre, string $plan, string $periodo, 
             </div>
             <p>Ya puedes acceder a tu dashboard y comenzar a publicar tus productos.</p>
             <div style='text-align:center;margin:30px 0;'>
-                <a href='" . SITE_URL . "/emprendedoras-dashboard' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;font-size:1rem;'>Ir a mi Dashboard</a>
+                <a href='" . SITE_URL . "/emprendedores-dashboard' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;font-size:1rem;'>Ir a mi Dashboard</a>
             </div>
         </div>
         <div style='background:#f9fafb;padding:20px;text-align:center;border-radius:0 0 16px 16px;color:#666;font-size:0.85rem;'>
@@ -533,7 +533,7 @@ $isLoggedIn = true;
                 <p style="color:#374151;font-size:1.1rem;">Hemos recibido tu comprobante de pago SINPE.<br>
                    Revisaremos y activaremos tu cuenta en un máximo de <strong>24 horas hábiles</strong>.</p>
                 <p style="color:#666;margin-top:10px;">Recibirás un correo de confirmación a <strong><?= htmlspecialchars($userEmail) ?></strong>.</p>
-                <a href="emprendedoras-planes.php" class="btn-submit" style="display:inline-block;width:auto;padding:14px 40px;margin-top:30px;text-decoration:none;">
+                <a href="emprendedores-planes.php" class="btn-submit" style="display:inline-block;width:auto;padding:14px 40px;margin-top:30px;text-decoration:none;">
                     Ver mis planes
                 </a>
             </div>
@@ -582,7 +582,7 @@ $isLoggedIn = true;
                 <p style="color:#667eea;font-weight:600;margin-top:10px;">Activando tu suscripción...</p>
             </div>
 
-            <a href="emprendedoras-subscribe.php?plan_id=<?= $planId ?>" class="back-link" style="margin-top:24px;">
+            <a href="emprendedores-subscribe.php?plan_id=<?= $planId ?>" class="back-link" style="margin-top:24px;">
                 <i class="fas fa-arrow-left"></i> Volver a opciones de pago
             </a>
         </div>
@@ -633,7 +633,7 @@ $isLoggedIn = true;
                         .then(function(r) { return r.json(); })
                         .then(function(result) {
                             if (result.ok) {
-                                window.location.href = 'emprendedoras-dashboard.php?suscrita=1';
+                                window.location.href = 'emprendedores-dashboard.php?suscrita=1';
                             } else {
                                 document.getElementById('wallet-processing').style.display = 'none';
                                 document.getElementById('paypal-button-container').style.display = 'block';
@@ -678,7 +678,7 @@ $isLoggedIn = true;
                 <div class="alert alert-error">
                     <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($stripeError) ?>
                 </div>
-                <a href="emprendedoras-subscribe.php?plan_id=<?= $planId ?>" class="back-link">
+                <a href="emprendedores-subscribe.php?plan_id=<?= $planId ?>" class="back-link">
                     <i class="fas fa-arrow-left"></i> Volver a opciones de pago
                 </a>
             <?php else: ?>
@@ -703,7 +703,7 @@ $isLoggedIn = true;
                     <i class="fas fa-shield-alt"></i> Pago seguro procesado por <strong>Stripe</strong>. Nunca almacenamos datos de tu tarjeta.
                 </p>
 
-                <a href="emprendedoras-subscribe.php?plan_id=<?= $planId ?>" class="back-link">
+                <a href="emprendedores-subscribe.php?plan_id=<?= $planId ?>" class="back-link">
                     <i class="fas fa-arrow-left"></i> Volver a opciones de pago
                 </a>
 
@@ -762,7 +762,7 @@ $isLoggedIn = true;
                             .then(r => r.json())
                             .then(function(res) {
                                 if (res.ok) {
-                                    window.location.href = 'emprendedoras-dashboard.php?suscrita=1';
+                                    window.location.href = 'emprendedores-dashboard.php?suscrita=1';
                                 } else {
                                     processingDiv.style.display = 'none';
                                     submitBtn.style.display = 'block';
@@ -834,7 +834,7 @@ $isLoggedIn = true;
                 </button>
             </form>
 
-            <a href="emprendedoras-subscribe.php?plan_id=<?= $planId ?>" class="back-link">
+            <a href="emprendedores-subscribe.php?plan_id=<?= $planId ?>" class="back-link">
                 <i class="fas fa-arrow-left"></i> Volver a opciones de pago
             </a>
         </div>
@@ -900,7 +900,7 @@ $isLoggedIn = true;
                 </button>
             </form>
 
-            <a href="emprendedoras-planes.php" class="back-link">
+            <a href="emprendedores-planes.php" class="back-link">
                 <i class="fas fa-arrow-left"></i> Ver todos los planes
             </a>
         </div>

@@ -15,7 +15,7 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
 }
 
 $sid = (int)($_GET['id'] ?? 0);
-if ($sid <= 0) { header('Location: emprendedoras-catalogo.php'); exit; }
+if ($sid <= 0) { header('Location: emprendedores-catalogo.php'); exit; }
 
 $pdo = db();
 
@@ -35,7 +35,7 @@ $stSeller = $pdo->prepare("
 ");
 $stSeller->execute([$sid]);
 $seller = $stSeller->fetch(PDO::FETCH_ASSOC);
-if (!$seller) { header('Location: emprendedoras-catalogo.php'); exit; }
+if (!$seller) { header('Location: emprendedores-catalogo.php'); exit; }
 
 // Inicializar tablas de cámara (también añade columnas si es necesario)
 initLiveCamTables($pdo);
@@ -639,7 +639,7 @@ window.camUnmute = function() {
         <?php endif; ?>
         <button type="submit"><i class="fas fa-search"></i></button>
     </form>
-    <a href="emprendedoras-catalogo.php" style="color:#667eea;font-size:0.9rem;white-space:nowrap;">
+    <a href="emprendedores-catalogo.php" style="color:#667eea;font-size:0.9rem;white-space:nowrap;">
         <i class="fas fa-arrow-left"></i> Volver al Mercadito
     </a>
 </div>
@@ -654,7 +654,7 @@ window.camUnmute = function() {
 <?php else: ?>
 <div class="store-products">
     <?php foreach ($products as $prod): ?>
-    <a href="emprendedoras-producto.php?id=<?= $prod['id'] ?>" class="store-product-card">
+    <a href="emprendedores-producto.php?id=<?= $prod['id'] ?>" class="store-product-card">
         <?php if ($prod['image_1']): ?>
             <img src="<?= htmlspecialchars($prod['image_1']) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" loading="lazy">
         <?php else: ?>
@@ -679,7 +679,7 @@ window.camUnmute = function() {
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
 
-<a href="emprendedoras-carrito.php" class="emp-cart-fab" id="emp-fab"
+<a href="emprendedores-carrito.php" class="emp-cart-fab" id="emp-fab"
    style="display:<?= $empCartCount > 0 ? 'flex' : 'none' ?>">
     <i class="fas fa-shopping-bag"></i>
     <span class="fab-count" id="fab-count"><?= $empCartCount ?></span>
@@ -689,7 +689,7 @@ window.camUnmute = function() {
 <script>
 document.querySelectorAll('#hamburger-menu a').forEach(function(a) {
     if (a.getAttribute('href') === 'cart' || a.getAttribute('href') === '/cart') {
-        a.setAttribute('href', '/emprendedoras-carrito.php');
+        a.setAttribute('href', '/emprendedores-carrito.php');
     }
 });
 

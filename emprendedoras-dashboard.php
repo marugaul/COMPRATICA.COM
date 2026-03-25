@@ -60,7 +60,7 @@ require_once __DIR__ . '/includes/avatar_builder.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
-    header('Location: emprendedoras-login.php');
+    header('Location: emprendedores-login.php');
     exit;
 }
 
@@ -81,7 +81,7 @@ if (empty($_SESSION['entrepreneur_id'])) {
     } else {
         // No es emprendedora registrada, redirigir a login
         session_destroy();
-        header('Location: emprendedoras-login.php?error=not_entrepreneur');
+        header('Location: emprendedores-login.php?error=not_entrepreneur');
         exit;
     }
 }
@@ -100,13 +100,13 @@ try {
     $stmt->execute([$userId]);
     $subscription = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    header('Location: emprendedoras-planes.php');
+    header('Location: emprendedores-planes.php');
     exit;
 }
 
 // Sin suscripción → ir a planes
 if (!$subscription) {
-    header('Location: emprendedoras-planes.php');
+    header('Location: emprendedores-planes.php');
     exit;
 }
 
@@ -317,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 
         $shippingMsg = ['ok', '✅ Opciones de envío guardadas correctamente.'];
         debug_log("Redirigiendo a #shipping-section");
-        header('Location: emprendedoras-dashboard.php#shipping-section');
+        header('Location: emprendedores-dashboard.php#shipping-section');
         exit;
 
     } catch (Throwable $e) {
@@ -342,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             ->execute([$userId]);
         $liveMsg = ['info', '⚫ Transmisión finalizada. Tu puesto volvió al orden normal.'];
     }
-    header('Location: emprendedoras-dashboard.php#live-section');
+    header('Location: emprendedores-dashboard.php#live-section');
     exit;
 }
 
@@ -663,7 +663,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             <div class="alert alert-warning">
                 <i class="fas fa-exclamation-triangle"></i>
                 <strong>Límite alcanzado:</strong> Has llegado al límite de productos de tu plan (<?php echo $subscription['max_products']; ?> productos).
-                <a href="emprendedoras-planes.php" style="color: #667eea; font-weight: 600;">Actualiza tu plan</a> para agregar más productos.
+                <a href="emprendedores-planes.php" style="color: #667eea; font-weight: 600;">Actualiza tu plan</a> para agregar más productos.
             </div>
         <?php endif; ?>
 
@@ -678,9 +678,9 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             </div>
             <div style="background:#fafafa;border-radius:12px;padding:20px;text-align:center;color:#9ca3af;">
                 <i class="fas fa-video-slash" style="font-size:2.5rem;margin-bottom:12px;display:block;"></i>
-                Activa un <strong>Plan Emprendedora</strong> o <strong>Plan Premium</strong> para usar el Live.
+                Activa un <strong>Plan Emprendedor/a</strong> o <strong>Plan Premium</strong> para usar el Live.
                 <br><br>
-                <a href="emprendedoras-planes.php" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:10px 22px;border-radius:10px;text-decoration:none;font-weight:700;display:inline-block;">
+                <a href="emprendedores-planes.php" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:10px 22px;border-radius:10px;text-decoration:none;font-weight:700;display:inline-block;">
                     <i class="fas fa-arrow-up"></i> Ver Planes
                 </a>
             </div>
@@ -1594,7 +1594,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                     <button type="submit" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:white;border:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:1rem;cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:all .2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
                         <i class="fas fa-save"></i> Guardar diseño
                     </button>
-                    <a href="emprendedoras-catalogo.php" target="_blank" style="margin-left:16px;color:#667eea;font-size:.9rem;">
+                    <a href="emprendedores-catalogo.php" target="_blank" style="margin-left:16px;color:#667eea;font-size:.9rem;">
                         <i class="fas fa-eye"></i> Ver en el catálogo
                     </a>
                 </div>
@@ -1763,7 +1763,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                 <h2><i class="fas fa-box"></i> Mis Productos</h2>
                 <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
                     <?php if (!$isPending && !empty($products)): ?>
-                    <a href="emprendedoras-bulk-prices.php"
+                    <a href="emprendedores-bulk-prices.php"
                        style="background:rgba(102,126,234,.1);color:#667eea;padding:10px 18px;border-radius:25px;text-decoration:none;font-weight:600;font-size:.875rem;display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(102,126,234,.3);transition:all .2s;"
                        onmouseover="this.style.background='rgba(102,126,234,.18)'" onmouseout="this.style.background='rgba(102,126,234,.1)'">
                         <i class="fas fa-percentage"></i> Ajuste de Precios
@@ -1774,7 +1774,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                         <i class="fas fa-lock"></i> Cuenta pendiente
                     </button>
                     <?php elseif ($canAddProducts): ?>
-                    <a href="emprendedoras-producto-crear.php" class="btn-primary">
+                    <a href="emprendedores-producto-crear.php" class="btn-primary">
                         <i class="fas fa-plus"></i> Agregar Producto
                     </a>
                     <?php else: ?>
@@ -1797,7 +1797,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                     <h3>No tienes productos aún</h3>
                     <p>Comienza a vender agregando tu primer producto</p>
                     <?php if ($canAddProducts): ?>
-                        <a href="emprendedoras-producto-crear.php" class="btn-primary" style="margin-top: 20px;">
+                        <a href="emprendedores-producto-crear.php" class="btn-primary" style="margin-top: 20px;">
                             <i class="fas fa-plus"></i> Agregar mi primer producto
                         </a>
                     <?php endif; ?>
@@ -1822,7 +1822,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                                     <span><?php echo $product['is_active'] ? '<i class="fas fa-check-circle" style="color: #4ade80;"></i>' : '<i class="fas fa-times-circle" style="color: #ef4444;"></i>'; ?></span>
                                 </div>
                                 <div class="product-actions">
-                                    <a href="emprendedoras-producto-editar.php?id=<?php echo $product['id']; ?>" class="btn-small btn-edit">
+                                    <a href="emprendedores-producto-editar.php?id=<?php echo $product['id']; ?>" class="btn-small btn-edit">
                                         <i class="fas fa-edit"></i> Editar
                                     </a>
                                     <button class="btn-small btn-delete" onclick="deleteProduct(<?php echo $product['id']; ?>)">
@@ -2069,7 +2069,7 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
 
         function deleteProduct(productId) {
             if (confirm('¿Estás segura de que quieres eliminar este producto?')) {
-                window.location.href = 'emprendedoras-producto-eliminar.php?id=' + productId;
+                window.location.href = 'emprendedores-producto-eliminar.php?id=' + productId;
             }
         }
 

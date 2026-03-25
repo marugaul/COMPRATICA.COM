@@ -1,6 +1,6 @@
 <?php
 /**
- * emprendedoras-checkout.php
+ * emprendedores-checkout.php
  * Checkout para productos de emprendedoras.
  * Pago agrupado por emprendedora: SINPE (evidencia + email) o PayPal.
  */
@@ -17,7 +17,7 @@ $buyerEmail = $_SESSION['email'] ?? '';
 // Agrupar carrito por vendedor
 $cartItems = $_SESSION['emp_cart'] ?? [];
 if (empty($cartItems)) {
-    header('Location: emprendedoras-carrito.php');
+    header('Location: emprendedores-carrito.php');
     exit;
 }
 
@@ -603,7 +603,7 @@ foreach ($groups as $sid => $group) {
 <?php include __DIR__ . '/includes/header.php'; ?>
 
 <div class="page-wrap">
-    <a href="emprendedoras-carrito.php" class="back-link"><i class="fas fa-arrow-left"></i> Volver al carrito</a>
+    <a href="emprendedores-carrito.php" class="back-link"><i class="fas fa-arrow-left"></i> Volver al carrito</a>
 
     <h1 class="checkout-title"><i class="fas fa-lock"></i> Finalizar Compra</h1>
     <p class="checkout-subtitle">El pago se realiza directamente a cada vendedor/a.</p>
@@ -617,7 +617,7 @@ foreach ($groups as $sid => $group) {
         <div class="done-icon"><i class="fas fa-check"></i></div>
         <h2>¡Todo listo!</h2>
         <p>Tus comprobantes fueron enviados. Los vendedores te contactarán pronto para coordinar la entrega.</p>
-        <a href="emprendedoras-catalogo.php" class="btn-continue"><i class="fas fa-store"></i> Seguir comprando</a>
+        <a href="emprendedores-catalogo.php" class="btn-continue"><i class="fas fa-store"></i> Seguir comprando</a>
     </div>
 
     <?php else: foreach ($groups as $sid => $group): ?>
@@ -822,7 +822,7 @@ foreach ($groups as $sid => $group) {
 <script>
 document.querySelectorAll('#hamburger-menu a').forEach(function(a) {
     if (a.getAttribute('href') === 'cart' || a.getAttribute('href') === '/cart') {
-        a.setAttribute('href', '/emprendedoras-carrito.php');
+        a.setAttribute('href', '/emprendedores-carrito.php');
     }
 });
 

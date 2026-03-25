@@ -195,7 +195,7 @@ if ($isLoggedIn) {
                 <i class="fas fa-crown"></i> Plan Actual: <?php echo htmlspecialchars($currentSubscription['plan_name']); ?>
             </div>
             <p style="color: #666; margin-top: 10px;">
-                <a href="emprendedoras-dashboard.php" style="color: #667eea;">
+                <a href="emprendedores-dashboard.php" style="color: #667eea;">
                     <i class="fas fa-arrow-right"></i> Ir a mi Dashboard
                 </a>
             </p>
@@ -238,14 +238,14 @@ if ($isLoggedIn) {
                             <i class="fas fa-check"></i> Plan Actual
                         </button>
                     <?php else: ?>
-                        <a href="emprendedoras-subscribe.php?plan_id=<?php echo $plan['id']; ?>">
+                        <a href="emprendedores-subscribe.php?plan_id=<?php echo $plan['id']; ?>">
                             <button class="plan-button">
                                 <?php echo $currentSubscription ? 'Cambiar a este plan' : 'Elegir este plan'; ?>
                             </button>
                         </a>
                     <?php endif; ?>
                 <?php else: ?>
-                    <a href="login.php?redirect=emprendedoras-planes.php">
+                    <a href="login.php?redirect=emprendedores-planes.php">
                         <button class="plan-button">
                             Iniciar sesión para elegir
                         </button>

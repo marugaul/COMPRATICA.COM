@@ -1,5 +1,5 @@
 <?php
-// emprendedoras-bulk-prices.php — Ajuste masivo de precios para emprendedoras
+// emprendedores-bulk-prices.php — Ajuste masivo de precios para emprendedoras
 // Reutiliza la lógica de affiliate/bulk-prices.php adaptada a entrepreneur_products
 
 $__sessPath = __DIR__ . '/sessions';
@@ -11,7 +11,7 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
 
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
-    header('Location: emprendedoras-login.php');
+    header('Location: emprendedores-login.php');
     exit;
 }
 
@@ -27,7 +27,7 @@ if (empty($_SESSION['entrepreneur_id'])) {
         $_SESSION['entrepreneur_id'] = $entId;
     } else {
         session_destroy();
-        header('Location: emprendedoras-login.php?error=not_entrepreneur');
+        header('Location: emprendedores-login.php?error=not_entrepreneur');
         exit;
     }
 }
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_price_adjust']))
     } catch (Throwable $e) {
         $msg      = $e->getMessage();
         $msg_type = 'error';
-        error_log('[emprendedoras-bulk-prices.php] ' . $e->getMessage());
+        error_log('[emprendedores-bulk-prices.php] ' . $e->getMessage());
     }
 }
 
@@ -241,10 +241,10 @@ $products_json = json_encode(array_map(fn($p) => [
     <i class="fas fa-percentage"></i> Ajuste Masivo de Precios
   </div>
   <nav style="display:flex;gap:0.4rem;flex-wrap:wrap;">
-    <a href="emprendedoras-dashboard.php" class="nav-link">
+    <a href="emprendedores-dashboard.php" class="nav-link">
       <i class="fas fa-th-large"></i><span>Dashboard</span>
     </a>
-    <a href="emprendedoras-producto-crear.php" class="nav-link">
+    <a href="emprendedores-producto-crear.php" class="nav-link">
       <i class="fas fa-plus"></i><span>Nuevo Producto</span>
     </a>
   </nav>
@@ -262,7 +262,7 @@ $products_json = json_encode(array_map(fn($p) => [
   <?php if (empty($all_products)): ?>
     <div class="alert-error">
       <i class="fas fa-info-circle"></i>
-      <span>No tenés productos aún. <a href="emprendedoras-producto-crear.php" style="font-weight:600">Agregá tu primer producto</a>.</span>
+      <span>No tenés productos aún. <a href="emprendedores-producto-crear.php" style="font-weight:600">Agregá tu primer producto</a>.</span>
     </div>
   <?php else: ?>
 

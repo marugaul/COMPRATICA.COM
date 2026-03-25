@@ -632,7 +632,7 @@ foreach ($_SESSION['cart'] as $it) {
       <i class="fas fa-home"></i> Portal Bienes Raíces
     </a>
     <a href="emprendedores-dashboard" class="menu-link">
-      <i class="fas fa-store"></i> Portal Emprendedoras/Emprendedores
+      <i class="fas fa-store"></i> Portal Emprendedores
     </a>
     <a href="admin/login.php" class="menu-link">
       <i class="fas fa-user-shield"></i> Administrador

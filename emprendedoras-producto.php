@@ -24,7 +24,7 @@ $pdo       = db();
 $productId = intval($_GET['id'] ?? 0);
 
 if (!$productId) {
-    header('Location: emprendedoras-catalogo.php');
+    header('Location: emprendedores-catalogo.php');
     exit;
 }
 
@@ -41,7 +41,7 @@ $stmt->execute([$productId]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$product) {
-    header('Location: emprendedoras-catalogo.php');
+    header('Location: emprendedores-catalogo.php');
     exit;
 }
 
@@ -86,11 +86,11 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
     <style>#cartButton{display:none!important;}</style>
     <meta name="description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 160)) ?>">
     <meta name="robots" content="index, follow, max-image-preview:large">
-    <link rel="canonical" href="https://compratica.com/emprendedoras-producto?id=<?= $productId ?>">
+    <link rel="canonical" href="https://compratica.com/emprendedores-producto?id=<?= $productId ?>">
 
     <!-- Open Graph -->
     <meta property="og:type" content="product">
-    <meta property="og:url" content="https://compratica.com/emprendedoras-producto?id=<?= $productId ?>">
+    <meta property="og:url" content="https://compratica.com/emprendedores-producto?id=<?= $productId ?>">
     <meta property="og:title" content="<?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedoras">
     <meta property="og:description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 200)) ?>">
     <meta property="og:image" content="<?= $mainImage ? 'https://compratica.com/' . htmlspecialchars(ltrim($mainImage, '/')) : 'https://compratica.com/assets/img/og-emprendedoras.jpg' ?>">
@@ -99,7 +99,7 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://compratica.com/emprendedoras-producto?id=<?= $productId ?>">
+    <meta name="twitter:url" content="https://compratica.com/emprendedores-producto?id=<?= $productId ?>">
     <meta name="twitter:title" content="<?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedoras">
     <meta name="twitter:description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 200)) ?>">
     <meta name="twitter:image" content="<?= $mainImage ? 'https://compratica.com/' . htmlspecialchars(ltrim($mainImage, '/')) : 'https://compratica.com/assets/img/og-emprendedoras.jpg' ?>">
@@ -227,9 +227,9 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
 
     <div class="breadcrumb">
         <a href="index">Inicio</a><span>›</span>
-        <a href="emprendedoras-catalogo.php">Emprendedoras</a><span>›</span>
+        <a href="emprendedores-catalogo.php">Emprendedoras</a><span>›</span>
         <?php if ($product['category_name']): ?>
-            <a href="emprendedoras-catalogo.php?category=<?= $product['category_id'] ?>"><?= htmlspecialchars($product['category_name']) ?></a><span>›</span>
+            <a href="emprendedores-catalogo.php?category=<?= $product['category_id'] ?>"><?= htmlspecialchars($product['category_name']) ?></a><span>›</span>
         <?php endif; ?>
         <strong><?= htmlspecialchars($product['name']) ?></strong>
     </div>
@@ -335,7 +335,7 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
             <!-- Banner Ver Carrito (aparece después de agregar) -->
             <div id="cart-banner" style="display:none;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border-radius:12px;padding:14px 20px;display:none;align-items:center;justify-content:space-between;gap:12px;">
                 <span><i class="fas fa-check-circle"></i> <strong id="cart-banner-msg">¡Producto agregado!</strong></span>
-                <a href="emprendedoras-carrito.php" style="background:white;color:#667eea;padding:8px 18px;border-radius:8px;font-weight:700;text-decoration:none;white-space:nowrap;font-size:0.9rem;">
+                <a href="emprendedores-carrito.php" style="background:white;color:#667eea;padding:8px 18px;border-radius:8px;font-weight:700;text-decoration:none;white-space:nowrap;font-size:0.9rem;">
                     <i class="fas fa-shopping-bag"></i> Ver carrito
                 </a>
             </div>
@@ -373,7 +373,7 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
         <h2 class="related-title"><i class="fas fa-store" style="color:#667eea;"></i> Más de este pasillo</h2>
         <div class="related-grid">
             <?php foreach ($relatedProducts as $rel): ?>
-                <a href="emprendedoras-producto.php?id=<?= $rel['id'] ?>" class="related-card">
+                <a href="emprendedores-producto.php?id=<?= $rel['id'] ?>" class="related-card">
                     <?php if ($rel['image_1']): ?>
                         <img src="<?= htmlspecialchars($rel['image_1']) ?>" alt="<?= htmlspecialchars($rel['name']) ?>">
                     <?php else: ?>
@@ -407,7 +407,7 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
 <script>
 document.querySelectorAll('#hamburger-menu a').forEach(function(a) {
     if (a.getAttribute('href') === 'cart' || a.getAttribute('href') === '/cart') {
-        a.setAttribute('href', '/emprendedoras-carrito.php');
+        a.setAttribute('href', '/emprendedores-carrito.php');
     }
 });
 
