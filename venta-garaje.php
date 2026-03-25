@@ -1974,8 +1974,8 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
             <span class="<?php echo $secClass; ?>"><?php echo $secondary; ?></span>
           <?php endif; ?>
           <?php if (!empty($s['is_private'])): ?>
-            <span class="chip chip-private">
-              <i class="fas fa-lock"></i>
+            <span class="chip chip-private" title="Espacio privado — necesitás un código de acceso para ver los productos">
+              <i class="fas fa-lock"></i> Privado
             </span>
           <?php endif; ?>
         </div>
