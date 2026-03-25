@@ -31,7 +31,7 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
 }
 #ct-chat-btn svg { width: 26px; height: 26px; }
 
-/* Badgede notificación */
+/* Badge de notificación */
 #ct-chat-badge {
   position: absolute;
   top: 2px; right: 2px;
@@ -57,7 +57,7 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
   flex-direction: column;
   overflow: hidden;
   font-family: 'Segoe UI', system-ui, sans-serif;
-  max-height: 520px;
+  max-height: 580px;
 }
 #ct-chat-panel.ct-open { display: flex; }
 
@@ -68,6 +68,7 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 .ct-avatar {
   width: 40px; height: 40px;
@@ -145,6 +146,9 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
   gap: 7px;
   background: #f8f9fc;
   border-top: 1px solid #e5e7eb;
+  overflow-y: auto;
+  max-height: 260px;
+  flex-shrink: 0;
 }
 .ct-opt-btn {
   background: #fff;
@@ -158,6 +162,7 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
   text-align: left;
   transition: background .15s, border-color .15s;
   display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
 }
 .ct-opt-btn:hover {
   background: #eef2ff;
@@ -252,7 +257,7 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
     vendedores: [
       {
         q: '¿Cómo me registro como Emprendedor/a?',
-        a: 'Hacé clic en <strong>Portal Emprendedoras/Emprendedores</strong> en el menú, creá tu cuenta y elegí un plan. En menos de 24 horas tu cuenta estará activa. 🌟'
+        a: 'Hacé clic en <strong>Emprendedores</strong> en el menú, creá tu cuenta y elegí un plan. En menos de 24 horas tu cuenta estará activa. 🌟'
       },
       {
         q: '¿Cuáles son los planes disponibles?',
@@ -270,11 +275,99 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
         q: '¿Qué comisión cobra CompraTica?',
         a: 'Depende de tu plan. El plan gratuito tiene una comisión del <strong>10%</strong>, el Básico <strong>7%</strong> y el Premium <strong>5%</strong>. La comisión se aplica solo a ventas realizadas. 📊'
       },
-    ]
+    ],
+    inmobiliario: [
+      {
+        q: '¿Cómo publico una propiedad?',
+        a: 'Ingresá a tu cuenta, elegí la sección de <strong>Bienes Raíces</strong> y completá el formulario con fotos, descripción, precio y ubicación. Tu anuncio quedará visible de inmediato. 🏠'
+      },
+      {
+        q: '¿Qué tipos de propiedades puedo anunciar?',
+        a: 'Podés publicar <strong>casas, apartamentos, lotes, locales comerciales, bodegas y fincas</strong> en venta o en alquiler. CompraTica cubre todo el territorio de Costa Rica. 🇨🇷'
+      },
+      {
+        q: '¿Cómo me contactan los interesados?',
+        a: 'Los compradores o inquilinos pueden contactarte directamente por <strong>WhatsApp o correo</strong> desde el anuncio. Recibirás sus datos de contacto al instante. 📲'
+      },
+      {
+        q: '¿Cuánto cuesta publicar una propiedad?',
+        a: 'Contamos con planes <strong>gratuitos y de pago</strong>. Los anuncios de pago tienen mayor visibilidad y aparecen destacados en las búsquedas. Consultanos para ver las opciones actuales. 💼'
+      },
+      {
+        q: '¿Cómo destaco mi anuncio?',
+        a: 'Podés destacar tu propiedad con fotos de alta calidad, descripción detallada y eligiendo un <strong>plan Premium</strong> que la posiciona en los primeros lugares del catálogo. ⭐'
+      },
+    ],
+    servicios: [
+      {
+        q: '¿Cómo ofrezco mis servicios?',
+        a: 'Registrate como proveedor de servicios en CompraTica, completá tu perfil con fotos, descripción, precios y área de cobertura. Tu perfil aparecerá en el catálogo de servicios. 🔧'
+      },
+      {
+        q: '¿Qué tipo de servicios puedo publicar?',
+        a: 'Podés publicar cualquier servicio profesional: <strong>plomería, electricidad, diseño, fotografía, clases, limpieza, reparaciones, salud, belleza</strong> y mucho más. 🛠️'
+      },
+      {
+        q: '¿Cómo gestionan las reservas y citas?',
+        a: 'Los clientes pueden solicitarte una cita o reserva directamente desde tu perfil. Recibirás una notificación y podés confirmar o rechazar desde tu panel de control. 📅'
+      },
+      {
+        q: '¿Cómo recibo los pagos?',
+        a: 'Podés recibir pagos por <strong>SINPE Móvil o PayPal</strong> directamente. El cliente coordina el pago contigo y subís el comprobante al sistema para registrar el servicio. 💰'
+      },
+      {
+        q: '¿Cómo consigo más clientes?',
+        a: 'Mantené tu perfil completo y actualizado, pedí a tus clientes que dejen <strong>reseñas</strong> y considerá un plan Premium para aparecer destacado en las búsquedas. 🌟'
+      },
+    ],
+    empleos: [
+      {
+        q: '¿Cómo busco empleo en CompraTica?',
+        a: 'Ingresá a la sección de <strong>Empleos</strong>, usá los filtros de categoría, ubicación y tipo de jornada para encontrar la oferta que mejor se adapte a tu perfil. 🔍'
+      },
+      {
+        q: '¿Cómo postulo a un empleo?',
+        a: 'En cada oferta hay un botón de <strong>Postularme</strong> o podés contactar directamente a la empresa por WhatsApp o correo indicados en el anuncio. 📩'
+      },
+      {
+        q: '¿Cómo publico una oferta de trabajo?',
+        a: 'Si sos empleador, registrate y publicá tu oferta indicando el puesto, requisitos, salario y forma de contacto. Las ofertas aparecen en el catálogo de inmediato. 📋'
+      },
+      {
+        q: '¿Es gratuito publicar empleos?',
+        a: 'Sí, <strong>publicar ofertas de trabajo es gratuito</strong>. Contamos además con planes de pago para destacar tu aviso y llegar a más candidatos. 🆓'
+      },
+      {
+        q: '¿Cómo me contacta la empresa?',
+        a: 'La empresa te contactará directamente por el medio que indicaste en tu postulación (WhatsApp, correo o teléfono). Asegurate de que tu información esté actualizada. 📞'
+      },
+    ],
+    garaje: [
+      {
+        q: '¿Cómo creo mi venta de garaje?',
+        a: 'Registrate como vendedor, ingresá a <strong>Venta de Garaje</strong>, creá tu espacio con título, fechas, fotos y publicalo. Los compradores podrán ver tus artículos en tiempo real. 🏷️'
+      },
+      {
+        q: '¿Qué puedo vender en mi venta de garaje?',
+        a: 'Podés vender <strong>ropa, muebles, electrodomésticos, juguetes, libros, electrónica</strong> y cualquier artículo de segunda mano en buen estado. ¡Dale nueva vida a lo que ya no usás! 🛋️'
+      },
+      {
+        q: '¿Cómo acceden los compradores a mi espacio?',
+        a: 'Tu espacio puede ser <strong>público</strong> (visible para todos) o <strong>privado</strong> (solo quienes tengan el código de acceso de 6 dígitos que vos compartís). Elegís vos. 🔐'
+      },
+      {
+        q: '¿Cómo recibo los pagos?',
+        a: 'Los compradores te pagan directamente por <strong>SINPE Móvil o PayPal</strong>. Cuando el comprador sube el comprobante, te llegará una notificación para confirmar el pedido. 💳'
+      },
+      {
+        q: '¿Puedo hacer mi venta de garaje en vivo?',
+        a: 'Sí. Podés activar el modo <strong>En Vivo</strong> desde tu espacio para que los compradores vean los artículos en tiempo real y puedan comprar durante la transmisión. 🔴'
+      },
+    ],
   };
 
   // ── Estado ────────────────────────────────
-  let state = 'start'; // start | type_menu | clientes | vendedores
+  let state = 'start';
   const $panel    = document.getElementById('ct-chat-panel');
   const $btn      = document.getElementById('ct-chat-btn');
   const $close    = document.getElementById('ct-close-btn');
@@ -334,8 +427,12 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
     typing(() => {
       addMsg('¡Hola! 👋 Soy el asistente de <strong>CompraTica</strong>. ¿Con qué puedo ayudarte hoy?', 'bot');
       clearOptions();
-      addOption('🛍️ Soy Cliente', '', 'ct-primary', () => chooseType('clientes', 'Soy Cliente'));
-      addOption('🏪 Soy Vendedor/a', '', 'ct-primary', () => chooseType('vendedores', 'Soy Vendedor/a'));
+      addOption('🛍️ Soy Cliente',              '', 'ct-primary', () => chooseType('clientes',     'Soy Cliente'));
+      addOption('🏪 Soy Vendedor/a',            '', 'ct-primary', () => chooseType('vendedores',   'Soy Vendedor/a'));
+      addOption('🏠 Soy Agente Inmobiliario',   '', 'ct-primary', () => chooseType('inmobiliario', 'Soy Agente Inmobiliario'));
+      addOption('🔧 Ofrezco Servicios',         '', 'ct-primary', () => chooseType('servicios',    'Ofrezco Servicios'));
+      addOption('💼 Busco / Publico Empleo',    '', 'ct-primary', () => chooseType('empleos',      'Busco / Publico Empleo'));
+      addOption('🏷️ Venta de Garaje',           '', 'ct-primary', () => chooseType('garaje',       'Venta de Garaje'));
     });
   }
 
