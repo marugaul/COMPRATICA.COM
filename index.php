@@ -504,17 +504,17 @@ logDebug("RENDERING_PAGE");
       <!-- Fondo fotográfico difuminado -->
       <div style="
         position: absolute; inset: 0;
-        background-image: url('https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=500&fit=crop&auto=format');
+        background-image: url('https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=500&fit=crop&auto=format');
         background-size: cover; background-position: center;
-        opacity: 0.18;
+        opacity: 0.55;
       "></div>
       <!-- Overlay degradado profesional -->
       <div style="
         position: absolute; inset: 0;
         background: linear-gradient(135deg,
-          rgba(15,23,42,0.95) 0%,
-          rgba(30,41,59,0.88) 50%,
-          rgba(51,65,85,0.82) 100%);
+          rgba(15,23,42,0.72) 0%,
+          rgba(30,41,59,0.55) 50%,
+          rgba(51,65,85,0.45) 100%);
       "></div>
       <!-- Acento de color lateral -->
       <div style="
@@ -531,7 +531,7 @@ logDebug("RENDERING_PAGE");
           <i class="fas fa-store" style="color: #fff;"></i>
         </div>
         <h3 class="category-title" style="color: #fff;">Emprendedoras y Emprendedores</h3>
-        <p class="category-description" style="color: rgba(255,255,255,0.72);">Mercadito tico: comprá directo a quienes venden. Apoyá el talento costarricense.</p>
+        <p class="category-description" style="color: rgba(255,255,255,0.90);">Mercadito tico: comprá directo a quienes venden. Apoyá el talento costarricense.</p>
       </div>
     </a>
   </div>
@@ -642,11 +642,11 @@ logDebug("RENDERING_PAGE");
     </div>
     <div class="footer-section">
       <h3>Contacto</h3>
-      <a href="mailto:<?php echo defined('ADMIN_EMAIL') ? ADMIN_EMAIL : 'info@compratica.com'; ?>">
-        <i class="fas fa-envelope"></i> Enviar Email
+      <a href="mailto:info@compratica.com">
+        <i class="fas fa-envelope"></i> info@compratica.com
       </a>
-      <a href="tel:+50622222222">
-        <i class="fas fa-phone"></i> +506 2222-2222
+      <a href="tel:+50688902814">
+        <i class="fas fa-phone"></i> +506 8890-2814
       </a>
     </div>
   </div>
