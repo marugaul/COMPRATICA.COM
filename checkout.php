@@ -1665,5 +1665,6 @@ document.getElementById('location_url').addEventListener('input', function() {
   }
 });
 </script>
+<?php require_once __DIR__ . '/includes/chat-support.php'; ?>
 </body>
 </html>
