@@ -970,5 +970,6 @@ document.addEventListener('click', async (e) => {
 loadCart();
 </script>
 
+<?php require_once __DIR__ . '/includes/chat-support.php'; ?>
 </body>
 </html>
