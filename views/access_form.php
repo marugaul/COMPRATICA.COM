@@ -227,7 +227,7 @@
     </div>
 
     <h1>Espacio Privado</h1>
-    <p class="subtitle">Este espacio requiere un código de acceso</p>
+    <p class="subtitle">Este espacio es privado y requiere un código de acceso para ver los productos disponibles</p>
 
     <div class="sale-title">
       <strong><?= htmlspecialchars($sale['title'] ?? 'Espacio Privado') ?></strong>
@@ -259,7 +259,7 @@
         >
         <div class="hint">
           <i class="fas fa-info-circle"></i>
-          Ingresa el código de 6 dígitos proporcionado por el vendedor
+          Ingresá el código de 6 dígitos que el/la vendedor/a te compartió (por WhatsApp, correo u otro medio).
         </div>
       </div>
 
