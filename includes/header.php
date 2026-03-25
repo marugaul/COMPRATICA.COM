@@ -74,8 +74,12 @@
     <?php endif; ?>
 
     <!-- ── CLIENTES ─────────────────────────── -->
-    <div class="menu-group-label" style="margin-top:12px;padding:6px 16px 4px;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#2563eb,#1d4ed8);border-radius:8px;display:flex;align-items:center;gap:6px;">
-      <i class="fas fa-shopping-bag"></i> Para Clientes
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px;padding:0 4px;">
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+      <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;white-space:nowrap;">
+        <i class="fas fa-shopping-bag" style="color:#3b82f6;margin-right:4px;"></i>Para Clientes
+      </span>
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
     </div>
 
     <a href="/" class="menu-item">
@@ -98,14 +102,18 @@
       <span>Bienes Raíces</span>
     </a>
 
-    <a href="/emprendedoras-catalogo" class="menu-item" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+    <a href="/emprendedoras-catalogo" class="menu-item">
       <i class="fas fa-store"></i>
-      <span>✨ Emprendedoras y Emprendedores</span>
+      <span>Emprendedoras y Emprendedores</span>
     </a>
 
     <!-- ── VENDEDORES ────────────────────────── -->
-    <div class="menu-group-label" style="margin-top:12px;padding:6px 16px 4px;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#059669,#047857);border-radius:8px;display:flex;align-items:center;gap:6px;">
-      <i class="fas fa-store-alt"></i> Para Vendedores
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px;padding:0 4px;">
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+      <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;white-space:nowrap;">
+        <i class="fas fa-store-alt" style="color:#10b981;margin-right:4px;"></i>Para Vendedores
+      </span>
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
     </div>
 
     <a href="/select-publication-type" class="menu-item">
@@ -128,7 +136,7 @@
       <span>Portal Bienes Raíces</span>
     </a>
 
-    <a href="/emprendedoras-dashboard" class="menu-item" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+    <a href="/emprendedoras-dashboard" class="menu-item">
       <i class="fas fa-store"></i>
       <span>Portal Emprendedoras/Emprendedores</span>
     </a>
