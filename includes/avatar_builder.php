@@ -65,17 +65,14 @@ const AV_MOUTH = [
     'concerned'=> '😟 Preocupado',
 ];
 
-// Accesorios clásicos (avataaars)
-// 'glasses/sunglasses/wayfarers' → accessories[]; 'hat/bow/cap/crown' → top[]
+// Accesorios clásicos (avataaars) — solo faciales (glasses → accessories[])
+// Los accesorios de cabeza (hat/bow/cap/crown → top[]) no se muestran
+// correctamente en el avatar compuesto por el recorte circular del rostro.
 const AV_ACCESSORIES = [
     'none'       => '🚫 Ninguno',
     'glasses'    => '👓 Gafas',
     'sunglasses' => '😎 Sol',
     'wayfarers'  => '🕶️ Wayfarers',
-    'hat'        => '🎩 Sombrero',
-    'bow'        => '🎀 Moño',
-    'cap'        => '🧢 Gorra',
-    'crown'      => '👑 Corona',
 ];
 
 // ── Constantes para estilo Aventura (DiceBear adventurer) ────────────────────
@@ -189,24 +186,17 @@ function avatarUrl(array $cfg, int $size = 100): string {
 
     // ── Accesorio: algunos son "de cabeza" (top[]), otros "faciales" (accessories[]) ─
     $accVal = $cfg['accessory'] ?? 'none';
-    // Accesorios que reemplazan el estilo de cabello en top[]
-    $HEAD_ACC = ['hat' => 'hat', 'bow' => 'froBand', 'cap' => 'winterHat1', 'crown' => 'turban'];
-    // Accesorios faciales (gafas) → accessories[]
+    // Solo accesorios faciales (gafas) → accessories[]
     $FACE_ACC = ['glasses' => 'prescription01', 'sunglasses' => 'sunglasses',
-                 'wayfarers' => 'wayfarers', 'round' => 'round',
-                 'prescription01' => 'prescription01', 'prescription02' => 'prescription02',
-                 'kurt' => 'kurt', 'eyepatch' => 'eyepatch'];
-    $headAcc = $HEAD_ACC[$accVal] ?? null;
+                 'wayfarers' => 'wayfarers'];
     $faceAcc = $FACE_ACC[$accVal] ?? null;
 
     // ── Build URL ─────────────────────────────────────────────────────────────
     $url  = 'https://api.dicebear.com/9.x/avataaars/svg?backgroundColor=transparent';
     $url .= '&size=' . $size;
 
-    // Top: accesorio de cabeza tiene prioridad sobre estilo de cabello
-    if ($headAcc !== null) {
-        $url .= '&top[]=' . rawurlencode($headAcc);
-    } elseif ($hair !== '') {
+    // Top: estilo de cabello
+    if ($hair !== '') {
         $url .= '&top[]=' . rawurlencode($hair);
     } else {
         $url .= '&topProbability=0';
