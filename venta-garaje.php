@@ -1778,7 +1778,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <span>Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-catalogo" class="menu-item">
+    <a href="emprendedores-catalogo" class="menu-item">
       <i class="fas fa-store"></i>
       <span>Emprendedoras y Emprendedores</span>
     </a>
@@ -1812,7 +1812,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <span>Portal Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-dashboard" class="menu-item">
+    <a href="emprendedores-dashboard" class="menu-item">
       <i class="fas fa-store"></i>
       <span>Portal Emprendedoras/Emprendedores</span>
     </a>
@@ -2187,7 +2187,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <a href="servicios">Servicios</a>
       <a href="venta-garaje">Venta de Garaje</a>
       <a href="bienes-raices">Bienes Raíces</a>
-      <a href="emprendedoras-catalogo">Emprendedoras y Emprendedores</a>
+      <a href="emprendedores-catalogo">Emprendedoras y Emprendedores</a>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>
