@@ -31,7 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             // Obtener suscripción
             $sub = $pdo->prepare("
-                SELECT s.*, p.name AS plan_name, u.name AS user_name, u.email AS user_email
+                SELECT s.*, p.name AS plan_name, u.name AS user_name, u.email AS user_email,
+                       COALESCE(u.seller_type, 'emprendedora') AS seller_type
                 FROM entrepreneur_subscriptions s
                 JOIN entrepreneur_plans p ON p.id = s.plan_id
                 JOIN users u ON u.id = s.user_id
@@ -44,6 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $msg = 'Suscripción no encontrada o ya procesada.';
                 $msgType = 'error';
             } else {
+                $empLabelAdmin  = ($row['seller_type'] ?? 'emprendedora') === 'emprendedor' ? 'Emprendedor' : 'Emprendedora';
+                $empHeaderAdmin = ($row['seller_type'] ?? 'emprendedora') === 'emprendedor' ? '💼 CompraTica Emprendedores' : '🌸 CompraTica Emprendedoras';
                 $pdo->beginTransaction();
 
                 if ($act === 'approve') {
@@ -62,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $html = "
                         <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
                             <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:40px;text-align:center;border-radius:16px 16px 0 0;'>
-                                <h1 style='color:#fff;margin:0;font-size:1.8rem;'>🌸 CompraTica Emprendedoras</h1>
+                                <h1 style='color:#fff;margin:0;font-size:1.8rem;'>" . $empHeaderAdmin . "</h1>
                             </div>
                             <div style='background:#fff;padding:40px;border:1px solid #e0e0e0;'>
                                 <h2 style='color:#27ae60;'>✅ ¡Tu cuenta fue aprobada!</h2>
@@ -78,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>";
                         try {
-                            send_email($row['user_email'], '✅ Cuenta Aprobada - Emprendedoras CompraTica', $html);
+                            send_email($row['user_email'], '✅ Cuenta Aprobada - CompraTica', $html);
                         } catch (Throwable $e) {
                             error_log('[admin/emprendedoras] Email aprobacion error: ' . $e->getMessage());
                         }
@@ -100,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $html = "
                         <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
                             <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:40px;text-align:center;border-radius:16px 16px 0 0;'>
-                                <h1 style='color:#fff;margin:0;font-size:1.8rem;'>🌸 CompraTica Emprendedoras</h1>
+                                <h1 style='color:#fff;margin:0;font-size:1.8rem;'>" . $empHeaderAdmin . "</h1>
                             </div>
                             <div style='background:#fff;padding:40px;border:1px solid #e0e0e0;'>
                                 <h2 style='color:#e74c3c;'>❌ Comprobante no aprobado</h2>
@@ -116,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>";
                         try {
-                            send_email($row['user_email'], '❌ Comprobante no aprobado - Emprendedoras CompraTica', $html);
+                            send_email($row['user_email'], '❌ Comprobante no aprobado - CompraTica', $html);
                         } catch (Throwable $e) {
                             error_log('[admin/emprendedoras] Email rechazo error: ' . $e->getMessage());
                         }
@@ -134,7 +137,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($subId > 0 && $act === 'activate') {
         try {
             $sub = $pdo->prepare("
-                SELECT s.*, p.name AS plan_name, u.name AS user_name, u.email AS user_email
+                SELECT s.*, p.name AS plan_name, u.name AS user_name, u.email AS user_email,
+                       COALESCE(u.seller_type, 'emprendedora') AS seller_type
                 FROM entrepreneur_subscriptions s
                 JOIN entrepreneur_plans p ON p.id = s.plan_id
                 JOIN users u ON u.id = s.user_id
@@ -147,6 +151,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $msg = 'Suscripción no encontrada.';
                 $msgType = 'error';
             } else {
+                $empLabelAdmin  = ($row['seller_type'] ?? 'emprendedora') === 'emprendedor' ? 'Emprendedor' : 'Emprendedora';
+                $empHeaderAdmin = ($row['seller_type'] ?? 'emprendedora') === 'emprendedor' ? '💼 CompraTica Emprendedores' : '🌸 CompraTica Emprendedoras';
                 $pdo->beginTransaction();
 
                 // Reactivar por 1 mes desde hoy
@@ -166,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $html = "
                     <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
                         <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:40px;text-align:center;border-radius:16px 16px 0 0;'>
-                            <h1 style='color:#fff;margin:0;font-size:1.8rem;'>🌸 CompraTica Emprendedoras</h1>
+                            <h1 style='color:#fff;margin:0;font-size:1.8rem;'>" . $empHeaderAdmin . "</h1>
                         </div>
                         <div style='background:#fff;padding:40px;border:1px solid #e0e0e0;'>
                             <h2 style='color:#27ae60;'>✅ ¡Tu suscripción fue reactivada!</h2>
@@ -182,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>";
                     try {
-                        send_email($row['user_email'], '✅ Suscripción Reactivada - Emprendedoras CompraTica', $html);
+                        send_email($row['user_email'], '✅ Suscripción Reactivada - CompraTica', $html);
                     } catch (Throwable $e) {
                         error_log('[admin/emprendedoras] Email reactivación error: ' . $e->getMessage());
                     }
@@ -199,7 +205,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($subId > 0 && $act === 'inactivate') {
         try {
             $sub = $pdo->prepare("
-                SELECT s.*, p.name AS plan_name, u.name AS user_name, u.email AS user_email
+                SELECT s.*, p.name AS plan_name, u.name AS user_name, u.email AS user_email,
+                       COALESCE(u.seller_type, 'emprendedora') AS seller_type
                 FROM entrepreneur_subscriptions s
                 JOIN entrepreneur_plans p ON p.id = s.plan_id
                 JOIN users u ON u.id = s.user_id
@@ -212,6 +219,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $msg = 'Suscripción no encontrada.';
                 $msgType = 'error';
             } else {
+                $empLabelAdmin  = ($row['seller_type'] ?? 'emprendedora') === 'emprendedor' ? 'Emprendedor' : 'Emprendedora';
+                $empHeaderAdmin = ($row['seller_type'] ?? 'emprendedora') === 'emprendedor' ? '💼 CompraTica Emprendedores' : '🌸 CompraTica Emprendedoras';
                 $pdo->beginTransaction();
 
                 $pdo->prepare("
@@ -229,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $html = "
                     <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
                         <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:40px;text-align:center;border-radius:16px 16px 0 0;'>
-                            <h1 style='color:#fff;margin:0;font-size:1.8rem;'>🌸 CompraTica Emprendedoras</h1>
+                            <h1 style='color:#fff;margin:0;font-size:1.8rem;'>" . $empHeaderAdmin . "</h1>
                         </div>
                         <div style='background:#fff;padding:40px;border:1px solid #e0e0e0;'>
                             <h2 style='color:#e74c3c;'>⚠️ Tu suscripción fue desactivada</h2>
@@ -245,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>";
                     try {
-                        send_email($row['user_email'], '⚠️ Suscripción Desactivada - Emprendedoras CompraTica', $html);
+                        send_email($row['user_email'], '⚠️ Suscripción Desactivada - CompraTica', $html);
                     } catch (Throwable $e) {
                         error_log('[admin/emprendedoras] Email desactivación error: ' . $e->getMessage());
                     }

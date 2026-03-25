@@ -249,7 +249,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $phone     = trim($_POST['phone'] ?? '');
             $password  = $_POST['password'] ?? '';
             $password2 = $_POST['password2'] ?? '';
-
             if ($name && $email && $password) {
                 if ($password !== $password2) {
                     $error = 'Las contraseñas no coinciden';

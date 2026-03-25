@@ -589,12 +589,16 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
     </style>
 </head>
 <body>
-    <?php include __DIR__ . '/includes/header.php'; ?>
+    <?php
+    $isLoggedIn = true;
+    $cantidadProductos = 0;
+    include __DIR__ . '/includes/header.php';
+    ?>
 
     <div class="dashboard-container">
         <div class="dashboard-header">
             <h1>👋 Hola, <?php echo htmlspecialchars($userName); ?></h1>
-            <p>Bienvenida a tu dashboard de emprendedora</p>
+            <p>Bienvenid<?= ($storeDesign['seller_type'] ?? 'emprendedora') === 'emprendedor' ? 'o' : 'a' ?> a tu dashboard de <?= ($storeDesign['seller_type'] ?? 'emprendedora') === 'emprendedor' ? 'emprendedor' : 'emprendedora' ?></p>
             <div class="plan-badge">
                 <i class="fas fa-crown"></i> <?php echo htmlspecialchars($subscription['plan_name']); ?>
                 <?php if ($isPending): ?>
