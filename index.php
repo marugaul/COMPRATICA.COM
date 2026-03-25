@@ -327,14 +327,17 @@ logDebug("RENDERING_PAGE");
         <i class="fas fa-shopping-cart"></i>
         <span>Mi Carrito</span>
       </a>
-      <div class="menu-divider"></div>
     <?php else: ?>
       <a href="login" class="menu-item primary">
         <i class="fas fa-sign-in-alt"></i>
         <span>Iniciar Sesión</span>
       </a>
-      <div class="menu-divider"></div>
     <?php endif; ?>
+
+    <!-- ── CLIENTES ─────────────────────────── -->
+    <div class="menu-group-label" style="margin-top:12px;padding:6px 16px 4px;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#2563eb,#1d4ed8);border-radius:8px;display:flex;align-items:center;gap:6px;">
+      <i class="fas fa-shopping-bag"></i> Para Clientes
+    </div>
 
     <a href="index" class="menu-item">
       <i class="fas fa-home"></i>
@@ -352,16 +355,19 @@ logDebug("RENDERING_PAGE");
     </a>
 
     <a href="bienes-raices" class="menu-item">
-      <i class="fas fa-home"></i>
+      <i class="fas fa-building"></i>
       <span>Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-catalogo" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <a href="emprendedoras-catalogo" class="menu-item" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
       <i class="fas fa-store"></i>
       <span>✨ Emprendedoras y Emprendedores</span>
     </a>
 
-    <div class="menu-divider"></div>
+    <!-- ── VENDEDORES ────────────────────────── -->
+    <div class="menu-group-label" style="margin-top:12px;padding:6px 16px 4px;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#059669,#047857);border-radius:8px;display:flex;align-items:center;gap:6px;">
+      <i class="fas fa-store-alt"></i> Para Vendedores
+    </div>
 
     <a href="select-publication-type.php" class="menu-item">
       <i class="fas fa-bullhorn"></i>
@@ -383,7 +389,7 @@ logDebug("RENDERING_PAGE");
       <span>Portal Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-dashboard" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <a href="emprendedoras-dashboard" class="menu-item" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
       <i class="fas fa-store"></i>
       <span>Portal Emprendedoras/Emprendedores</span>
     </a>
