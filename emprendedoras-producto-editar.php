@@ -12,7 +12,7 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
 
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
-    header('Location: emprendedoras-login.php');
+    header('Location: emprendedores-login.php');
     exit;
 }
 
@@ -28,7 +28,7 @@ if (empty($_SESSION['entrepreneur_id'])) {
         $_SESSION['entrepreneur_id'] = $entId;
     } else {
         session_destroy();
-        header('Location: emprendedoras-login.php?error=not_entrepreneur');
+        header('Location: emprendedores-login.php?error=not_entrepreneur');
         exit;
     }
 }
@@ -36,7 +36,7 @@ if (empty($_SESSION['entrepreneur_id'])) {
 // Obtener el producto y verificar que pertenece al usuario
 $productId = intval($_GET['id'] ?? 0);
 if (!$productId) {
-    header('Location: emprendedoras-dashboard.php');
+    header('Location: emprendedores-dashboard.php');
     exit;
 }
 
@@ -45,7 +45,7 @@ $stmt->execute([$productId, $userId]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$product) {
-    header('Location: emprendedoras-dashboard.php?error=not_found');
+    header('Location: emprendedores-dashboard.php?error=not_found');
     exit;
 }
 
@@ -61,7 +61,7 @@ $stmt->execute([$userId]);
 $subscription = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$subscription) {
-    header('Location: emprendedoras-planes.php');
+    header('Location: emprendedores-planes.php');
     exit;
 }
 
@@ -473,7 +473,7 @@ $isLoggedIn = true;
                 </button>
 
                 <p style="text-align:center;margin-top:20px;">
-                    <a href="emprendedoras-dashboard.php" style="color:#667eea;">
+                    <a href="emprendedores-dashboard.php" style="color:#667eea;">
                         <i class="fas fa-arrow-left"></i> Volver al dashboard
                     </a>
                 </p>

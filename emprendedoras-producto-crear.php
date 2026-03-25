@@ -13,7 +13,7 @@ require_once __DIR__ . '/includes/config.php';
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
-    header('Location: emprendedoras-login.php');
+    header('Location: emprendedores-login.php');
     exit;
 }
 
@@ -31,7 +31,7 @@ if (empty($_SESSION['entrepreneur_id'])) {
         $_SESSION['entrepreneur_id'] = $entId;
     } else {
         session_destroy();
-        header('Location: emprendedoras-login.php?error=not_entrepreneur');
+        header('Location: emprendedores-login.php?error=not_entrepreneur');
         exit;
     }
 }
@@ -48,7 +48,7 @@ $stmt->execute([$userId]);
 $subscription = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$subscription) {
-    header('Location: emprendedoras-planes.php');
+    header('Location: emprendedores-planes.php');
     exit;
 }
 
@@ -58,7 +58,7 @@ $stmt->execute([$userId]);
 $productCount = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
 if ($subscription['max_products'] > 0 && $productCount >= $subscription['max_products']) {
-    header('Location: emprendedoras-dashboard.php?error=limit_reached');
+    header('Location: emprendedores-dashboard.php?error=limit_reached');
     exit;
 }
 
@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             $success = '¡Producto creado exitosamente!';
-            header('refresh:2;url=emprendedoras-dashboard.php');
+            header('refresh:2;url=emprendedores-dashboard.php');
 
         } catch (Exception $e) {
             $error = 'Error al crear el producto: ' . $e->getMessage();
@@ -448,7 +448,7 @@ $isLoggedIn = true;
                 </button>
 
                 <p style="text-align: center; margin-top: 20px;">
-                    <a href="emprendedoras-dashboard.php" style="color: #667eea;">
+                    <a href="emprendedores-dashboard.php" style="color: #667eea;">
                         <i class="fas fa-arrow-left"></i> Volver al dashboard
                     </a>
                 </p>

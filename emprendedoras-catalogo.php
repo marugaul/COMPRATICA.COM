@@ -122,11 +122,11 @@ $awningPalette = [
     <meta name="keywords" content="emprendedoras costa rica, emprendedores costa rica, mercadito costa rica, tienda online costa rica, emprendimiento tico, artesanias costa rica, productos ticos, comprar local costa rica, mujeres emprendedoras cr, hombres emprendedores cr, catalogo online costa rica">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <meta name="author" content="CompraTica">
-    <link rel="canonical" href="https://compratica.com/emprendedoras-catalogo">
+    <link rel="canonical" href="https://compratica.com/emprendedores-catalogo">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://compratica.com/emprendedoras-catalogo">
+    <meta property="og:url" content="https://compratica.com/emprendedores-catalogo">
     <meta property="og:title" content="Mercadito Emprendedoras y Emprendedores de Costa Rica | CompraTica">
     <meta property="og:description" content="Compra directo a emprendedoras y emprendedores costarricenses: ropa, accesorios, alimentos, artesanías y más. ¡Apoya el emprendimiento tico!">
     <meta property="og:image" content="https://compratica.com/logo.png">
@@ -137,7 +137,7 @@ $awningPalette = [
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://compratica.com/emprendedoras-catalogo">
+    <meta name="twitter:url" content="https://compratica.com/emprendedores-catalogo">
     <meta name="twitter:title" content="Mercadito Emprendedoras y Emprendedores de Costa Rica | CompraTica">
     <meta name="twitter:description" content="Apoya a las emprendedoras y emprendedores ticos. Tiendas de ropa, accesorios, alimentos, artesanías y más en CompraTica.">
     <meta name="twitter:image" content="https://compratica.com/logo.png">
@@ -155,7 +155,7 @@ $awningPalette = [
       "@type": "WebPage",
       "name": "Mercadito Emprendedoras y Emprendedores de Costa Rica",
       "description": "Plataforma de emprendedoras y emprendedores costarricenses. Compra y apoya el emprendimiento local en Costa Rica.",
-      "url": "https://compratica.com/emprendedoras-catalogo",
+      "url": "https://compratica.com/emprendedores-catalogo",
       "inLanguage": "es-CR",
       "isPartOf": {
         "@type": "WebSite",
@@ -166,7 +166,7 @@ $awningPalette = [
         "@type": "BreadcrumbList",
         "itemListElement": [
           { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://compratica.com/" },
-          { "@type": "ListItem", "position": 2, "name": "Mercadito Emprendedoras y Emprendedores", "item": "https://compratica.com/emprendedoras-catalogo" }
+          { "@type": "ListItem", "position": 2, "name": "Mercadito Emprendedoras y Emprendedores", "item": "https://compratica.com/emprendedores-catalogo" }
         ]
       }
     }
@@ -601,9 +601,9 @@ $awningPalette = [
     <h1>🏪 Mercadito <span>Emprendedoras y Emprendedores</span></h1>
     <p>Caminá por cada puesto, conocé a quienes venden y comprá directo a ellos. ¡Apoyá el talento tico!</p>
     <?php if ($isLoggedIn): ?>
-        <a href="emprendedoras-dashboard.php" class="hero-cta"><i class="fas fa-store"></i> Mi Tienda</a>
+        <a href="emprendedores-dashboard.php" class="hero-cta"><i class="fas fa-store"></i> Mi Tienda</a>
     <?php else: ?>
-        <a href="emprendedoras-planes.php" class="hero-cta"><i class="fas fa-rocket"></i> Vende tus Productos</a>
+        <a href="emprendedores-planes.php" class="hero-cta"><i class="fas fa-rocket"></i> Vende tus Productos</a>
     <?php endif; ?>
 </div>
 
@@ -621,7 +621,7 @@ $awningPalette = [
     <!-- Tabs de filtro por tipo -->
     <div style="display:flex;justify-content:center;gap:10px;margin-bottom:32px;flex-wrap:wrap;">
         <?php
-        $baseUrl = 'emprendedoras-catalogo.php' . ($searchQuery ? '?search='.urlencode($searchQuery).'&filter=' : '?filter=');
+        $baseUrl = 'emprendedores-catalogo.php' . ($searchQuery ? '?search='.urlencode($searchQuery).'&filter=' : '?filter=');
         $tabs = [
             'all'           => ['🏪 Todos',          '#1f2937'],
             'emprendedora'  => ['👩 Emprendedoras',   '#db2777'],
@@ -652,7 +652,7 @@ $awningPalette = [
         <i class="fas fa-store-slash"></i>
         <h3 style="color:#555;">No se encontraron puestos</h3>
         <p style="color:#999;">Prueba otra búsqueda o vuelve pronto.</p>
-        <a href="emprendedoras-catalogo.php" style="color:#667eea;display:inline-block;margin-top:16px;">
+        <a href="emprendedores-catalogo.php" style="color:#667eea;display:inline-block;margin-top:16px;">
             <i class="fas fa-arrow-left"></i> Ver todos
         </a>
     </div>
@@ -679,7 +679,7 @@ $awningPalette = [
 <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:60px 20px;text-align:center;">
     <h2 style="font-size:2.2rem;margin-bottom:16px;">¿Sos emprendedora o emprendedor?</h2>
     <p style="font-size:1.15rem;margin-bottom:28px;opacity:.9;">Abrí tu puesto hoy y llegá a miles de compradores costarricenses. ¡Todos son bienvenidos!</p>
-    <a href="emprendedoras-planes.php" style="background:white;color:#667eea;padding:14px 38px;border-radius:50px;font-weight:700;text-decoration:none;display:inline-block;">
+    <a href="emprendedores-planes.php" style="background:white;color:#667eea;padding:14px 38px;border-radius:50px;font-weight:700;text-decoration:none;display:inline-block;">
         <i class="fas fa-rocket"></i> Ver Planes
     </a>
 </div>
@@ -687,7 +687,7 @@ $awningPalette = [
 <?php include __DIR__ . '/includes/footer.php'; ?>
 
 <!-- FAB carrito emprendedoras -->
-<a href="emprendedoras-carrito.php" class="emp-cart-fab" id="emp-fab"
+<a href="emprendedores-carrito.php" class="emp-cart-fab" id="emp-fab"
    style="display:<?= $empCartCount > 0 ? 'flex' : 'none' ?>">
     <i class="fas fa-shopping-bag"></i>
     <span class="fab-count" id="fab-count"><?= $empCartCount ?></span>
@@ -799,7 +799,7 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
             </div>
             <?php if ($isLive): ?>
                 <?php if ($isCamLive): ?>
-                    <a href="emprendedoras-tienda.php?id=<?= $sid ?>" class="live-badge"
+                    <a href="emprendedores-tienda.php?id=<?= $sid ?>" class="live-badge"
                        style="background:linear-gradient(135deg,#ef4444,#b91c1c);">
                         EN VIVO
                     </a>
@@ -858,7 +858,7 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
         <!-- Productos (grilla 3×) -->
         <div class="puesto-products">
             <?php foreach ($products as $prod): ?>
-            <a href="emprendedoras-producto.php?id=<?= $prod['id'] ?>"
+            <a href="emprendedores-producto.php?id=<?= $prod['id'] ?>"
                class="puesto-product-cell"
                data-pid="<?= $prod['id'] ?>">
                 <?php if ($prod['image_1']): ?>
@@ -890,7 +890,7 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
         <!-- Footer -->
         <div class="puesto-footer">
             <span class="puesto-count"><i class="fas fa-shopping-bag" style="color:<?= $c1 ?>;"></i> <?= number_format((int)$seller['total_sales']) ?> ventas</span>
-            <a href="emprendedoras-tienda.php?id=<?= $sid ?>" class="btn-entrar"
+            <a href="emprendedores-tienda.php?id=<?= $sid ?>" class="btn-entrar"
                style="background:linear-gradient(135deg,<?= $c1 ?>,<?= $c2 ?>);">
                 <i class="fas fa-store"></i> Entrar al puesto
             </a>
@@ -905,7 +905,7 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
 // Redirigir "Mi Carrito" del menú hamburguesa al carrito de emprendedoras
 document.querySelectorAll('#hamburger-menu a').forEach(function(a) {
     if (a.getAttribute('href') === 'cart' || a.getAttribute('href') === '/cart') {
-        a.setAttribute('href', '/emprendedoras-carrito.php');
+        a.setAttribute('href', '/emprendedores-carrito.php');
     }
 });
 

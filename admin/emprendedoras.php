@@ -378,7 +378,7 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
     <div class="logo"><i class="fas fa-crown"></i> Emprendedoras — Admin</div>
     <nav>
         <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        <a href="../emprendedores-dashboard"><i class="fas fa-store"></i> Portal Emprendedoras</a>
+        <a href="../emprendedores-dashboard"><i class="fas fa-store"></i> Portal Emprendedores</a>
         <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Salir</a>
     </nav>
 </header>

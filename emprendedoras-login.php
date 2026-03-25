@@ -48,11 +48,11 @@ require_once __DIR__ . '/includes/db.php';
 // OAuth Config
 $GOOGLE_CLIENT_ID     = defined('GOOGLE_CLIENT_ID')     ? GOOGLE_CLIENT_ID     : '';
 $GOOGLE_CLIENT_SECRET = defined('GOOGLE_CLIENT_SECRET') ? GOOGLE_CLIENT_SECRET : '';
-$GOOGLE_REDIRECT_URI  = ($__isHttps ? 'https://' : 'http://') . $host . '/emprendedoras-login.php?oauth=google';
+$GOOGLE_REDIRECT_URI  = ($__isHttps ? 'https://' : 'http://') . $host . '/emprendedores-login.php?oauth=google';
 
 $FACEBOOK_APP_ID      = defined('FACEBOOK_APP_ID')      ? FACEBOOK_APP_ID      : '';
 $FACEBOOK_APP_SECRET  = defined('FACEBOOK_APP_SECRET')  ? FACEBOOK_APP_SECRET  : '';
-$FACEBOOK_REDIRECT_URI = ($__isHttps ? 'https://' : 'http://') . $host . '/emprendedoras-login.php?oauth=facebook';
+$FACEBOOK_REDIRECT_URI = ($__isHttps ? 'https://' : 'http://') . $host . '/emprendedores-login.php?oauth=facebook';
 
 $error   = '';
 $success = '';
@@ -84,7 +84,7 @@ function get_or_create_entrepreneur_id(PDO $pdo, int $uid): int {
 
 // Si ya está logueado, redirigir al dashboard
 if (isset($_SESSION['uid']) && $_SESSION['uid'] > 0 && empty($_GET['oauth'])) {
-    header('Location: emprendedoras-dashboard.php');
+    header('Location: emprendedores-dashboard.php');
     exit;
 }
 
@@ -187,7 +187,7 @@ if (isset($_GET['oauth']) && isset($_GET['code'])) {
             $_SESSION['role']            = 'active';
             $_SESSION['entrepreneur_id'] = get_or_create_entrepreneur_id($pdo, $oauthUid);
 
-            header('Location: emprendedoras-dashboard.php');
+            header('Location: emprendedores-dashboard.php');
             exit;
         } elseif ($result && isset($result['error'])) {
             $error = $result['error'];
@@ -226,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $_SESSION['role']            = $user['status'] ?? 'active';
                     $_SESSION['entrepreneur_id'] = get_or_create_entrepreneur_id($pdo, $loginUid);
 
-                    header('Location: emprendedoras-dashboard.php');
+                    header('Location: emprendedores-dashboard.php');
                     exit;
                 } else {
                     $reason = !$user ? 'usuario_no_encontrado' : (!$storedHash ? 'sin_hash' : 'password_incorrecta');
@@ -274,7 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $_SESSION['role']            = 'active';
                         $_SESSION['entrepreneur_id'] = get_or_create_entrepreneur_id($pdo, $newUid);
 
-                        header('Location: emprendedoras-dashboard.php');
+                        header('Location: emprendedores-dashboard.php');
                         exit;
                     }
                 }

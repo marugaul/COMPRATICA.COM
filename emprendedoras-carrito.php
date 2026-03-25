@@ -324,7 +324,7 @@ foreach ($shippingChoices as $sid => $choice) {
 <?php include __DIR__ . '/includes/header.php'; ?>
 
 <div class="page-wrap">
-    <a href="emprendedoras-catalogo.php" class="back-link"><i class="fas fa-arrow-left"></i> Seguir comprando</a>
+    <a href="emprendedores-catalogo.php" class="back-link"><i class="fas fa-arrow-left"></i> Seguir comprando</a>
     <h1 class="cart-title"><i class="fas fa-shopping-bag"></i> Mi Carrito</h1>
     <p class="cart-subtitle">Revisá tus productos antes de proceder al pago.</p>
 
@@ -333,7 +333,7 @@ foreach ($shippingChoices as $sid => $choice) {
         <div class="empty-icon"><i class="fas fa-shopping-bag"></i></div>
         <h3>Tu carrito está vacío</h3>
         <p>Explorá el mercadito y agregá productos de vendedores ticos.</p>
-        <a href="emprendedoras-catalogo.php" class="btn-go-shop"><i class="fas fa-store"></i> Ir al Mercadito</a>
+        <a href="emprendedores-catalogo.php" class="btn-go-shop"><i class="fas fa-store"></i> Ir al Mercadito</a>
     </div>
     <?php else: ?>
 
@@ -529,7 +529,7 @@ foreach ($shippingChoices as $sid => $choice) {
                 <span class="summary-total-label">Total</span>
                 <span class="summary-total-amount" id="grand-total">₡<?= number_format($grandTotal + $shippingTotal, 0) ?></span>
             </div>
-            <a href="emprendedoras-checkout.php" class="btn-checkout" id="btn-checkout">
+            <a href="emprendedores-checkout.php" class="btn-checkout" id="btn-checkout">
                 <i class="fas fa-lock"></i> Proceder al Pago
             </a>
             <p class="checkout-note"><i class="fas fa-shield-alt"></i> Pago directo a cada vendedor/a</p>
@@ -546,7 +546,7 @@ foreach ($shippingChoices as $sid => $choice) {
 // Redirigir "Mi Carrito" del menú al carrito de emprendedoras
 document.querySelectorAll('#hamburger-menu a').forEach(function(a) {
     if (a.getAttribute('href') === 'cart' || a.getAttribute('href') === '/cart') {
-        a.setAttribute('href', '/emprendedoras-carrito.php');
+        a.setAttribute('href', '/emprendedores-carrito.php');
     }
 });
 
