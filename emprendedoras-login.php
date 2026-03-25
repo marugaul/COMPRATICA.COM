@@ -68,6 +68,20 @@ function empLog(string $level, string $msg, array $ctx = []): void {
     @file_put_contents($__logFile, $line . PHP_EOL, FILE_APPEND);
 }
 
+// Obtiene o crea el entrepreneur_id para un user_id dado.
+// Garantiza que quien pasa por emprendedoras-login siempre tenga identidad de emprendedora.
+function get_or_create_entrepreneur_id(PDO $pdo, int $uid): int {
+    $stmt = $pdo->prepare("SELECT id FROM entrepreneurs WHERE user_id = ?");
+    $stmt->execute([$uid]);
+    $eid = (int)($stmt->fetchColumn() ?: 0);
+    if ($eid <= 0) {
+        $pdo->prepare("INSERT OR IGNORE INTO entrepreneurs (user_id, status) VALUES (?, 'active')")->execute([$uid]);
+        $stmt->execute([$uid]);
+        $eid = (int)($stmt->fetchColumn() ?: 0);
+    }
+    return $eid;
+}
+
 // Si ya está logueado, redirigir al dashboard
 if (isset($_SESSION['uid']) && $_SESSION['uid'] > 0 && empty($_GET['oauth'])) {
     header('Location: emprendedoras-dashboard.php');
@@ -163,13 +177,15 @@ if (isset($_GET['oauth']) && isset($_GET['code'])) {
         }
 
         if ($result && isset($result['success'])) {
-            $_SESSION['uid']        = $result['user_id'];
-            $_SESSION['user_id']    = $result['user_id'];
-            $_SESSION['email']      = $result['email'];
-            $_SESSION['user_email'] = $result['email'];
-            $_SESSION['name']       = $result['name'];
-            $_SESSION['user_name']  = $result['name'];
-            $_SESSION['role']       = 'active';
+            $oauthUid = (int)$result['user_id'];
+            $_SESSION['uid']             = $oauthUid;
+            $_SESSION['user_id']         = $oauthUid;
+            $_SESSION['email']           = $result['email'];
+            $_SESSION['user_email']      = $result['email'];
+            $_SESSION['name']            = $result['name'];
+            $_SESSION['user_name']       = $result['name'];
+            $_SESSION['role']            = 'active';
+            $_SESSION['entrepreneur_id'] = get_or_create_entrepreneur_id($pdo, $oauthUid);
 
             header('Location: emprendedoras-dashboard.php');
             exit;
@@ -199,14 +215,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $ok = $storedHash ? password_verify($password, $storedHash) : false;
 
                 if ($user && $ok) {
-                    empLog('INFO', 'LOGIN_OK', ['email' => $email, 'user_id' => $user['id'], 'ip' => $_SERVER['REMOTE_ADDR'] ?? '']);
-                    $_SESSION['uid']        = (int)$user['id'];
-                    $_SESSION['user_id']    = (int)$user['id'];
-                    $_SESSION['email']      = $user['email'];
-                    $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['name']       = $user['name'] ?? '';
-                    $_SESSION['user_name']  = $user['name'] ?? '';
-                    $_SESSION['role']       = $user['status'] ?? 'active';
+                    $loginUid = (int)$user['id'];
+                    empLog('INFO', 'LOGIN_OK', ['email' => $email, 'user_id' => $loginUid, 'ip' => $_SERVER['REMOTE_ADDR'] ?? '']);
+                    $_SESSION['uid']             = $loginUid;
+                    $_SESSION['user_id']         = $loginUid;
+                    $_SESSION['email']           = $user['email'];
+                    $_SESSION['user_email']      = $user['email'];
+                    $_SESSION['name']            = $user['name'] ?? '';
+                    $_SESSION['user_name']       = $user['name'] ?? '';
+                    $_SESSION['role']            = $user['status'] ?? 'active';
+                    $_SESSION['entrepreneur_id'] = get_or_create_entrepreneur_id($pdo, $loginUid);
 
                     header('Location: emprendedoras-dashboard.php');
                     exit;
@@ -248,13 +266,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $ins->execute([$name, $email, $phone, $hash]);
                         $newUid = (int)$pdo->lastInsertId();
 
-                        $_SESSION['uid']        = $newUid;
-                        $_SESSION['user_id']    = $newUid;
-                        $_SESSION['email']      = $email;
-                        $_SESSION['user_email'] = $email;
-                        $_SESSION['name']       = $name;
-                        $_SESSION['user_name']  = $name;
-                        $_SESSION['role']       = 'active';
+                        $_SESSION['uid']             = $newUid;
+                        $_SESSION['user_id']         = $newUid;
+                        $_SESSION['email']           = $email;
+                        $_SESSION['user_email']      = $email;
+                        $_SESSION['name']            = $name;
+                        $_SESSION['user_name']       = $name;
+                        $_SESSION['role']            = 'active';
+                        $_SESSION['entrepreneur_id'] = get_or_create_entrepreneur_id($pdo, $newUid);
 
                         header('Location: emprendedoras-dashboard.php');
                         exit;

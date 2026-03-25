@@ -64,11 +64,28 @@ if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
     exit;
 }
 
-$userId = $_SESSION['uid'];
+$userId = (int)$_SESSION['uid'];
 $userName = $_SESSION['name'] ?? 'Usuario';
 $userEmail = $_SESSION['email'] ?? '';
 
 $pdo = db();
+
+// Verificar identidad de emprendedora (distingue de clientes finales)
+if (empty($_SESSION['entrepreneur_id'])) {
+    // Compatibilidad con sesiones existentes: buscar en DB
+    $stmtEnt = $pdo->prepare("SELECT id FROM entrepreneurs WHERE user_id = ?");
+    $stmtEnt->execute([$userId]);
+    $entId = (int)($stmtEnt->fetchColumn() ?: 0);
+    if ($entId > 0) {
+        $_SESSION['entrepreneur_id'] = $entId;
+    } else {
+        // No es emprendedora registrada, redirigir a login
+        session_destroy();
+        header('Location: emprendedoras-login.php?error=not_entrepreneur');
+        exit;
+    }
+}
+$entrepreneurId = (int)$_SESSION['entrepreneur_id'];
 
 // Obtener suscripción más reciente (activa o pendiente)
 try {

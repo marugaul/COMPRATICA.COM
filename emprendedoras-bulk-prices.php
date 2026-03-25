@@ -17,6 +17,20 @@ if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
 
 $pdo    = db();
 $userId = (int)$_SESSION['uid'];
+
+// Verificar identidad de emprendedora
+if (empty($_SESSION['entrepreneur_id'])) {
+    $stmtEnt = $pdo->prepare("SELECT id FROM entrepreneurs WHERE user_id = ?");
+    $stmtEnt->execute([$userId]);
+    $entId = (int)($stmtEnt->fetchColumn() ?: 0);
+    if ($entId > 0) {
+        $_SESSION['entrepreneur_id'] = $entId;
+    } else {
+        session_destroy();
+        header('Location: emprendedoras-login.php?error=not_entrepreneur');
+        exit;
+    }
+}
 $msg      = '';
 $msg_type = 'error';
 

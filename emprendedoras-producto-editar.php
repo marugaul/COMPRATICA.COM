@@ -12,12 +12,26 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
 
 if (!isset($_SESSION['uid']) || $_SESSION['uid'] <= 0) {
-    header('Location: login.php?redirect=emprendedoras-dashboard.php');
+    header('Location: emprendedoras-login.php');
     exit;
 }
 
-$userId = $_SESSION['uid'];
+$userId = (int)$_SESSION['uid'];
 $pdo    = db();
+
+// Verificar identidad de emprendedora
+if (empty($_SESSION['entrepreneur_id'])) {
+    $stmtEnt = $pdo->prepare("SELECT id FROM entrepreneurs WHERE user_id = ?");
+    $stmtEnt->execute([$userId]);
+    $entId = (int)($stmtEnt->fetchColumn() ?: 0);
+    if ($entId > 0) {
+        $_SESSION['entrepreneur_id'] = $entId;
+    } else {
+        session_destroy();
+        header('Location: emprendedoras-login.php?error=not_entrepreneur');
+        exit;
+    }
+}
 
 // Obtener el producto y verificar que pertenece al usuario
 $productId = intval($_GET['id'] ?? 0);
