@@ -1742,14 +1742,21 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
         <i class="fas fa-shopping-cart"></i>
         <span>Mi Carrito</span>
       </a>
-      <div class="menu-divider"></div>
     <?php else: ?>
       <a href="login" class="menu-item primary">
         <i class="fas fa-sign-in-alt"></i>
         <span>Iniciar Sesión</span>
       </a>
-      <div class="menu-divider"></div>
     <?php endif; ?>
+
+    <!-- ── CLIENTES ─────────────────────────── -->
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px;padding:0 4px;">
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+      <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;white-space:nowrap;">
+        <i class="fas fa-shopping-bag" style="color:#3b82f6;margin-right:4px;"></i>Para Clientes
+      </span>
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+    </div>
 
     <a href="index" class="menu-item">
       <i class="fas fa-home"></i>
@@ -1767,16 +1774,23 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
     </a>
 
     <a href="bienes-raices" class="menu-item">
-      <i class="fas fa-home"></i>
+      <i class="fas fa-building"></i>
       <span>Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-catalogo" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <a href="emprendedoras-catalogo" class="menu-item">
       <i class="fas fa-store"></i>
-      <span>✨ Emprendedoras y Emprendedores</span>
+      <span>Emprendedoras y Emprendedores</span>
     </a>
 
-    <div class="menu-divider"></div>
+    <!-- ── VENDEDORES ────────────────────────── -->
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px;padding:0 4px;">
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+      <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;white-space:nowrap;">
+        <i class="fas fa-store-alt" style="color:#10b981;margin-right:4px;"></i>Para Vendedores
+      </span>
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+    </div>
 
     <a href="select-publication-type.php" class="menu-item">
       <i class="fas fa-bullhorn"></i>
@@ -1798,7 +1812,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <span>Portal Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-dashboard" class="menu-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <a href="emprendedoras-dashboard" class="menu-item">
       <i class="fas fa-store"></i>
       <span>Portal Emprendedoras/Emprendedores</span>
     </a>

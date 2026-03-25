@@ -573,49 +573,77 @@ foreach ($_SESSION['cart'] as $it) {
   
   <div class="menu-body">
     <?php if ($isLoggedIn): ?>
-      <div class="menu-section">
-        <div class="menu-section-title">Usuario</div>
-        <div style="padding:0 1rem;margin-bottom:1rem;color:var(--gray-700)">
-          <i class="fas fa-user-circle"></i> <?= htmlspecialchars($userName) ?>
-        </div>
-      </div>
-    <?php endif; ?>
-
-    <div class="menu-section">
-      <div class="menu-section-title">Navegación</div>
-      <a href="index" class="menu-link">
-        <i class="fas fa-home"></i> Inicio
-      </a>
-      <a href="cart" class="menu-link">
-        <i class="fas fa-shopping-cart"></i> Carrito
-      </a>
-      <a href="my_orders" class="menu-link active">
+      <a href="my_orders" class="menu-link">
         <i class="fas fa-box"></i> Mis Órdenes
       </a>
+      <a href="cart" class="menu-link">
+        <i class="fas fa-shopping-cart"></i> Mi Carrito
+      </a>
+    <?php else: ?>
+      <a href="login" class="menu-link">
+        <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+      </a>
+    <?php endif; ?>
+
+    <!-- ── CLIENTES ─────────────────────────── -->
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px;padding:0 4px;">
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+      <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;white-space:nowrap;">
+        <i class="fas fa-shopping-bag" style="color:#3b82f6;margin-right:4px;"></i>Para Clientes
+      </span>
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
     </div>
 
-    <div class="menu-section">
-      <div class="menu-section-title">Cuenta</div>
-      <?php if ($isLoggedIn): ?>
-        <a href="logout" class="menu-link">
-          <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-        </a>
-      <?php else: ?>
-        <a href="login" class="menu-link">
-          <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-        </a>
-      <?php endif; ?>
+    <a href="index" class="menu-link">
+      <i class="fas fa-home"></i> Inicio
+    </a>
+    <a href="/servicios" class="menu-link">
+      <i class="fas fa-concierge-bell"></i> Empleos y Servicios
+    </a>
+    <a href="venta-garaje" class="menu-link">
+      <i class="fas fa-tags"></i> Venta de Garaje
+    </a>
+    <a href="bienes-raices" class="menu-link">
+      <i class="fas fa-building"></i> Bienes Raíces
+    </a>
+    <a href="emprendedoras-catalogo" class="menu-link">
+      <i class="fas fa-store"></i> Emprendedoras y Emprendedores
+    </a>
+
+    <!-- ── VENDEDORES ────────────────────────── -->
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px;padding:0 4px;">
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+      <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;white-space:nowrap;">
+        <i class="fas fa-store-alt" style="color:#10b981;margin-right:4px;"></i>Para Vendedores
+      </span>
+      <div style="flex:1;height:1px;background:#e5e7eb;"></div>
     </div>
 
-    <div class="menu-section">
-      <div class="menu-section-title">Enlaces</div>
-      <a href="affiliate/login.php" class="menu-link">
-        <i class="fas fa-handshake"></i> Afiliados
+    <a href="select-publication-type.php" class="menu-link">
+      <i class="fas fa-bullhorn"></i> Publicar mi venta
+    </a>
+    <a href="affiliate/login.php" class="menu-link">
+      <i class="fas fa-tags"></i> Portal Venta Garaje
+    </a>
+    <a href="/jobs_service/login.php" class="menu-link">
+      <i class="fas fa-briefcase"></i> Portal Empleos y Servicios
+    </a>
+    <a href="/real-estate/login.php" class="menu-link">
+      <i class="fas fa-home"></i> Portal Bienes Raíces
+    </a>
+    <a href="emprendedoras-dashboard" class="menu-link">
+      <i class="fas fa-store"></i> Portal Emprendedoras/Emprendedores
+    </a>
+    <a href="admin/login.php" class="menu-link">
+      <i class="fas fa-user-shield"></i> Administrador
+    </a>
+
+    <?php if ($isLoggedIn): ?>
+      <div style="height:1px;background:#e5e7eb;margin:8px 0;"></div>
+      <a href="logout" class="menu-link" style="color:#ef4444;">
+        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
       </a>
-      <a href="admin/login.php" class="menu-link">
-        <i class="fas fa-shield-alt"></i> Administrador
-      </a>
-    </div>
+    <?php endif; ?>
   </div>
 </div>
 
