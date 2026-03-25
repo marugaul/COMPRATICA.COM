@@ -363,7 +363,7 @@ logDebug("RENDERING_PAGE");
       <span>Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-catalogo" class="menu-item">
+    <a href="emprendedores-catalogo" class="menu-item">
       <i class="fas fa-store"></i>
       <span>Emprendedoras y Emprendedores</span>
     </a>
@@ -397,7 +397,7 @@ logDebug("RENDERING_PAGE");
       <span>Portal Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-dashboard" class="menu-item">
+    <a href="emprendedores-dashboard" class="menu-item">
       <i class="fas fa-store"></i>
       <span>Portal Emprendedoras/Emprendedores</span>
     </a>
@@ -434,7 +434,7 @@ logDebug("RENDERING_PAGE");
         <i class="fas fa-compass"></i>
         Explorar Ahora
       </a>
-      <a href="emprendedoras-catalogo" class="btn-hero btn-hero-secondary">
+      <a href="emprendedores-catalogo" class="btn-hero btn-hero-secondary">
         <i class="fas fa-store"></i>
         Únete como Emprendedor/a
       </a>
@@ -495,7 +495,7 @@ logDebug("RENDERING_PAGE");
     </a>
 
     <!-- EMPRENDEDORAS Y EMPRENDEDORES -->
-    <a href="emprendedoras-catalogo" class="category-card category-emprendedoras" style="
+    <a href="emprendedores-catalogo" class="category-card category-emprendedoras" style="
       position: relative;
       overflow: hidden;
       background: #0f172a;
@@ -632,7 +632,7 @@ logDebug("RENDERING_PAGE");
       <a href="servicios">Servicios</a>
       <a href="venta-garaje">Venta de Garaje</a>
       <a href="bienes-raices">Bienes Raíces</a>
-      <a href="emprendedoras-catalogo">Emprendedoras y Emprendedores</a>
+      <a href="emprendedores-catalogo">Emprendedoras y Emprendedores</a>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>

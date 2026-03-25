@@ -606,7 +606,7 @@ foreach ($_SESSION['cart'] as $it) {
     <a href="bienes-raices" class="menu-link">
       <i class="fas fa-building"></i> Bienes Raíces
     </a>
-    <a href="emprendedoras-catalogo" class="menu-link">
+    <a href="emprendedores-catalogo" class="menu-link">
       <i class="fas fa-store"></i> Emprendedoras y Emprendedores
     </a>
 
@@ -631,7 +631,7 @@ foreach ($_SESSION['cart'] as $it) {
     <a href="/real-estate/login.php" class="menu-link">
       <i class="fas fa-home"></i> Portal Bienes Raíces
     </a>
-    <a href="emprendedoras-dashboard" class="menu-link">
+    <a href="emprendedores-dashboard" class="menu-link">
       <i class="fas fa-store"></i> Portal Emprendedoras/Emprendedores
     </a>
     <a href="admin/login.php" class="menu-link">

@@ -1789,7 +1789,7 @@ if (empty($categories)) {
       <span>Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-catalogo" class="menu-item">
+    <a href="emprendedores-catalogo" class="menu-item">
       <i class="fas fa-store"></i>
       <span>Emprendedoras y Emprendedores</span>
     </a>
@@ -1823,7 +1823,7 @@ if (empty($categories)) {
       <span>Portal Bienes Raíces</span>
     </a>
 
-    <a href="emprendedoras-dashboard" class="menu-item">
+    <a href="emprendedores-dashboard" class="menu-item">
       <i class="fas fa-store"></i>
       <span>Portal Emprendedoras/Emprendedores</span>
     </a>
