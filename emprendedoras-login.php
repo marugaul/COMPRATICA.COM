@@ -306,7 +306,7 @@ $facebookLoginUrl = $FACEBOOK_APP_ID ? 'https://www.facebook.com/v18.0/dialog/oa
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Acceso Emprendedoras | CompraTica</title>
+<title>Acceso Emprendedores | CompraTica</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -457,7 +457,7 @@ body {
 <div class="container">
     <div class="header">
         <div class="logo">🌸</div>
-        <h1>Área de Emprendedoras</h1>
+        <h1>Área de Emprendedores</h1>
         <p>Inicia sesión para acceder a tu dashboard</p>
     </div>
 
@@ -565,7 +565,7 @@ body {
     </div>
 
     <div class="footer">
-        <a href="emprendedoras">← Volver a Emprendedoras CompraTica</a>
+        <a href="emprendedoras">← Volver a Emprendedores CompraTica</a>
         &nbsp;|&nbsp;
         <a href="index">Inicio</a>
     </div>

@@ -82,7 +82,7 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedoras</title>
+    <title><?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedores</title>
     <style>#cartButton{display:none!important;}</style>
     <meta name="description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 160)) ?>">
     <meta name="robots" content="index, follow, max-image-preview:large">
@@ -91,7 +91,7 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
     <!-- Open Graph -->
     <meta property="og:type" content="product">
     <meta property="og:url" content="https://compratica.com/emprendedores-producto?id=<?= $productId ?>">
-    <meta property="og:title" content="<?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedoras">
+    <meta property="og:title" content="<?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedores">
     <meta property="og:description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 200)) ?>">
     <meta property="og:image" content="<?= $mainImage ? 'https://compratica.com/' . htmlspecialchars(ltrim($mainImage, '/')) : 'https://compratica.com/assets/img/og-emprendedoras.jpg' ?>">
     <meta property="og:locale" content="es_CR">
@@ -100,7 +100,7 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://compratica.com/emprendedores-producto?id=<?= $productId ?>">
-    <meta name="twitter:title" content="<?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedoras">
+    <meta name="twitter:title" content="<?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedores">
     <meta name="twitter:description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 200)) ?>">
     <meta name="twitter:image" content="<?= $mainImage ? 'https://compratica.com/' . htmlspecialchars(ltrim($mainImage, '/')) : 'https://compratica.com/assets/img/og-emprendedoras.jpg' ?>">
 
@@ -227,7 +227,7 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
 
     <div class="breadcrumb">
         <a href="index">Inicio</a><span>›</span>
-        <a href="emprendedores-catalogo.php">Emprendedoras</a><span>›</span>
+        <a href="emprendedores-catalogo.php">Emprendedores</a><span>›</span>
         <?php if ($product['category_name']): ?>
             <a href="emprendedores-catalogo.php?category=<?= $product['category_id'] ?>"><?= htmlspecialchars($product['category_name']) ?></a><span>›</span>
         <?php endif; ?>

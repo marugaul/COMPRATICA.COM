@@ -180,7 +180,7 @@ try {
         $htmlCliente = "
         <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
             <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:40px;text-align:center;border-radius:16px 16px 0 0;'>
-                <h1 style='color:#fff;margin:0;font-size:1.8rem;'>🌸 CompraTica Emprendedoras</h1>
+                <h1 style='color:#fff;margin:0;font-size:1.8rem;'>💼 CompraTica Emprendedores</h1>
             </div>
             <div style='background:#fff;padding:40px;border:1px solid #e0e0e0;'>
                 <h2 style='color:#27ae60;'>✅ ¡Pago confirmado! Tu plan está activo</h2>
@@ -201,7 +201,7 @@ try {
                 CompraTica — El marketplace costarricense
             </div>
         </div>";
-        @send_email($userEmail, '✅ Pago Confirmado - Suscripción Emprendedoras CompraTica', $htmlCliente);
+        @send_email($userEmail, '✅ Pago Confirmado - Suscripción Emprendedores CompraTica', $htmlCliente);
         sub_log('EMAIL_CLIENTE_SENT', ['to' => $userEmail]);
     }
 
@@ -218,7 +218,7 @@ try {
             <tr><td style='padding:8px;'><strong>Estado:</strong></td><td style='padding:8px;'><span style='color:#27ae60;font-weight:bold;'>ACTIVO ✅</span></td></tr>
         </table>
     </div>";
-    @send_email(ADMIN_EMAIL, "[Emprendedoras] 💰 Suscripción PayPal Confirmada - {$userName}", $htmlAdmin);
+    @send_email(ADMIN_EMAIL, "[Emprendedores] 💰 Suscripción PayPal Confirmada - {$userName}", $htmlAdmin);
     sub_log('EMAIL_ADMIN_SENT', ['to' => ADMIN_EMAIL]);
 
 } catch (Exception $e) {
