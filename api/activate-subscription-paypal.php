@@ -220,7 +220,7 @@ $emailCliente = "
         </div>
         <p>Ya puedes acceder a tu dashboard y comenzar a publicar tus productos.</p>
         <div style='text-align:center;margin:30px 0;'>
-            <a href='" . SITE_URL . "/emprendedoras-dashboard' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ir a mi Dashboard</a>
+            <a href='" . SITE_URL . "/emprendedores-dashboard' style='background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:bold;'>Ir a mi Dashboard</a>
         </div>
     </div>
     <div style='background:#f9fafb;padding:20px;text-align:center;border-radius:0 0 16px 16px;color:#666;font-size:0.85rem;'>

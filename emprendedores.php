@@ -2,7 +2,7 @@
 // Esta página fue unificada con /emprendedoras
 // Redirigir al catálogo unificado de emprendedores/as
 header('HTTP/1.1 301 Moved Permanently');
-header('Location: /emprendedoras-catalogo');
+header('Location: /emprendedores-catalogo');
 exit;
 
 ini_set('display_errors', '0');
