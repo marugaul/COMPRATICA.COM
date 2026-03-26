@@ -1,0 +1,624 @@
+<?php
+/**
+ * SwiftPayClient — Middleware para SwiftPay Gateway
+ * ─────────────────────────────────────────────────
+ * Esta es la ÚNICA clase que se comunica directamente con SwiftPay.
+ * Si SwiftPay cambia su API, solo se modifica este archivo.
+ * El frontend y el checkout NO conocen los detalles del gateway.
+ *
+ * Uso básico (cobro en un solo paso):
+ *   $sp     = new SwiftPayClient($pdo);
+ *   $result = $sp->charge('15000.00', 'CRC', 'Compra en CompraTica', [
+ *       'number' => '4111111111111111',
+ *       'expiry' => '1228',
+ *       'cvv'    => '123',
+ *   ]);
+ *   if ($result->isSuccess()) { ... }
+ *   if ($result->needs3ds())  { header('Location: '.$result->redirectUrl); }
+ */
+
+// ── Value Object ────────────────────────────────────────────────────────────
+
+class SwiftPayResult
+{
+    public bool   $approved;
+    public bool   $pending3ds;
+    public string $clientId;
+    public string $orderId;
+    public string $rrn;
+    public string $intRef;
+    public string $authCode;
+    public string $redirectUrl;   // URL 3DS para redirigir al usuario
+    public string $errorMessage;
+    public array  $rawResponse;
+    public int    $txId;          // ID en swiftpay_transactions
+
+    public function __construct(
+        bool   $approved,
+        bool   $pending3ds,
+        string $clientId,
+        string $orderId,
+        string $rrn,
+        string $intRef,
+        string $authCode,
+        string $redirectUrl,
+        string $errorMessage,
+        array  $rawResponse,
+        int    $txId
+    ) {
+        $this->approved     = $approved;
+        $this->pending3ds   = $pending3ds;
+        $this->clientId     = $clientId;
+        $this->orderId      = $orderId;
+        $this->rrn          = $rrn;
+        $this->intRef       = $intRef;
+        $this->authCode     = $authCode;
+        $this->redirectUrl  = $redirectUrl;
+        $this->errorMessage = $errorMessage;
+        $this->rawResponse  = $rawResponse;
+        $this->txId         = $txId;
+    }
+
+    /** Pago aprobado y sin 3DS pendiente */
+    public function isSuccess(): bool { return $this->approved && !$this->pending3ds; }
+
+    /** Requiere validación 3DS (redirigir a $redirectUrl) */
+    public function needs3ds(): bool { return $this->pending3ds; }
+
+    /** Convertir a array para respuestas JSON */
+    public function toArray(): array
+    {
+        return [
+            'approved'     => $this->approved,
+            'pending_3ds'  => $this->pending3ds,
+            'client_id'    => $this->clientId,
+            'order_id'     => $this->orderId,
+            'rrn'          => $this->rrn,
+            'int_ref'      => $this->intRef,
+            'auth_code'    => $this->authCode,
+            'redirect_url' => $this->redirectUrl,
+            'error'        => $this->errorMessage,
+            'tx_id'        => $this->txId,
+        ];
+    }
+}
+
+class SwiftPayException extends RuntimeException {}
+
+// ── Middleware Principal ────────────────────────────────────────────────────
+
+class SwiftPayClient
+{
+    // ── Endpoints de producción ──────────────────────────────────────
+    private const EP_VALIDATE   = '/api/card/validateCardExternal';
+    private const EP_PAYMENT    = '/api/card/paymentExternal';
+    private const EP_PRE_AUTH   = '/api/card/preAuthExternal';
+    private const EP_COMPLETE   = '/api/card/completeAuthExternal';
+    private const EP_VOID       = '/api/card/voidExternal';
+    private const EP_3DS_RESULT = '/api/card/getResult3ds/';
+
+    // ── Prefijo sandbox: /api/card/qa/... ───────────────────────────
+    private const QA_REPLACE    = ['/api/card/' => '/api/card/qa/'];
+
+    private PDO    $pdo;
+    private string $jwt;
+    private string $baseUrl;
+    private bool   $sandbox;
+    private string $mode;        // 'sandbox' | 'live' — solo para logs
+
+    // ────────────────────────────────────────────────────────────────
+
+    public function __construct(PDO $pdo)
+    {
+        $this->pdo     = $pdo;
+        $this->sandbox = defined('SWIFTPAY_SANDBOX') ? (bool)SWIFTPAY_SANDBOX : true;
+        $this->mode    = $this->sandbox ? 'sandbox' : 'live';
+
+        // Seleccionar JWT y URL según el modo
+        if ($this->sandbox) {
+            $this->jwt     = defined('SWIFTPAY_JWT_SANDBOX')  ? SWIFTPAY_JWT_SANDBOX  : (defined('SWIFTPAY_JWT') ? SWIFTPAY_JWT : '');
+            $this->baseUrl = defined('SWIFTPAY_URL_SANDBOX')  ? rtrim(SWIFTPAY_URL_SANDBOX, '/') : '';
+        } else {
+            $this->jwt     = defined('SWIFTPAY_JWT_LIVE')     ? SWIFTPAY_JWT_LIVE     : (defined('SWIFTPAY_JWT') ? SWIFTPAY_JWT : '');
+            $this->baseUrl = defined('SWIFTPAY_URL_LIVE')     ? rtrim(SWIFTPAY_URL_LIVE, '/') : '';
+        }
+
+        if (empty($this->baseUrl)) {
+            throw new SwiftPayException('SWIFTPAY_URL_' . strtoupper($this->mode) . ' no está configurado en config.php');
+        }
+        if (empty($this->jwt)) {
+            throw new SwiftPayException('SWIFTPAY_JWT_' . strtoupper($this->mode) . ' no está configurado en config.php');
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // INTERFAZ PÚBLICA
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Cobro en un solo paso: valida tarjeta → autoriza.
+     * Es el método principal que usa el checkout.
+     * Las credenciales de tarjeta NUNCA se almacenan; solo el tokenCard enmascarado.
+     *
+     * @param string $amount       Monto con decimales: "15000.00"
+     * @param string $currency     "CRC" o "USD"
+     * @param string $description  Texto en estado de cuenta del cliente
+     * @param array  $card         ['number', 'expiry' (MMYY), 'cvv']
+     * @param int    $referenceId  ID de la orden local (opcional, para trazabilidad)
+     * @param string $referenceTable Tabla local (ej: 'orders')
+     */
+    public function charge(
+        string $amount,
+        string $currency,
+        string $description,
+        array  $card,
+        int    $referenceId = 0,
+        string $referenceTable = ''
+    ): SwiftPayResult {
+        // Paso 1: Validar tarjeta y obtener tokenCard
+        $tokenCard = $this->validateCard(
+            $card['number'],
+            $card['expiry'],
+            $card['cvv']
+        );
+
+        // Paso 2: Autorizar con tokenCard (datos de tarjeta ya no se usan)
+        return $this->authorize($tokenCard, $amount, $currency, $description, $referenceId, $referenceTable);
+    }
+
+    /**
+     * Valida tarjeta con SwiftPay y retorna tokenCard.
+     * Llamar este método directamente solo si necesitás el token por separado.
+     */
+    public function validateCard(string $cardNumber, string $expiry, string $cvv): string
+    {
+        $payload = [
+            'card'  => ['card' => $cardNumber, 'expiration' => $expiry, 'cvv' => $cvv],
+            'token' => $this->jwt,
+        ];
+
+        $response  = $this->post($this->ep(self::EP_VALIDATE), $payload);
+        $tokenCard = $response['tokenCard']
+                  ?? $response['data']['tokenCard']
+                  ?? $response['token']
+                  ?? '';
+
+        if (empty($tokenCard)) {
+            throw new SwiftPayException(
+                'validateCard: no se recibió tokenCard. Respuesta: ' . json_encode($response)
+            );
+        }
+
+        return $tokenCard;
+    }
+
+    /**
+     * Autorización (cobro inmediato).
+     * Usá charge() en lugar de este método directamente a menos que ya tengás el tokenCard.
+     */
+    public function authorize(
+        string $tokenCard,
+        string $amount,
+        string $currency,
+        string $description,
+        int    $referenceId = 0,
+        string $referenceTable = ''
+    ): SwiftPayResult {
+        $clientId = $this->uuid();
+        $payload  = [
+            'clientId' => $clientId,
+            'solicita' => 'dll',
+            'card'     => [
+                'tokenCard'   => $tokenCard,
+                'amount'      => $this->formatAmount($amount),
+                'currency'    => strtoupper($currency),
+                'description' => $description,
+                'page_result' => $this->returnUrl($clientId),
+            ],
+            'token'    => $this->jwt,
+        ];
+
+        $txId     = $this->dbLog([
+            'client_id'       => $clientId,
+            'type'            => 'authorize',
+            'status'          => 'pending',
+            'amount'          => $amount,
+            'currency'        => $currency,
+            'description'     => $description,
+            'token_card'      => $this->maskToken($tokenCard),
+            'reference_id'    => $referenceId,
+            'reference_table' => $referenceTable,
+        ]);
+
+        $response = $this->post($this->ep(self::EP_PAYMENT), $payload);
+        return $this->buildResult($response, $clientId, $txId);
+    }
+
+    /**
+     * Pre-autorización: reserva fondos sin cobrar.
+     * Luego completar con completeAuth() o cancelar con void().
+     */
+    public function preAuthorize(
+        string $tokenCard,
+        string $amount,
+        string $currency,
+        string $description,
+        int    $referenceId = 0,
+        string $referenceTable = ''
+    ): SwiftPayResult {
+        $clientId = $this->uuid();
+        $payload  = [
+            'clientId' => $clientId,
+            'solicita' => 'dll',
+            'card'     => [
+                'tokenCard'   => $tokenCard,
+                'amount'      => $this->formatAmount($amount),
+                'currency'    => strtoupper($currency),
+                'description' => $description,
+                'page_result' => $this->returnUrl($clientId),
+            ],
+            'token'    => $this->jwt,
+        ];
+
+        $txId     = $this->dbLog([
+            'client_id'       => $clientId,
+            'type'            => 'preauth',
+            'status'          => 'pending',
+            'amount'          => $amount,
+            'currency'        => $currency,
+            'description'     => $description,
+            'token_card'      => $this->maskToken($tokenCard),
+            'reference_id'    => $referenceId,
+            'reference_table' => $referenceTable,
+        ]);
+
+        $response = $this->post($this->ep(self::EP_PRE_AUTH), $payload);
+        return $this->buildResult($response, $clientId, $txId);
+    }
+
+    /**
+     * Completar una pre-autorización.
+     * Requiere datos del resultado de preAuthorize().
+     */
+    public function completeAuth(
+        string $tokenCard,
+        string $amount,
+        string $currency,
+        string $rrn,
+        string $intRef,
+        string $orderId
+    ): SwiftPayResult {
+        $payload = [
+            'card'  => [
+                'tokenCard' => $tokenCard,
+                'amount'    => $this->formatAmount($amount),
+                'currency'  => strtoupper($currency),
+                'rrn'       => $rrn,
+                'intRef'    => $intRef,
+                'orderId'   => $orderId,
+            ],
+            'token' => $this->jwt,
+        ];
+
+        $clientId = $this->uuid();
+        $txId     = $this->dbLog([
+            'client_id'  => $clientId,
+            'type'       => 'complete',
+            'status'     => 'pending',
+            'amount'     => $amount,
+            'currency'   => $currency,
+            'order_id'   => $orderId,
+            'rrn'        => $rrn,
+            'int_ref'    => $intRef,
+            'token_card' => $this->maskToken($tokenCard),
+        ]);
+
+        $response = $this->post($this->ep(self::EP_COMPLETE), $payload);
+        return $this->buildResult($response, $clientId, $txId);
+    }
+
+    /**
+     * Anular una transacción aprobada.
+     * Datos requeridos vienen de la respuesta original de authorize/preAuthorize.
+     */
+    public function void(
+        string $amount,
+        string $currency,
+        string $orderId,
+        string $rrn,
+        string $intRef,
+        string $authCode
+    ): SwiftPayResult {
+        $payload = [
+            'card'  => [
+                'amount'   => $this->formatAmount($amount),
+                'currency' => strtoupper($currency),
+                'orderId'  => $orderId,
+                'rrn'      => $rrn,
+                'intRef'   => $intRef,
+                'authCode' => $authCode,
+            ],
+            'token' => $this->jwt,
+        ];
+
+        $clientId = $this->uuid();
+        $txId     = $this->dbLog([
+            'client_id' => $clientId,
+            'type'      => 'void',
+            'status'    => 'pending',
+            'amount'    => $amount,
+            'currency'  => $currency,
+            'order_id'  => $orderId,
+            'rrn'       => $rrn,
+            'int_ref'   => $intRef,
+            'auth_code' => $authCode,
+        ]);
+
+        // Anulación: Bearer header + token en body (según Postman)
+        $response = $this->post($this->ep(self::EP_VOID), $payload, withBearer: true);
+        return $this->buildResult($response, $clientId, $txId);
+    }
+
+    /**
+     * Consultar resultado de validación 3DS.
+     * Llamar desde la página de retorno después de que SwiftPay redirija al usuario.
+     * Nota: Este endpoint es GET según la colección de Postman.
+     */
+    public function get3dsResult(string $clientId): SwiftPayResult
+    {
+        $url = $this->baseUrl . $this->ep(self::EP_3DS_RESULT . $clientId, raw: true);
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $raw      = curl_exec($ch);
+        $curlErr  = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlErr) throw new SwiftPayException('get3dsResult cURL error: ' . $curlErr);
+
+        $response = json_decode($raw ?: '{}', true) ?? [];
+        $tx       = $this->dbFindByClientId($clientId);
+        $txId     = (int)($tx['id'] ?? 0);
+
+        return $this->buildResult($response, $clientId, $txId);
+    }
+
+    /** Modo actual: 'sandbox' o 'live' */
+    public function getMode(): string { return $this->mode; }
+
+    // ════════════════════════════════════════════════════════════════
+    // MÉTODOS PRIVADOS
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Construye el endpoint completo.
+     * $raw = true devuelve el path sin la baseUrl (para GET 3DS).
+     */
+    private function ep(string $path, bool $raw = false): string
+    {
+        $full = $this->sandbox
+            ? str_replace('/api/card/', '/api/card/qa/', $path)
+            : $path;
+
+        return $raw ? $full : $this->baseUrl . $full;
+    }
+
+    /** POST a SwiftPay con manejo de errores centralizado */
+    private function post(string $url, array $payload, bool $withBearer = false): array
+    {
+        $headers = ['Content-Type: application/json', 'Accept: application/json'];
+        if ($withBearer) {
+            $headers[] = 'Authorization: Bearer ' . $this->jwt;
+        }
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($payload),
+            CURLOPT_HTTPHEADER     => $headers,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        $raw      = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr  = curl_error($ch);
+        curl_close($ch);
+
+        error_log('[SwiftPay][' . $this->mode . '] POST ' . $url . ' → HTTP ' . $httpCode);
+
+        if ($curlErr) {
+            throw new SwiftPayException('Error de red al conectar con SwiftPay: ' . $curlErr);
+        }
+
+        $decoded = json_decode($raw ?: '{}', true);
+        if (!is_array($decoded)) {
+            throw new SwiftPayException(
+                'Respuesta inválida de SwiftPay (HTTP ' . $httpCode . '): ' . substr((string)$raw, 0, 300)
+            );
+        }
+
+        return $decoded;
+    }
+
+    /** Construye SwiftPayResult desde la respuesta de SwiftPay y actualiza DB */
+    private function buildResult(array $response, string $clientId, int $txId): SwiftPayResult
+    {
+        $approved  = $this->isApproved($response);
+        $needs3ds  = $this->detectsRedirect($response);
+        $status    = $needs3ds ? 'pending_3ds' : ($approved ? 'approved' : 'declined');
+
+        // Extraer campos — adaptados a posibles variaciones en la respuesta
+        $orderId     = $response['orderId']      ?? $response['data']['orderId']      ?? '';
+        $rrn         = $response['rrn']          ?? $response['data']['rrn']          ?? '';
+        $intRef      = $response['intRef']       ?? $response['data']['intRef']       ?? '';
+        $authCode    = $response['authCode']     ?? $response['data']['authCode']     ?? '';
+        $redirectUrl = $response['url3ds']       ?? $response['redirect']             ?? $response['urlRedirect'] ?? $response['url'] ?? '';
+        $errorMsg    = $response['message']      ?? $response['error']                ?? $response['description'] ?? '';
+
+        if ($txId > 0) {
+            $this->dbUpdate($txId, [
+                'status'        => $status,
+                'order_id'      => $orderId,
+                'rrn'           => $rrn,
+                'int_ref'       => $intRef,
+                'auth_code'     => $authCode,
+                'is_3ds'        => $needs3ds ? 1 : 0,
+                'error_message' => (!$approved && !$needs3ds) ? ($errorMsg ?: json_encode($response)) : '',
+                'raw_response'  => json_encode($response),
+            ]);
+        }
+
+        return new SwiftPayResult(
+            approved:     $approved,
+            pending3ds:   $needs3ds,
+            clientId:     $clientId,
+            orderId:      $orderId,
+            rrn:          $rrn,
+            intRef:       $intRef,
+            authCode:     $authCode,
+            redirectUrl:  $redirectUrl,
+            errorMessage: $errorMsg,
+            rawResponse:  $response,
+            txId:         $txId,
+        );
+    }
+
+    /** Detecta si la transacción fue aprobada */
+    private function isApproved(array $r): bool
+    {
+        if (isset($r['approved']))     return (bool)$r['approved'];
+        if (isset($r['success']))      return (bool)$r['success'];
+        if (isset($r['responseCode'])) return $r['responseCode'] === '00';
+        if (isset($r['status']))       return in_array(strtolower((string)$r['status']), ['approved', 'success', 'ok', '00'], true);
+        // Si hay orderId y no hay error, asumir aprobado
+        if (!empty($r['orderId']) && empty($r['error']) && empty($r['message'])) return true;
+        return false;
+    }
+
+    /** Detecta si la respuesta requiere redirección 3DS */
+    private function detectsRedirect(array $r): bool
+    {
+        return !empty($r['url3ds'])
+            || !empty($r['urlRedirect'])
+            || !empty($r['redirect'])
+            || (isset($r['requires3ds']) && $r['requires3ds'])
+            || (isset($r['status']) && strtolower((string)$r['status']) === '3ds');
+    }
+
+    /** URL a la que SwiftPay redirige al usuario después del 3DS */
+    private function returnUrl(string $clientId): string
+    {
+        $base = defined('APP_URL')
+            ? APP_URL
+            : (((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http')
+               . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+        return rtrim($base, '/') . '/api/swiftpay-3ds-return.php?clientId=' . urlencode($clientId);
+    }
+
+    private function formatAmount(string $amount): string
+    {
+        return number_format((float)$amount, 2, '.', '');
+    }
+
+    private function maskToken(string $token): string
+    {
+        return strlen($token) > 10
+            ? substr($token, 0, 6) . '****' . substr($token, -6)
+            : $token;
+    }
+
+    private function uuid(): string
+    {
+        return sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+    }
+
+    // ── DB helpers ───────────────────────────────────────────────────
+
+    private function dbLog(array $d): int
+    {
+        try {
+            $this->pdo->prepare("
+                INSERT INTO swiftpay_transactions
+                (client_id, type, status, amount, currency, description,
+                 order_id, rrn, int_ref, auth_code, token_card, is_3ds,
+                 reference_id, reference_table, error_message, raw_response, ip_address, mode)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ")->execute([
+                $d['client_id']       ?? '',
+                $d['type']            ?? '',
+                $d['status']          ?? 'pending',
+                $d['amount']          ?? null,
+                $d['currency']        ?? null,
+                $d['description']     ?? null,
+                $d['order_id']        ?? null,
+                $d['rrn']             ?? null,
+                $d['int_ref']         ?? null,
+                $d['auth_code']       ?? null,
+                $d['token_card']      ?? null,
+                $d['is_3ds']          ?? 0,
+                $d['reference_id']    ?? 0,
+                $d['reference_table'] ?? '',
+                $d['error_message']   ?? null,
+                $d['raw_response']    ?? null,
+                $_SERVER['REMOTE_ADDR'] ?? '',
+                $this->mode,
+            ]);
+            return (int)$this->pdo->lastInsertId();
+        } catch (Throwable $e) {
+            error_log('[SwiftPayClient] dbLog error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    private function dbUpdate(int $id, array $d): void
+    {
+        try {
+            $this->pdo->prepare("
+                UPDATE swiftpay_transactions SET
+                    status = ?, order_id = ?, rrn = ?, int_ref = ?,
+                    auth_code = ?, is_3ds = ?, error_message = ?,
+                    raw_response = ?, updated_at = datetime('now')
+                WHERE id = ?
+            ")->execute([
+                $d['status']        ?? 'pending',
+                $d['order_id']      ?? null,
+                $d['rrn']           ?? null,
+                $d['int_ref']       ?? null,
+                $d['auth_code']     ?? null,
+                $d['is_3ds']        ?? 0,
+                $d['error_message'] ?? null,
+                $d['raw_response']  ?? null,
+                $id,
+            ]);
+        } catch (Throwable $e) {
+            error_log('[SwiftPayClient] dbUpdate error: ' . $e->getMessage());
+        }
+    }
+
+    private function dbFindByClientId(string $clientId): array
+    {
+        try {
+            $s = $this->pdo->prepare(
+                "SELECT * FROM swiftpay_transactions WHERE client_id = ? ORDER BY id DESC LIMIT 1"
+            );
+            $s->execute([$clientId]);
+            return $s->fetch(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+}

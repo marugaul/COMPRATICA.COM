@@ -158,6 +158,30 @@ if (!defined('PAYPAL_API_URL')) {
 if (!defined('STRIPE_PUBLIC_KEY')) define('STRIPE_PUBLIC_KEY', '');
 if (!defined('STRIPE_SECRET_KEY')) define('STRIPE_SECRET_KEY', '');
 
+// ══════════════════════════════════════════════════════════════════════
+// SwiftPay — Gateway de Tarjetas (Visa / Mastercard / Amex)
+// ══════════════════════════════════════════════════════════════════════
+//
+// SANDBOX  → para pruebas (no cobra tarjetas reales)
+// LIVE     → producción (cobra tarjetas reales)
+//
+// SWIFTPAY_SANDBOX = true  → usa sandbox URLs y JWT de sandbox
+// SWIFTPAY_SANDBOX = false → usa live URLs y JWT de producción
+//
+// URL base: confirmar con SwiftPay (el Postman tiene {{url}} vacío)
+// JWT: token proporcionado por SwiftPay para cada ambiente
+// ══════════════════════════════════════════════════════════════════════
+
+if (!defined('SWIFTPAY_SANDBOX')) define('SWIFTPAY_SANDBOX', true); // ← cambiar a false para producción
+
+// ── Sandbox (QA) ──────────────────────────────────────────────────────
+if (!defined('SWIFTPAY_URL_SANDBOX')) define('SWIFTPAY_URL_SANDBOX', 'https://REEMPLAZAR_CON_URL_SWIFTPAY');
+if (!defined('SWIFTPAY_JWT_SANDBOX')) define('SWIFTPAY_JWT_SANDBOX', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM');
+
+// ── Producción (Live) ──────────────────────────────────────────────────
+if (!defined('SWIFTPAY_URL_LIVE')) define('SWIFTPAY_URL_LIVE', 'https://REEMPLAZAR_CON_URL_PRODUCCION_SWIFTPAY');
+if (!defined('SWIFTPAY_JWT_LIVE')) define('SWIFTPAY_JWT_LIVE', 'REEMPLAZAR_CON_JWT_PRODUCCION');
+
 // =========================
 // Sightengine API (Moderación de Imágenes)
 // =========================

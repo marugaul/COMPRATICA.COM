@@ -762,6 +762,34 @@ function db() {
             )");
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_accept_user ON terms_acceptances(user_table, user_id)");
 
+            // ── Transacciones SwiftPay ─────────────────────────────────────────
+            $pdo->exec("CREATE TABLE IF NOT EXISTS swiftpay_transactions (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                client_id       TEXT NOT NULL,
+                mode            TEXT NOT NULL DEFAULT 'sandbox',
+                type            TEXT NOT NULL,
+                status          TEXT NOT NULL DEFAULT 'pending',
+                amount          TEXT,
+                currency        TEXT,
+                description     TEXT,
+                order_id        TEXT,
+                rrn             TEXT,
+                int_ref         TEXT,
+                auth_code       TEXT,
+                token_card      TEXT,
+                is_3ds          INTEGER NOT NULL DEFAULT 0,
+                reference_id    INTEGER DEFAULT 0,
+                reference_table TEXT DEFAULT '',
+                error_message   TEXT,
+                raw_response    TEXT,
+                ip_address      TEXT,
+                created_at      TEXT DEFAULT (datetime('now')),
+                updated_at      TEXT DEFAULT (datetime('now'))
+            )");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sp_client_id ON swiftpay_transactions(client_id)");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sp_status    ON swiftpay_transactions(status)");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sp_order_id  ON swiftpay_transactions(order_id)");
+
             // Insertar T&C iniciales si no existen
             $types = [
                 'cliente', 'vendedor', 'emprendedor',
