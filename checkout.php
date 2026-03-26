@@ -260,7 +260,7 @@ $grand_total_usd = $currency === 'USD' ? $grand_total : ($grand_total / $exchang
 
 // Métodos de pago del afiliado
 $st = $pdo->prepare("
-    SELECT paypal_email, sinpe_phone, active_paypal, active_sinpe
+    SELECT paypal_email, sinpe_phone, active_paypal, active_sinpe, active_card
     FROM affiliate_payment_methods
     WHERE affiliate_id = ?
     LIMIT 1
@@ -269,6 +269,7 @@ $st->execute([$affiliate_id]);
 $pm = $st->fetch(PDO::FETCH_ASSOC) ?: [];
 $has_paypal = (!empty($pm['active_paypal']) && !empty($pm['paypal_email']));
 $has_sinpe  = (!empty($pm['active_sinpe'])  && !empty($pm['sinpe_phone']));
+$has_card   = !empty($pm['active_card']);
 
 // Opciones de envío del afiliado (affiliate_shipping_options puede no existir aún)
 $shipping_opts = null;
@@ -1131,7 +1132,7 @@ foreach ($_SESSION['cart'] as $it) {
           <h2 class="section-title">
             <i class="fas fa-credit-card"></i> Método de Pago
           </h2>
-          <?php if (!$has_paypal && !$has_sinpe): ?>
+          <?php if (!$has_paypal && !$has_sinpe && !$has_card): ?>
             <div class="alert">
               <i class="fas fa-exclamation-triangle"></i>
               El vendedor no tiene métodos de pago configurados.
@@ -1169,7 +1170,38 @@ foreach ($_SESSION['cart'] as $it) {
                   </div>
                 </label>
               <?php endif; ?>
+              <?php if ($has_card): ?>
+                <label class="payment-option" id="card-payment-label">
+                  <input type="radio" name="payment_method" value="card" required
+                         onchange="document.getElementById('swiftpay-panel').style.display='block'">
+                  <span class="payment-icon">
+                    <img src="/assets/img/swiftpay-logo.png" alt="SwiftPay" style="height:26px;border-radius:4px;vertical-align:middle;"
+                         onerror="this.outerHTML='💳'">
+                  </span>
+                  <div class="payment-info">
+                    <h4>Pago con Tarjeta</h4>
+                    <p>Visa, Mastercard, American Express — procesado por SwiftPay</p>
+                  </div>
+                </label>
+              <?php endif; ?>
             </div>
+
+            <?php if ($has_card): ?>
+            <!-- Panel de pago con tarjeta (SwiftPay) -->
+            <div id="swiftpay-panel" style="display:none;margin-top:1.5rem;">
+              <?php
+                $sp_amount      = number_format($grand_total, 2, '.', '');
+                $sp_currency    = $currency;
+                $sp_description = 'Compra en CompraTica #' . ($affiliate_id ?? '');
+                $sp_reference_id    = 0;
+                $sp_reference_table = 'orders';
+                $sp_success_url = '/checkout.php?payment=ok';
+                $sp_cancel_url  = '';
+                include __DIR__ . '/views/swiftpay-button.php';
+              ?>
+            </div>
+            <?php endif; ?>
+
           <?php endif; ?>
         </div>
       </div>
@@ -1216,7 +1248,7 @@ foreach ($_SESSION['cart'] as $it) {
             </div>
           </div>
 
-          <button type="submit" class="btn-primary" <?= (!$has_paypal && !$has_sinpe) ? 'disabled' : '' ?>>
+          <button type="submit" class="btn-primary" <?= (!$has_paypal && !$has_sinpe && !$has_card) ? 'disabled' : '' ?>>
             <i class="fas fa-lock"></i> Confirmar y Pagar
           </button>
 

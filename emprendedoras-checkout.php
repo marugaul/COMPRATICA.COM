@@ -34,6 +34,7 @@ foreach ($cartItems as $item) {
             'paypal_email'  => $item['paypal_email'],
             'accepts_sinpe' => $item['accepts_sinpe'],
             'accepts_paypal'=> $item['accepts_paypal'],
+            'accepts_card'  => $item['accepts_card'] ?? 0,
             'items'         => [],
             'subtotal'      => 0,
         ];
@@ -679,12 +680,13 @@ foreach ($groups as $sid => $group) {
         <?php endif; ?>
 
         <!-- Tabs de pago -->
-        <?php $hasSinpe = $group['accepts_sinpe'] && $group['sinpe_phone'];
+        <?php $hasSinpe  = $group['accepts_sinpe'] && $group['sinpe_phone'];
               $hasPaypal = $group['accepts_paypal'] && $group['paypal_email'];
-              $defaultTab = $hasSinpe ? 'sinpe' : ($hasPaypal ? 'paypal' : '');
+              $hasCard   = !empty($group['accepts_card']);
+              $defaultTab = $hasSinpe ? 'sinpe' : ($hasPaypal ? 'paypal' : ($hasCard ? 'card' : ''));
         ?>
 
-        <?php if ($hasSinpe || $hasPaypal): ?>
+        <?php if ($hasSinpe || $hasPaypal || $hasCard): ?>
         <div class="pay-section-title"><i class="fas fa-credit-card"></i> Método de Pago</div>
         <div class="pay-methods">
             <?php if ($hasSinpe): ?>
@@ -707,6 +709,20 @@ foreach ($groups as $sid => $group) {
                         <div class="pay-method-desc">Pago con tarjeta o cuenta PayPal</div>
                     </div>
                     <input type="radio" name="pay_method_<?= $sid ?>" value="paypal" <?= $defaultTab === 'paypal' && !$hasSinpe ? 'checked' : '' ?>>
+                </div>
+            <?php endif; ?>
+            <?php if ($hasCard): ?>
+                <div class="pay-method-card <?= $defaultTab === 'card' ? 'selected' : '' ?>"
+                     onclick="switchTab(<?= $sid ?>, 'card', this)">
+                    <div class="pay-method-icon" style="background:linear-gradient(135deg,#0d1b3e,#1a3a8f);color:#fff;">
+                        <img src="/assets/img/swiftpay-logo.png" alt="SwiftPay" style="height:22px;border-radius:3px;"
+                             onerror="this.outerHTML='<i class=\'fas fa-credit-card\'></i>'">
+                    </div>
+                    <div>
+                        <div class="pay-method-label">Pago con Tarjeta</div>
+                        <div class="pay-method-desc">Visa, Mastercard, Amex</div>
+                    </div>
+                    <input type="radio" name="pay_method_<?= $sid ?>" value="card" <?= $defaultTab === 'card' ? 'checked' : '' ?>>
                 </div>
             <?php endif; ?>
         </div>
@@ -790,6 +806,24 @@ foreach ($groups as $sid => $group) {
                     <div style="color:#166534;font-size:1.1rem;font-weight:700;"><i class="fas fa-check-circle"></i> ¡Pago completado!</div>
                     <p style="color:#64748b;font-size:.9rem;margin-top:8px;">Recibirás un correo de confirmación. ¡Gracias!</p>
                 </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Panel Pago con Tarjeta (SwiftPay) -->
+        <?php if ($hasCard): ?>
+        <div class="pay-panel <?= $defaultTab === 'card' ? 'active' : '' ?>" id="tab-<?= $sid ?>-card">
+            <div style="padding:16px 0 0;">
+              <?php
+                $sp_amount      = number_format($group['total'], 2, '.', '');
+                $sp_currency    = 'CRC';
+                $sp_description = 'Compra en CompraTica a ' . $group['seller_name'];
+                $sp_reference_id    = (int)$group['seller_id'];
+                $sp_reference_table = 'entrepreneur_orders';
+                $sp_success_url = '/emprendedoras-checkout.php?payment=ok';
+                $sp_cancel_url  = '';
+                include __DIR__ . '/views/swiftpay-button.php';
+              ?>
             </div>
         </div>
         <?php endif; ?>

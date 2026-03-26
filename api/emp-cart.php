@@ -46,7 +46,7 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo  = db();
         $stmt = $pdo->prepare("
             SELECT p.id, p.name, p.price, p.stock, p.image_1,
-                   p.accepts_sinpe, p.accepts_paypal, p.sinpe_phone, p.paypal_email,
+                   p.accepts_sinpe, p.accepts_paypal, p.accepts_card, p.sinpe_phone, p.paypal_email,
                    p.user_id AS seller_id,
                    u.name AS seller_name, u.email AS seller_email,
                    COALESCE(u.seller_type, 'emprendedora') AS seller_type
@@ -81,6 +81,7 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'paypal_email'  => $prod['paypal_email'] ?? '',
             'accepts_sinpe' => (int)$prod['accepts_sinpe'],
             'accepts_paypal'=> (int)$prod['accepts_paypal'],
+            'accepts_card'  => (int)($prod['accepts_card'] ?? 0),
         ];
         $_SESSION['emp_cart'] = $cart;
         emp_cart_response(true, ['message' => '¡Producto agregado al carrito!']);

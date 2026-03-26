@@ -24,11 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $paypal_email = trim($_POST['paypal_email'] ?? '');
         $active_sinpe = isset($_POST['active_sinpe']) ? 1 : 0;
         $active_paypal= isset($_POST['active_paypal']) ? 1 : 0;
+        $active_card  = isset($_POST['active_card'])  ? 1 : 0;
 
         $st = $pdo->prepare("UPDATE affiliate_payment_methods
-                             SET sinpe_phone=?, paypal_email=?, active_sinpe=?, active_paypal=?, updated_at=datetime('now','localtime')
+                             SET sinpe_phone=?, paypal_email=?, active_sinpe=?, active_paypal=?, active_card=?, updated_at=datetime('now','localtime')
                              WHERE affiliate_id=?");
-        $st->execute([$sinpe_phone, $paypal_email, $active_sinpe, $active_paypal, $aff_id]);
+        $st->execute([$sinpe_phone, $paypal_email, $active_sinpe, $active_paypal, $active_card, $aff_id]);
         $ok = 'Métodos de pago actualizados correctamente.';
         $row = $pdo->query("SELECT * FROM affiliate_payment_methods WHERE affiliate_id=$aff_id LIMIT 1")->fetch(PDO::FETCH_ASSOC);
     } catch (Throwable $e) {
@@ -62,6 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <label><input type="checkbox" name="active_paypal" <?= $row['active_paypal'] ? 'checked' : '' ?>> Activar PayPal</label>
     <input type="email" name="paypal_email" class="input" placeholder="Correo PayPal" value="<?= htmlspecialchars($row['paypal_email'] ?? '') ?>">
+
+    <label><input type="checkbox" name="active_card" <?= !empty($row['active_card']) ? 'checked' : '' ?>> Activar Pago con Tarjeta (SwiftPay)</label>
+    <p style="font-size:.85rem;color:#666;margin:-.5rem 0 .75rem 1.5rem;">Visa, Mastercard y American Express — procesado por SwiftPay</p>
 
     <button class="btn primary" type="submit">Guardar</button>
   </form>

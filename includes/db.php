@@ -613,6 +613,7 @@ function db() {
                         size_cm_height REAL,
                         accepts_sinpe INTEGER DEFAULT 0,
                         accepts_paypal INTEGER DEFAULT 0,
+                        accepts_card INTEGER DEFAULT 0,
                         sinpe_phone TEXT,
                         paypal_email TEXT,
                         featured INTEGER DEFAULT 0,
@@ -646,6 +647,7 @@ function db() {
                 if(empty($haveEP['size_cm_height']))     $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN size_cm_height REAL");
                 if(empty($haveEP['accepts_sinpe']))      $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN accepts_sinpe INTEGER DEFAULT 0");
                 if(empty($haveEP['accepts_paypal']))     $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN accepts_paypal INTEGER DEFAULT 0");
+                if(empty($haveEP['accepts_card']))       $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN accepts_card INTEGER DEFAULT 0");
                 if(empty($haveEP['sinpe_phone']))        $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN sinpe_phone TEXT");
                 if(empty($haveEP['paypal_email']))       $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN paypal_email TEXT");
                 if(empty($haveEP['featured']))           $pdo->exec("ALTER TABLE entrepreneur_products ADD COLUMN featured INTEGER DEFAULT 0");
@@ -789,6 +791,26 @@ function db() {
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sp_client_id ON swiftpay_transactions(client_id)");
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sp_status    ON swiftpay_transactions(status)");
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sp_order_id  ON swiftpay_transactions(order_id)");
+
+            // ── Tabla métodos de pago de afiliados (Venta de Garaje) ──────────
+            $pdo->exec("CREATE TABLE IF NOT EXISTS affiliate_payment_methods (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                affiliate_id INTEGER NOT NULL,
+                sinpe_phone  TEXT,
+                paypal_email TEXT,
+                active_sinpe INTEGER DEFAULT 0,
+                active_paypal INTEGER DEFAULT 0,
+                active_card  INTEGER DEFAULT 0,
+                created_at   TEXT DEFAULT (datetime('now','localtime')),
+                updated_at   TEXT DEFAULT (datetime('now','localtime'))
+            )");
+            // Migrar columna active_card si la tabla ya existía
+            $colsAPM = $pdo->query("PRAGMA table_info(affiliate_payment_methods)")->fetchAll(PDO::FETCH_ASSOC);
+            $haveAPM = [];
+            foreach ($colsAPM as $c) $haveAPM[strtolower($c['name'])] = true;
+            if (empty($haveAPM['active_card'])) {
+                $pdo->exec("ALTER TABLE affiliate_payment_methods ADD COLUMN active_card INTEGER DEFAULT 0");
+            }
 
             // Insertar T&C iniciales si no existen
             $types = [

@@ -44,7 +44,22 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
   </div>
   <?php endif; ?>
 
-  <!-- ── Logos de marcas ─────────────────────────────────────────── -->
+  <!-- ── Logo SwiftPay + logos de marcas ─────────────────────────── -->
+  <div class="sp-header">
+    <img src="/assets/img/swiftpay-logo.png"
+         alt="SwiftPay"
+         class="sp-provider-logo"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="sp-provider-fallback" style="display:none">
+      <svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" rx="16" fill="#0d1b3e"/>
+        <polygon points="55,10 30,55 50,55 45,90 70,45 50,45" fill="#3b9bff"/>
+      </svg>
+      <span style="font-weight:800;color:#0d1b3e;font-size:.85rem;letter-spacing:.02em;">SwiftPay</span>
+    </span>
+    <span class="sp-header-label">Pago con Tarjeta</span>
+  </div>
+
   <div class="sp-brands">
     <!-- Visa -->
     <svg class="sp-brand-logo" viewBox="0 0 750 471" xmlns="http://www.w3.org/2000/svg" aria-label="Visa">
@@ -130,9 +145,10 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
     <!-- Botón de pago -->
     <button type="submit" class="sp-pay-btn" id="<?= $sp_widget_id ?>_btn">
       <span class="sp-btn-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        <img src="/assets/img/swiftpay-logo.png" alt="" width="22" height="22" style="border-radius:4px;vertical-align:middle;"
+             onerror="this.style.display='none'">
       </span>
-      <span class="sp-btn-label">Pagar <?= htmlspecialchars($sp_amount_fmt) ?></span>
+      <span class="sp-btn-label">Pago con Tarjeta — <?= htmlspecialchars($sp_amount_fmt) ?></span>
       <span class="sp-btn-loading" style="display:none">
         <svg class="sp-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
         Procesando…
@@ -169,6 +185,30 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
   font-weight: 600;
   margin-bottom: 1rem;
   text-align: center;
+}
+.sp-header {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: .9rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.sp-provider-logo {
+  height: 36px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.sp-provider-fallback {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.sp-header-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a202c;
+  letter-spacing: -.01em;
 }
 .sp-brands {
   display: flex;

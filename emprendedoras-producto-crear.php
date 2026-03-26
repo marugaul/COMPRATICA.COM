@@ -87,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $weight = floatval($_POST['weight_kg'] ?? 0);
     $acceptsSinpe = isset($_POST['accepts_sinpe']) ? 1 : 0;
     $acceptsPaypal = isset($_POST['accepts_paypal']) ? 1 : 0;
+    $acceptsCard  = isset($_POST['accepts_card'])  ? 1 : 0;
     $sinpePhone = trim($_POST['sinpe_phone'] ?? '');
     $paypalEmail = trim($_POST['paypal_email'] ?? '');
     $shippingAvailable = isset($_POST['shipping_available']) ? 1 : 0;
@@ -98,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'El nombre del producto es obligatorio';
     } elseif ($price <= 0) {
         $error = 'El precio debe ser mayor a 0';
-    } elseif (!$acceptsSinpe && !$acceptsPaypal) {
+    } elseif (!$acceptsSinpe && !$acceptsPaypal && !$acceptsCard) {
         $error = 'Debes aceptar al menos un método de pago';
     } elseif ($acceptsSinpe && empty($sinpePhone)) {
         $error = 'Debes proporcionar un número de teléfono SINPE';
@@ -129,14 +130,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO entrepreneur_products (
                     user_id, category_id, name, description, price, stock, sku,
                     image_1, image_2, image_3, image_4, image_5,
-                    weight_kg, accepts_sinpe, accepts_paypal,
+                    weight_kg, accepts_sinpe, accepts_paypal, accepts_card,
                     sinpe_phone, paypal_email,
                     shipping_available, pickup_available, pickup_location,
                     is_active, created_at, updated_at
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
-                    ?, ?, ?,
+                    ?, ?, ?, ?,
                     ?, ?,
                     ?, ?, ?,
                     1, datetime('now'), datetime('now')
@@ -146,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([
                 $userId, $categoryId, $name, $description, $price, $stock, $sku,
                 $images[1] ?? null, $images[2] ?? null, $images[3] ?? null, $images[4] ?? null, $images[5] ?? null,
-                $weight, $acceptsSinpe, $acceptsPaypal,
+                $weight, $acceptsSinpe, $acceptsPaypal, $acceptsCard,
                 $sinpePhone, $paypalEmail,
                 $shippingAvailable, $pickupAvailable, $pickupLocation
             ]);
@@ -420,6 +421,14 @@ $isLoggedIn = true;
                 <div class="form-group">
                     <label>Correo de PayPal</label>
                     <input type="email" name="paypal_email" placeholder="tu@email.com" value="<?php echo htmlspecialchars($paymentMethods['paypal_email'] ?? ''); ?>">
+                </div>
+
+                <div class="checkbox-group" style="margin-bottom: 15px;">
+                    <input type="checkbox" id="accepts_card" name="accepts_card" value="1">
+                    <label for="accepts_card" style="margin: 0;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                        Pago con Tarjeta (Visa, Mastercard, Amex)
+                    </label>
                 </div>
 
                 <div class="section-title">Opciones de Entrega</div>
