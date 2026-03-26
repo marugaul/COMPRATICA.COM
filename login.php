@@ -348,6 +348,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $error = 'Las contraseñas no coinciden';
                 } elseif (strlen($password) < 6) {
                     $error = 'La contraseña debe tener al menos 6 caracteres';
+                } elseif ((string)($_POST['accept_terms'] ?? '') !== '1') {
+                    $error = 'Debés aceptar los Términos y Condiciones para continuar';
                 } else {
                     $check = $pdo->prepare("SELECT id FROM users WHERE email = ?");
                     $check->execute([$email]);
@@ -358,6 +360,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $ins = $pdo->prepare("INSERT INTO users (name, email, phone, password_hash, created_at) VALUES (?, ?, ?, ?, NOW())");
                         $ins->execute([$name, $email, $phone, $hash]);
                         $newUid = (int)$pdo->lastInsertId();
+
+                        // Registrar aceptación de T&C
+                        try {
+                            $tcStmt = $pdo->prepare("SELECT version FROM terms_conditions WHERE type='cliente' AND is_active=1 LIMIT 1");
+                            $tcStmt->execute();
+                            $tcRow = $tcStmt->fetch(PDO::FETCH_ASSOC);
+                            $tcVersion = $tcRow['version'] ?? '1.0';
+                            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+                            $pdo->prepare("INSERT INTO terms_acceptances (user_table, user_id, terms_type, version, ip_address) VALUES ('users', ?, 'cliente', ?, ?)")
+                                ->execute([$newUid, $tcVersion, $ip]);
+                        } catch (Throwable $e) { error_log('[login.php] T&C record failed: '.$e->getMessage()); }
 
                         $guest_sid_cart = $_SESSION['guest_sid'] ?? ($_COOKIE['vg_guest'] ?? '');
                         migrate_guest_cart_to_user($pdo, $newUid, $guest_sid_cart);
@@ -537,6 +550,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:linear-gradient(1
         <div class="form-group">
           <label>Confirmar *</label>
           <input type="password" name="password2" required>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:1rem;">
+          <input type="checkbox" id="accept_terms" name="accept_terms" value="1" required style="margin-top:3px;flex-shrink:0;">
+          <label for="accept_terms" style="cursor:pointer;font-size:0.85rem;color:#555;">
+            Acepto los <a href="/terminos-condiciones.php?type=cliente" target="_blank" style="color:#667eea;font-weight:500;">Términos y Condiciones</a> de CompraTica.
+          </label>
         </div>
         <button type="submit" class="btn btn-primary">Crear Cuenta</button>
       </form>
