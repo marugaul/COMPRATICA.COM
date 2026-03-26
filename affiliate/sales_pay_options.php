@@ -26,11 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $paypal_email  = trim($_POST['paypal_email'] ?? '');
         $active_sinpe  = isset($_POST['active_sinpe']) ? 1 : 0;
         $active_paypal = isset($_POST['active_paypal']) ? 1 : 0;
+        $active_card   = isset($_POST['active_card'])  ? 1 : 0;
 
         $sql = "UPDATE affiliate_payment_methods
-                SET sinpe_phone=?, paypal_email=?, active_sinpe=?, active_paypal=?, updated_at=datetime('now','localtime')
+                SET sinpe_phone=?, paypal_email=?, active_sinpe=?, active_paypal=?, active_card=?, updated_at=datetime('now','localtime')
                 WHERE affiliate_id=?";
-        $pdo->prepare($sql)->execute([$sinpe_phone, $paypal_email, $active_sinpe, $active_paypal, $aff_id]);
+        $pdo->prepare($sql)->execute([$sinpe_phone, $paypal_email, $active_sinpe, $active_paypal, $active_card, $aff_id]);
 
         $ok_note = "Métodos de pago actualizados correctamente.";
         $row = $pdo->query("SELECT * FROM affiliate_payment_methods WHERE affiliate_id=$aff_id LIMIT 1")->fetch(PDO::FETCH_ASSOC);
@@ -297,6 +298,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <small>Correo de tu cuenta PayPal. Los clientes pueden pagar con su cuenta o tarjeta sin registrarse.</small>
       </div>
 
+      <div class="pay-card">
+        <label class="pay-label">
+          <input type="checkbox" name="active_card" <?= !empty($row['active_card']) ? 'checked' : '' ?>>
+          <img src="/assets/img/swiftpay-logo.png" alt="SwiftPay" style="height:24px;border-radius:4px;vertical-align:middle;"
+               onerror="this.outerHTML='<i class=\'fas fa-credit-card\'></i>'">
+          Activar Pago con Tarjeta
+        </label>
+        <small>Visa, Mastercard y American Express. Los pagos se procesan de forma segura a través de SwiftPay. No necesitás configurar nada adicional.</small>
+      </div>
+
       <button type="submit" class="btn primary">
         <i class="fas fa-save"></i>
         Guardar Métodos de Pago
@@ -318,7 +329,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <strong>PayPal activo</strong> — Correo: <?= htmlspecialchars($row['paypal_email']) ?>
           </li>
         <?php endif; ?>
-        <?php if ((!$row['active_sinpe'] || empty($row['sinpe_phone'])) && (!$row['active_paypal'] || empty($row['paypal_email']))): ?>
+        <?php if (!empty($row['active_card'])): ?>
+          <li>
+            <img src="/assets/img/swiftpay-logo.png" alt="SwiftPay" style="height:20px;border-radius:3px;"
+                 onerror="this.outerHTML='<i class=\'fas fa-credit-card\'></i>'">
+            <strong>Pago con Tarjeta activo</strong> — Visa, Mastercard, Amex vía SwiftPay
+          </li>
+        <?php endif; ?>
+        <?php if ((!$row['active_sinpe'] || empty($row['sinpe_phone'])) && (!$row['active_paypal'] || empty($row['paypal_email'])) && empty($row['active_card'])): ?>
           <li style="opacity: 0.7;">
             <i class="fas fa-info-circle"></i>
             <em>No tienes métodos de pago activos actualmente.</em>
