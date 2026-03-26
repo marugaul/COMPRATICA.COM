@@ -354,8 +354,8 @@ class SwiftPayClient
             'auth_code' => $authCode,
         ]);
 
-        // Anulación: Bearer header + token en body (según Postman)
-        $response = $this->post($this->ep(self::EP_VOID), $payload, withBearer: true);
+        // Anulación: solo token en body, Auth: null según Postman (sin Bearer header)
+        $response = $this->post($this->ep(self::EP_VOID), $payload);
         return $this->buildResult($response, $clientId, $txId);
     }
 
