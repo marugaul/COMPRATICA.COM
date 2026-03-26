@@ -254,6 +254,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $error = 'Las contraseñas no coinciden';
                 } elseif (strlen($password) < 6) {
                     $error = 'La contraseña debe tener al menos 6 caracteres';
+                } elseif ((string)($_POST['accept_terms'] ?? '') !== '1') {
+                    $error = 'Debés aceptar los Términos y Condiciones para continuar';
                 } else {
                     $check = $pdo->prepare("SELECT id FROM users WHERE email = ?");
                     $check->execute([$email]);
@@ -264,6 +266,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $ins  = $pdo->prepare("INSERT INTO users (name, email, phone, password_hash, created_at) VALUES (?, ?, ?, ?, NOW())");
                         $ins->execute([$name, $email, $phone, $hash]);
                         $newUid = (int)$pdo->lastInsertId();
+
+                        // Registrar aceptación de T&C
+                        try {
+                            $tcStmt = $pdo->prepare("SELECT version FROM terms_conditions WHERE type='emprendedor' AND is_active=1 LIMIT 1");
+                            $tcStmt->execute();
+                            $tcRow = $tcStmt->fetch(PDO::FETCH_ASSOC);
+                            $tcVersion = $tcRow['version'] ?? '1.0';
+                            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+                            $pdo->prepare("INSERT INTO terms_acceptances (user_table, user_id, terms_type, version, ip_address) VALUES ('users', ?, 'emprendedor', ?, ?)")
+                                ->execute([$newUid, $tcVersion, $ip]);
+                        } catch (Throwable $e) { error_log('[emprendedoras-login.php] T&C record failed: '.$e->getMessage()); }
 
                         $_SESSION['uid']             = $newUid;
                         $_SESSION['user_id']         = $newUid;
@@ -557,8 +570,14 @@ body {
                     <label>Confirmar contraseña *</label>
                     <input type="password" name="password2" placeholder="Repite tu contraseña" required>
                 </div>
+                <div class="form-group" style="display:flex;align-items:flex-start;gap:0.5rem;">
+                    <input type="checkbox" id="accept_terms_reg" name="accept_terms" value="1" required style="margin-top:3px;flex-shrink:0;">
+                    <label for="accept_terms_reg" style="cursor:pointer;font-size:0.875rem;">
+                        Acepto los <a href="/terminos-condiciones.php?type=emprendedor" target="_blank" style="color:#667eea">Términos y Condiciones</a> para emprendedores de CompraTica.
+                    </label>
+                </div>
                 <button type="submit" class="btn btn-primary">
-                    Crear mi cuenta de Emprendedora
+                    Crear mi cuenta de Emprendedor/a
                 </button>
             </form>
         </div>

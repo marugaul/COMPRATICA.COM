@@ -669,6 +669,10 @@ $stats = [
       <i class="fas fa-database"></i>
       <span>SQL Tools</span>
     </a>
+    <a class="nav-btn" href="terminos.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.15); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.3);" onmouseover="this.style.background='rgba(255,255,255,0.25)'; this.style.borderColor='rgba(255,255,255,0.5)';" onmouseout="this.style.background='rgba(255,255,255,0.15)'; this.style.borderColor='rgba(255,255,255,0.3)';">
+      <i class="fas fa-file-contract"></i>
+      <span>TÉRMINOS</span>
+    </a>
     <a class="nav-btn" href="analytics.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: linear-gradient(135deg,rgba(39,174,96,.8),rgba(22,160,133,.8)); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 700; transition: all 0.3s ease; border: 2px solid rgba(39,174,96,.9); box-shadow: 0 2px 8px rgba(39,174,96,.3);" onmouseover="this.style.filter='brightness(1.15)';" onmouseout="this.style.filter='none';">
       <i class="fas fa-chart-line"></i>
       <span>ESTADÍSTICAS</span>
