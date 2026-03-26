@@ -738,6 +738,44 @@ function db() {
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_affiliates_email ON affiliates(email)");
             }
 
+            // ── Términos y Condiciones ──────────────────────────────────────
+            $pdo->exec("CREATE TABLE IF NOT EXISTS terms_conditions (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                type        TEXT NOT NULL,
+                title       TEXT NOT NULL,
+                content     TEXT NOT NULL,
+                version     TEXT NOT NULL DEFAULT '1.0',
+                is_active   INTEGER NOT NULL DEFAULT 1,
+                created_at  TEXT DEFAULT (datetime('now')),
+                updated_at  TEXT DEFAULT (datetime('now'))
+            )");
+            $pdo->exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_terms_type ON terms_conditions(type)");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS terms_acceptances (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_table  TEXT NOT NULL,
+                user_id     INTEGER NOT NULL,
+                terms_type  TEXT NOT NULL,
+                version     TEXT NOT NULL,
+                accepted_at TEXT DEFAULT (datetime('now')),
+                ip_address  TEXT
+            )");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_accept_user ON terms_acceptances(user_table, user_id)");
+
+            // Insertar T&C iniciales si no existen
+            $types = [
+                'cliente', 'vendedor', 'emprendedor',
+                'empleos', 'servicios', 'bienes_raices'
+            ];
+            foreach ($types as $t) {
+                $exists = $pdo->prepare("SELECT id FROM terms_conditions WHERE type=? LIMIT 1");
+                $exists->execute([$t]);
+                if (!$exists->fetchColumn()) {
+                    $pdo->prepare("INSERT INTO terms_conditions (type, title, content, version) VALUES (?,?,?,?)")
+                        ->execute([$t, tcDefaultTitle($t), tcDefaultContent($t), '1.0']);
+                }
+            }
+
             // ── Crear usuario-bot para importaciones si no existe ───────────
             $botEmail = 'bot@compratica.com';
             $hasBot = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
@@ -763,5 +801,279 @@ function get_exchange_rate(){
     $pdo = db();
     $row = $pdo->query("SELECT exchange_rate FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC);
     return (float)($row['exchange_rate'] ?? 540.00);
+}
+
+// ── Términos y Condiciones: helpers ──────────────────────────────────────────
+
+function tcDefaultTitle(string $type): string {
+    $titles = [
+        'cliente'       => 'Términos y Condiciones para Compradores',
+        'vendedor'      => 'Términos y Condiciones para Vendedores (Afiliados)',
+        'emprendedor'   => 'Términos y Condiciones para Emprendedores/as',
+        'empleos'       => 'Términos y Condiciones para Empleos',
+        'servicios'     => 'Términos y Condiciones para Proveedores de Servicios',
+        'bienes_raices' => 'Términos y Condiciones para Agentes Inmobiliarios',
+    ];
+    return $titles[$type] ?? 'Términos y Condiciones';
+}
+
+function tcDefaultContent(string $type): string {
+    $company  = 'CompraTica';
+    $site     = 'compratica.com';
+    $email    = 'info@compratica.com';
+    $country  = 'Costa Rica';
+    $date     = date('d/m/Y');
+
+    $intro = "**Fecha de vigencia:** $date\n\n"
+           . "Al registrarse y utilizar la plataforma **$company** ($site), usted declara haber leído, "
+           . "comprendido y aceptado los presentes Términos y Condiciones. Si no está de acuerdo con alguna "
+           . "de las disposiciones aquí establecidas, le pedimos abstenerse de utilizar nuestros servicios.\n\n"
+           . "**$company** es una plataforma de comercio electrónico 100% costarricense, registrada y operando "
+           . "conforme a las leyes de la República de $country.\n\n";
+
+    $footer = "\n\n---\n\n"
+            . "**Contacto:** Para consultas sobre estos términos, escribinos a $email o visitá $site.\n\n"
+            . "**Última actualización:** $date";
+
+    switch ($type) {
+
+        case 'cliente':
+            return $intro
+. "## 1. Definiciones
+- **Usuario/Comprador:** Persona física o jurídica que utiliza CompraTica para adquirir productos o servicios.
+- **Vendedor:** Emprendedor/a o afiliado que publica productos en la plataforma.
+- **Plataforma:** El sitio web compratica.com y sus aplicaciones asociadas.
+
+## 2. Registro y Cuenta
+- Debés ser mayor de 18 años o contar con autorización de tu representante legal para registrarte.
+- La información proporcionada en el registro debe ser veraz, actualizada y completa.
+- Sos responsable de mantener la confidencialidad de tu contraseña y de todas las actividades realizadas desde tu cuenta.
+- CompraTica se reserva el derecho de suspender cuentas con información falsa o que incumplan estos términos.
+
+## 3. Proceso de Compra
+- Al confirmar un pedido, aceptás pagar el precio acordado más los costos de envío aplicables.
+- Los métodos de pago aceptados son: **SINPE Móvil** y **PayPal**, según lo que cada vendedor configure.
+- El comprobante de pago debe subirse en la plataforma dentro de las 24 horas siguientes a la transacción.
+- CompraTica no procesa ni custodia los pagos directamente; los mismos se realizan entre comprador y vendedor.
+
+## 4. Entregas y Envíos
+- Los tiempos de entrega son responsabilidad de cada vendedor y varían entre 1 y 7 días hábiles.
+- El comprador debe verificar el estado del producto al recibirlo y reportar inconvenientes en un plazo de 48 horas.
+- En caso de producto no recibido, el comprador debe contactar primero al vendedor y luego a CompraTica si no obtiene respuesta.
+
+## 5. Devoluciones y Garantías
+- CompraTica facilita la comunicación entre comprador y vendedor para resolver disputas, pero no garantiza devoluciones.
+- Cada vendedor define su propia política de devoluciones, la cual debe estar visible en su tienda.
+- En casos de fraude comprobado, CompraTica tomará las acciones pertinentes según la legislación costarricense.
+
+## 6. Uso Aceptable
+- Queda prohibido utilizar la plataforma para adquirir productos ilegales, falsificados o que infrinjan derechos de terceros.
+- No está permitido realizar pagos fraudulentos, usar comprobantes falsos ni intentar engañar a los vendedores.
+
+## 7. Privacidad de Datos
+- Sus datos personales serán tratados conforme a la **Ley 8968 de Protección de la Persona frente al tratamiento de sus datos personales** de Costa Rica.
+- CompraTica no vende ni comparte sus datos con terceros sin su consentimiento expreso, salvo requerimiento legal.
+
+## 8. Limitación de Responsabilidad
+- CompraTica actúa como intermediario tecnológico. No es parte en las transacciones entre compradores y vendedores.
+- La plataforma no se responsabiliza por la calidad, exactitud ni disponibilidad de los productos listados."
+. $footer;
+
+        case 'vendedor':
+            return $intro
+. "## 1. Definiciones
+- **Vendedor/Afiliado:** Persona física o jurídica que publica y vende productos o servicios en CompraTica.
+- **Espacio de Venta:** Área virtual asignada al vendedor para realizar sus ventas de garaje u otras actividades comerciales.
+- **Comisión:** Porcentaje que CompraTica retiene sobre las ventas realizadas según el plan contratado.
+
+## 2. Registro y Activación
+- El vendedor debe ser mayor de 18 años y contar con una cédula física o jurídica costarricense vigente.
+- La información de registro debe ser real y actualizada; el uso de datos falsos conlleva la cancelación inmediata.
+- La activación del espacio de venta requiere el pago de la tarifa de activación correspondiente.
+
+## 3. Publicación de Productos
+- Solo se permite publicar productos y servicios lícitos, de tu propiedad o debidamente autorizados para vender.
+- Está prohibido publicar: armas, drogas, medicamentos sin receta, productos falsificados, contenido para adultos o cualquier artículo ilegal bajo la legislación costarricense.
+- Las fotos e información de los productos deben ser verídicas y no inducir a error al comprador.
+- CompraTica se reserva el derecho de remover publicaciones que violen estas normas sin previo aviso.
+
+## 4. Precios y Pagos
+- Los precios se publican en colones costarricenses (₡) o dólares (USD) según la configuración del vendedor.
+- Los pagos se realizan directamente entre comprador y vendedor; el vendedor debe facilitar su número de SINPE Móvil y/o cuenta PayPal.
+- CompraTica cobra una **comisión sobre ventas** según el plan activo del vendedor.
+
+## 5. Gestión de Pedidos
+- El vendedor se compromete a confirmar o rechazar pedidos en un plazo máximo de 24 horas.
+- El envío o entrega debe realizarse en el tiempo acordado con el comprador.
+- Ante disputas, el vendedor debe colaborar con CompraTica para su resolución.
+
+## 6. Propiedad Intelectual
+- El vendedor es responsable de contar con los derechos sobre las imágenes, marcas y contenido que publique.
+- Al publicar en CompraTica, otorgás una licencia no exclusiva para mostrar dicho contenido en la plataforma.
+
+## 7. Suspensión y Cancelación
+- CompraTica puede suspender o cancelar una cuenta vendedora en caso de incumplimiento de estos términos, fraude, o quejas reiteradas de compradores.
+- Las tarifas de activación pagadas no son reembolsables una vez activado el espacio.
+
+## 8. Privacidad y Datos
+- Los datos personales del vendedor serán tratados conforme a la **Ley 8968** de Costa Rica.
+- El vendedor reconoce que su nombre, nombre de tienda y provincia de operación podrán ser visibles públicamente."
+. $footer;
+
+        case 'emprendedor':
+            return $intro
+. "## 1. Definiciones
+- **Emprendedor/a:** Persona que utiliza la plataforma CompraTica para publicar y vender sus productos artesanales, creativos o empresariales.
+- **Plan de Suscripción:** Modalidad de acceso (Gratuito, Básico o Premium) con funciones y límites distintos.
+- **Catálogo:** Espacio virtual personalizado donde el emprendedor/a exhibe sus productos.
+
+## 2. Elegibilidad y Registro
+- Podés registrarte como emprendedor/a siendo mayor de 18 años o con autorización de tu representante legal.
+- Tu información de contacto, nombre y datos de negocio deben ser reales y estar actualizados.
+- Cada emprendedor/a puede tener una sola cuenta activa en la plataforma.
+
+## 3. Planes y Suscripción
+- CompraTica ofrece planes **Gratuito, Emprendedor/a y Premium**, con distintas funciones y límites de productos.
+- Los planes de pago se cobran mensualmente en colones costarricenses.
+- La suscripción se activa al confirmar el pago y finaliza en la fecha indicada si no se renueva.
+- No se realizan reembolsos por períodos no utilizados.
+
+## 4. Publicación de Productos
+- Solo podés publicar productos que sean de tu autoría, fabricación o cuya venta tengas autorizada legalmente.
+- Las imágenes deben ser propias o con licencia de uso; no se permite copiar fotos de otras tiendas.
+- Queda prohibido publicar productos ilegales, falsificados, para adultos o que dañen la imagen de terceros.
+- CompraTica puede remover publicaciones que incumplan estas normas sin necesidad de aviso previo.
+
+## 5. Ventas y Cobros
+- Los compradores pagan directamente al emprendedor/a mediante SINPE Móvil o PayPal.
+- El emprendedor/a es responsable de entregar el producto en las condiciones y tiempos acordados.
+- Ante disputas con compradores, el emprendedor/a debe actuar de buena fe y con diligencia.
+
+## 6. Comisiones
+- Según el plan activo, CompraTica puede cobrar una comisión sobre cada venta realizada.
+- Las comisiones serán deducidas o cobradas conforme a lo indicado en la descripción del plan vigente.
+
+## 7. Imagen y Marca
+- Al publicar en CompraTica, autorizás el uso de tu contenido (fotos, nombre de negocio, descripción) para fines promocionales de la plataforma.
+- Tu logo, fotos y marca siguen siendo de tu propiedad.
+
+## 8. Privacidad
+- Tus datos personales serán tratados con estricta confidencialidad conforme a la **Ley 8968** costarricense.
+- Tu nombre de negocio, provincia y categoría de productos podrán ser visibles públicamente en el catálogo."
+. $footer;
+
+        case 'empleos':
+            return $intro
+. "## 1. Definiciones
+- **Empleador:** Empresa o persona que publica ofertas laborales en CompraTica.
+- **Candidato:** Persona que utiliza la plataforma para buscar empleo y postularse a ofertas.
+- **Oferta Laboral:** Publicación de un puesto de trabajo con sus requisitos, salario y condiciones.
+
+## 2. Para Empleadores
+- La empresa o persona que publica una oferta debe tener existencia legal en Costa Rica o estar autorizada para contratar en el país.
+- Las ofertas deben describir el puesto con veracidad; está prohibido publicar ofertas falsas, engañosas o discriminatorias.
+- CompraTica se reserva el derecho de eliminar ofertas que incumplan la **Ley 2694 (Código de Trabajo)** o cualquier normativa laboral vigente.
+- Está prohibido publicar ofertas que soliciten pagos a candidatos como condición de empleo.
+
+## 3. Para Candidatos
+- Al postularse a una oferta, aceptás que tus datos de contacto sean compartidos con el empleador correspondiente.
+- La información en tu perfil o postulación debe ser veraz; el uso de datos falsos en un proceso laboral puede tener consecuencias legales.
+- CompraTica no garantiza la obtención de empleo ni la idoneidad de las ofertas publicadas.
+
+## 4. Proceso de Selección
+- El proceso de selección es responsabilidad exclusiva del empleador.
+- CompraTica no participa ni es responsable de las decisiones de contratación.
+- Cualquier acuerdo laboral se establece directamente entre el empleador y el candidato.
+
+## 5. Contenido Prohibido
+- Está prohibido publicar ofertas con criterios discriminatorios por raza, género, religión, orientación sexual, discapacidad, edad o cualquier otro factor protegido por la ley costarricense.
+- No se permite publicar ofertas de actividades ilegales, pirámides financieras ni esquemas de trabajo forzoso.
+
+## 6. Privacidad de Datos
+- Los datos de candidatos serán compartidos únicamente con el empleador de la oferta a la que se postulan.
+- Los empleadores se comprometen a tratar los datos de los candidatos conforme a la **Ley 8968**.
+- CompraTica no cede datos a terceros con fines publicitarios sin consentimiento expreso.
+
+## 7. Tarifas
+- La publicación básica de ofertas laborales es gratuita.
+- Las opciones de destacado o mayor visibilidad tienen costo según el plan vigente al momento de la publicación."
+. $footer;
+
+        case 'servicios':
+            return $intro
+. "## 1. Definiciones
+- **Proveedor de Servicios:** Persona física o jurídica que ofrece sus servicios profesionales o técnicos en CompraTica.
+- **Cliente:** Persona que contacta o contrata servicios a través de la plataforma.
+- **Servicio:** Toda actividad de valor económico ofrecida por el proveedor (plomería, diseño, clases, etc.).
+
+## 2. Registro como Proveedor
+- Debes ser mayor de 18 años y contar con capacidad legal para ejercer el servicio que ofreces.
+- Si tu servicio requiere habilitación profesional (médico, abogado, ingeniero, etc.), debés contar con la acreditación correspondiente y es tu responsabilidad mantenerla vigente.
+- La información de tu perfil debe ser veraz, incluyendo descripción, precios, zona de cobertura y fotografías.
+
+## 3. Publicación de Servicios
+- Solo podés publicar servicios que estés capacitado y legalmente habilitado para prestar.
+- Está prohibido publicar: servicios ilegales, actividades que violen la ley costarricense, servicios engañosos o que induzcan a error.
+- CompraTica puede remover publicaciones que no cumplan con estas normas.
+
+## 4. Contratación y Pagos
+- Las condiciones específicas del servicio (precio, horario, entregables) se acuerdan directamente entre proveedor y cliente.
+- Los pagos se realizan directamente entre las partes mediante SINPE Móvil o PayPal.
+- CompraTica actúa como intermediario de visibilidad, no como parte del contrato de servicio.
+
+## 5. Calidad y Responsabilidad
+- El proveedor es el único responsable de la calidad y ejecución del servicio prestado.
+- CompraTica no garantiza la calidad ni los resultados de los servicios ofrecidos en la plataforma.
+- Ante incumplimientos, el cliente debe resolver directamente con el proveedor o acudir a las instancias legales correspondientes.
+
+## 6. Reseñas y Reputación
+- Los clientes pueden dejar reseñas sobre los servicios recibidos.
+- Está prohibido publicar reseñas falsas, ya sea positivas o negativas, con fines de manipulación.
+- CompraTica puede eliminar reseñas que no cumplan con los estándares de la plataforma.
+
+## 7. Privacidad
+- Los datos del proveedor (nombre, teléfono, zona de cobertura) podrán ser visibles en el catálogo público.
+- Los datos de contacto de los clientes serán compartidos únicamente para facilitar la comunicación sobre el servicio contratado."
+. $footer;
+
+        case 'bienes_raices':
+            return $intro
+. "## 1. Definiciones
+- **Agente Inmobiliario:** Persona física o jurídica que publica propiedades en venta o alquiler en CompraTica.
+- **Propiedad:** Bien inmueble (casa, apartamento, lote, local, finca, etc.) listado en la plataforma.
+- **Interesado:** Persona que contacta al agente a través de CompraTica para obtener información de una propiedad.
+
+## 2. Registro y Habilitación
+- El agente debe ser mayor de 18 años y actuar dentro del marco legal costarricense.
+- Si el agente representa a una empresa inmobiliaria, debe contar con autorización de la misma.
+- CompraTica recomienda a los agentes estar inscritos en el **SUGEF** o en el colegio profesional correspondiente, aunque no lo exige como requisito de plataforma.
+
+## 3. Publicación de Propiedades
+- Solo se pueden publicar propiedades sobre las que el agente tenga mandato o autorización del propietario.
+- La información publicada (precio, área, descripción, ubicación, fotos) debe ser veraz y actualizada.
+- Está prohibido publicar propiedades inexistentes, con precios engañosos o con información que induzca a error.
+- CompraTica puede remover anuncios que presenten inconsistencias o que sean reportados como fraudulentos.
+
+## 4. Transacciones Inmobiliarias
+- CompraTica actúa exclusivamente como plataforma de visibilidad; no participa en la negociación ni en el cierre de transacciones.
+- El agente es el único responsable de la correcta tramitación legal de la compraventa o alquiler ante el Registro Nacional y demás autoridades.
+- CompraTica no certifica la situación registral, cargas ni derechos sobre las propiedades listadas.
+
+## 5. Comunicación con Interesados
+- Al publicar en CompraTica, el agente acepta ser contactado por interesados a través de los medios indicados en el anuncio.
+- El agente se compromete a responder consultas de buena fe y en un plazo razonable.
+
+## 6. Comisiones y Tarifas de Plataforma
+- La publicación básica de propiedades puede ser gratuita o de pago según el plan vigente.
+- CompraTica NO cobra comisión sobre el precio de venta o alquiler de las propiedades; ese acuerdo es exclusivo entre el agente y su cliente.
+
+## 7. Privacidad
+- El nombre del agente, empresa representada, teléfono y correo de contacto podrán ser visibles públicamente.
+- Los datos de los interesados que contacten al agente serán tratados con confidencialidad y usados solo para la gestión del interés expresado."
+. $footer;
+
+        default:
+            return $intro . "Términos generales de uso de la plataforma CompraTica." . $footer;
+    }
 }
 ?>

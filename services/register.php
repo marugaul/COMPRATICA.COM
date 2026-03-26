@@ -68,6 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new RuntimeException('La contraseña debe tener al menos 6 caracteres.');
         }
 
+        if ((string)($_POST['accept_terms'] ?? '') !== '1') {
+            throw new RuntimeException('Debés aceptar los Términos y Condiciones para continuar.');
+        }
+
         // Crear usuario usando la función unificada
         $userId = create_user([
             'name' => $name,
@@ -77,6 +81,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'company_name' => $company,
             'is_active' => 1
         ]);
+
+        // Registrar aceptación de T&C
+        try {
+            $pdo2 = db();
+            $tcStmt = $pdo2->prepare("SELECT version FROM terms_conditions WHERE type='servicios' AND is_active=1 LIMIT 1");
+            $tcStmt->execute();
+            $tcRow = $tcStmt->fetch(PDO::FETCH_ASSOC);
+            $tcVersion = $tcRow['version'] ?? '1.0';
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+            $pdo2->prepare("INSERT INTO terms_acceptances (user_table, user_id, terms_type, version, ip_address) VALUES ('users', ?, 'servicios', ?, ?)")
+                 ->execute([$userId, $tcVersion, $ip]);
+        } catch (Throwable $e) { error_log('[services/register.php] T&C record failed: '.$e->getMessage()); }
 
         $ok  = true;
         $msg = '¡Tu cuenta fue creada! Ya podés iniciar sesión.';
@@ -209,6 +225,13 @@ $captcha_b = $_SESSION['srv_reg_captcha_b'] ?? 0;
         <div class="form-group">
           <div class="captcha-question">¿Cuánto es <?php echo $captcha_a; ?> + <?php echo $captcha_b; ?>?</div>
           <input type="text" name="captcha" required placeholder="Tu respuesta">
+        </div>
+
+        <div class="form-group" style="display:flex;align-items:flex-start;gap:0.5rem;">
+          <input type="checkbox" id="accept_terms" name="accept_terms" value="1" required style="margin-top:3px;flex-shrink:0;">
+          <label for="accept_terms" style="cursor:pointer;font-size:0.875rem;color:var(--gray-700);">
+            Acepto los <a href="/terminos-condiciones.php?type=servicios" target="_blank" style="color:var(--primary)">Términos y Condiciones</a> para proveedores de servicios en CompraTica.
+          </label>
         </div>
 
         <button type="submit" class="btn">Crear Cuenta Gratis</button>

@@ -263,6 +263,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (strlen($pass) < 6) {
       throw new RuntimeException('La contraseña debe tener al menos 6 caracteres.');
     }
+    if ((string)($_POST['accept_terms'] ?? '') !== '1') {
+      throw new RuntimeException('Debés aceptar los Términos y Condiciones para continuar.');
+    }
 
     $st = $pdo->prepare("SELECT id FROM affiliates WHERE email = ? LIMIT 1");
     $st->execute([$email]);
@@ -279,6 +282,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ins->execute([$name, $email, $phone_ok, $hash]);
 
     $aff_id = (int)$pdo->lastInsertId();
+
+    // Registrar aceptación de T&C
+    try {
+      $tcStmt = $pdo->prepare("SELECT version FROM terms_conditions WHERE type='vendedor' AND is_active=1 LIMIT 1");
+      $tcStmt->execute();
+      $tcRow = $tcStmt->fetch(PDO::FETCH_ASSOC);
+      $tcVersion = $tcRow['version'] ?? '1.0';
+      $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+      $pdo->prepare("INSERT INTO terms_acceptances (user_table, user_id, terms_type, version, ip_address) VALUES ('affiliates', ?, 'vendedor', ?, ?)")
+          ->execute([$aff_id, $tcVersion, $ip]);
+    } catch (Throwable $e) { error_log('[affiliate/register.php] T&C record failed: '.$e->getMessage()); }
+
     $ok = true;
     $msg = "¡Tu cuenta fue creada y activada! Ya podés iniciar sesión.";
 
@@ -803,6 +818,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="small">
         <i class="fas fa-check-circle"></i>
         Tu cuenta se activará <strong>automáticamente</strong> al registrarte.
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:0.5rem;margin-top:0.5rem;">
+        <input type="checkbox" id="accept_terms" name="accept_terms" value="1" required style="margin-top:3px;flex-shrink:0;">
+        <label for="accept_terms" style="font-size:0.875rem;color:var(--gray-700);cursor:pointer;">
+          Acepto los <a href="/terminos-condiciones.php?type=vendedor" target="_blank" style="color:var(--accent)">Términos y Condiciones</a> para vendedores de CompraTica.
+        </label>
       </div>
 
       <div class="actions">
