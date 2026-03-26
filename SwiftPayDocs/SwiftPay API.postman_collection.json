@@ -1,0 +1,359 @@
+{
+  "info": {
+    "_postman_id": "3529eb00-5184-47a9-8232-2f76dad5b1b1",
+    "name": "SwiftPay API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "423991"
+  },
+  "item": [
+    {
+      "name": "Tarjetas",
+      "item": [
+        {
+          "name": "Validar Tarjeta",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"card\": {\r\n        \"card\": \"\", // Número de tarjeta ####..#\r\n        \"expiration\": \"\", // Fecha expiracion MMYY\r\n        \"cvv\": \"\" // CVV         \r\n    },\r\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM\"\r\n} ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/api/card/validateCardExternal",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "card",
+                "validateCardExternal"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Autorización",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"clientId\":\"\", // UUID generado\r\n    \"solicita\": \"dll\", // Valor no se debe cambiar\r\n    \"card\": {\r\n        \"tokenCard\": \"4BAE65********0FDDEA8\", // TOKEN GENERADO EN EL VALIDAR TARJETA\r\n        // SI NO SE TIENE TOKEN DATOS DE LA TARJETA\r\n        \"card\": \"\", // NUMERO DE TARJETA\r\n        \"expiration\": \"\", // Fecha expiracion MMYY\r\n        \"cvv\": \"\", // CVV\r\n        \"amount\": \"10.54\", // Monto #####.## debe llevar los decimales\r\n        \"currency\": \"CRC\", // Moneda CRC ó USD\r\n        \"description\": \"prueba\", // Descripción del cobro\r\n        \"page_result\": \"http://www.sitioweb.com/pagina-resultado-3ds\" // Página que se invoca al terminar la validación 3ds\r\n    },\r\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/api/card/paymentExternal",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "card",
+                "paymentExternal"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pre Autorización",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"clientId\":\"\", // UUID generado\r\n    \"solicita\": \"dll\", // Valor no se debe cambiar\r\n    \"card\": {\r\n        \"tokenCard\": \"4BAE65********0FDDEA8\", // TOKEN GENERADO EN EL VALIDAR TARJETA\r\n        // SI NO SE TIENE TOKEN DATOS DE LA TARJETA\r\n        \"card\": \"\", // NUMERO DE TARJETA\r\n        \"expiration\": \"\", // Fecha expiracion MMYY\r\n        \"cvv\": \"\", // CVV\r\n        \"amount\": \"10.54\", // Monto #####.## debe llevar los decimales\r\n        \"currency\": \"CRC\", // Moneda CRC ó USD\r\n        \"description\": \"prueba\", // Descripción del cobro\r\n        \"page_result\": \"http://www.sitioweb.com/pagina-resultado-3ds\" // Página que se invoca al terminar la validación 3ds\r\n    },\r\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/api/card/preAuthExternal",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "card",
+                "preAuthExternal"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Completitud",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"card\": {\r\n        \"tokenCard\": \"4BAE65********0FDDEA8\", // TOKEN GENERADO EN EL VALIDAR TARJETA\r\n        // SI NO SE TIENE TOKEN DATOS DE LA TARJETA\r\n        \"card\": \"\", // NUMERO DE TARJETA\r\n        \"expiration\": \"\", // Fecha expiracion MMYY\r\n        \"cvv\": \"\", // CVV\r\n        \"amount\": \"10.54\", // Monto de la preautorizacion #####.##\r\n        \"currency\": \"CRC\", // Moneda de la preautorizacion\r\n        \"rrn\": \"\", // RRN de la preautorizacion (respuesta)\r\n        \"intRef\": \"\",// intRef de la preautorizacion (respuesta)\r\n        \"orderId\": \"\" // orderId de la preautorizacion (respuesta)\r\n        \r\n    },\r\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/api/card/completeAuthExternal",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "card",
+                "completeAuthExternal"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Anulación",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"card\": {\r\n        \"amount\": \"10.54\", // Monto de la autorización que desea anular\r\n        \"currency\": \"CRC\", // Moneda de la autorización\r\n        \"orderId\": \"20250814022632 \", // OrderId de la preautorizacion/autorización (respuesta)\r\n        \"rrn\": \"522502927308\", // RRN de la preautorizacion/autorización (respuesta)\r\n        \"intRef\": \"865019D3B2E6859B\", // IntRef de la preautorizacion/autorización (respuesta)\r\n        \"authCode\": \"296684\" // AuthCode de la preautorizacion/autorización (respuesta)\r\n    },\r\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/api/card/voidExternal",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "card",
+                "voidExternal"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener resultado 3DS",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/api/card/getResult3ds/61fd8063ec3cc8222c2aff5d",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "card",
+                "getResult3ds",
+                "61fd8063ec3cc8222c2aff5d"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tarjetas SandBox",
+      "item": [
+        {
+          "name": "Autorización QA",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"clientId\":\"\", // UUID generado\r\n    \"solicita\": \"dll\", // Valor no se debe cambiar\r\n    \"card\": {\r\n        \"tokenCard\": \"4BAE65********0FDDEA8\", // TOKEN GENERADO EN EL VALIDAR TARJETA\r\n        // SI NO SE TIENE TOKEN DATOS DE LA TARJETA\r\n        \"card\": \"\", // NUMERO DE TARJETA\r\n        \"expiration\": \"\", // Fecha expiracion MMYY\r\n        \"cvv\": \"\", // CVV\r\n        \"amount\": \"10.54\", // Monto #####.## debe llevar los decimales\r\n        \"currency\": \"CRC\", // Moneda CRC ó USD\r\n        \"description\": \"prueba\", // Descripción del cobro, para pruebas si se agrega la palabra \"3ds\", simula el proceso 3ds\r\n        \"page_result\": \"http://www.sitioweb.com/pagina-resultado-3ds\" // Página que se invoca al terminar la validación 3ds\r\n    },\r\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/api/card/qa/paymentExternal",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "card",
+                "qa",
+                "paymentExternal"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pre Autorización QA",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"clientId\":\"\", // UUID generado\r\n    \"solicita\": \"dll\", // Valor no se debe cambiar\r\n    \"card\": {\r\n        \"tokenCard\": \"4BAE65********0FDDEA8\", // TOKEN GENERADO EN EL VALIDAR TARJETA\r\n        // SI NO SE TIENE TOKEN DATOS DE LA TARJETA\r\n        \"card\": \"\", // NUMERO DE TARJETA\r\n        \"expiration\": \"\", // Fecha expiracion MMYY\r\n        \"cvv\": \"\", // CVV\r\n        \"amount\": \"10.54\", // Monto #####.## debe llevar los decimales\r\n        \"currency\": \"CRC\", // Moneda CRC ó USD\r\n        \"description\": \"prueba\", // Descripción del cobro, para pruebas si se agrega la palabra \"3ds\", simula el proceso 3ds\r\n        \"page_result\": \"http://www.sitioweb.com/pagina-resultado-3ds\" // Página que se invoca al terminar la validación 3ds\r\n    },\r\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/api/card/qa/preAuthExternal",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "card",
+                "qa",
+                "preAuthExternal"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Completitud QA",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"card\": {\r\n        \"tokenCard\": \"4BAE65********0FDDEA8\", // TOKEN GENERADO EN EL VALIDAR TARJETA\r\n        // SI NO SE TIENE TOKEN DATOS DE LA TARJETA\r\n        \"card\": \"\", // NUMERO DE TARJETA\r\n        \"expiration\": \"\", // Fecha expiracion MMYY\r\n        \"cvv\": \"\", // CVV\r\n        \"amount\": \"10.54\", // Monto de la preautorizacion #####.##\r\n        \"currency\": \"CRC\", // Moneda de la preautorizacion\r\n        \"rrn\": \"\", // RRN de la preautorizacion (respuesta)\r\n        \"intRef\": \"\",// intRef de la preautorizacion (respuesta)\r\n        \"orderId\": \"\" // orderId de la preautorizacion (respuesta)\r\n        \r\n    },\r\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/api/card/qa/completeAuthExternal",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "card",
+                "qa",
+                "completeAuthExternal"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Anulación QA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"card\": {\r\n        \"amount\": \"10.54\", // Monto de la autorización que desea anular\r\n        \"currency\": \"CRC\", // Moneda de la autorización\r\n        \"orderId\": \"20250814022632 \", // OrderId de la preautorizacion/autorización (respuesta)\r\n        \"rrn\": \"522502927308\", // RRN de la preautorizacion/autorización (respuesta)\r\n        \"intRef\": \"865019D3B2E6859B\", // IntRef de la preautorizacion/autorización (respuesta)\r\n        \"authCode\": \"296684\" // AuthCode de la preautorizacion/autorización (respuesta)\r\n    },\r\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/api/card/qa/voidExternal",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "card",
+                "qa",
+                "voidExternal"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener resultado 3DS",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/api/card/qa/getResult3ds/61fd8063ec3cc8222c2aff5d",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "card",
+                "qa",
+                "getResult3ds",
+                "61fd8063ec3cc8222c2aff5d"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "url",
+      "value": ""
+    }
+  ]
+}
