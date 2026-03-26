@@ -165,21 +165,21 @@ if (!defined('STRIPE_SECRET_KEY')) define('STRIPE_SECRET_KEY', '');
 // SANDBOX  → para pruebas (no cobra tarjetas reales)
 // LIVE     → producción (cobra tarjetas reales)
 //
-// SWIFTPAY_SANDBOX = true  → usa sandbox URLs y JWT de sandbox
-// SWIFTPAY_SANDBOX = false → usa live URLs y JWT de producción
+// SWIFTPAY_SANDBOX = true  → rutas /api/card/qa/...  (mismo dominio, path diferente)
+// SWIFTPAY_SANDBOX = false → rutas /api/card/...
 //
-// URL base: confirmar con SwiftPay (el Postman tiene {{url}} vacío)
+// Base URL: https://swiftportals.com  (igual para sandbox y live)
 // JWT: token proporcionado por SwiftPay para cada ambiente
 // ══════════════════════════════════════════════════════════════════════
 
 if (!defined('SWIFTPAY_SANDBOX')) define('SWIFTPAY_SANDBOX', true); // ← cambiar a false para producción
 
-// ── Sandbox (QA) ──────────────────────────────────────────────────────
-if (!defined('SWIFTPAY_URL_SANDBOX')) define('SWIFTPAY_URL_SANDBOX', 'https://REEMPLAZAR_CON_URL_SWIFTPAY');
+// ── Sandbox (QA) — misma URL base, rutas /api/card/qa/ ────────────────
+if (!defined('SWIFTPAY_URL_SANDBOX')) define('SWIFTPAY_URL_SANDBOX', 'https://swiftportals.com');
 if (!defined('SWIFTPAY_JWT_SANDBOX')) define('SWIFTPAY_JWT_SANDBOX', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM');
 
-// ── Producción (Live) ──────────────────────────────────────────────────
-if (!defined('SWIFTPAY_URL_LIVE')) define('SWIFTPAY_URL_LIVE', 'https://REEMPLAZAR_CON_URL_PRODUCCION_SWIFTPAY');
+// ── Producción (Live) — misma URL base, rutas /api/card/ ──────────────
+if (!defined('SWIFTPAY_URL_LIVE')) define('SWIFTPAY_URL_LIVE', 'https://swiftportals.com');
 if (!defined('SWIFTPAY_JWT_LIVE')) define('SWIFTPAY_JWT_LIVE', 'REEMPLAZAR_CON_JWT_PRODUCCION');
 
 // =========================
