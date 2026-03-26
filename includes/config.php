@@ -158,6 +158,30 @@ if (!defined('PAYPAL_API_URL')) {
 if (!defined('STRIPE_PUBLIC_KEY')) define('STRIPE_PUBLIC_KEY', '');
 if (!defined('STRIPE_SECRET_KEY')) define('STRIPE_SECRET_KEY', '');
 
+// ══════════════════════════════════════════════════════════════════════
+// SwiftPay — Gateway de Tarjetas (Visa / Mastercard / Amex)
+// ══════════════════════════════════════════════════════════════════════
+//
+// SANDBOX  → para pruebas (no cobra tarjetas reales)
+// LIVE     → producción (cobra tarjetas reales)
+//
+// SWIFTPAY_SANDBOX = true  → rutas /api/card/qa/...  (mismo dominio, path diferente)
+// SWIFTPAY_SANDBOX = false → rutas /api/card/...
+//
+// Base URL: https://swiftportals.com  (igual para sandbox y live)
+// JWT: token proporcionado por SwiftPay para cada ambiente
+// ══════════════════════════════════════════════════════════════════════
+
+if (!defined('SWIFTPAY_SANDBOX')) define('SWIFTPAY_SANDBOX', true); // ← cambiar a false para producción
+
+// ── Sandbox (QA) — misma URL base, rutas /api/card/qa/ ────────────────
+if (!defined('SWIFTPAY_URL_SANDBOX')) define('SWIFTPAY_URL_SANDBOX', 'https://swiftportals.com');
+if (!defined('SWIFTPAY_JWT_SANDBOX')) define('SWIFTPAY_JWT_SANDBOX', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6MTUsImlhdCI6MTc3MjA3NTE3OH0.O29R_kJ0T5xZWI8_9QiUU7eR6edouBYkwuXqYe6AZSM');
+
+// ── Producción (Live) — misma URL base, rutas /api/card/ ──────────────
+if (!defined('SWIFTPAY_URL_LIVE')) define('SWIFTPAY_URL_LIVE', 'https://swiftportals.com');
+if (!defined('SWIFTPAY_JWT_LIVE')) define('SWIFTPAY_JWT_LIVE', 'REEMPLAZAR_CON_JWT_PRODUCCION');
+
 // =========================
 // Sightengine API (Moderación de Imágenes)
 // =========================
