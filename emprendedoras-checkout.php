@@ -270,6 +270,22 @@ foreach ($groups as $sid => $group) {
             'order_ref'    => 'EMP-' . $sid,
         ];
     }
+
+    // Guardar contexto SwiftPay por vendedor para que swiftpay-charge.php pueda crear la orden
+    if (!empty($group['accepts_card'])) {
+        $_SESSION['swiftpay_checkout_emp'][$sid] = [
+            'seller_id'    => $sid,
+            'seller_name'  => $group['seller_name'],
+            'seller_email' => $group['seller_email'],
+            'buyer_name'   => $buyerName,
+            'buyer_email'  => $buyerEmail,
+            'buyer_phone'  => '',  // se sobreescribe con lo que manda el widget
+            'items'        => $group['items'],
+            'total'        => $group['total'],
+            'shipping_cost'=> $group['shipping_cost'],
+            'shipping_method'=> $group['shipping_method'],
+        ];
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -815,13 +831,15 @@ foreach ($groups as $sid => $group) {
         <div class="pay-panel <?= $defaultTab === 'card' ? 'active' : '' ?>" id="tab-<?= $sid ?>-card">
             <div style="padding:16px 0 0;">
               <?php
-                $sp_amount      = number_format($group['total'], 2, '.', '');
-                $sp_currency    = 'CRC';
-                $sp_description = 'Compra en CompraTica a ' . $group['seller_name'];
+                $sp_amount          = number_format($group['total'], 2, '.', '');
+                $sp_currency        = 'CRC';
+                $sp_description     = 'Compra en CompraTica a ' . $group['seller_name'];
                 $sp_reference_id    = (int)$group['seller_id'];
                 $sp_reference_table = 'entrepreneur_orders';
-                $sp_success_url = '/emprendedoras-checkout.php?payment=ok';
-                $sp_cancel_url  = '';
+                $sp_sale_id         = (int)$group['seller_id'];  // usado para lookup de sesión
+                $sp_extra_fields    = [];
+                $sp_success_url     = '/emprendedoras-checkout.php?payment=ok';
+                $sp_cancel_url      = '';
                 include __DIR__ . '/views/swiftpay-button.php';
               ?>
             </div>

@@ -98,8 +98,12 @@ try {
     if ($result->isSuccess()) {
         $_SESSION['swiftpay_last'] = $result->toArray();
 
-        // Crear orden, descontar stock, limpiar carrito y enviar emails
-        $redirectUrl = crearOrdenSwiftPay($pdo, $result, $customerPhone, $deliveryNotes);
+        // Elegir flujo según tabla de referencia
+        if ($refTable === 'entrepreneur_orders') {
+            $redirectUrl = crearOrdenEmprendedoraSwiftPay($pdo, $result, $refId, $customerPhone, $deliveryNotes);
+        } else {
+            $redirectUrl = crearOrdenSwiftPay($pdo, $result, $customerPhone, $deliveryNotes);
+        }
 
         echo json_encode([
             'ok'           => true,
@@ -323,4 +327,135 @@ function crearOrdenSwiftPay(PDO $pdo, SwiftPayResult $result, string $customerPh
     }
 
     return '/order-success.php?order=' . urlencode($orderNumber);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Crea una orden de emprendedora en DB, descuenta stock, limpia carrito
+// y envía correos de confirmación.
+// $sellerId = seller_user_id (= $sp_reference_id del widget)
+// ══════════════════════════════════════════════════════════════════════
+function crearOrdenEmprendedoraSwiftPay(PDO $pdo, SwiftPayResult $result, int $sellerId, string $customerPhone, string $deliveryNotes): string
+{
+    // Contexto guardado al renderizar emprendedoras-checkout.php
+    $ctx = $_SESSION['swiftpay_checkout_emp'][$sellerId] ?? [];
+
+    $sellerName  = (string)($ctx['seller_name']  ?? '');
+    $sellerEmail = (string)($ctx['seller_email'] ?? '');
+    $buyerName   = (string)($ctx['buyer_name']   ?? '');
+    $buyerEmail  = (string)($ctx['buyer_email']  ?? '');
+    $buyerPhone  = $customerPhone ?: (string)($ctx['buyer_phone'] ?? '');
+    $items       = (array)($ctx['items']         ?? []);
+    $total       = (float)($ctx['total']         ?? 0);
+    $txnId       = $result->orderId ?: $result->authCode;
+
+    if (empty($items)) {
+        error_log('[swiftpay-charge] crearOrdenEmprendedora: contexto vacío para seller ' . $sellerId);
+        return '/emprendedoras-checkout.php?payment=ok';
+    }
+
+    // ── Crear registros en entrepreneur_orders ─────────────────────
+    try {
+        $pdo->beginTransaction();
+        $ins = $pdo->prepare("
+            INSERT INTO entrepreneur_orders
+                (product_id, seller_user_id, buyer_name, buyer_email, buyer_phone, quantity, total_price, status, notes, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        ");
+
+        foreach ($items as $it) {
+            $pid   = (int)($it['product_id'] ?? $it['id'] ?? 0);
+            $qty   = (int)($it['qty'] ?? 1);
+            $price = (float)($it['price'] ?? 0);
+            $ins->execute([
+                $pid, $sellerId, $buyerName, $buyerEmail, $buyerPhone,
+                $qty, $qty * $price, 'paid',
+                trim('SwiftPay ' . $txnId . ($deliveryNotes ? ' | ' . $deliveryNotes : '')),
+                date('Y-m-d H:i:s'), date('Y-m-d H:i:s'),
+            ]);
+            // Descontar stock
+            if ($pid > 0 && $qty > 0) {
+                $pdo->prepare("UPDATE entrepreneur_products SET stock = stock - ?, updated_at = datetime('now') WHERE id = ? AND stock >= ?")
+                    ->execute([$qty, $pid, $qty]);
+            }
+        }
+
+        // Limpiar carrito de emprendedoras para este vendedor
+        $cartItems = $_SESSION['emp_cart'] ?? [];
+        foreach ($cartItems as $k => $it) {
+            if ((int)($it['seller_id'] ?? 0) === $sellerId) {
+                unset($_SESSION['emp_cart'][$k]);
+            }
+        }
+        unset($_SESSION['swiftpay_checkout_emp'][$sellerId]);
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('[swiftpay-charge] DB error emprendedora: ' . $e->getMessage());
+        return '/emprendedoras-checkout.php?payment=ok';
+    }
+
+    // ── Emails de confirmación ─────────────────────────────────────
+    try {
+        $esc = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+        $contactBox = fn(string $name, string $email, string $phone, string $label) =>
+            '<div style="margin:20px 0;padding:14px 16px;background:#f8f9fa;border-left:3px solid #667eea;border-radius:6px;">'
+            . '<p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;">' . $label . '</p>'
+            . '<p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#1a202c;">' . $esc($name) . '</p>'
+            . ($email ? '<p style="margin:0 0 4px;font-size:13px;color:#555;"><a href="mailto:' . $esc($email) . '" style="color:#667eea;text-decoration:none;">' . $esc($email) . '</a></p>' : '')
+            . ($phone ? '<p style="margin:0;font-size:13px;color:#555;">&#128222; ' . $esc($phone) . '</p>' : '')
+            . '</div>';
+
+        $emailItems = [];
+        foreach ($items as $it) {
+            $qty   = (int)($it['qty'] ?? 1);
+            $price = (float)($it['price'] ?? 0);
+            $emailItems[] = ['name' => $it['name'] ?? 'Producto', 'qty' => $qty, 'unit_price' => $price, 'line_total' => $qty * $price];
+        }
+        $txnSafe = htmlspecialchars($txnId, ENT_QUOTES, 'UTF-8');
+
+        // Comprador
+        if ($buyerEmail !== '') {
+            $body = '
+              <div style="text-align:center;margin-bottom:24px;">
+                <span style="font-size:40px;">&#10003;</span>
+                <h2 style="margin:8px 0 4px;font-size:22px;color:#2e7d32;">Pago con tarjeta confirmado</h2>
+              </div>
+              <p style="font-size:15px;margin:0 0 20px;color:#555;">Tu pago fue procesado exitosamente.</p>
+              ' . email_product_table($emailItems, 'CRC') . '
+              ' . email_total_block($total, 0, $total, 'CRC') . '
+              ' . $contactBox($sellerName, $sellerEmail, '', 'Datos del vendedor/a') . '
+              <p style="margin:8px 0 0;font-size:12px;color:#bbb;">Ref. SwiftPay: ' . $txnSafe . '</p>';
+            @send_mail($buyerEmail, 'Pago confirmado — CompraTica Emprendedores', email_html($body));
+        }
+
+        // Vendedor
+        if ($sellerEmail !== '' && strtolower($sellerEmail) !== strtolower($buyerEmail)) {
+            $body = '
+              <h2 style="margin:0 0 16px;font-size:22px;color:#333;">Pago con tarjeta recibido</h2>
+              <p style="font-size:15px;margin:0 0 4px;color:#555;">Hola <strong>' . $esc($sellerName) . '</strong>, recibiste un pago con tarjeta:</p>
+              ' . email_product_table($emailItems, 'CRC') . '
+              ' . email_total_block($total, 0, $total, 'CRC') . '
+              ' . $contactBox($buyerName, $buyerEmail, $buyerPhone, 'Datos del comprador') . '
+              <p style="margin:8px 0 0;font-size:12px;color:#bbb;">Ref. SwiftPay: ' . $txnSafe . '</p>';
+            @send_mail($sellerEmail, '[CompraTica] Pago con tarjeta — Emprendedores', email_html($body));
+        }
+
+        // Admin
+        $adminEmail = defined('ADMIN_EMAIL') ? ADMIN_EMAIL : '';
+        if ($adminEmail !== '' && strtolower($adminEmail) !== strtolower($buyerEmail)) {
+            $body = '
+              <h2 style="margin:0 0 4px;font-size:20px;color:#333;">SwiftPay Emprendedoras</h2>
+              <p>Comprador: ' . $esc($buyerName) . ' &lt;' . $esc($buyerEmail) . '&gt;</p>
+              <p>Vendedor: ' . $esc($sellerName) . ' &lt;' . $esc($sellerEmail) . '&gt;</p>
+              ' . email_product_table($emailItems, 'CRC') . '
+              ' . email_total_block($total, 0, $total, 'CRC') . '
+              <p>Ref: ' . $txnSafe . '</p>';
+            @send_mail($adminEmail, '[ADMIN] SwiftPay Emprendedora — ' . $txnId, email_html($body));
+        }
+    } catch (Throwable $e) {
+        error_log('[swiftpay-charge] Email emprendedora error: ' . $e->getMessage());
+    }
+
+    return '/emprendedoras-checkout.php?payment=ok';
 }
