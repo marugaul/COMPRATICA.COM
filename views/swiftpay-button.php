@@ -536,10 +536,23 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
 
       const data = await res.json();
 
-      // ── 3DS requerido ──────────────────────────────────────────
-      if (data.pending_3ds && data.redirect_url) {
+      // ── 3DS requerido (v2: form POST al ACS) ──────────────────
+      if (data.pending_3ds && data.action) {
         showMsg('Redirigiendo a verificación de seguridad 3D Secure…', 'info');
-        setTimeout(() => { window.location.href = data.redirect_url; }, 800);
+        setTimeout(() => {
+          const f = document.createElement('form');
+          f.method = 'POST';
+          f.action = data.action;
+          const addHidden = (name, val) => {
+            const i = document.createElement('input');
+            i.type = 'hidden'; i.name = name; i.value = val || '';
+            f.appendChild(i);
+          };
+          addHidden('creq',               data.creq               || '');
+          addHidden('threeDSSessionData', data.three_ds_session_data || '');
+          document.body.appendChild(f);
+          f.submit();
+        }, 800);
         return;
       }
 

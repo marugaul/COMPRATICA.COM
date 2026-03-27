@@ -28,10 +28,12 @@ class SwiftPayResult
     public string $rrn;
     public string $intRef;
     public string $authCode;
-    public string $redirectUrl;   // URL 3DS para redirigir al usuario
+    public string $redirectUrl;       // URL action del ACS para el form POST 3DS
+    public string $creq;              // Campo creq para el form POST 3DS v2
+    public string $threeDSSessionData; // Campo threeDSSessionData para el form POST 3DS v2
     public string $errorMessage;
     public array  $rawResponse;
-    public int    $txId;          // ID en swiftpay_transactions
+    public int    $txId;              // ID en swiftpay_transactions
 
     public function __construct(
         bool   $approved,
@@ -42,21 +44,25 @@ class SwiftPayResult
         string $intRef,
         string $authCode,
         string $redirectUrl,
+        string $creq,
+        string $threeDSSessionData,
         string $errorMessage,
         array  $rawResponse,
         int    $txId
     ) {
-        $this->approved     = $approved;
-        $this->pending3ds   = $pending3ds;
-        $this->clientId     = $clientId;
-        $this->orderId      = $orderId;
-        $this->rrn          = $rrn;
-        $this->intRef       = $intRef;
-        $this->authCode     = $authCode;
-        $this->redirectUrl  = $redirectUrl;
-        $this->errorMessage = $errorMessage;
-        $this->rawResponse  = $rawResponse;
-        $this->txId         = $txId;
+        $this->approved           = $approved;
+        $this->pending3ds         = $pending3ds;
+        $this->clientId           = $clientId;
+        $this->orderId            = $orderId;
+        $this->rrn                = $rrn;
+        $this->intRef             = $intRef;
+        $this->authCode           = $authCode;
+        $this->redirectUrl        = $redirectUrl;
+        $this->creq               = $creq;
+        $this->threeDSSessionData = $threeDSSessionData;
+        $this->errorMessage       = $errorMessage;
+        $this->rawResponse        = $rawResponse;
+        $this->txId               = $txId;
     }
 
     /** Pago aprobado y sin 3DS pendiente */
@@ -69,16 +75,18 @@ class SwiftPayResult
     public function toArray(): array
     {
         return [
-            'approved'     => $this->approved,
-            'pending_3ds'  => $this->pending3ds,
-            'client_id'    => $this->clientId,
-            'order_id'     => $this->orderId,
-            'rrn'          => $this->rrn,
-            'int_ref'      => $this->intRef,
-            'auth_code'    => $this->authCode,
-            'redirect_url' => $this->redirectUrl,
-            'error'        => $this->errorMessage,
-            'tx_id'        => $this->txId,
+            'approved'              => $this->approved,
+            'pending_3ds'           => $this->pending3ds,
+            'client_id'             => $this->clientId,
+            'order_id'              => $this->orderId,
+            'rrn'                   => $this->rrn,
+            'int_ref'               => $this->intRef,
+            'auth_code'             => $this->authCode,
+            'action'                => $this->redirectUrl,
+            'creq'                  => $this->creq,
+            'three_ds_session_data' => $this->threeDSSessionData,
+            'error'                 => $this->errorMessage,
+            'tx_id'                 => $this->txId,
         ];
     }
 }
@@ -215,7 +223,7 @@ class SwiftPayClient
         $clientId = $this->uuid();
         $payload  = [
             'clientId' => $clientId,
-            'solicita' => 'api',
+            'solicita' => 'dll',
             'card'     => [
                 'card'        => $cardNumber,
                 'expiration'  => $expiry,
@@ -260,7 +268,7 @@ class SwiftPayClient
         $clientId = $this->uuid();
         $payload  = [
             'clientId' => $clientId,
-            'solicita' => 'api',
+            'solicita' => 'dll',
             'card'     => [
                 'tokenCard'   => $tokenCard,
                 'amount'      => $this->formatAmount($amount),
@@ -304,7 +312,7 @@ class SwiftPayClient
         $clientId = $this->uuid();
         $payload  = [
             'clientId' => $clientId,
-            'solicita' => 'api',
+            'solicita' => 'dll',
             'card'     => [
                 'tokenCard'   => $tokenCard,
                 'amount'      => $this->formatAmount($amount),
@@ -423,28 +431,17 @@ class SwiftPayClient
     /**
      * Consultar resultado de validación 3DS.
      * Llamar desde la página de retorno después de que SwiftPay redirija al usuario.
-     * Nota: Este endpoint es GET según la colección de Postman.
+     * Según el manual PDF: Método POST con clientId en URL y en body.
      */
     public function get3dsResult(string $clientId): SwiftPayResult
     {
-        $url = $this->baseUrl . $this->ep(self::EP_3DS_RESULT . $clientId, raw: true);
+        $url     = $this->ep(self::EP_3DS_RESULT . $clientId);
+        $payload = ['clientId' => $clientId, 'token' => $this->jwt];
 
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 30,
-            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
-            CURLOPT_SSL_VERIFYPEER => true,
-        ]);
-        $raw      = curl_exec($ch);
-        $curlErr  = curl_error($ch);
-        curl_close($ch);
+        $tx   = $this->dbFindByClientId($clientId);
+        $txId = (int)($tx['id'] ?? 0);
 
-        if ($curlErr) throw new SwiftPayException('get3dsResult cURL error: ' . $curlErr);
-
-        $response = json_decode($raw ?: '{}', true) ?? [];
-        $tx       = $this->dbFindByClientId($clientId);
-        $txId     = (int)($tx['id'] ?? 0);
+        $response = $this->post($url, $payload);
 
         return $this->buildResult($response, $clientId, $txId);
     }
@@ -521,12 +518,15 @@ class SwiftPayClient
         $status    = $needs3ds ? 'pending_3ds' : ($approved ? 'approved' : 'declined');
 
         // Extraer campos del objeto interno
-        $orderId     = $r['orderId']     ?? $r['data']['orderId']     ?? '';
-        $rrn         = $r['rrn']         ?? $r['data']['rrn']         ?? '';
-        $intRef      = $r['intRef']      ?? $r['data']['intRef']      ?? '';
-        $authCode    = $r['authCode']    ?? $r['data']['authCode']    ?? '';
-        $redirectUrl = $r['url3ds']      ?? $r['redirect']            ?? $r['urlRedirect'] ?? $r['url'] ?? '';
-        $errorMsg    = $r['message']     ?? $r['error']               ?? $r['description'] ?? '';
+        $orderId            = $r['orderId']              ?? $r['data']['orderId']  ?? '';
+        $rrn                = $r['rrn']                  ?? $r['data']['rrn']      ?? '';
+        $intRef             = $r['intRef']               ?? $r['data']['intRef']   ?? '';
+        $authCode           = $r['authCode']             ?? $r['data']['authCode'] ?? '';
+        // URL del ACS para 3DS v2 viene en "action"; fallbacks para otras variantes
+        $redirectUrl        = $r['action']               ?? $r['url3ds']     ?? $r['redirect'] ?? $r['urlRedirect'] ?? $r['url'] ?? '';
+        $creq               = $r['creq']                 ?? '';
+        $threeDSSessionData = $r['threeDSSessionData']   ?? '';
+        $errorMsg           = $r['message']              ?? $r['error']       ?? $r['description'] ?? '';
 
         if ($txId > 0) {
             $this->dbUpdate($txId, [
@@ -542,17 +542,19 @@ class SwiftPayClient
         }
 
         return new SwiftPayResult(
-            approved:     $approved,
-            pending3ds:   $needs3ds,
-            clientId:     $clientId,
-            orderId:      $orderId,
-            rrn:          $rrn,
-            intRef:       $intRef,
-            authCode:     $authCode,
-            redirectUrl:  $redirectUrl,
-            errorMessage: $errorMsg,
-            rawResponse:  $response,
-            txId:         $txId,
+            approved:           $approved,
+            pending3ds:         $needs3ds,
+            clientId:           $clientId,
+            orderId:            $orderId,
+            rrn:                $rrn,
+            intRef:             $intRef,
+            authCode:           $authCode,
+            redirectUrl:        $redirectUrl,
+            creq:               $creq,
+            threeDSSessionData: $threeDSSessionData,
+            errorMessage:       $errorMsg,
+            rawResponse:        $response,
+            txId:               $txId,
         );
     }
 
@@ -576,7 +578,7 @@ class SwiftPayClient
             || !empty($r['urlRedirect'])
             || !empty($r['redirect'])
             || (isset($r['requires3ds']) && $r['requires3ds'])
-            || (isset($r['status']) && strtolower((string)$r['status']) === '3ds');
+            || (isset($r['status']) && in_array(strtolower((string)$r['status']), ['3ds', 'confirmed'], true));
     }
 
     /** URL a la que SwiftPay redirige al usuario después del 3DS */

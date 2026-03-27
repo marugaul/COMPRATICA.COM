@@ -87,14 +87,16 @@ try {
         referenceTable: $refTable
     );
 
-    // ── 3DS requerido ──────────────────────────────────────────────
+    // ── 3DS requerido (v2: form POST al ACS) ──────────────────────
     if ($result->needs3ds()) {
         echo json_encode([
-            'ok'           => false,
-            'pending_3ds'  => true,
-            'redirect_url' => $result->redirectUrl,
-            'client_id'    => $result->clientId,
-            'tx_id'        => $result->txId,
+            'ok'                    => false,
+            'pending_3ds'           => true,
+            'action'                => $result->redirectUrl,
+            'creq'                  => $result->creq,
+            'three_ds_session_data' => $result->threeDSSessionData,
+            'client_id'             => $result->clientId,
+            'tx_id'                 => $result->txId,
         ]);
         exit;
     }
