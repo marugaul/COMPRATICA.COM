@@ -141,11 +141,6 @@
       <span>Portal Emprendedoras/Emprendedores</span>
     </a>
 
-    <a href="/admin/login.php" class="menu-item">
-      <i class="fas fa-user-shield"></i>
-      <span>Administrador</span>
-    </a>
-
     <?php if ($isLoggedIn): ?>
       <div class="menu-divider"></div>
       <a href="/logout" class="menu-item danger">
