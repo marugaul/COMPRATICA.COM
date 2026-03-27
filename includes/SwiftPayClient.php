@@ -554,10 +554,12 @@ class SwiftPayClient
     /** Construye SwiftPayResult desde la respuesta de SwiftPay y actualiza DB */
     private function buildResult(array $response, string $clientId, int $txId): SwiftPayResult
     {
-        // SwiftPay envuelve la respuesta de pago en "payResponse": {...}
-        $r = isset($response['payResponse']) && is_array($response['payResponse'])
-           ? $response['payResponse']
-           : $response;
+        // SwiftPay puede anidar la respuesta en múltiples niveles de "payResponse"
+        // (getResult3ds devuelve hasta 3 niveles: payResponse.payResponse.payResponse)
+        $r = $response;
+        while (isset($r['payResponse']) && is_array($r['payResponse'])) {
+            $r = $r['payResponse'];
+        }
 
         $approved  = $this->isApproved($r);
         $needs3ds  = $this->detectsRedirect($r);
