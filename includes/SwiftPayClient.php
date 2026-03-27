@@ -179,7 +179,9 @@ class SwiftPayClient
 
         $response  = $this->post($this->ep(self::EP_VALIDATE), $payload);
         $tokenCard = $response['tokenCard']
+                  ?? $response['cardToken']
                   ?? $response['data']['tokenCard']
+                  ?? $response['data']['cardToken']
                   ?? $response['token']
                   ?? '';
 
