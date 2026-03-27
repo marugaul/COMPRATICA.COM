@@ -309,6 +309,8 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
   font-size: .875rem;
   font-weight: 500;
   margin-bottom: 1rem;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 .sp-msg.sp-msg-error   { background: #fff5f5; color: #c53030; border: 1px solid #fc8181; }
 .sp-msg.sp-msg-success { background: #f0fff4; color: #276749; border: 1px solid #68d391; }
@@ -514,7 +516,9 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
       }
 
       // ── Error ──────────────────────────────────────────────────
-      showMsg(data.error || 'El pago fue rechazado. Verificá tus datos.', 'error');
+      let errMsg = data.error || 'El pago fue rechazado. Verificá tus datos.';
+      if (data._debug_raw) errMsg += '\n\nRespuesta SwiftPay: ' + JSON.stringify(data._debug_raw);
+      showMsg(errMsg, 'error');
 
     } catch (err) {
       showMsg('Error de conexión. Revisá tu internet e intentá de nuevo.', 'error');
