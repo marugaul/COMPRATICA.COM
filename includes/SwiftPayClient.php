@@ -460,7 +460,9 @@ class SwiftPayClient
             }
         }
 
-        return $this->buildResult($decoded, $lookupId, $txId);
+        // updateRawResponse=false: preservar raw_response original del paymentExternal
+        // El resultado 3DS ya se guardó en raw_response_3ds arriba
+        return $this->buildResult($decoded, $lookupId, $txId, false);
     }
 
     /** Modo actual: 'sandbox' o 'live' */
@@ -556,7 +558,7 @@ class SwiftPayClient
     }
 
     /** Construye SwiftPayResult desde la respuesta de SwiftPay y actualiza DB */
-    private function buildResult(array $response, string $clientId, int $txId): SwiftPayResult
+    private function buildResult(array $response, string $clientId, int $txId, bool $updateRawResponse = true): SwiftPayResult
     {
         // SwiftPay puede anidar la respuesta en múltiples niveles de "payResponse"
         // (getResult3ds devuelve hasta 3 niveles: payResponse.payResponse.payResponse)
@@ -589,7 +591,7 @@ class SwiftPayClient
                 'auth_code'     => $authCode,
                 'is_3ds'        => $needs3ds ? 1 : 0,
                 'error_message' => (!$approved && !$needs3ds) ? ($errorMsg ?: 'Transacción rechazada') : '',
-                'raw_response'  => json_encode($response),
+                'raw_response'  => $updateRawResponse ? json_encode($response) : null,
             ]);
         }
 
@@ -740,23 +742,43 @@ class SwiftPayClient
     private function dbUpdate(int $id, array $d): void
     {
         try {
-            $this->pdo->prepare("
-                UPDATE swiftpay_transactions SET
-                    status = ?, order_id = ?, rrn = ?, int_ref = ?,
-                    auth_code = ?, is_3ds = ?, error_message = ?,
-                    raw_response = ?, updated_at = datetime('now')
-                WHERE id = ?
-            ")->execute([
-                $d['status']        ?? 'pending',
-                $d['order_id']      ?? null,
-                $d['rrn']           ?? null,
-                $d['int_ref']       ?? null,
-                $d['auth_code']     ?? null,
-                $d['is_3ds']        ?? 0,
-                $d['error_message'] ?? null,
-                $d['raw_response']  ?? null,
-                $id,
-            ]);
+            // Si raw_response es null, no se sobreescribe (preserva el del paymentExternal)
+            if ($d['raw_response'] === null) {
+                $this->pdo->prepare("
+                    UPDATE swiftpay_transactions SET
+                        status = ?, order_id = ?, rrn = ?, int_ref = ?,
+                        auth_code = ?, is_3ds = ?, error_message = ?,
+                        updated_at = datetime('now')
+                    WHERE id = ?
+                ")->execute([
+                    $d['status']        ?? 'pending',
+                    $d['order_id']      ?? null,
+                    $d['rrn']           ?? null,
+                    $d['int_ref']       ?? null,
+                    $d['auth_code']     ?? null,
+                    $d['is_3ds']        ?? 0,
+                    $d['error_message'] ?? null,
+                    $id,
+                ]);
+            } else {
+                $this->pdo->prepare("
+                    UPDATE swiftpay_transactions SET
+                        status = ?, order_id = ?, rrn = ?, int_ref = ?,
+                        auth_code = ?, is_3ds = ?, error_message = ?,
+                        raw_response = ?, updated_at = datetime('now')
+                    WHERE id = ?
+                ")->execute([
+                    $d['status']        ?? 'pending',
+                    $d['order_id']      ?? null,
+                    $d['rrn']           ?? null,
+                    $d['int_ref']       ?? null,
+                    $d['auth_code']     ?? null,
+                    $d['is_3ds']        ?? 0,
+                    $d['error_message'] ?? null,
+                    $d['raw_response'],
+                    $id,
+                ]);
+            }
         } catch (Throwable $e) {
             error_log('[SwiftPayClient] dbUpdate error: ' . $e->getMessage());
         }
