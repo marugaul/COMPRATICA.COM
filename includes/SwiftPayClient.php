@@ -563,7 +563,7 @@ class SwiftPayClient
         if (isset($r['success']))      return (bool)$r['success'];
         if (isset($r['ipsRc']))        return $r['ipsRc'] === '00';
         if (isset($r['responseCode'])) return $r['responseCode'] === '00';
-        if (isset($r['status']))       return in_array(strtolower((string)$r['status']), ['approved', 'success', 'ok', '00'], true);
+        if (isset($r['status']))       return in_array(strtolower((string)$r['status']), ['approved', 'success', 'ok', '00', 'confirmed'], true);
         // Si hay orderId y no hay error, asumir aprobado
         if (!empty($r['orderId']) && empty($r['error']) && empty($r['message'])) return true;
         return false;
