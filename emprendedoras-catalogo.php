@@ -48,6 +48,9 @@ $sellersSql  = "
            COALESCE(u.store_banner_style,'stripes') AS store_banner_style,
            COALESCE(u.store_logo,'') AS store_logo,
            COALESCE(u.seller_type,'emprendedora') AS seller_type,
+           COALESCE(u.global_accepts_sinpe,0)  AS global_accepts_sinpe,
+           COALESCE(u.global_accepts_paypal,0) AS global_accepts_paypal,
+           COALESCE(u.global_accepts_card,0)   AS global_accepts_card,
            COUNT(p.id) AS product_count,
            SUM(p.sales_count) AS total_sales
     FROM entrepreneur_products p
@@ -82,8 +85,9 @@ $sellers = $stSellers->fetchAll(PDO::FETCH_ASSOC);
 $productsBySeller = [];
 foreach ($sellers as $seller) {
     $sid  = (int)$seller['seller_id'];
-    $sqlP = "SELECT p.id, p.name, p.price, p.stock, p.image_1, p.featured,
-                    p.views_count, p.sales_count, c.name AS category_name
+    $sqlP = "SELECT p.id, p.name, p.price, p.stock,
+                    COALESCE(NULLIF(p.image_1,''), NULLIF(p.image_2,''), NULLIF(p.image_3,''), NULLIF(p.image_4,''), NULLIF(p.image_5,'')) AS image_1,
+                    p.featured, p.views_count, p.sales_count, c.name AS category_name
              FROM entrepreneur_products p
              LEFT JOIN entrepreneur_categories c ON c.id = p.category_id
              WHERE p.is_active = 1 AND p.user_id = ?
@@ -895,6 +899,31 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
                 <i class="fas fa-store"></i> Entrar al puesto
             </a>
         </div>
+        <?php
+        $hasSinpe  = !empty($seller['global_accepts_sinpe']);
+        $hasPaypal = !empty($seller['global_accepts_paypal']);
+        $hasCard   = !empty($seller['global_accepts_card']);
+        if ($hasSinpe || $hasPaypal || $hasCard):
+        ?>
+        <div style="padding:8px 16px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-right:2px;">Pago:</span>
+            <?php if ($hasSinpe): ?>
+            <span style="display:inline-flex;align-items:center;gap:4px;background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:20px;font-size:.72rem;font-weight:700;">
+                <i class="fas fa-mobile-alt"></i> SINPE
+            </span>
+            <?php endif; ?>
+            <?php if ($hasPaypal): ?>
+            <span style="display:inline-flex;align-items:center;gap:4px;background:#dbeafe;color:#1e40af;padding:3px 8px;border-radius:20px;font-size:.72rem;font-weight:700;">
+                <i class="fab fa-paypal"></i> PayPal
+            </span>
+            <?php endif; ?>
+            <?php if ($hasCard): ?>
+            <span style="display:inline-flex;align-items:center;gap:4px;background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:20px;font-size:.72rem;font-weight:700;">
+                <i class="fas fa-credit-card"></i> Tarjeta
+            </span>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
         </div><!-- /.puesto -->
     </div><!-- /.puesto-wrapper -->
     <?php

@@ -164,13 +164,19 @@ $isLoggedIn = true;
 // ── Migración silenciosa: columnas de personalización y seller_type ──────────
 try {
     $colsU = array_column($pdo->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC), 'name');
-    if (!in_array('store_color1',      $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color1 TEXT DEFAULT '#667eea'");
-    if (!in_array('store_color2',      $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color2 TEXT DEFAULT '#764ba2'");
-    if (!in_array('store_banner_style',$colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_style TEXT DEFAULT 'stripes'");
-    if (!in_array('store_logo',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_logo TEXT");
-    if (!in_array('seller_type',       $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedora'");
-    if (!in_array('store_avatar',      $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_avatar TEXT");
-    if (!in_array('store_name',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_name TEXT");
+    if (!in_array('store_color1',       $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color1 TEXT DEFAULT '#667eea'");
+    if (!in_array('store_color2',       $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color2 TEXT DEFAULT '#764ba2'");
+    if (!in_array('store_banner_style', $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_style TEXT DEFAULT 'stripes'");
+    if (!in_array('store_logo',         $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_logo TEXT");
+    if (!in_array('seller_type',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedora'");
+    if (!in_array('store_avatar',       $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_avatar TEXT");
+    if (!in_array('store_name',         $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_name TEXT");
+    // Métodos de pago globales del emprendedor
+    if (!in_array('global_accepts_sinpe',  $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN global_accepts_sinpe INTEGER DEFAULT 0");
+    if (!in_array('global_sinpe_phone',    $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN global_sinpe_phone TEXT");
+    if (!in_array('global_accepts_paypal', $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN global_accepts_paypal INTEGER DEFAULT 0");
+    if (!in_array('global_paypal_email',   $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN global_paypal_email TEXT");
+    if (!in_array('global_accepts_card',   $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN global_accepts_card INTEGER DEFAULT 0");
 } catch (Throwable $_e) {}
 
 // ── Manejar guardado de avatar ────────────────────────────────────────────────
@@ -362,6 +368,43 @@ try {
 
 // Cargar config de envío del vendedor
 $shippingConfig = getShippingConfig($pdo, $userId);
+
+// ── Manejar guardado de métodos de pago ────────────────────────────────────
+$paymentMsg = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_payment_methods') {
+    try {
+        $acceptsSinpe  = isset($_POST['global_accepts_sinpe'])  ? 1 : 0;
+        $sinpePhone    = trim($_POST['global_sinpe_phone']   ?? '');
+        $acceptsPaypal = isset($_POST['global_accepts_paypal']) ? 1 : 0;
+        $paypalEmail   = trim($_POST['global_paypal_email']  ?? '');
+        $acceptsCard   = isset($_POST['global_accepts_card'])   ? 1 : 0;
+
+        $pdo->prepare("UPDATE users SET
+            global_accepts_sinpe=?, global_sinpe_phone=?,
+            global_accepts_paypal=?, global_paypal_email=?,
+            global_accepts_card=?
+            WHERE id=?")
+            ->execute([$acceptsSinpe, $sinpePhone, $acceptsPaypal, $paypalEmail, $acceptsCard, $userId]);
+
+        $paymentMsg = ['ok', '✅ Métodos de pago guardados correctamente.'];
+        header('Location: emprendedores-dashboard.php#payment-section');
+        exit;
+    } catch (Throwable $e) {
+        $paymentMsg = ['error', '❌ Error al guardar: ' . $e->getMessage()];
+    }
+}
+
+// Cargar métodos de pago actuales del usuario
+try {
+    $pmRow = $pdo->prepare("SELECT global_accepts_sinpe, global_sinpe_phone,
+                                   global_accepts_paypal, global_paypal_email,
+                                   global_accepts_card
+                            FROM users WHERE id=?");
+    $pmRow->execute([$userId]);
+    $userPayment = $pmRow->fetch(PDO::FETCH_ASSOC) ?: [];
+} catch (Throwable $_e) {
+    $userPayment = [];
+}
 
 // Verificar límite de productos
 $canAddProducts = true;
@@ -1758,6 +1801,127 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         </div>
         <!-- ── FIN ENVÍO Y ENTREGA ─────────────────────────────────────── -->
 
+        <!-- ── SECCIÓN MÉTODOS DE PAGO ──────────────────────────────────── -->
+        <div class="section" id="payment-section">
+            <div class="section-header">
+                <h2><i class="fas fa-credit-card"></i> Métodos de Pago</h2>
+            </div>
+
+            <?php if (!empty($paymentMsg)): ?>
+            <div style="background:<?= $paymentMsg[0]==='ok' ? '#f0fdf4' : '#fef2f2' ?>;border:1px solid <?= $paymentMsg[0]==='ok' ? '#86efac' : '#fecaca' ?>;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:<?= $paymentMsg[0]==='ok' ? '#166534' : '#991b1b' ?>;">
+                <?= htmlspecialchars($paymentMsg[1]) ?>
+            </div>
+            <?php endif; ?>
+
+            <p style="color:#6b7280;font-size:.9rem;margin:0 0 20px;">
+                <i class="fas fa-info-circle" style="color:#667eea;"></i>
+                Activa los métodos de pago que aceptas. Se mostrarán en el catálogo y en tu tienda.
+            </p>
+
+            <form method="POST" id="payment-form">
+                <input type="hidden" name="action" value="save_payment_methods">
+
+                <style>
+                .pay-method-card {
+                    border: 2px solid #e5e7eb; border-radius: 14px; padding: 18px 20px;
+                    margin-bottom: 14px; transition: border-color .2s, background .2s;
+                }
+                .pay-method-card.active { border-color: #667eea; background: #f5f3ff; }
+                .pay-method-header {
+                    display: flex; align-items: center; gap: 12px; cursor: pointer;
+                }
+                .pay-method-header label { cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1rem; margin: 0; }
+                .pay-method-body { margin-top: 14px; padding-top: 14px; border-top: 1px solid #e5e7eb; }
+                .pay-field { margin-bottom: 12px; }
+                .pay-field label { display:block; font-size:.85rem; font-weight:600; color:#555; margin-bottom:4px; }
+                .pay-field input { width:100%; padding:9px 13px; border:2px solid #e0e0e0; border-radius:8px; font-size:.92rem; box-sizing:border-box; }
+                .pay-field input:focus { border-color:#667eea; outline:none; }
+                </style>
+
+                <!-- SINPE MÓVIL -->
+                <?php $sinpeOn = !empty($userPayment['global_accepts_sinpe']); ?>
+                <div class="pay-method-card <?= $sinpeOn ? 'active' : '' ?>" id="pm-card-sinpe">
+                    <div class="pay-method-header">
+                        <input type="checkbox" name="global_accepts_sinpe" id="chk-sinpe" value="1"
+                               <?= $sinpeOn ? 'checked' : '' ?>
+                               onchange="togglePayCard('sinpe')"
+                               style="width:18px;height:18px;accent-color:#10b981;cursor:pointer;">
+                        <label for="chk-sinpe">
+                            <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#d1fae5;border-radius:8px;">
+                                <i class="fas fa-mobile-alt" style="color:#059669;font-size:1rem;"></i>
+                            </span>
+                            SINPE Móvil
+                            <span style="font-size:.8rem;color:#6b7280;font-weight:400;"> — Pago por transferencia SINPE</span>
+                        </label>
+                    </div>
+                    <div class="pay-method-body" id="pm-body-sinpe" style="<?= !$sinpeOn ? 'display:none;' : '' ?>">
+                        <div class="pay-field">
+                            <label for="global_sinpe_phone"><i class="fas fa-phone"></i> Número de teléfono SINPE</label>
+                            <input type="tel" name="global_sinpe_phone" id="global_sinpe_phone"
+                                   value="<?= htmlspecialchars($userPayment['global_sinpe_phone'] ?? '') ?>"
+                                   placeholder="Ej: 8888-8888"
+                                   maxlength="20">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PAYPAL -->
+                <?php $paypalOn = !empty($userPayment['global_accepts_paypal']); ?>
+                <div class="pay-method-card <?= $paypalOn ? 'active' : '' ?>" id="pm-card-paypal">
+                    <div class="pay-method-header">
+                        <input type="checkbox" name="global_accepts_paypal" id="chk-paypal" value="1"
+                               <?= $paypalOn ? 'checked' : '' ?>
+                               onchange="togglePayCard('paypal')"
+                               style="width:18px;height:18px;accent-color:#003087;cursor:pointer;">
+                        <label for="chk-paypal">
+                            <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#dbeafe;border-radius:8px;">
+                                <i class="fab fa-paypal" style="color:#003087;font-size:1rem;"></i>
+                            </span>
+                            PayPal
+                            <span style="font-size:.8rem;color:#6b7280;font-weight:400;"> — Pago con tarjeta o cuenta PayPal</span>
+                        </label>
+                    </div>
+                    <div class="pay-method-body" id="pm-body-paypal" style="<?= !$paypalOn ? 'display:none;' : '' ?>">
+                        <div class="pay-field">
+                            <label for="global_paypal_email"><i class="fas fa-envelope"></i> Correo de cuenta PayPal</label>
+                            <input type="email" name="global_paypal_email" id="global_paypal_email"
+                                   value="<?= htmlspecialchars($userPayment['global_paypal_email'] ?? '') ?>"
+                                   placeholder="tu@correo.com">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SWIFTPAY (TARJETA) -->
+                <?php $cardOn = !empty($userPayment['global_accepts_card']); ?>
+                <div class="pay-method-card <?= $cardOn ? 'active' : '' ?>" id="pm-card-card">
+                    <div class="pay-method-header">
+                        <input type="checkbox" name="global_accepts_card" id="chk-card" value="1"
+                               <?= $cardOn ? 'checked' : '' ?>
+                               onchange="togglePayCard('card')"
+                               style="width:18px;height:18px;accent-color:#e53935;cursor:pointer;">
+                        <label for="chk-card">
+                            <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#fee2e2;border-radius:8px;">
+                                <i class="fas fa-credit-card" style="color:#e53935;font-size:1rem;"></i>
+                            </span>
+                            SwiftPay (Tarjeta)
+                            <span style="font-size:.8rem;color:#6b7280;font-weight:400;"> — Visa, Mastercard, American Express</span>
+                        </label>
+                    </div>
+                    <div class="pay-method-body" id="pm-body-card" style="<?= !$cardOn ? 'display:none;' : '' ?>">
+                        <p style="margin:0;font-size:.88rem;color:#6b7280;">
+                            <i class="fas fa-shield-alt" style="color:#e53935;"></i>
+                            El cobro se procesa automáticamente a través de SwiftPay. No requieres configuración adicional.
+                        </p>
+                    </div>
+                </div>
+
+                <button type="submit" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:.95rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;margin-top:6px;">
+                    <i class="fas fa-save"></i> Guardar métodos de pago
+                </button>
+            </form>
+        </div>
+        <!-- ── FIN MÉTODOS DE PAGO ───────────────────────────────────────── -->
+
         <div class="section">
             <div class="section-header">
                 <h2><i class="fas fa-box"></i> Mis Productos</h2>
@@ -2551,6 +2715,21 @@ function addZone() {
 function removeZone(btn) {
     const row = btn.closest('.zone-row');
     if (row) row.remove();
+}
+
+// ── Payment methods section JS ────────────────────────────────────────────────
+function togglePayCard(type) {
+    const chk  = document.getElementById('chk-'     + type);
+    const card = document.getElementById('pm-card-' + type);
+    const body = document.getElementById('pm-body-' + type);
+    if (!chk || !card || !body) return;
+    if (chk.checked) {
+        card.classList.add('active');
+        body.style.display = 'block';
+    } else {
+        card.classList.remove('active');
+        body.style.display = 'none';
+    }
 }
 </script>
 </body>
