@@ -389,6 +389,9 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
   ];
 
   let detectedBrand = null;
+  // Valores reales ocultos (PCI: los inputs muestran versión enmascarada al perder foco)
+  let _rawCard = '';
+  let _rawCvv  = '';
 
   function detectBrand(num) {
     return BRANDS.find(b => b.pattern.test(num.replace(/\s/g, ''))) || null;
@@ -405,11 +408,30 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
     inp.cvv.maxLength    = (brand && brand.cvvLen) ? brand.cvvLen : 3;
   }
 
+  // ── Enmascarado PCI ────────────────────────────────────────────
+  function maskCardDisplay(digits) {
+    if (digits.length < 6) return digits.replace(/(.{4})/g, '$1 ').trim();
+    const first4 = digits.slice(0, 4);
+    const last2  = digits.slice(-2);
+    const midLen = digits.length - 6;
+    const mid    = '•'.repeat(midLen).replace(/(.{4})/g, '$1 ').trim();
+    return (first4 + ' ' + mid + ' ' + last2).replace(/\s+/g, ' ').trim();
+  }
+
   // ── Formateo de inputs ─────────────────────────────────────────
   inp.card.addEventListener('input', function () {
     let v = this.value.replace(/\D/g, '').slice(0, 16);
+    _rawCard = v;
     this.value = v.replace(/(.{4})/g, '$1 ').trim();
     updateBrandUI(detectBrand(v));
+  });
+
+  inp.card.addEventListener('blur', function () {
+    if (_rawCard.length >= 6) this.value = maskCardDisplay(_rawCard);
+  });
+
+  inp.card.addEventListener('focus', function () {
+    if (_rawCard) this.value = _rawCard.replace(/(.{4})/g, '$1 ').trim();
   });
 
   inp.expiry.addEventListener('input', function () {
@@ -419,6 +441,15 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
 
   inp.cvv.addEventListener('input', function () {
     this.value = this.value.replace(/\D/g, '').slice(0, 4);
+    _rawCvv = this.value;
+  });
+
+  inp.cvv.addEventListener('blur', function () {
+    if (_rawCvv.length > 0) this.value = '•'.repeat(_rawCvv.length);
+  });
+
+  inp.cvv.addEventListener('focus', function () {
+    if (_rawCvv) this.value = _rawCvv;
   });
 
   // ── Helpers UI ────────────────────────────────────────────────
@@ -448,9 +479,9 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
   // ── Validación cliente ────────────────────────────────────────
   function validate() {
     let ok = true;
-    const cardVal  = inp.card.value.replace(/\s/g, '');
-    const expiryV  = inp.expiry.value.replace('/', '');
-    const cvvVal   = inp.cvv.value;
+    const cardVal = _rawCard;
+    const expiryV = inp.expiry.value.replace('/', '');
+    const cvvVal  = _rawCvv;
 
     if (cardVal.length < 13) { markError(inp.card);   ok = false; } else { markOk(inp.card); }
     if (expiryV.length !== 4){ markError(inp.expiry); ok = false; } else { markOk(inp.expiry); }
@@ -479,9 +510,9 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          card_number:     inp.card.value.replace(/\s/g, ''),
+          card_number:     _rawCard,
           expiry:          expRaw,
-          cvv:             inp.cvv.value,
+          cvv:             _rawCvv,
           amount:          CONFIG.amount,
           currency:        CONFIG.currency,
           description:     CONFIG.description,
@@ -503,10 +534,10 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
       // ── Aprobado ───────────────────────────────────────────────
       if (data.ok) {
         showMsg('✅ Pago aprobado. Redirigiendo…', 'success');
-        // Limpiar campos por seguridad
-        inp.card.value = '';
+        // Limpiar campos por seguridad (PCI)
+        inp.card.value = ''; _rawCard = '';
         inp.expiry.value = '';
-        inp.cvv.value = '';
+        inp.cvv.value  = ''; _rawCvv  = '';
         setTimeout(() => {
           window.location.href = CONFIG.successUrl
             + (CONFIG.successUrl.includes('?') ? '&' : '?')

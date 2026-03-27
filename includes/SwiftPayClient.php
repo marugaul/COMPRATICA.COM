@@ -501,17 +501,22 @@ class SwiftPayClient
     /** Construye SwiftPayResult desde la respuesta de SwiftPay y actualiza DB */
     private function buildResult(array $response, string $clientId, int $txId): SwiftPayResult
     {
-        $approved  = $this->isApproved($response);
-        $needs3ds  = $this->detectsRedirect($response);
+        // SwiftPay envuelve la respuesta de pago en "payResponse": {...}
+        $r = isset($response['payResponse']) && is_array($response['payResponse'])
+           ? $response['payResponse']
+           : $response;
+
+        $approved  = $this->isApproved($r);
+        $needs3ds  = $this->detectsRedirect($r);
         $status    = $needs3ds ? 'pending_3ds' : ($approved ? 'approved' : 'declined');
 
-        // Extraer campos — adaptados a posibles variaciones en la respuesta
-        $orderId     = $response['orderId']      ?? $response['data']['orderId']      ?? '';
-        $rrn         = $response['rrn']          ?? $response['data']['rrn']          ?? '';
-        $intRef      = $response['intRef']       ?? $response['data']['intRef']       ?? '';
-        $authCode    = $response['authCode']     ?? $response['data']['authCode']     ?? '';
-        $redirectUrl = $response['url3ds']       ?? $response['redirect']             ?? $response['urlRedirect'] ?? $response['url'] ?? '';
-        $errorMsg    = $response['message']      ?? $response['error']                ?? $response['description'] ?? '';
+        // Extraer campos del objeto interno
+        $orderId     = $r['orderId']     ?? $r['data']['orderId']     ?? '';
+        $rrn         = $r['rrn']         ?? $r['data']['rrn']         ?? '';
+        $intRef      = $r['intRef']      ?? $r['data']['intRef']      ?? '';
+        $authCode    = $r['authCode']    ?? $r['data']['authCode']    ?? '';
+        $redirectUrl = $r['url3ds']      ?? $r['redirect']            ?? $r['urlRedirect'] ?? $r['url'] ?? '';
+        $errorMsg    = $r['message']     ?? $r['error']               ?? $r['description'] ?? '';
 
         if ($txId > 0) {
             $this->dbUpdate($txId, [
@@ -546,6 +551,7 @@ class SwiftPayClient
     {
         if (isset($r['approved']))     return (bool)$r['approved'];
         if (isset($r['success']))      return (bool)$r['success'];
+        if (isset($r['ipsRc']))        return $r['ipsRc'] === '00';
         if (isset($r['responseCode'])) return $r['responseCode'] === '00';
         if (isset($r['status']))       return in_array(strtolower((string)$r['status']), ['approved', 'success', 'ok', '00'], true);
         // Si hay orderId y no hay error, asumir aprobado
