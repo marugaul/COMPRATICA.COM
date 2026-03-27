@@ -215,7 +215,7 @@ class SwiftPayClient
         $clientId = $this->uuid();
         $payload  = [
             'clientId' => $clientId,
-            'solicita' => 'dll',
+            'solicita' => 'api',
             'card'     => [
                 'card'        => $cardNumber,
                 'expiration'  => $expiry,
@@ -260,7 +260,7 @@ class SwiftPayClient
         $clientId = $this->uuid();
         $payload  = [
             'clientId' => $clientId,
-            'solicita' => 'dll',
+            'solicita' => 'api',
             'card'     => [
                 'tokenCard'   => $tokenCard,
                 'amount'      => $this->formatAmount($amount),
@@ -304,7 +304,7 @@ class SwiftPayClient
         $clientId = $this->uuid();
         $payload  = [
             'clientId' => $clientId,
-            'solicita' => 'dll',
+            'solicita' => 'api',
             'card'     => [
                 'tokenCard'   => $tokenCard,
                 'amount'      => $this->formatAmount($amount),
