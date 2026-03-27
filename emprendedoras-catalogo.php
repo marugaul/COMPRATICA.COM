@@ -28,8 +28,13 @@ try {
     if (!in_array('store_banner_style',$cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_style TEXT DEFAULT 'stripes'");
     if (!in_array('store_logo',        $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_logo TEXT");
     if (!in_array('seller_type',       $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedora'");
-    if (!in_array('store_avatar',      $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_avatar TEXT");
-    if (!in_array('store_name',        $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_name TEXT");
+    if (!in_array('store_avatar',          $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_avatar TEXT");
+    if (!in_array('store_name',            $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN store_name TEXT");
+    if (!in_array('global_accepts_sinpe',  $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN global_accepts_sinpe INTEGER DEFAULT 0");
+    if (!in_array('global_sinpe_phone',    $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN global_sinpe_phone TEXT");
+    if (!in_array('global_accepts_paypal', $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN global_accepts_paypal INTEGER DEFAULT 0");
+    if (!in_array('global_paypal_email',   $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN global_paypal_email TEXT");
+    if (!in_array('global_accepts_card',   $cols)) $pdo->exec("ALTER TABLE users ADD COLUMN global_accepts_card INTEGER DEFAULT 0");
 } catch (Throwable $_e) {}
 
 // Filtros de búsqueda
