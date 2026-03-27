@@ -935,6 +935,63 @@ function db() {
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sl_active   ON service_listings(is_active)");
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sl_category ON service_listings(category_id)");
 
+            // ── Tabla categories compartida (Bienes Raíces + Servicios) ──────
+            $pdo->exec("CREATE TABLE IF NOT EXISTS categories (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                name          TEXT NOT NULL UNIQUE,
+                icon          TEXT DEFAULT NULL,
+                active        INTEGER DEFAULT 1,
+                display_order INTEGER DEFAULT 0,
+                created_at    TEXT DEFAULT (datetime('now'))
+            )");
+            // Seed categorías de servicios profesionales si la tabla está vacía
+            if ((int)$pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn() === 0) {
+                $pdo->exec("INSERT INTO categories (name, icon, active, display_order) VALUES
+                    ('SERV: Abogados y Servicios Legales',  'fa-gavel',              1, 200),
+                    ('SERV: Contabilidad y Finanzas',        'fa-calculator',         1, 201),
+                    ('SERV: Mantenimiento del Hogar',        'fa-tools',              1, 202),
+                    ('SERV: Plomería y Electricidad',        'fa-plug',               1, 203),
+                    ('SERV: Limpieza del Hogar',             'fa-broom',              1, 204),
+                    ('SERV: Shuttle y Transporte',           'fa-shuttle-van',        1, 205),
+                    ('SERV: Fletes y Mudanzas',              'fa-truck',              1, 206),
+                    ('SERV: Tutorías y Clases',              'fa-chalkboard-teacher', 1, 207),
+                    ('SERV: Diseño y Creatividad',           'fa-paint-brush',        1, 208),
+                    ('SERV: Tecnología y Sistemas',          'fa-laptop-code',        1, 209),
+                    ('SERV: Salud y Bienestar',              'fa-heartbeat',          1, 210),
+                    ('SERV: Fotografía y Video',             'fa-camera',             1, 211),
+                    ('SERV: Eventos y Catering',             'fa-glass-cheers',       1, 212),
+                    ('SERV: Jardinería y Zonas Verdes',      'fa-leaf',               1, 213),
+                    ('SERV: Seguridad y Vigilancia',         'fa-shield-alt',         1, 214),
+                    ('SERV: Otros Servicios',                'fa-concierge-bell',     1, 215),
+                    ('BR: Casas en Venta',                   'fa-home',               1, 100),
+                    ('BR: Casas en Alquiler',                'fa-home',               1, 101),
+                    ('BR: Apartamentos en Venta',            'fa-building',           1, 102),
+                    ('BR: Apartamentos en Alquiler',         'fa-building',           1, 103),
+                    ('BR: Locales Comerciales en Venta',     'fa-store',              1, 104),
+                    ('BR: Locales Comerciales en Alquiler',  'fa-store',              1, 105),
+                    ('BR: Oficinas en Venta',                'fa-briefcase',          1, 106),
+                    ('BR: Oficinas en Alquiler',             'fa-briefcase',          1, 107),
+                    ('BR: Terrenos en Venta',                'fa-map',                1, 108),
+                    ('BR: Lotes en Venta',                   'fa-map-marked-alt',     1, 109),
+                    ('BR: Bodegas en Venta',                 'fa-warehouse',          1, 110),
+                    ('BR: Bodegas en Alquiler',              'fa-warehouse',          1, 111),
+                    ('BR: Fincas en Venta',                  'fa-tractor',            1, 113),
+                    ('BR: Otros Bienes Raíces',              'fa-question-circle',    1, 117)");
+            }
+
+            // ── Migraciones silenciosas para tablas de portales que ya pueden existir ──
+            // Agrega columnas que los dashboards necesitan pero pueden faltar en tablas antiguas
+            try {
+                $relCols = array_column($pdo->query("PRAGMA table_info(real_estate_listings)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+                if (!in_array('agent_id', $relCols))
+                    $pdo->exec("ALTER TABLE real_estate_listings ADD COLUMN agent_id INTEGER");
+            } catch (Throwable $_e) {}
+            try {
+                $lpCols = array_column($pdo->query("PRAGMA table_info(listing_pricing)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+                if (!in_array('payment_methods', $lpCols))
+                    $pdo->exec("ALTER TABLE listing_pricing ADD COLUMN payment_methods TEXT");
+            } catch (Throwable $_e) {}
+
             // Insertar T&C iniciales si no existen
             $types = [
                 'cliente', 'vendedor', 'emprendedor',

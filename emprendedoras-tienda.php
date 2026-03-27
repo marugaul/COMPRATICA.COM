@@ -67,8 +67,9 @@ $catFilter = (int)($_GET['cat'] ?? 0);
 $search    = trim($_GET['q'] ?? '');
 
 // Productos del vendedor
-$sql = "SELECT p.id, p.name, p.price, p.stock, p.image_1, p.featured,
-               p.views_count, p.sales_count, p.description,
+$sql = "SELECT p.id, p.name, p.price, p.stock,
+               COALESCE(NULLIF(p.image_1,''), NULLIF(p.image_2,''), NULLIF(p.image_3,''), NULLIF(p.image_4,''), NULLIF(p.image_5,'')) AS image_1,
+               p.featured, p.views_count, p.sales_count, p.description,
                c.name AS category_name
         FROM entrepreneur_products p
         LEFT JOIN entrepreneur_categories c ON c.id = p.category_id
