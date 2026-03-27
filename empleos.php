@@ -547,9 +547,40 @@ if (empty($categories)) {
 
     .hero-description {
       font-size: 1.25rem;
-      margin-bottom: 2.5rem;
+      margin-bottom: 1.5rem;
       line-height: 1.7;
       opacity: 0.95;
+    }
+
+    /* ── Toggle Empleos / Servicios ── */
+    .section-toggle {
+      display: inline-flex;
+      background: rgba(0,0,0,0.25);
+      border-radius: 999px;
+      padding: 5px;
+      margin-bottom: 2rem;
+      gap: 4px;
+    }
+    .section-toggle a {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1.4rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+      color: rgba(255,255,255,0.75);
+    }
+    .section-toggle a.active {
+      background: #fff;
+      color: #1a3a5c;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    }
+    .section-toggle a:not(.active):hover {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
     }
 
     .hero-stats {
@@ -1854,6 +1885,11 @@ if (empty($categories)) {
         en tecnología, administración, ventas, salud y mucho más.
         <br><strong>🔄 Actualizado 2 veces al día</strong> con las últimas oportunidades.
       </p>
+
+      <div class="section-toggle">
+        <a href="/empleos" class="active">💼 Empleos</a>
+        <a href="/servicios">🔧 Servicios</a>
+      </div>
 
       <div class="hero-stats">
         <div class="stat-item">
