@@ -812,6 +812,129 @@ function db() {
                 $pdo->exec("ALTER TABLE affiliate_payment_methods ADD COLUMN active_card INTEGER DEFAULT 0");
             }
 
+            // ── Portales: Bienes Raíces, Servicios (tablas compartidas) ──────
+            $pdo->exec("CREATE TABLE IF NOT EXISTS listing_pricing (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                name         TEXT NOT NULL,
+                duration_days INTEGER NOT NULL,
+                price_usd    REAL NOT NULL DEFAULT 0,
+                price_crc    REAL NOT NULL DEFAULT 0,
+                is_active    INTEGER DEFAULT 1,
+                is_featured  INTEGER DEFAULT 0,
+                description  TEXT,
+                display_order INTEGER DEFAULT 0,
+                created_at   TEXT DEFAULT (datetime('now')),
+                updated_at   TEXT DEFAULT (datetime('now'))
+            )");
+            // Seed pricing plans if empty
+            if ((int)$pdo->query("SELECT COUNT(*) FROM listing_pricing")->fetchColumn() === 0) {
+                $pdo->exec("INSERT INTO listing_pricing (name,duration_days,price_usd,price_crc,is_active,is_featured,description,display_order) VALUES
+                    ('Gratis 7 días',7,0.00,0.00,1,0,'Prueba gratis por 7 días',1),
+                    ('Plan 30 días',30,1.00,540.00,1,1,'Publicación por 30 días',2),
+                    ('Plan 90 días',90,2.00,1080.00,1,1,'Publicación por 90 días - Ahorrá 33%',3)");
+            }
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS real_estate_agents (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                name         TEXT NOT NULL,
+                email        TEXT NOT NULL UNIQUE,
+                phone        TEXT,
+                password_hash TEXT NOT NULL,
+                company_name TEXT,
+                company_description TEXT,
+                company_logo TEXT,
+                website      TEXT,
+                license_number TEXT,
+                specialization TEXT,
+                bio          TEXT,
+                profile_image TEXT,
+                facebook     TEXT,
+                instagram    TEXT,
+                whatsapp     TEXT,
+                slug         TEXT,
+                is_active    INTEGER DEFAULT 1,
+                created_at   TEXT DEFAULT (datetime('now')),
+                updated_at   TEXT DEFAULT (datetime('now'))
+            )");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS real_estate_listings (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id      INTEGER,
+                agent_id     INTEGER,
+                category_id  INTEGER NOT NULL,
+                title        TEXT NOT NULL,
+                description  TEXT,
+                price        REAL NOT NULL DEFAULT 0,
+                currency     TEXT DEFAULT 'CRC',
+                location     TEXT,
+                province     TEXT,
+                canton       TEXT,
+                district     TEXT,
+                bedrooms     INTEGER DEFAULT 0,
+                bathrooms    INTEGER DEFAULT 0,
+                area_m2      REAL DEFAULT 0,
+                parking_spaces INTEGER DEFAULT 0,
+                features     TEXT,
+                images       TEXT,
+                contact_name  TEXT,
+                contact_phone TEXT,
+                contact_email TEXT,
+                contact_whatsapp TEXT,
+                listing_type  TEXT DEFAULT 'sale',
+                pricing_plan_id INTEGER NOT NULL DEFAULT 1,
+                is_active    INTEGER DEFAULT 1,
+                is_featured  INTEGER DEFAULT 0,
+                views_count  INTEGER DEFAULT 0,
+                start_date   TEXT,
+                end_date     TEXT,
+                payment_status TEXT DEFAULT 'pending',
+                payment_id   TEXT,
+                created_at   TEXT DEFAULT (datetime('now')),
+                updated_at   TEXT DEFAULT (datetime('now'))
+            )");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rel_agent    ON real_estate_listings(agent_id)");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rel_active   ON real_estate_listings(is_active)");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_rel_province ON real_estate_listings(province)");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS service_listings (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                agent_id     INTEGER NOT NULL,
+                category_id  INTEGER NOT NULL,
+                title        TEXT NOT NULL,
+                description  TEXT,
+                service_type TEXT DEFAULT 'presencial',
+                price_from   REAL DEFAULT 0,
+                price_to     REAL DEFAULT 0,
+                price_type   TEXT DEFAULT 'hora',
+                currency     TEXT DEFAULT 'CRC',
+                province     TEXT,
+                canton       TEXT,
+                district     TEXT,
+                location_description TEXT,
+                experience_years INTEGER DEFAULT 0,
+                skills       TEXT,
+                availability TEXT,
+                images       TEXT,
+                contact_name  TEXT,
+                contact_phone TEXT,
+                contact_email TEXT,
+                contact_whatsapp TEXT,
+                website      TEXT,
+                pricing_plan_id INTEGER NOT NULL DEFAULT 1,
+                is_active    INTEGER DEFAULT 1,
+                is_featured  INTEGER DEFAULT 0,
+                views_count  INTEGER DEFAULT 0,
+                start_date   TEXT,
+                end_date     TEXT,
+                payment_status TEXT DEFAULT 'pending',
+                payment_id   TEXT,
+                created_at   TEXT DEFAULT (datetime('now')),
+                updated_at   TEXT DEFAULT (datetime('now'))
+            )");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sl_agent    ON service_listings(agent_id)");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sl_active   ON service_listings(is_active)");
+            $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sl_category ON service_listings(category_id)");
+
             // Insertar T&C iniciales si no existen
             $types = [
                 'cliente', 'vendedor', 'emprendedor',
