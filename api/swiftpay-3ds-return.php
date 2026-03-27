@@ -42,7 +42,15 @@ try {
     $pdo    = db();
     $client = new SwiftPayClient($pdo);
 
-    $result = $client->get3dsResult($swiftpayUuid ?: $ourClientId, $ourClientId);
+    $uuidUsed = $swiftpayUuid ?: $ourClientId;
+    error_log('[swiftpay-3ds-return] swiftpayUuid=' . $swiftpayUuid . ' ourClientId=' . $ourClientId . ' uuidUsed=' . $uuidUsed);
+
+    $result = $client->get3dsResult($uuidUsed, $ourClientId);
+
+    error_log('[swiftpay-3ds-return] result: approved=' . ($result->approved ? 'true' : 'false')
+        . ' pending3ds=' . ($result->pending3ds ? 'true' : 'false')
+        . ' errorMessage=' . $result->errorMessage
+        . ' rawResponse=' . json_encode($result->rawResponse));
 
     if ($result->isSuccess()) {
         $_SESSION['swiftpay_last'] = $result->toArray();
@@ -50,8 +58,14 @@ try {
         exit;
     }
 
-    $errMsg = urlencode($result->errorMessage ?: 'Validación 3DS fallida');
-    header('Location: ' . $errorUrl . '&reason=' . $errMsg);
+    if ($result->needs3ds()) {
+        // getResult3ds sigue devolviendo CONFIRMED — el 3DS no se procesó aún
+        header('Location: ' . $errorUrl . '&reason=' . urlencode('3DS pendiente: SwiftPay aún no procesó el resultado'));
+        exit;
+    }
+
+    $errMsg = $result->errorMessage ?: json_encode($result->rawResponse);
+    header('Location: ' . $errorUrl . '&reason=' . urlencode(substr($errMsg, 0, 200)));
     exit;
 
 } catch (SwiftPayException $e) {
