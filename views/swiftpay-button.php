@@ -489,6 +489,7 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
       });
 
       const data = await res.json();
+      console.log('[SwiftPay debug]', JSON.stringify(data));
 
       // ── 3DS requerido ──────────────────────────────────────────
       if (data.pending_3ds && data.redirect_url) {
