@@ -443,6 +443,10 @@ class SwiftPayClient
 
         $lookupId = !empty($ourClientId) ? $ourClientId : $swiftpayUuid;
         $tx       = $this->dbFindByClientId($lookupId);
+        // Fallback: buscar por UUID de SwiftPay en el raw_response si no encontramos por clientId
+        if (empty($tx) && !empty($swiftpayUuid)) {
+            $tx = $this->dbFindBySwiftpayUuid($swiftpayUuid);
+        }
         $txId     = (int)($tx['id'] ?? 0);
 
         // Guardar respuesta 3DS en columna separada (no pisa raw_response del paymentExternal)
@@ -765,6 +769,20 @@ class SwiftPayClient
                 "SELECT * FROM swiftpay_transactions WHERE client_id = ? ORDER BY id DESC LIMIT 1"
             );
             $s->execute([$clientId]);
+            return $s->fetch(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    /** Fallback: buscar transacción por UUID de SwiftPay dentro de raw_response */
+    private function dbFindBySwiftpayUuid(string $swiftpayUuid): array
+    {
+        try {
+            $s = $this->pdo->prepare(
+                "SELECT * FROM swiftpay_transactions WHERE raw_response LIKE ? ORDER BY id DESC LIMIT 1"
+            );
+            $s->execute(['%' . $swiftpayUuid . '%']);
             return $s->fetch(PDO::FETCH_ASSOC) ?: [];
         } catch (Throwable $e) {
             return [];
