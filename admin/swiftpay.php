@@ -70,8 +70,34 @@ $total = (int)$countStmt->fetchColumn();
 $pages = max(1, (int)ceil($total / $perPage));
 
 $listStmt = $pdo->prepare("
-    SELECT st.*
+    SELECT st.*,
+           -- Emprendedoras: comprador y vendedor
+           eo.buyer_name   AS eo_buyer_name,
+           eo.buyer_email  AS eo_buyer_email,
+           eo.buyer_phone  AS eo_buyer_phone,
+           us.name         AS eo_seller_name,
+           us.email        AS eo_seller_email,
+           -- Venta de Garaje: comprador
+           o.buyer_email   AS o_buyer_email,
+           o.buyer_phone   AS o_buyer_phone,
+           -- Para anulaciones: datos de la tx original
+           orig.id         AS orig_id,
+           orig.auth_code  AS orig_auth_code,
+           orig.order_id   AS orig_order_id
     FROM swiftpay_transactions st
+    LEFT JOIN entrepreneur_orders eo
+           ON st.reference_table = 'entrepreneur_orders' AND st.reference_id = eo.id
+    LEFT JOIN users us
+           ON eo.seller_user_id = us.id
+    LEFT JOIN orders o
+           ON st.reference_table = 'orders' AND st.reference_id = o.id
+    LEFT JOIN swiftpay_transactions orig
+           ON st.type = 'void'
+          AND orig.type != 'void'
+          AND orig.status IN ('approved','voided')
+          AND orig.amount = st.amount
+          AND orig.currency = st.currency
+          AND orig.id < st.id
     WHERE $whereSQL
     ORDER BY st.created_at DESC
     LIMIT $perPage OFFSET $offset
@@ -281,9 +307,9 @@ function refLabel(string $table): string {
             <th>Estado</th>
             <th>Monto</th>
             <th>Order ID</th>
-            <th>Token</th>
+            <th>Auth Code</th>
+            <th>RRN</th>
             <th>Modo</th>
-            <th>IP</th>
             <th>Acción</th>
           </tr>
         </thead>
@@ -291,7 +317,28 @@ function refLabel(string $table): string {
           <?php if (empty($rows)): ?>
           <tr><td colspan="11" style="text-align:center;padding:2rem;color:#94a3b8">Sin transacciones</td></tr>
           <?php endif; ?>
-          <?php foreach ($rows as $row): ?>
+          <?php foreach ($rows as $row):
+            // Resolver comprador y vendedor según origen
+            $buyerName  = '';
+            $buyerEmail = '';
+            $buyerPhone = '';
+            $sellerName = '';
+            if (!empty($row['eo_buyer_name'])) {
+                $buyerName  = $row['eo_buyer_name'];
+                $buyerEmail = $row['eo_buyer_email'] ?? '';
+                $buyerPhone = $row['eo_buyer_phone'] ?? '';
+                $sellerName = $row['eo_seller_name'] ?? '';
+            } elseif (!empty($row['o_buyer_email'])) {
+                $buyerEmail = $row['o_buyer_email'];
+                $buyerPhone = $row['o_buyer_phone'] ?? '';
+            }
+            // Auth code: propio si existe, o del tx original (para anulaciones)
+            $authCode   = $row['auth_code'] ?? '';
+            $origAuth   = $row['orig_auth_code'] ?? '';
+            $origId     = $row['orig_id'] ?? '';
+            $rrn        = $row['rrn'] ?? '';
+            $hasDetail  = $buyerName || $buyerEmail || $sellerName || $row['description'];
+          ?>
           <tr>
             <td class="mono"><?= $row['id'] ?></td>
             <td style="white-space:nowrap;font-size:.78rem;color:#475569"><?= h(substr($row['created_at'],0,16)) ?></td>
@@ -304,14 +351,23 @@ function refLabel(string $table): string {
               <span style="font-size:.65rem;color:#f59e0b;font-weight:600;display:block">SANDBOX</span>
               <?php endif; ?>
             </td>
-            <td class="mono"><?= h($row['order_id'] ?? '—') ?></td>
-            <td class="mono" style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="<?= h($row['token_card'] ?? '') ?>"><?= h($row['token_card'] ?? '—') ?></td>
+            <td class="mono" style="font-size:.75rem"><?= h($row['order_id'] ?: '—') ?></td>
+            <td class="mono" style="font-size:.75rem">
+              <?php if ($authCode): ?>
+                <span style="color:#065f46;font-weight:700"><?= h($authCode) ?></span>
+              <?php elseif ($origAuth): ?>
+                <span style="color:#6b7280;font-size:.7rem" title="Auth de tx original #<?= h($origId) ?>">
+                  ↩ <?= h($origAuth) ?>
+                </span>
+              <?php else: ?>—<?php endif; ?>
+            </td>
+            <td class="mono" style="font-size:.75rem"><?= h($rrn ?: '—') ?></td>
             <td>
               <span style="font-size:.72rem;font-weight:600;color:<?= $row['mode']==='live'?'#065f46':'#92400e' ?>">
                 <?= strtoupper(h($row['mode'])) ?>
               </span>
+              <span style="font-size:.65rem;color:#94a3b8;display:block"><?= h($row['ip_address'] ?? '') ?></span>
             </td>
-            <td class="mono" style="font-size:.72rem"><?= h($row['ip_address'] ?? '—') ?></td>
             <td>
               <?php if ($row['status'] === 'approved' && $row['type'] !== 'void'): ?>
               <button class="btn-void"
@@ -328,6 +384,33 @@ function refLabel(string $table): string {
               <?php endif; ?>
             </td>
           </tr>
+          <?php if ($hasDetail): ?>
+          <tr style="background:#f8fafc">
+            <td colspan="11" style="padding:.35rem 1rem .5rem 2rem;font-size:.76rem;color:#475569;border-bottom:1px solid #f1f5f9">
+              <?php if ($sellerName): ?>
+                <span style="margin-right:1.2rem">
+                  <i class="fas fa-store" style="color:#7c3aed;margin-right:.25rem"></i>
+                  <strong>Vendedor:</strong> <?= h($sellerName) ?> <?= $row['eo_seller_email'] ? '&lt;'.h($row['eo_seller_email']).'&gt;' : '' ?>
+                </span>
+              <?php endif; ?>
+              <?php if ($buyerName || $buyerEmail): ?>
+                <span style="margin-right:1.2rem">
+                  <i class="fas fa-user" style="color:#0284c7;margin-right:.25rem"></i>
+                  <strong>Comprador:</strong>
+                  <?= h($buyerName ?: '') ?>
+                  <?= $buyerEmail ? '&lt;'.h($buyerEmail).'&gt;' : '' ?>
+                  <?= $buyerPhone ? ' · '.h($buyerPhone) : '' ?>
+                </span>
+              <?php endif; ?>
+              <?php if ($row['description']): ?>
+                <span>
+                  <i class="fas fa-tag" style="color:#94a3b8;margin-right:.25rem"></i>
+                  <?= h($row['description']) ?>
+                </span>
+              <?php endif; ?>
+            </td>
+          </tr>
+          <?php endif; ?>
           <?php if (!empty($row['error_message'])): ?>
           <tr>
             <td colspan="11" style="background:#fff5f5;padding:.4rem 1rem;font-size:.76rem;color:#991b1b;border-bottom:1px solid #f1f5f9">
