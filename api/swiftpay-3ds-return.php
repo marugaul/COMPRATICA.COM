@@ -48,11 +48,13 @@ try {
     exit;
 
 } catch (SwiftPayException $e) {
-    error_log('[swiftpay-3ds-return] Error: ' . $e->getMessage());
-    header('Location: ' . $errorUrl . '&reason=gateway_error');
+    $msg = $e->getMessage();
+    error_log('[swiftpay-3ds-return] SwiftPayException: ' . $msg);
+    header('Location: ' . $errorUrl . '&reason=' . urlencode(substr($msg, 0, 120)));
     exit;
 } catch (Throwable $e) {
-    error_log('[swiftpay-3ds-return] Error inesperado: ' . $e->getMessage());
-    header('Location: ' . $errorUrl . '&reason=internal_error');
+    $msg = $e->getMessage();
+    error_log('[swiftpay-3ds-return] Error inesperado: ' . $msg);
+    header('Location: ' . $errorUrl . '&reason=' . urlencode(substr($msg, 0, 120)));
     exit;
 }

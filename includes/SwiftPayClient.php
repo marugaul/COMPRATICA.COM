@@ -431,19 +431,37 @@ class SwiftPayClient
     /**
      * Consultar resultado de validación 3DS.
      * Llamar desde la página de retorno después de que SwiftPay redirija al usuario.
-     * Según el manual PDF: Método POST con clientId en URL y en body.
+     * Endpoint GET: /api/card/getResult3ds/{clientId}
      */
     public function get3dsResult(string $clientId): SwiftPayResult
     {
-        $url     = $this->ep(self::EP_3DS_RESULT . $clientId);
-        $payload = ['clientId' => $clientId, 'token' => $this->jwt];
+        $url = $this->ep(self::EP_3DS_RESULT . $clientId);
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json', 'Content-Type: application/json'],
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $raw      = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr  = curl_error($ch);
+        curl_close($ch);
+
+        error_log('[SwiftPay][get3dsResult] GET ' . $url . ' → HTTP ' . $httpCode);
+
+        if ($curlErr) throw new SwiftPayException('get3dsResult cURL error: ' . $curlErr);
+
+        $decoded = json_decode($raw ?: '{}', true);
+        if (!is_array($decoded)) {
+            throw new SwiftPayException('get3dsResult respuesta inválida (HTTP ' . $httpCode . '): ' . substr((string)$raw, 0, 300));
+        }
 
         $tx   = $this->dbFindByClientId($clientId);
         $txId = (int)($tx['id'] ?? 0);
 
-        $response = $this->post($url, $payload);
-
-        return $this->buildResult($response, $clientId, $txId);
+        return $this->buildResult($decoded, $clientId, $txId);
     }
 
     /** Modo actual: 'sandbox' o 'live' */
