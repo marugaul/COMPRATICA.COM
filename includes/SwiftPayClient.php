@@ -536,7 +536,7 @@ class SwiftPayClient
                 'int_ref'       => $intRef,
                 'auth_code'     => $authCode,
                 'is_3ds'        => $needs3ds ? 1 : 0,
-                'error_message' => (!$approved && !$needs3ds) ? ($errorMsg ?: json_encode($response)) : '',
+                'error_message' => (!$approved && !$needs3ds) ? ($errorMsg ?: 'Transacción rechazada') : '',
                 'raw_response'  => json_encode($response),
             ]);
         }
