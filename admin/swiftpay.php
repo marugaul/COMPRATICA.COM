@@ -142,8 +142,9 @@ function refLabel(string $table): string {
 $txLogs = [];
 foreach ($rows as $r) {
     $txLogs[(int)$r['id']] = [
-        'req' => $r['raw_request']  ?? null,
-        'res' => $r['raw_response'] ?? null,
+        'req'  => $r['raw_request']      ?? null,
+        'res'  => $r['raw_response']     ?? null,
+        'res3' => $r['raw_response_3ds'] ?? null,
     ];
 }
 ?>
@@ -205,6 +206,8 @@ foreach ($rows as $r) {
     .json-close{margin-left:auto;background:none;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;line-height:1;padding:.2rem .5rem;border-radius:6px}
     .json-close:hover{color:#fff;background:#374151}
     .json-panels{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden;gap:0;min-height:0}
+    .json-panels.has-3ds{grid-template-columns:1fr 1fr 1fr}
+    @media(max-width:900px){.json-panels.has-3ds{grid-template-columns:1fr}}
     @media(max-width:700px){.json-panels{grid-template-columns:1fr}}
     .json-panel{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid #e2e8f0}
     .json-panel:last-child{border-right:none}
@@ -489,7 +492,7 @@ foreach ($rows as $r) {
       <span id="json-modal-title"></span>
       <button class="json-close" onclick="closeJsonModal()">&#x2715;</button>
     </div>
-    <div class="json-panels">
+    <div class="json-panels" id="json-panels-wrap">
       <div class="json-panel">
         <div class="json-panel-header">
           <i class="fas fa-upload" style="color:#3b82f6"></i> REQUEST (enviado a SwiftPay)
@@ -499,10 +502,17 @@ foreach ($rows as $r) {
       </div>
       <div class="json-panel">
         <div class="json-panel-header">
-          <i class="fas fa-download" style="color:#10b981"></i> RESPONSE (recibido de SwiftPay)
+          <i class="fas fa-download" style="color:#10b981"></i> RESPONSE paymentExternal
           <button class="copy-btn" onclick="copyJson('res')">Copiar</button>
         </div>
         <pre class="json-pre" id="json-res">—</pre>
+      </div>
+      <div class="json-panel" id="json-panel-3ds" style="display:none">
+        <div class="json-panel-header">
+          <i class="fas fa-shield-alt" style="color:#f59e0b"></i> RESPONSE getResult3DS
+          <button class="copy-btn" onclick="copyJson('res3')">Copiar</button>
+        </div>
+        <pre class="json-pre" id="json-res3">—</pre>
       </div>
     </div>
   </div>
@@ -572,10 +582,19 @@ function prettyJson(raw) {
 }
 
 function openJsonModal(txId) {
-    const data = TX_LOGS[txId] || {};
+    const data    = TX_LOGS[txId] || {};
+    const has3ds  = !!(data.res3);
+    const panels  = document.getElementById('json-panels-wrap');
+    const panel3  = document.getElementById('json-panel-3ds');
+
     document.getElementById('json-modal-title').textContent = ' — TX #' + txId;
-    document.getElementById('json-req').textContent = prettyJson(data.req || null);
-    document.getElementById('json-res').textContent = prettyJson(data.res || null);
+    document.getElementById('json-req').textContent  = prettyJson(data.req  || null);
+    document.getElementById('json-res').textContent  = prettyJson(data.res  || null);
+    document.getElementById('json-res3').textContent = prettyJson(data.res3 || null);
+
+    panel3.style.display = has3ds ? '' : 'none';
+    panels.classList.toggle('has-3ds', has3ds);
+
     document.getElementById('json-modal').classList.add('open');
     document.body.style.overflow = 'hidden';
 }

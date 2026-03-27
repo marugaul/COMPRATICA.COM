@@ -461,6 +461,17 @@ class SwiftPayClient
         $tx   = $this->dbFindByClientId($clientId);
         $txId = (int)($tx['id'] ?? 0);
 
+        // Guardar respuesta 3DS en columna separada (no pisa raw_response del paymentExternal)
+        if ($txId > 0) {
+            try {
+                $this->pdo->prepare(
+                    "UPDATE swiftpay_transactions SET raw_response_3ds = ?, updated_at = datetime('now') WHERE id = ?"
+                )->execute([json_encode($decoded), $txId]);
+            } catch (Throwable $e) {
+                error_log('[SwiftPayClient] save raw_response_3ds error: ' . $e->getMessage());
+            }
+        }
+
         return $this->buildResult($decoded, $clientId, $txId);
     }
 
