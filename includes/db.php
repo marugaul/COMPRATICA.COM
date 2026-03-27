@@ -935,6 +935,19 @@ function db() {
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sl_active   ON service_listings(is_active)");
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sl_category ON service_listings(category_id)");
 
+            // ── Migraciones silenciosas para tablas de portales que ya pueden existir ──
+            // Agrega columnas que los dashboards necesitan pero pueden faltar en tablas antiguas
+            try {
+                $relCols = array_column($pdo->query("PRAGMA table_info(real_estate_listings)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+                if (!in_array('agent_id', $relCols))
+                    $pdo->exec("ALTER TABLE real_estate_listings ADD COLUMN agent_id INTEGER");
+            } catch (Throwable $_e) {}
+            try {
+                $lpCols = array_column($pdo->query("PRAGMA table_info(listing_pricing)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+                if (!in_array('payment_methods', $lpCols))
+                    $pdo->exec("ALTER TABLE listing_pricing ADD COLUMN payment_methods TEXT");
+            } catch (Throwable $_e) {}
+
             // Insertar T&C iniciales si no existen
             $types = [
                 'cliente', 'vendedor', 'emprendedor',
