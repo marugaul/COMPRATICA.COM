@@ -271,6 +271,26 @@ $has_paypal = (!empty($pm['active_paypal']) && !empty($pm['paypal_email']));
 $has_sinpe  = (!empty($pm['active_sinpe'])  && !empty($pm['sinpe_phone']));
 $has_card   = !empty($pm['active_card']);
 
+// Pre-guardar contexto para que swiftpay-charge.php pueda crear la orden sin re-consultar
+if ($has_card) {
+    $_SESSION['swiftpay_checkout'] = [
+        'order_number'  => 'ORD-' . date('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6)),
+        'user_id'       => $user_id,
+        'user_name'     => (string)($user['name']  ?? ''),
+        'user_email'    => (string)($user['email'] ?? ''),
+        'user_phone'    => (string)($user['phone'] ?? ''),
+        'items'         => $items,
+        'subtotal'      => $subtotal,
+        'tax_total'     => $tax_total,
+        'grand_total'   => $grand_total,
+        'currency'      => $currency,
+        'exchange_rate' => $exchange_rate,
+        'affiliate_id'  => $affiliate_id,
+        'sale_id'       => $sale_id,
+        'cart_id'       => $cart_id,
+    ];
+}
+
 // Opciones de envío del afiliado (affiliate_shipping_options puede no existir aún)
 $shipping_opts = null;
 try {
@@ -1258,13 +1278,15 @@ foreach ($_SESSION['cart'] as $it) {
 <?php endif; ?>
 
 <?php if ($has_card):
-  $sp_amount      = number_format($grand_total, 2, '.', '');
-  $sp_currency    = $currency;
-  $sp_description = 'Compra en CompraTica #' . $cart_id;
+  $sp_amount          = number_format($grand_total, 2, '.', '');
+  $sp_currency        = $currency;
+  $sp_description     = 'Compra en CompraTica #' . $cart_id;
   $sp_reference_id    = $cart_id;
   $sp_reference_table = 'carts';
-  $sp_success_url = '/checkout.php?payment=ok&sale_id=' . (int)$sale_id;
-  $sp_cancel_url  = 'javascript:toggleSwiftPayPanel(false)';
+  $sp_sale_id         = $sale_id;
+  $sp_extra_fields    = ['customer_phone', 'location_url', 'otras_senas'];
+  $sp_success_url     = '/order-success.php';   // fallback; swiftpay-charge.php devuelve redirect_url
+  $sp_cancel_url      = 'javascript:toggleSwiftPayPanel(false)';
 ?>
 <div id="swiftpay-panel" style="display:none;max-width:480px;margin:1.5rem auto;">
   <?php include __DIR__ . '/views/swiftpay-button.php'; ?>

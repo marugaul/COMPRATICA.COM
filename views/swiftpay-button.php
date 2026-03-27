@@ -24,8 +24,10 @@ $sp_currency    = strtoupper($sp_currency    ?? 'CRC');
 $sp_description = $sp_description ?? 'Pago en CompraTica';
 $sp_reference_id    = (int)($sp_reference_id    ?? 0);
 $sp_reference_table = (string)($sp_reference_table ?? '');
-$sp_success_url = $sp_success_url ?? '/';
-$sp_cancel_url  = $sp_cancel_url  ?? 'javascript:history.back()';
+$sp_sale_id      = (int)($sp_sale_id      ?? 0);
+$sp_extra_fields = $sp_extra_fields ?? [];
+$sp_success_url  = $sp_success_url  ?? '/';
+$sp_cancel_url   = $sp_cancel_url   ?? 'javascript:history.back()';
 
 // Indicador de modo (sandbox / live)
 $sp_is_sandbox  = defined('SWIFTPAY_SANDBOX') && SWIFTPAY_SANDBOX;
@@ -372,13 +374,15 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
   const logos    = W.querySelectorAll('.sp-brand-logo');
 
   const CONFIG = {
-    chargeUrl:   '/api/swiftpay-charge.php',
-    amount:      '<?= htmlspecialchars($sp_amount) ?>',
-    currency:    '<?= htmlspecialchars($sp_currency) ?>',
-    description: <?= json_encode($sp_description) ?>,
+    chargeUrl:      '/api/swiftpay-charge.php',
+    amount:         '<?= htmlspecialchars($sp_amount) ?>',
+    currency:       '<?= htmlspecialchars($sp_currency) ?>',
+    description:    <?= json_encode($sp_description) ?>,
     referenceId:    <?= (int)$sp_reference_id ?>,
     referenceTable: <?= json_encode($sp_reference_table) ?>,
-    successUrl:  <?= json_encode($sp_success_url) ?>,
+    saleId:         <?= (int)$sp_sale_id ?>,
+    extraFields:    <?= json_encode($sp_extra_fields) ?>,
+    successUrl:     <?= json_encode($sp_success_url) ?>,
   };
 
   // ── Detección de marca ─────────────────────────────────────────
@@ -505,6 +509,13 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
 
     const expRaw = inp.expiry.value.replace('/', ''); // MMYY
 
+    // Recoger campos extra del formulario (teléfono, dirección, notas)
+    const extraData = {};
+    (CONFIG.extraFields || []).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) extraData[id] = el.value;
+    });
+
     try {
       const res = await fetch(CONFIG.chargeUrl, {
         method:  'POST',
@@ -518,6 +529,8 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
           description:     CONFIG.description,
           reference_id:    CONFIG.referenceId,
           reference_table: CONFIG.referenceTable,
+          sale_id:         CONFIG.saleId,
+          ...extraData,
         }),
       });
 
@@ -537,11 +550,29 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
         inp.card.value = ''; _rawCard = '';
         inp.expiry.value = '';
         inp.cvv.value  = ''; _rawCvv  = '';
+
+        const dest = data.redirect_url || CONFIG.successUrl;
         setTimeout(() => {
-          window.location.href = CONFIG.successUrl
-            + (CONFIG.successUrl.includes('?') ? '&' : '?')
-            + 'order_id=' + encodeURIComponent(data.order_id || '');
+          window.location.href = dest;
         }, 1200);
+
+        // Fallback: si por algún motivo no redirigió en 5s, bloquear la página
+        setTimeout(() => {
+          if (document.visibilityState !== 'hidden') {
+            document.body.style.pointerEvents = 'none';
+            document.body.style.opacity = '0.4';
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+            overlay.innerHTML = '<div style="background:#fff;border-radius:14px;padding:2rem 2.5rem;text-align:center;max-width:360px;">'
+              + '<div style="font-size:2.5rem;margin-bottom:.5rem;">✅</div>'
+              + '<h3 style="margin:0 0 .5rem;color:#2e7d32;">¡Pago aprobado!</h3>'
+              + '<p style="color:#555;margin:0 0 1.5rem;font-size:.95rem;">Tu pago fue procesado exitosamente.</p>'
+              + '<a href="' + (dest.split('?')[0].replace('order-success.php','') || '/') + '" '
+              + 'style="display:inline-block;background:#e53935;color:#fff;padding:.75rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:700;">Volver a la tienda</a>'
+              + '</div>';
+            document.body.appendChild(overlay);
+          }
+        }, 5000);
         return;
       }
 
