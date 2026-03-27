@@ -230,12 +230,14 @@ function crearOrdenSwiftPay(PDO $pdo, SwiftPayResult $result, string $customerPh
         // Datos del afiliado (vendedor)
         $affEmail = '';
         $affName  = 'Vendedor';
+        $affPhone = '';
         if ($affiliateId > 0) {
-            $st = $pdo->prepare("SELECT email, name FROM affiliates WHERE id=? LIMIT 1");
+            $st = $pdo->prepare("SELECT email, name, phone FROM affiliates WHERE id=? LIMIT 1");
             $st->execute([$affiliateId]);
             $row = $st->fetch(PDO::FETCH_ASSOC) ?: [];
             $affEmail = strtolower(trim((string)($row['email'] ?? '')));
-            $affName  = (string)($row['name'] ?? 'Vendedor');
+            $affName  = (string)($row['name']  ?? 'Vendedor');
+            $affPhone = (string)($row['phone'] ?? '');
         }
 
         // Título de la tienda
@@ -260,6 +262,16 @@ function crearOrdenSwiftPay(PDO $pdo, SwiftPayResult $result, string $customerPh
         $txnSafe   = htmlspecialchars($txnId, ENT_QUOTES, 'UTF-8');
         $saleTag   = $saleTitle ? ' &mdash; <em>' . htmlspecialchars($saleTitle, ENT_QUOTES, 'UTF-8') . '</em>' : '';
 
+        // Helpers de contacto reutilizables
+        $esc = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+        $contactBox = fn(string $name, string $email, string $phone, string $label) =>
+            '<div style="margin:20px 0;padding:14px 16px;background:#f8f9fa;border-left:3px solid #e53935;border-radius:6px;">'
+            . '<p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;">' . $label . '</p>'
+            . '<p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#1a202c;">' . $esc($name) . '</p>'
+            . ($email ? '<p style="margin:0 0 4px;font-size:13px;color:#555;"><a href="mailto:' . $esc($email) . '" style="color:#e53935;text-decoration:none;">' . $esc($email) . '</a></p>' : '')
+            . ($phone ? '<p style="margin:0;font-size:13px;color:#555;">📞 ' . $esc($phone) . '</p>' : '')
+            . '</div>';
+
         // ── Correo al comprador ───────────────────────────────────
         if ($userEmail !== '') {
             $body = '
@@ -268,11 +280,12 @@ function crearOrdenSwiftPay(PDO $pdo, SwiftPayResult $result, string $customerPh
                 <h2 style="margin:8px 0 4px;font-size:22px;color:#2e7d32;">Pago con tarjeta confirmado</h2>
                 <p style="margin:0;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $orderSafe . '</strong>' . $saleTag . '</p>
               </div>
-              <p style="font-size:15px;margin:0 0 16px;">Hola <strong>' . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . '</strong>,</p>
+              <p style="font-size:15px;margin:0 0 16px;">Hola <strong>' . $esc($userName) . '</strong>,</p>
               <p style="font-size:15px;margin:0 0 20px;color:#555;">Tu pago fue procesado exitosamente. Aquí está el resumen de tu compra:</p>
               ' . email_product_table($emailItems, $currency) . '
               ' . email_total_block($grandTotal, 0, $grandTotal, $currency) . '
               <p style="margin:20px 0 0;font-size:13px;color:#999;">Estado: ' . email_status_badge('Pagado') . '</p>
+              ' . ($affName ? $contactBox($affName, $affEmail, $affPhone, 'Datos del vendedor') : '') . '
               <p style="margin:8px 0 0;font-size:12px;color:#bbb;">Referencia SwiftPay: ' . $txnSafe . '</p>';
             @send_mail($userEmail, 'Pago confirmado — Orden ' . $orderNumber, email_html($body));
         }
@@ -282,15 +295,12 @@ function crearOrdenSwiftPay(PDO $pdo, SwiftPayResult $result, string $customerPh
             $body = '
               <h2 style="margin:0 0 4px;font-size:22px;color:#333;">Pago con tarjeta recibido en tu tienda</h2>
               <p style="margin:0 0 20px;font-size:13px;color:#999;">Orden: <strong style="color:#333;">' . $orderSafe . '</strong></p>
-              <p style="font-size:15px;margin:0 0 16px;">Hola <strong>' . htmlspecialchars($affName, ENT_QUOTES, 'UTF-8') . '</strong>,</p>
-              <p style="font-size:15px;margin:0 0 20px;color:#555;">
-                Se confirmó el pago con tarjeta de
-                <strong>' . htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') . '</strong>
-                (<a href="mailto:' . htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8') . '" style="color:#e53935;">' . htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8') . '</a>).
-              </p>
+              <p style="font-size:15px;margin:0 0 16px;">Hola <strong>' . $esc($affName) . '</strong>,</p>
+              <p style="font-size:15px;margin:0 0 4px;color:#555;">Se confirmó el pago con tarjeta por el siguiente pedido:</p>
               ' . email_product_table($emailItems, $currency) . '
               ' . email_total_block($grandTotal, 0, $grandTotal, $currency) . '
               <p style="margin:20px 0 0;font-size:13px;color:#999;">Estado: ' . email_status_badge('Pagado') . '</p>
+              ' . $contactBox($userName, $userEmail, $userPhone, 'Datos del comprador') . '
               <p style="margin:8px 0 0;font-size:12px;color:#bbb;">Referencia SwiftPay: ' . $txnSafe . '</p>';
             @send_mail($affEmail, '[COMPRATICA] Pago con tarjeta recibido — Orden ' . $orderNumber, email_html($body));
         }
