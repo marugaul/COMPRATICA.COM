@@ -1141,7 +1141,8 @@ foreach ($_SESSION['cart'] as $it) {
             <div class="payment-methods">
               <?php if ($has_paypal): ?>
                 <label class="payment-option">
-                  <input type="radio" name="payment_method" value="paypal" required>
+                  <input type="radio" name="payment_method" value="paypal" required
+                         onchange="toggleSwiftPayPanel(false)">
                   <span class="payment-icon">💳</span>
                   <div class="payment-info">
                     <h4>PayPal</h4>
@@ -1156,7 +1157,8 @@ foreach ($_SESSION['cart'] as $it) {
               <?php endif; ?>
               <?php if ($has_sinpe): ?>
                 <label class="payment-option">
-                  <input type="radio" name="payment_method" value="sinpe" required>
+                  <input type="radio" name="payment_method" value="sinpe" required
+                         onchange="toggleSwiftPayPanel(false)">
                   <span class="payment-icon">📱</span>
                   <div class="payment-info">
                     <h4>SINPE Móvil</h4>
@@ -1173,7 +1175,7 @@ foreach ($_SESSION['cart'] as $it) {
               <?php if ($has_card): ?>
                 <label class="payment-option" id="card-payment-label">
                   <input type="radio" name="payment_method" value="card" required
-                         onchange="document.getElementById('swiftpay-panel').style.display='block'">
+                         onchange="toggleSwiftPayPanel(true)">
                   <span class="payment-icon">
                     <img src="/assets/img/swiftpay-logo.png" alt="SwiftPay" style="height:26px;border-radius:4px;vertical-align:middle;"
                          onerror="this.outerHTML='💳'">
@@ -1184,23 +1186,6 @@ foreach ($_SESSION['cart'] as $it) {
                   </div>
                 </label>
               <?php endif; ?>
-            </div>
-
-            <?php if ($has_card): ?>
-            <!-- Panel de pago con tarjeta (SwiftPay) -->
-            <div id="swiftpay-panel" style="display:none;margin-top:1.5rem;">
-              <?php
-                $sp_amount      = number_format($grand_total, 2, '.', '');
-                $sp_currency    = $currency;
-                $sp_description = 'Compra en CompraTica #' . ($affiliate_id ?? '');
-                $sp_reference_id    = 0;
-                $sp_reference_table = 'orders';
-                $sp_success_url = '/checkout.php?payment=ok';
-                $sp_cancel_url  = '';
-                include __DIR__ . '/views/swiftpay-button.php';
-              ?>
-            </div>
-            <?php endif; ?>
 
           <?php endif; ?>
         </div>
@@ -1248,7 +1233,7 @@ foreach ($_SESSION['cart'] as $it) {
             </div>
           </div>
 
-          <button type="submit" class="btn-primary" <?= (!$has_paypal && !$has_sinpe && !$has_card) ? 'disabled' : '' ?>>
+          <button type="submit" id="checkout-submit-btn" class="btn-primary" <?= (!$has_paypal && !$has_sinpe && !$has_card) ? 'disabled' : '' ?>>
             <i class="fas fa-lock"></i> Confirmar y Pagar
           </button>
 
@@ -1261,11 +1246,43 @@ foreach ($_SESSION['cart'] as $it) {
       </div>
     </div>
   </form>
+
+<?php if (($GET_payment = ($_GET['payment'] ?? '')) === 'ok'): ?>
+  <div style="background:#d4edda;border:1px solid #c3e6cb;border-left:4px solid #27ae60;color:#155724;padding:1.25rem 1.5rem;border-radius:10px;margin:1.5rem 0;display:flex;align-items:center;gap:.75rem;">
+    <i class="fas fa-check-circle" style="font-size:1.4rem;color:#27ae60;"></i>
+    <div>
+      <strong>¡Pago con tarjeta aprobado!</strong><br>
+      <span style="font-size:.9rem;">Tu pago fue procesado exitosamente. El vendedor recibirá tu pedido a la brevedad.</span>
+    </div>
+  </div>
+<?php endif; ?>
+
+<?php if ($has_card):
+  $sp_amount      = number_format($grand_total, 2, '.', '');
+  $sp_currency    = $currency;
+  $sp_description = 'Compra en CompraTica #' . $cart_id;
+  $sp_reference_id    = $cart_id;
+  $sp_reference_table = 'carts';
+  $sp_success_url = '/checkout.php?payment=ok&sale_id=' . (int)$sale_id;
+  $sp_cancel_url  = 'javascript:toggleSwiftPayPanel(false)';
+?>
+<div id="swiftpay-panel" style="display:none;max-width:480px;margin:1.5rem auto;">
+  <?php include __DIR__ . '/views/swiftpay-button.php'; ?>
+</div>
+<?php endif; ?>
+
 </div>
 
 <script>
 // Variables globales
 let shippingCost = 0;
+
+function toggleSwiftPayPanel(show) {
+  const panel     = document.getElementById('swiftpay-panel');
+  const submitBtn = document.getElementById('checkout-submit-btn');
+  if (panel)     panel.style.display     = show ? 'block' : 'none';
+  if (submitBtn) submitBtn.style.display = show ? 'none'  : '';
+}
 const baseTotal = <?= isset($grand_total) && is_numeric($grand_total) ? $grand_total : 0 ?>;
 const currency = '<?= isset($currency) ? addslashes($currency) : 'CRC' ?>';
 
@@ -1344,6 +1361,7 @@ document.querySelectorAll('.payment-option').forEach(opt => {
     this.classList.add('selected');
     const r = this.querySelector('input[type="radio"]');
     if (r) r.checked = true;
+    toggleSwiftPayPanel(r && r.value === 'card');
   });
 });
 
@@ -1582,12 +1600,17 @@ const form = document.getElementById('checkout-form');
 form.addEventListener('submit', function(e){
   // Validar método de pago
   const pm = document.querySelector('input[name="payment_method"]:checked');
-  if (!pm) { 
-    e.preventDefault(); 
-    alert('Por favor selecciona un método de pago'); 
+  if (!pm) {
+    e.preventDefault();
+    alert('Por favor selecciona un método de pago');
     return false;
   }
-  
+  if (pm.value === 'card') {
+    e.preventDefault();
+    toggleSwiftPayPanel(true);
+    return false;
+  }
+
   // Validar teléfono
   const phone = document.getElementById('customer_phone').value.trim();
   if (!phone) { 
