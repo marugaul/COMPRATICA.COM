@@ -23,7 +23,10 @@ session_destroy();
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #1a6b3a, #2e9e5b); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #1a6b3a, #2e9e5b); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; gap: 1.25rem; }
+    .topnav { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+    .topnav a { background: rgba(255,255,255,0.15); color: #fff; text-decoration: none; padding: 0.5rem 1.1rem; border-radius: 999px; font-size: 0.875rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.3); transition: background 0.2s; }
+    .topnav a:hover { background: rgba(255,255,255,0.28); }
     .card { background: #fff; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); padding: 3rem 2.5rem; max-width: 420px; width: 100%; text-align: center; }
     .icon { font-size: 3.5rem; margin-bottom: 1rem; }
     h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.5rem; }
@@ -36,6 +39,11 @@ session_destroy();
   </style>
 </head>
 <body>
+  <nav class="topnav">
+    <a href="/">🏠 CompraTica</a>
+    <a href="/empleos">💼 Ver Empleos</a>
+    <a href="/servicios">🔧 Ver Servicios</a>
+  </nav>
   <div class="card">
     <div class="icon">👋</div>
     <h1>Sesión cerrada</h1>
