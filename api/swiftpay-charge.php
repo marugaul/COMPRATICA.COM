@@ -41,6 +41,11 @@ $cvv         = trim((string)($body['cvv'] ?? ''));
 $amount      = trim((string)($body['amount'] ?? ''));
 $currency    = strtoupper(trim((string)($body['currency'] ?? 'CRC')));
 $description = trim((string)($body['description'] ?? 'Compra en CompraTica'));
+
+// En sandbox SwiftPay requiere la palabra "3ds" en la descripción para activar el flujo 3D Secure
+if (defined('SWIFTPAY_SANDBOX') && SWIFTPAY_SANDBOX && stripos($description, '3ds') === false) {
+    $description .= ' 3ds';
+}
 $refId       = (int)($body['reference_id'] ?? 0);
 $refTable    = trim((string)($body['reference_table'] ?? ''));
 
