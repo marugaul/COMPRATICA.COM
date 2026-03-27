@@ -128,7 +128,7 @@ try {
 
     // ── Pago rechazado ─────────────────────────────────────────────
     $msg = $result->errorMessage ?: 'Transacción declinada. Verificá los datos de tu tarjeta.';
-    echo json_encode(['ok' => false, 'error' => $msg, '_debug_raw' => $result->rawResponse]);
+    echo json_encode(['ok' => false, 'error' => $msg]);
 
 } catch (SwiftPayException $e) {
     error_log('[swiftpay-charge] SwiftPayException: ' . $e->getMessage());

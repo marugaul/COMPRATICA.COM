@@ -522,7 +522,6 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
       });
 
       const data = await res.json();
-      console.log('[SwiftPay debug]', JSON.stringify(data));
 
       // ── 3DS requerido ──────────────────────────────────────────
       if (data.pending_3ds && data.redirect_url) {
@@ -547,9 +546,7 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
       }
 
       // ── Error ──────────────────────────────────────────────────
-      let errMsg = data.error || 'El pago fue rechazado. Verificá tus datos.';
-      if (data._debug_raw) errMsg += '\n\nRespuesta SwiftPay: ' + JSON.stringify(data._debug_raw);
-      showMsg(errMsg, 'error');
+      showMsg(data.error || 'El pago fue rechazado. Verificá tus datos.', 'error');
 
     } catch (err) {
       showMsg('Error de conexión. Revisá tu internet e intentá de nuevo.', 'error');
