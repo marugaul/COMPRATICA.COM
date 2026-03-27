@@ -563,7 +563,7 @@ class SwiftPayClient
         if (isset($r['success']))      return (bool)$r['success'];
         if (isset($r['ipsRc']))        return $r['ipsRc'] === '00';
         if (isset($r['responseCode'])) return $r['responseCode'] === '00';
-        if (isset($r['status']))       return in_array(strtolower((string)$r['status']), ['approved', 'success', 'ok', '00', 'confirmed'], true);
+        if (isset($r['status']))       return in_array(strtolower((string)$r['status']), ['approved', 'success', 'ok', '00'], true);
         // Si hay orderId y no hay error, asumir aprobado
         if (!empty($r['orderId']) && empty($r['error']) && empty($r['message'])) return true;
         return false;
@@ -576,7 +576,7 @@ class SwiftPayClient
             || !empty($r['urlRedirect'])
             || !empty($r['redirect'])
             || (isset($r['requires3ds']) && $r['requires3ds'])
-            || (isset($r['status']) && strtolower((string)$r['status']) === '3ds');
+            || (isset($r['status']) && in_array(strtolower((string)$r['status']), ['3ds', 'confirmed'], true));
     }
 
     /** URL a la que SwiftPay redirige al usuario después del 3DS */
