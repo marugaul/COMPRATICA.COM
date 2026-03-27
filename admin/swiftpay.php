@@ -441,10 +441,14 @@ foreach ($rows as $r) {
             </td>
           </tr>
           <?php endif; ?>
-          <?php if (!empty($row['error_message'])): ?>
+          <?php
+            $errMsg  = trim($row['error_message'] ?? '');
+            $showErr = $errMsg !== '' && $errMsg[0] !== '{' && $errMsg[0] !== '[';
+          ?>
+          <?php if ($showErr): ?>
           <tr>
             <td colspan="11" style="background:#fff5f5;padding:.4rem 1rem;font-size:.76rem;color:#991b1b;border-bottom:1px solid #f1f5f9">
-              <i class="fas fa-exclamation-triangle"></i> <?= h($row['error_message']) ?>
+              <i class="fas fa-exclamation-triangle"></i> <?= h($errMsg) ?>
             </td>
           </tr>
           <?php endif; ?>
