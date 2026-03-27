@@ -9,14 +9,14 @@ require_once __DIR__ . '/../includes/db.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 // Verificar sesión
-if (!isset($_SESSION['employer_id']) || $_SESSION['employer_id'] <= 0) {
+$employer_id = (int)($_SESSION['employer_id'] ?? $_SESSION['user_id'] ?? $_SESSION['uid'] ?? 0);
+if ($employer_id <= 0) {
   header('Location: login.php');
   exit;
 }
 
 $pdo = db();
-$employer_id = (int)$_SESSION['employer_id'];
-$employer_name = $_SESSION['employer_name'] ?? 'Usuario';
+$employer_name = $_SESSION['employer_name'] ?? $_SESSION['user_name'] ?? $_SESSION['name'] ?? 'Usuario';
 
 // Obtener ID de la publicación
 $listing_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;

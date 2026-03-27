@@ -9,14 +9,14 @@ require_once __DIR__ . '/../includes/db.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 // Verificar autenticación
-if (!isset($_SESSION['agent_id']) || $_SESSION['agent_id'] <= 0) {
+$agent_id = (int)($_SESSION['agent_id'] ?? $_SESSION['user_id'] ?? $_SESSION['uid'] ?? 0);
+if ($agent_id <= 0) {
   header('Location: login.php');
   exit;
 }
 
 $pdo = db();
-$agent_id = (int)$_SESSION['agent_id'];
-$agent_name = $_SESSION['agent_name'] ?? 'Usuario';
+$agent_name = $_SESSION['agent_name'] ?? $_SESSION['user_name'] ?? $_SESSION['name'] ?? 'Usuario';
 $listing_id = (int)($_GET['listing_id'] ?? 0);
 
 if ($listing_id <= 0) {
