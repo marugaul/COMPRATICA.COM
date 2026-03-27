@@ -10,7 +10,8 @@ require_once __DIR__ . '/../includes/db.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (empty($_SESSION['agent_id'])) {
+$agent_id = (int)($_SESSION['agent_id'] ?? $_SESSION['user_id'] ?? $_SESSION['uid'] ?? 0);
+if ($agent_id <= 0) {
     echo json_encode(['ok' => false, 'error' => 'No autorizado']);
     exit;
 }
