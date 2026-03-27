@@ -430,18 +430,20 @@ class SwiftPayClient
 
     /**
      * Consultar resultado de validación 3DS.
-     * Según manual PDF: POST con clientId en URL y en body + token JWT.
-     * Endpoint: /api/card/getResult3ds/{clientId}  (sandbox: /api/card/qa/getResult3ds/{clientId})
+     * Según demo oficial de SwiftPay: GET /getResult3ds/{swiftpayUuid}
+     * SwiftPay envía su propio "uuid" al page_result — no nuestro clientId.
+     *
+     * @param string $swiftpayUuid  UUID que SwiftPay envió al page_result ($_GET['uuid'])
+     * @param string $ourClientId   Nuestro clientId para buscar el registro en DB ($_GET['clientId'])
      */
-    public function get3dsResult(string $clientId): SwiftPayResult
+    public function get3dsResult(string $swiftpayUuid, string $ourClientId = ''): SwiftPayResult
     {
-        $url     = $this->ep(self::EP_3DS_RESULT . $clientId);
-        $payload = ['clientId' => $clientId, 'token' => $this->jwt];
+        $url     = $this->ep(self::EP_3DS_RESULT . $swiftpayUuid);
+        $decoded = $this->httpGet($url);
 
-        $decoded = $this->post($url, $payload);
-
-        $tx   = $this->dbFindByClientId($clientId);
-        $txId = (int)($tx['id'] ?? 0);
+        $lookupId = !empty($ourClientId) ? $ourClientId : $swiftpayUuid;
+        $tx       = $this->dbFindByClientId($lookupId);
+        $txId     = (int)($tx['id'] ?? 0);
 
         // Guardar respuesta 3DS en columna separada (no pisa raw_response del paymentExternal)
         if ($txId > 0) {
@@ -454,7 +456,7 @@ class SwiftPayClient
             }
         }
 
-        return $this->buildResult($decoded, $clientId, $txId);
+        return $this->buildResult($decoded, $lookupId, $txId);
     }
 
     /** Modo actual: 'sandbox' o 'live' */
@@ -501,6 +503,39 @@ class SwiftPayClient
         curl_close($ch);
 
         error_log('[SwiftPay][' . $this->mode . '] POST ' . $url . ' → HTTP ' . $httpCode);
+
+        if ($curlErr) {
+            throw new SwiftPayException('Error de red al conectar con SwiftPay: ' . $curlErr);
+        }
+
+        $decoded = json_decode($raw ?: '{}', true);
+        if (!is_array($decoded)) {
+            throw new SwiftPayException(
+                'Respuesta inválida de SwiftPay (HTTP ' . $httpCode . '): ' . substr((string)$raw, 0, 300)
+            );
+        }
+
+        return $decoded;
+    }
+
+    /** GET a SwiftPay con manejo de errores centralizado */
+    private function httpGet(string $url): array
+    {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPGET        => true,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        $raw      = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr  = curl_error($ch);
+        curl_close($ch);
+
+        error_log('[SwiftPay][' . $this->mode . '] GET ' . $url . ' → HTTP ' . $httpCode);
 
         if ($curlErr) {
             throw new SwiftPayException('Error de red al conectar con SwiftPay: ' . $curlErr);
