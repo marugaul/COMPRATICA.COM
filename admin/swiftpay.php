@@ -377,12 +377,16 @@ function confirmVoid(btn) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Anulando…';
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     fetch('/api/swiftpay-void.php', {
         method:  'POST',
         headers: {'Content-Type': 'application/json'},
         body:    JSON.stringify({tx_id: parseInt(id)}),
+        signal:  controller.signal,
     })
-    .then(r => r.json())
+    .then(r => { clearTimeout(timeout); return r.json(); })
     .then(data => {
         if (data.ok) {
             showToast('✅ ' + data.message, 'ok');
@@ -399,10 +403,18 @@ function confirmVoid(btn) {
             btn.innerHTML = '<i class="fas fa-ban"></i> Anular';
         }
     })
-    .catch(() => {
-        showToast('❌ Error de conexión', 'err');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-ban"></i> Anular';
+    .catch(err => {
+        const isTimeout = err && err.name === 'AbortError';
+        if (isTimeout) {
+            showToast('⚠️ La solicitud tardó demasiado — recargá la página para verificar si se anuló.', 'err');
+            btn.innerHTML = '<i class="fas fa-sync"></i> Recargar';
+            btn.disabled = false;
+            btn.onclick = () => location.reload();
+        } else {
+            showToast('❌ Error de conexión — recargá la página para verificar el estado.', 'err');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-ban"></i> Anular';
+        }
     });
 }
 
