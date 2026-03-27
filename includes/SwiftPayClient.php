@@ -155,14 +155,17 @@ class SwiftPayClient
         int    $referenceId = 0,
         string $referenceTable = ''
     ): SwiftPayResult {
-        // Paso 1: Validar tarjeta y obtener tokenCard
-        $tokenCard = $this->validateCard(
-            $card['number'],
-            $card['expiry'],
-            $card['cvv']
-        );
+        if ($this->sandbox) {
+            // En QA no existe qa/validateCardExternal — el token ficticio que devuelve
+            // no es aceptado por qa/paymentExternal. Se envían los datos directamente.
+            return $this->authorizeWithCard(
+                $card['number'], $card['expiry'], $card['cvv'],
+                $amount, $currency, $description, $referenceId, $referenceTable
+            );
+        }
 
-        // Paso 2: Autorizar con tokenCard (datos de tarjeta ya no se usan)
+        // Producción: Paso 1 → validar y obtener tokenCard; Paso 2 → autorizar
+        $tokenCard = $this->validateCard($card['number'], $card['expiry'], $card['cvv']);
         return $this->authorize($tokenCard, $amount, $currency, $description, $referenceId, $referenceTable);
     }
 
@@ -192,6 +195,52 @@ class SwiftPayClient
         }
 
         return $tokenCard;
+    }
+
+    /**
+     * Autorización directa con datos de tarjeta (sin tokenCard).
+     * Solo para sandbox: en QA no existe qa/validateCardExternal,
+     * así que el endpoint QA acepta card/expiration/cvv directamente.
+     */
+    private function authorizeWithCard(
+        string $cardNumber,
+        string $expiry,
+        string $cvv,
+        string $amount,
+        string $currency,
+        string $description,
+        int    $referenceId = 0,
+        string $referenceTable = ''
+    ): SwiftPayResult {
+        $clientId = $this->uuid();
+        $payload  = [
+            'clientId' => $clientId,
+            'solicita' => 'dll',
+            'card'     => [
+                'card'        => $cardNumber,
+                'expiration'  => $expiry,
+                'cvv'         => $cvv,
+                'amount'      => $this->formatAmount($amount),
+                'currency'    => strtoupper($currency),
+                'description' => $description,
+                'page_result' => $this->returnUrl($clientId),
+            ],
+            'token'    => $this->jwt,
+        ];
+
+        $txId = $this->dbLog([
+            'client_id'       => $clientId,
+            'type'            => 'authorize',
+            'status'          => 'pending',
+            'amount'          => $amount,
+            'currency'        => $currency,
+            'description'     => $description,
+            'reference_id'    => $referenceId,
+            'reference_table' => $referenceTable,
+        ]);
+
+        $response = $this->post($this->ep(self::EP_PAYMENT), $payload);
+        return $this->buildResult($response, $clientId, $txId);
     }
 
     /**
