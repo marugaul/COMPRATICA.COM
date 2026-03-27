@@ -138,6 +138,14 @@ function refLabel(string $table): string {
         default               => h($table) ?: '—',
     };
 }
+// ── Mapa id → {request, response} para el modal JSON ─────────────────────────
+$txLogs = [];
+foreach ($rows as $r) {
+    $txLogs[(int)$r['id']] = [
+        'req' => $r['raw_request']  ?? null,
+        'res' => $r['raw_response'] ?? null,
+    ];
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -185,6 +193,25 @@ function refLabel(string $table): string {
     .btn-void{padding:.3rem .8rem;background:#fff;border:1.5px solid #dc2626;color:#dc2626;border-radius:6px;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
     .btn-void:hover{background:#dc2626;color:#fff}
     .btn-void:disabled{opacity:.4;cursor:not-allowed}
+    /* ── JSON Log btn ── */
+    .btn-log{padding:.25rem .7rem;background:#fff;border:1.5px solid #94a3b8;color:#475569;border-radius:6px;font-size:.72rem;font-weight:600;cursor:pointer;margin-top:.3rem;white-space:nowrap;display:inline-block}
+    .btn-log:hover{background:#f8fafc;border-color:#64748b}
+    /* ── JSON Modal ── */
+    #json-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:1rem}
+    #json-modal.open{display:flex}
+    .json-box{background:#fff;border-radius:14px;width:100%;max-width:1100px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+    .json-header{padding:.9rem 1.25rem;background:#0f172a;color:#e2e8f0;font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:.75rem}
+    .json-header span{font-size:.8rem;font-weight:400;color:#94a3b8;margin-left:.25rem}
+    .json-close{margin-left:auto;background:none;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;line-height:1;padding:.2rem .5rem;border-radius:6px}
+    .json-close:hover{color:#fff;background:#374151}
+    .json-panels{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden;gap:0;min-height:0}
+    @media(max-width:700px){.json-panels{grid-template-columns:1fr}}
+    .json-panel{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid #e2e8f0}
+    .json-panel:last-child{border-right:none}
+    .json-panel-header{padding:.5rem 1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:.76rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:.5rem}
+    .json-panel-header .copy-btn{margin-left:auto;padding:.2rem .6rem;background:#e2e8f0;border:none;border-radius:5px;font-size:.7rem;font-weight:700;cursor:pointer;color:#475569}
+    .json-panel-header .copy-btn:hover{background:#cbd5e1}
+    .json-pre{flex:1;overflow-y:auto;margin:0;padding:1rem;font-family:'Courier New',Courier,monospace;font-size:.78rem;line-height:1.55;background:#0f172a;color:#e2e8f0;white-space:pre-wrap;word-break:break-all}
     /* ── Pagination ── */
     .pagination{padding:1rem 1.25rem;display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap}
     .pagination a,.pagination span{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:7px;font-size:.84rem;text-decoration:none;border:1.5px solid #e2e8f0;color:#475569;background:#fff;transition:all .2s}
@@ -382,6 +409,9 @@ function refLabel(string $table): string {
               <?php else: ?>
               <span style="color:#cbd5e1;font-size:.78rem">—</span>
               <?php endif; ?>
+              <button class="btn-log" onclick="openJsonModal(<?= (int)$row['id'] ?>)">
+                <i class="fas fa-code"></i> JSON
+              </button>
             </td>
           </tr>
           <?php if ($hasDetail): ?>
@@ -447,6 +477,33 @@ function refLabel(string $table): string {
 
 <div id="toast"></div>
 
+<!-- ── Modal JSON ── -->
+<div id="json-modal">
+  <div class="json-box">
+    <div class="json-header">
+      <i class="fas fa-code"></i> Log SwiftPay
+      <span id="json-modal-title"></span>
+      <button class="json-close" onclick="closeJsonModal()">&#x2715;</button>
+    </div>
+    <div class="json-panels">
+      <div class="json-panel">
+        <div class="json-panel-header">
+          <i class="fas fa-upload" style="color:#3b82f6"></i> REQUEST (enviado a SwiftPay)
+          <button class="copy-btn" onclick="copyJson('req')">Copiar</button>
+        </div>
+        <pre class="json-pre" id="json-req">—</pre>
+      </div>
+      <div class="json-panel">
+        <div class="json-panel-header">
+          <i class="fas fa-download" style="color:#10b981"></i> RESPONSE (recibido de SwiftPay)
+          <button class="copy-btn" onclick="copyJson('res')">Copiar</button>
+        </div>
+        <pre class="json-pre" id="json-res">—</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 function confirmVoid(btn) {
     const id       = btn.dataset.id;
@@ -500,6 +557,41 @@ function confirmVoid(btn) {
         }
     });
 }
+
+// ── JSON Modal ───────────────────────────────────────────────────────────────
+const TX_LOGS = <?= json_encode($txLogs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+
+function prettyJson(raw) {
+    if (!raw) return '(sin datos)';
+    try { return JSON.stringify(JSON.parse(raw), null, 2); }
+    catch(e) { return raw; }
+}
+
+function openJsonModal(txId) {
+    const data = TX_LOGS[txId] || {};
+    document.getElementById('json-modal-title').textContent = ' — TX #' + txId;
+    document.getElementById('json-req').textContent = prettyJson(data.req || null);
+    document.getElementById('json-res').textContent = prettyJson(data.res || null);
+    document.getElementById('json-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeJsonModal() {
+    document.getElementById('json-modal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function copyJson(panel) {
+    const text = document.getElementById('json-' + panel).textContent;
+    navigator.clipboard.writeText(text).then(() => showToast('✅ Copiado al portapapeles', 'ok'));
+}
+
+document.getElementById('json-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeJsonModal();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeJsonModal();
+});
 
 function showToast(msg, type) {
     const t = document.getElementById('toast');

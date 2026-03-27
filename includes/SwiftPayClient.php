@@ -228,6 +228,7 @@ class SwiftPayClient
             'token'    => $this->jwt,
         ];
 
+        $epUrl = $this->ep(self::EP_PAYMENT);
         $txId = $this->dbLog([
             'client_id'       => $clientId,
             'type'            => 'authorize',
@@ -237,9 +238,10 @@ class SwiftPayClient
             'description'     => $description,
             'reference_id'    => $referenceId,
             'reference_table' => $referenceTable,
+            'raw_request'     => $this->requestLog($epUrl, $payload),
         ]);
 
-        $response = $this->post($this->ep(self::EP_PAYMENT), $payload);
+        $response = $this->post($epUrl, $payload);
         return $this->buildResult($response, $clientId, $txId);
     }
 
@@ -269,6 +271,7 @@ class SwiftPayClient
             'token'    => $this->jwt,
         ];
 
+        $epUrl    = $this->ep(self::EP_PAYMENT);
         $txId     = $this->dbLog([
             'client_id'       => $clientId,
             'type'            => 'authorize',
@@ -279,9 +282,10 @@ class SwiftPayClient
             'token_card'      => $this->maskToken($tokenCard),
             'reference_id'    => $referenceId,
             'reference_table' => $referenceTable,
+            'raw_request'     => $this->requestLog($epUrl, $payload),
         ]);
 
-        $response = $this->post($this->ep(self::EP_PAYMENT), $payload);
+        $response = $this->post($epUrl, $payload);
         return $this->buildResult($response, $clientId, $txId);
     }
 
@@ -311,6 +315,7 @@ class SwiftPayClient
             'token'    => $this->jwt,
         ];
 
+        $epUrl    = $this->ep(self::EP_PRE_AUTH);
         $txId     = $this->dbLog([
             'client_id'       => $clientId,
             'type'            => 'preauth',
@@ -321,9 +326,10 @@ class SwiftPayClient
             'token_card'      => $this->maskToken($tokenCard),
             'reference_id'    => $referenceId,
             'reference_table' => $referenceTable,
+            'raw_request'     => $this->requestLog($epUrl, $payload),
         ]);
 
-        $response = $this->post($this->ep(self::EP_PRE_AUTH), $payload);
+        $response = $this->post($epUrl, $payload);
         return $this->buildResult($response, $clientId, $txId);
     }
 
@@ -352,19 +358,21 @@ class SwiftPayClient
         ];
 
         $clientId = $this->uuid();
+        $epUrl    = $this->ep(self::EP_COMPLETE);
         $txId     = $this->dbLog([
-            'client_id'  => $clientId,
-            'type'       => 'complete',
-            'status'     => 'pending',
-            'amount'     => $amount,
-            'currency'   => $currency,
-            'order_id'   => $orderId,
-            'rrn'        => $rrn,
-            'int_ref'    => $intRef,
-            'token_card' => $this->maskToken($tokenCard),
+            'client_id'   => $clientId,
+            'type'        => 'complete',
+            'status'      => 'pending',
+            'amount'      => $amount,
+            'currency'    => $currency,
+            'order_id'    => $orderId,
+            'rrn'         => $rrn,
+            'int_ref'     => $intRef,
+            'token_card'  => $this->maskToken($tokenCard),
+            'raw_request' => $this->requestLog($epUrl, $payload),
         ]);
 
-        $response = $this->post($this->ep(self::EP_COMPLETE), $payload);
+        $response = $this->post($epUrl, $payload);
         return $this->buildResult($response, $clientId, $txId);
     }
 
@@ -393,20 +401,22 @@ class SwiftPayClient
         ];
 
         $clientId = $this->uuid();
+        $epUrl    = $this->ep(self::EP_VOID);
         $txId     = $this->dbLog([
-            'client_id' => $clientId,
-            'type'      => 'void',
-            'status'    => 'pending',
-            'amount'    => $amount,
-            'currency'  => $currency,
-            'order_id'  => $orderId,
-            'rrn'       => $rrn,
-            'int_ref'   => $intRef,
-            'auth_code' => $authCode,
+            'client_id'   => $clientId,
+            'type'        => 'void',
+            'status'      => 'pending',
+            'amount'      => $amount,
+            'currency'    => $currency,
+            'order_id'    => $orderId,
+            'rrn'         => $rrn,
+            'int_ref'     => $intRef,
+            'auth_code'   => $authCode,
+            'raw_request' => $this->requestLog($epUrl, $payload),
         ]);
 
         // Anulación: solo token en body, Auth: null según Postman (sin Bearer header)
-        $response = $this->post($this->ep(self::EP_VOID), $payload);
+        $response = $this->post($epUrl, $payload);
         return $this->buildResult($response, $clientId, $txId);
     }
 
@@ -603,6 +613,37 @@ class SwiftPayClient
         );
     }
 
+    /**
+     * Enmascara datos sensibles del payload antes de guardarlo en DB.
+     * Número de tarjeta → ****1234, CVV → ***, JWT → [JWT_REDACTED].
+     */
+    private function sanitizeForLog(array $payload): array
+    {
+        $p = $payload;
+        if (isset($p['token'])) $p['token'] = '[JWT_REDACTED]';
+        if (isset($p['card']['card'])) {
+            $n = (string)$p['card']['card'];
+            $p['card']['card'] = '****' . substr($n, -4);
+        }
+        if (isset($p['card']['cvv']))      $p['card']['cvv'] = '***';
+        if (isset($p['card']['tokenCard'])) {
+            $t = (string)$p['card']['tokenCard'];
+            $p['card']['tokenCard'] = strlen($t) > 8 ? substr($t, 0, 4) . '****' . substr($t, -4) : '****';
+        }
+        return $p;
+    }
+
+    /**
+     * Construye el JSON de log del request: endpoint + payload sanitizado.
+     */
+    private function requestLog(string $url, array $payload): string
+    {
+        return json_encode([
+            'endpoint' => $url,
+            'payload'  => $this->sanitizeForLog($payload),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
     // ── DB helpers ───────────────────────────────────────────────────
 
     private function dbLog(array $d): int
@@ -612,8 +653,8 @@ class SwiftPayClient
                 INSERT INTO swiftpay_transactions
                 (client_id, type, status, amount, currency, description,
                  order_id, rrn, int_ref, auth_code, token_card, is_3ds,
-                 reference_id, reference_table, error_message, raw_response, ip_address, mode)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 reference_id, reference_table, error_message, raw_request, raw_response, ip_address, mode)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ")->execute([
                 $d['client_id']       ?? '',
                 $d['type']            ?? '',
@@ -630,6 +671,7 @@ class SwiftPayClient
                 $d['reference_id']    ?? 0,
                 $d['reference_table'] ?? '',
                 $d['error_message']   ?? null,
+                $d['raw_request']     ?? null,
                 $d['raw_response']    ?? null,
                 $_SERVER['REMOTE_ADDR'] ?? '',
                 $this->mode,
