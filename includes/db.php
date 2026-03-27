@@ -791,13 +791,15 @@ function db() {
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sp_client_id ON swiftpay_transactions(client_id)");
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sp_status    ON swiftpay_transactions(status)");
             $pdo->exec("CREATE INDEX IF NOT EXISTS idx_sp_order_id  ON swiftpay_transactions(order_id)");
-            // Migración: raw_request (guardado a partir de 2026-03)
+            // Migración: raw_request y raw_response_3ds (guardado a partir de 2026-03)
             {
                 $haveSP = [];
                 foreach ($pdo->query("PRAGMA table_info(swiftpay_transactions)")->fetchAll(PDO::FETCH_ASSOC) as $c)
                     $haveSP[$c['name']] = true;
                 if (empty($haveSP['raw_request']))
                     $pdo->exec("ALTER TABLE swiftpay_transactions ADD COLUMN raw_request TEXT");
+                if (empty($haveSP['raw_response_3ds']))
+                    $pdo->exec("ALTER TABLE swiftpay_transactions ADD COLUMN raw_response_3ds TEXT");
             }
 
             // ── Tabla métodos de pago de afiliados (Venta de Garaje) ──────────

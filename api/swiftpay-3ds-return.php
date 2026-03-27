@@ -49,12 +49,7 @@ try {
         $result = $client->get3dsResult($clientId);
     }
 
-    error_log('[swiftpay-3ds-return] result approved=' . ($result->approved ? '1' : '0')
-        . ' needs3ds=' . ($result->pending3ds ? '1' : '0')
-        . ' raw=' . json_encode($result->rawResponse));
-
     if ($result->isSuccess()) {
-        // Guardar resultado en sesión para mostrarlo en checkout
         $_SESSION['swiftpay_last'] = $result->toArray();
         header('Location: ' . $successUrl . '&order_id=' . urlencode($result->orderId));
         exit;
