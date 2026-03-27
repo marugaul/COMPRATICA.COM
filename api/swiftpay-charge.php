@@ -192,6 +192,16 @@ function crearOrdenSwiftPay(PDO $pdo, SwiftPayResult $result, string $customerPh
                 date('Y-m-d H:i:s'), date('Y-m-d H:i:s'),
             ]);
 
+            // Marcar email de vendedor como ya enviado para que order-success.php no lo duplique
+            $newId = (int)$pdo->lastInsertId();
+            if ($newId > 0) {
+                try {
+                    $pdo->exec("CREATE TABLE IF NOT EXISTS order_meta (order_id INTEGER NOT NULL, meta_key TEXT NOT NULL, meta_value TEXT, UNIQUE(order_id, meta_key))");
+                    $pdo->prepare("INSERT OR IGNORE INTO order_meta (order_id, meta_key, meta_value) VALUES (?,?,?)")
+                        ->execute([$newId, 'reseller_notified_review_at', date('Y-m-d H:i:s')]);
+                } catch (Throwable $e) { /* no crítico */ }
+            }
+
             // Descontar stock atómicamente
             if ($pid > 0 && $qty > 0) {
                 $pdo->prepare("UPDATE products SET stock = stock - ?, updated_at = datetime('now') WHERE id = ? AND stock >= ?")
