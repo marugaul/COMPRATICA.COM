@@ -22,6 +22,10 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 $clientId = trim($_GET['clientId'] ?? '');
 
+// Log completo de lo que SwiftPay envía al hacer el callback
+error_log('[swiftpay-3ds-return] GET params: '  . json_encode($_GET));
+error_log('[swiftpay-3ds-return] POST params: ' . json_encode($_POST));
+
 // URL de redirección final (ajustar según el flujo de tu checkout)
 $successUrl = '/checkout.php?payment=ok';
 $errorUrl   = '/checkout.php?payment=error';
@@ -34,7 +38,20 @@ if (empty($clientId)) {
 try {
     $pdo    = db();
     $client = new SwiftPayClient($pdo);
+
+    // Esperar 2s para que SwiftPay procese el resultado del 3DS
+    sleep(2);
     $result = $client->get3dsResult($clientId);
+
+    // Si aún devuelve CONFIRMED (pending), reintentar una vez más tras 3s
+    if ($result->needs3ds()) {
+        sleep(3);
+        $result = $client->get3dsResult($clientId);
+    }
+
+    error_log('[swiftpay-3ds-return] result approved=' . ($result->approved ? '1' : '0')
+        . ' needs3ds=' . ($result->pending3ds ? '1' : '0')
+        . ' raw=' . json_encode($result->rawResponse));
 
     if ($result->isSuccess()) {
         // Guardar resultado en sesión para mostrarlo en checkout
