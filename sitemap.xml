@@ -8,7 +8,7 @@
   <!-- Inicio -->
   <url>
     <loc>https://compratica.com/</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-25</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -16,7 +16,7 @@
   <!-- Servicios Profesionales -->
   <url>
     <loc>https://compratica.com/servicios</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.95</priority>
   </url>
@@ -24,7 +24,7 @@
   <!-- Empleos -->
   <url>
     <loc>https://compratica.com/empleos</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.95</priority>
   </url>
@@ -32,7 +32,7 @@
   <!-- Venta de Garaje -->
   <url>
     <loc>https://compratica.com/venta-garaje</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-25</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
@@ -47,8 +47,8 @@
 
   <!-- Emprendedoras -->
   <url>
-    <loc>https://compratica.com/emprendedoras-catalogo</loc>
-    <lastmod>2026-03-23</lastmod>
+    <loc>https://compratica.com/emprendedores-catalogo</loc>
+    <lastmod>2026-03-25</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
@@ -56,7 +56,7 @@
   <!-- Shuttle / Transporte -->
   <url>
     <loc>https://compratica.com/shuttle_search</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
   </url>
@@ -64,7 +64,7 @@
   <!-- Ofertas de Servicios -->
   <url>
     <loc>https://compratica.com/ofertas-servicios</loc>
-    <lastmod>2026-03-23</lastmod>
+    <lastmod>2026-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>

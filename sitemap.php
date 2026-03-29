@@ -10,31 +10,10 @@ require_once __DIR__ . '/includes/config.php';
 
 header('Content-Type: application/xml; charset=UTF-8');
 
-$base  = 'https://compratica.com';
-$today = date('Y-m-d');
-$pdo   = db();
-$urls  = [];
-
-// ─── PÁGINAS ESTÁTICAS ───────────────────────────────────────────────────────
-$staticPages = [
-    ['loc' => '/',                        'priority' => '1.00', 'changefreq' => 'daily'],
-    ['loc' => '/servicios',               'priority' => '0.95', 'changefreq' => 'daily'],
-    ['loc' => '/empleos',                 'priority' => '0.95', 'changefreq' => 'daily'],
-    ['loc' => '/venta-garaje',            'priority' => '0.90', 'changefreq' => 'daily'],
-    ['loc' => '/bienes-raices',           'priority' => '0.90', 'changefreq' => 'daily'],
-    ['loc' => '/emprendedores-catalogo',  'priority' => '0.85', 'changefreq' => 'daily'],
-    ['loc' => '/shuttle_search',          'priority' => '0.80', 'changefreq' => 'weekly'],
-    ['loc' => '/ofertas-servicios',       'priority' => '0.75', 'changefreq' => 'weekly'],
-];
-
-foreach ($staticPages as $page) {
-    $urls[] = [
-        'loc'        => $base . $page['loc'],
-        'lastmod'    => $today,
-        'changefreq' => $page['changefreq'],
-        'priority'   => $page['priority'],
-    ];
-}
+// Páginas estáticas están en sitemap.xml — este sitemap solo genera URLs dinámicas.
+$base = 'https://compratica.com';
+$pdo  = db();
+$urls = [];
 
 // ─── EMPLEOS Y SERVICIOS (job_listings) ──────────────────────────────────────
 try {
