@@ -15,17 +15,10 @@ $base = 'https://compratica.com';
 $pdo  = db();
 $urls = [];
 
-// Genera slug SEO-friendly a partir de un texto
-function smSlug(string $text): string {
-    $t = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
-    $t = preg_replace('/[^a-z0-9]+/', '-', strtolower($t));
-    return substr(trim($t, '-'), 0, 60);
-}
-
 // ─── EMPLEOS Y SERVICIOS (job_listings) ──────────────────────────────────────
 try {
     $stmt = $pdo->query("
-        SELECT id, title,
+        SELECT id, listing_type,
                COALESCE(updated_at, created_at) AS lastmod
         FROM job_listings
         WHERE is_active = 1
@@ -33,9 +26,8 @@ try {
         LIMIT 50000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $slug = smSlug($row['title'] ?? '');
         $urls[] = [
-            'loc'        => $base . '/publicacion/' . (int)$row['id'] . ($slug ? '-' . $slug : ''),
+            'loc'        => $base . '/publicacion-detalle?id=' . (int)$row['id'],
             'lastmod'    => date('Y-m-d', strtotime($row['lastmod'])),
             'changefreq' => 'weekly',
             'priority'   => '0.70',
@@ -46,7 +38,7 @@ try {
 // ─── BIENES RAÍCES ───────────────────────────────────────────────────────────
 try {
     $stmt = $pdo->query("
-        SELECT id, title,
+        SELECT id,
                COALESCE(updated_at, created_at) AS lastmod
         FROM real_estate_listings
         WHERE is_active = 1
@@ -54,9 +46,8 @@ try {
         LIMIT 20000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $slug = smSlug($row['title'] ?? '');
         $urls[] = [
-            'loc'        => $base . '/propiedad/' . (int)$row['id'] . ($slug ? '-' . $slug : ''),
+            'loc'        => $base . '/propiedad-detalle?id=' . (int)$row['id'],
             'lastmod'    => date('Y-m-d', strtotime($row['lastmod'])),
             'changefreq' => 'weekly',
             'priority'   => '0.70',
@@ -67,7 +58,7 @@ try {
 // ─── VENTA GARAJE (tiendas) ───────────────────────────────────────────────────
 try {
     $stmt = $pdo->query("
-        SELECT id, title,
+        SELECT id,
                COALESCE(updated_at, created_at) AS lastmod
         FROM sales
         WHERE active = 1
@@ -75,9 +66,8 @@ try {
         LIMIT 20000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $slug = smSlug($row['title'] ?? '');
         $urls[] = [
-            'loc'        => $base . '/tienda/' . (int)$row['id'] . ($slug ? '-' . $slug : ''),
+            'loc'        => $base . '/store?sale_id=' . (int)$row['id'],
             'lastmod'    => date('Y-m-d', strtotime($row['lastmod'])),
             'changefreq' => 'weekly',
             'priority'   => '0.65',
@@ -88,7 +78,7 @@ try {
 // ─── EMPRENDEDORAS (productos) ────────────────────────────────────────────────
 try {
     $stmt = $pdo->query("
-        SELECT id, name,
+        SELECT id,
                COALESCE(updated_at, created_at) AS lastmod
         FROM entrepreneur_products
         WHERE is_active = 1
@@ -96,9 +86,8 @@ try {
         LIMIT 20000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $slug = smSlug($row['name'] ?? '');
         $urls[] = [
-            'loc'        => $base . '/producto/' . (int)$row['id'] . ($slug ? '-' . $slug : ''),
+            'loc'        => $base . '/emprendedores-producto?id=' . (int)$row['id'],
             'lastmod'    => date('Y-m-d', strtotime($row['lastmod'])),
             'changefreq' => 'weekly',
             'priority'   => '0.65',

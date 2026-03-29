@@ -45,6 +45,15 @@ if (!$product) {
     exit;
 }
 
+// Redirigir URL antigua (?id=) a URL limpia (/producto/id-slug)
+$_epSlug = preg_replace('/[^a-z0-9]+/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $product['name'] ?? '')));
+$_epSlug = trim($_epSlug, '-');
+$cleanUrl = 'https://compratica.com/producto/' . $productId . ($_epSlug ? '-' . substr($_epSlug, 0, 60) : '');
+if (!str_starts_with(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '', '/producto/')) {
+    header('Location: ' . $cleanUrl, true, 301);
+    exit;
+}
+
 // Incrementar vistas (silencioso)
 try {
     $pdo->prepare("UPDATE entrepreneur_products SET views_count = views_count + 1 WHERE id = ?")->execute([$productId]);
@@ -86,11 +95,11 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
     <style>#cartButton{display:none!important;}</style>
     <meta name="description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 160)) ?>">
     <meta name="robots" content="index, follow, max-image-preview:large">
-    <link rel="canonical" href="https://compratica.com/emprendedores-producto?id=<?= $productId ?>">
+    <link rel="canonical" href="<?= htmlspecialchars($cleanUrl, ENT_QUOTES) ?>">
 
     <!-- Open Graph -->
     <meta property="og:type" content="product">
-    <meta property="og:url" content="https://compratica.com/emprendedores-producto?id=<?= $productId ?>">
+    <meta property="og:url" content="<?= htmlspecialchars($cleanUrl, ENT_QUOTES) ?>">
     <meta property="og:title" content="<?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedores">
     <meta property="og:description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 200)) ?>">
     <meta property="og:image" content="<?= $mainImage ? 'https://compratica.com/' . htmlspecialchars(ltrim($mainImage, '/')) : 'https://compratica.com/assets/img/og-emprendedoras.jpg' ?>">
@@ -99,7 +108,7 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://compratica.com/emprendedores-producto?id=<?= $productId ?>">
+    <meta name="twitter:url" content="<?= htmlspecialchars($cleanUrl, ENT_QUOTES) ?>">
     <meta name="twitter:title" content="<?= htmlspecialchars($product['name']) ?> | CompraTica Emprendedores">
     <meta name="twitter:description" content="<?= htmlspecialchars(substr($product['description'] ?? '', 0, 200)) ?>">
     <meta name="twitter:image" content="<?= $mainImage ? 'https://compratica.com/' . htmlspecialchars(ltrim($mainImage, '/')) : 'https://compratica.com/assets/img/og-emprendedoras.jpg' ?>">

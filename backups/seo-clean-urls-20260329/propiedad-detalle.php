@@ -70,15 +70,6 @@ if (!$listing) {
   exit;
 }
 
-// Redirigir URL antigua (?id=) a URL limpia (/propiedad/id-slug)
-$_prSlug = preg_replace('/[^a-z0-9]+/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $listing['title'] ?? '')));
-$_prSlug = trim($_prSlug, '-');
-$cleanUrl = 'https://compratica.com/propiedad/' . $listingId . ($_prSlug ? '-' . substr($_prSlug, 0, 60) : '');
-if (!str_starts_with(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '', '/propiedad/')) {
-    header('Location: ' . $cleanUrl, true, 301);
-    exit;
-}
-
 // Decodificar JSON
 $images = !empty($listing['images']) ? json_decode($listing['images'], true) : [];
 if (!is_array($images)) $images = [];
@@ -124,11 +115,11 @@ $fullLocation = implode(', ', $locationParts);
   <title><?= htmlspecialchars($listing['title']) ?> — <?php echo APP_NAME; ?></title>
   <meta name="description" content="<?= htmlspecialchars(substr($listing['description'], 0, 160)) ?>">
   <meta name="robots" content="index, follow, max-image-preview:large">
-  <link rel="canonical" href="<?= htmlspecialchars($cleanUrl, ENT_QUOTES) ?>">
+  <link rel="canonical" href="https://compratica.com/propiedad-detalle?id=<?= $listing['id'] ?>">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="<?= htmlspecialchars($cleanUrl, ENT_QUOTES) ?>">
+  <meta property="og:url" content="https://compratica.com/propiedad-detalle?id=<?= $listing['id'] ?>">
   <meta property="og:title" content="<?= htmlspecialchars($listing['title']) ?> — CompraTica Bienes Raíces">
   <meta property="og:description" content="<?= htmlspecialchars(substr($listing['description'], 0, 200)) ?>">
   <meta property="og:image" content="<?= !empty($images[0]) ? htmlspecialchars($images[0]) : 'https://compratica.com/assets/img/og-bienes-raices.jpg' ?>">
@@ -137,7 +128,7 @@ $fullLocation = implode(', ', $locationParts);
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="<?= htmlspecialchars($cleanUrl, ENT_QUOTES) ?>">
+  <meta name="twitter:url" content="https://compratica.com/propiedad-detalle?id=<?= $listing['id'] ?>">
   <meta name="twitter:title" content="<?= htmlspecialchars($listing['title']) ?> — CompraTica Bienes Raíces">
   <meta name="twitter:description" content="<?= htmlspecialchars(substr($listing['description'], 0, 200)) ?>">
   <meta name="twitter:image" content="<?= !empty($images[0]) ? htmlspecialchars($images[0]) : 'https://compratica.com/assets/img/og-bienes-raices.jpg' ?>">
