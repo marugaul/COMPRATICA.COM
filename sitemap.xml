@@ -45,10 +45,10 @@
     <priority>0.90</priority>
   </url>
 
-  <!-- Emprendedoras -->
+  <!-- Emprendedores -->
   <url>
     <loc>https://compratica.com/emprendedores-catalogo</loc>
-    <lastmod>2026-03-25</lastmod>
+    <lastmod>2026-03-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
