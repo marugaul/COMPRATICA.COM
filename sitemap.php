@@ -91,7 +91,7 @@ try {
         LIMIT 20000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $slug = smSlug($row['name'] ?? '');
+        $slug = url_slug($row['name'] ?? '');
         $urls[] = [
             'loc'        => $base . '/producto/' . (int)$row['id'] . ($slug ? '-' . $slug : ''),
             'lastmod'    => date('Y-m-d', strtotime($row['lastmod'])),
