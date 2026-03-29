@@ -785,7 +785,7 @@ logDebug("RENDERING_PAGE", ['listings_count' => count($listings)]);
       $whatsappMessage = urlencode("Hola, me interesa la propiedad: " . $listing['title']);
       $whatsappUrl = "https://wa.me/506{$whatsappPhone}?text={$whatsappMessage}";
     ?>
-      <div class="property-card" onclick="window.location.href='propiedad-detalle?id=<?= (int)$listing['id'] ?>'">
+      <div class="property-card" onclick="window.location.href='<?= clean_url_propiedad((int)$listing['id'], $listing['title'] ?? '') ?>'">
         <div class="property-img-container">
           <img src="<?= htmlspecialchars($firstImage) ?>" alt="<?= htmlspecialchars($listing['title']) ?>" class="property-img">
           <div class="property-badge <?= $badgeClass ?>"><?= $operationType ?></div>
@@ -838,7 +838,7 @@ logDebug("RENDERING_PAGE", ['listings_count' => count($listings)]);
           </div>
 
           <div class="property-actions" onclick="event.stopPropagation()">
-            <a href="propiedad-detalle?id=<?= (int)$listing['id'] ?>" class="btn-primary">
+            <a href="<?= clean_url_propiedad((int)$listing['id'], $listing['title'] ?? '') ?>" class="btn-primary">
               <i class="fas fa-eye"></i> Ver detalles
             </a>
             <?php if (!empty($whatsappPhone)): ?>

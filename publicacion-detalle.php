@@ -254,9 +254,7 @@ if (!$publicacion) {
 }
 
 // Redirigir URL antigua (?id=) a URL limpia (/publicacion/id-slug)
-$_puSlug = preg_replace('/[^a-z0-9]+/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $publicacion['title'] ?? '')));
-$_puSlug = trim($_puSlug, '-');
-$cleanUrl = 'https://compratica.com/publicacion/' . $id . ($_puSlug ? '-' . substr($_puSlug, 0, 60) : '');
+$cleanUrl = 'https://compratica.com' . clean_url_publicacion($id, $publicacion['title'] ?? '');
 if (!str_starts_with(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '', '/publicacion/')) {
     header('Location: ' . $cleanUrl, true, 301);
     exit;

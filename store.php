@@ -152,9 +152,7 @@ if (!$sale) {
 }
 
 // Redirigir URL antigua (?sale_id=) a URL limpia (/tienda/id-slug)
-$_stSlug = preg_replace('/[^a-z0-9]+/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $sale['title'] ?? '')));
-$_stSlug = trim($_stSlug, '-');
-$cleanUrl = 'https://compratica.com/tienda/' . $sale_id . ($_stSlug ? '-' . substr($_stSlug, 0, 60) : '');
+$cleanUrl = 'https://compratica.com' . clean_url_tienda((int)$sale_id, $sale['title'] ?? '');
 if (!str_starts_with(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '', '/tienda/')) {
     header('Location: ' . $cleanUrl, true, 301);
     exit;

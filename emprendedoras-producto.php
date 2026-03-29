@@ -46,9 +46,7 @@ if (!$product) {
 }
 
 // Redirigir URL antigua (?id=) a URL limpia (/producto/id-slug)
-$_epSlug = preg_replace('/[^a-z0-9]+/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $product['name'] ?? '')));
-$_epSlug = trim($_epSlug, '-');
-$cleanUrl = 'https://compratica.com/producto/' . $productId . ($_epSlug ? '-' . substr($_epSlug, 0, 60) : '');
+$cleanUrl = 'https://compratica.com' . clean_url_producto($productId, $product['name'] ?? '');
 if (!str_starts_with(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '', '/producto/')) {
     header('Location: ' . $cleanUrl, true, 301);
     exit;

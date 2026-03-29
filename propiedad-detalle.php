@@ -71,9 +71,7 @@ if (!$listing) {
 }
 
 // Redirigir URL antigua (?id=) a URL limpia (/propiedad/id-slug)
-$_prSlug = preg_replace('/[^a-z0-9]+/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $listing['title'] ?? '')));
-$_prSlug = trim($_prSlug, '-');
-$cleanUrl = 'https://compratica.com/propiedad/' . $listingId . ($_prSlug ? '-' . substr($_prSlug, 0, 60) : '');
+$cleanUrl = 'https://compratica.com' . clean_url_propiedad($listingId, $listing['title'] ?? '');
 if (!str_starts_with(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '', '/propiedad/')) {
     header('Location: ' . $cleanUrl, true, 301);
     exit;

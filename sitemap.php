@@ -15,12 +15,7 @@ $base = 'https://compratica.com';
 $pdo  = db();
 $urls = [];
 
-// Genera slug SEO-friendly a partir de un texto
-function smSlug(string $text): string {
-    $t = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
-    $t = preg_replace('/[^a-z0-9]+/', '-', strtolower($t));
-    return substr(trim($t, '-'), 0, 60);
-}
+// url_slug(), clean_url_* vienen de includes/config.php
 
 // ─── EMPLEOS Y SERVICIOS (job_listings) ──────────────────────────────────────
 try {
@@ -33,7 +28,7 @@ try {
         LIMIT 50000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $slug = smSlug($row['title'] ?? '');
+        $slug = url_slug($row['title'] ?? '');
         $urls[] = [
             'loc'        => $base . '/publicacion/' . (int)$row['id'] . ($slug ? '-' . $slug : ''),
             'lastmod'    => date('Y-m-d', strtotime($row['lastmod'])),
@@ -54,7 +49,7 @@ try {
         LIMIT 20000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $slug = smSlug($row['title'] ?? '');
+        $slug = url_slug($row['title'] ?? '');
         $urls[] = [
             'loc'        => $base . '/propiedad/' . (int)$row['id'] . ($slug ? '-' . $slug : ''),
             'lastmod'    => date('Y-m-d', strtotime($row['lastmod'])),
@@ -75,7 +70,7 @@ try {
         LIMIT 20000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $slug = smSlug($row['title'] ?? '');
+        $slug = url_slug($row['title'] ?? '');
         $urls[] = [
             'loc'        => $base . '/tienda/' . (int)$row['id'] . ($slug ? '-' . $slug : ''),
             'lastmod'    => date('Y-m-d', strtotime($row['lastmod'])),

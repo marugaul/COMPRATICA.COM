@@ -1694,7 +1694,7 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
   <?php else: ?>
     <div class="categories-grid">
       <?php foreach ($servicios as $service): ?>
-        <div class="category-card" onclick="window.location.href='publicacion-detalle.php?id=<?php echo $service['id'] ?? ''; ?>'" style="cursor: pointer;">
+        <div class="category-card" onclick="window.location.href='<?php echo clean_url_publicacion((int)($service['id'] ?? 0), $service['title'] ?? ''); ?>'" style="cursor: pointer;">
           <?php if ($service['is_featured'] ?? false): ?>
             <div style="margin-bottom: 1rem;">
               <span class="badge" style="background: var(--warning); color: var(--white);">

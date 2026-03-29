@@ -214,3 +214,37 @@ function convert_google_drive_url(string $url): string {
     // Si no es una URL de Google Drive o ya está en formato correcto, devolver sin cambios
     return $url;
 }
+
+/**
+ * Genera un slug SEO-friendly a partir de un texto.
+ * Uso: url_slug('Desarrollador React - San José') → 'desarrollador-react-san-jose'
+ */
+function url_slug(string $text, int $maxLen = 60): string {
+    $t = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
+    $t = preg_replace('/[^a-z0-9]+/', '-', strtolower($t));
+    return substr(trim($t, '-'), 0, $maxLen);
+}
+
+/**
+ * Devuelve la URL limpia de una publicación (empleo/servicio).
+ * Uso: clean_url_publicacion($id, $title)
+ */
+function clean_url_publicacion(int $id, string $title): string {
+    $s = url_slug($title);
+    return '/publicacion/' . $id . ($s ? '-' . $s : '');
+}
+
+function clean_url_propiedad(int $id, string $title): string {
+    $s = url_slug($title);
+    return '/propiedad/' . $id . ($s ? '-' . $s : '');
+}
+
+function clean_url_tienda(int $id, string $title): string {
+    $s = url_slug($title);
+    return '/tienda/' . $id . ($s ? '-' . $s : '');
+}
+
+function clean_url_producto(int $id, string $name): string {
+    $s = url_slug($name);
+    return '/producto/' . $id . ($s ? '-' . $s : '');
+}

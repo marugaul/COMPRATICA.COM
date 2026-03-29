@@ -2084,7 +2084,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
               <div class="found-product-name"><?php echo htmlspecialchars($product['name']); ?></div>
               <div class="found-product-price"><?php echo $productPrice; ?></div>
             </div>
-            <a href="store?sale_id=<?php echo (int)$s['id']; ?>&product_id=<?php echo (int)$product['id']; ?>#product-<?php echo (int)$product['id']; ?>" class="found-product-btn">
+            <a href="<?php echo clean_url_tienda((int)$s['id'], $s['title'] ?? ''); ?>?product_id=<?php echo (int)$product['id']; ?>#product-<?php echo (int)$product['id']; ?>" class="found-product-btn">
               <i class="fas fa-shopping-cart"></i>
               <span>Ver producto</span>
             </a>
@@ -2093,7 +2093,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
 
           <?php if ($totalProducts > 3): ?>
           <div style="margin-top: 0.75rem; text-align: center;">
-            <a href="store?sale_id=<?php echo (int)$s['id']; ?>"
+            <a href="<?php echo clean_url_tienda((int)$s['id'], $s['title'] ?? ''); ?>"
                class="found-product-btn"
                style="display: inline-flex; background: linear-gradient(135deg, var(--cr-azul), var(--cr-azul-claro));">
               <i class="fas fa-eye"></i>
@@ -2151,7 +2151,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
 
         <div class="actions">
           <?php if ($state === 'En vivo'): ?>
-            <a class="btn-primary" href="store?sale_id=<?php echo (int)$s['id']; ?>">
+            <a class="btn-primary" href="<?php echo clean_url_tienda((int)$s['id'], $s['title'] ?? ''); ?>">
               <i class="fas fa-shopping-bag"></i> Entrar a la Venta
             </a>
           <?php elseif ($state === 'Próxima'): ?>
