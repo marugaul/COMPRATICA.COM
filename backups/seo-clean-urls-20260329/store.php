@@ -151,13 +151,6 @@ if (!$sale) {
     exit;
 }
 
-// Redirigir URL antigua (?sale_id=) a URL limpia (/tienda/id-slug)
-$cleanUrl = 'https://compratica.com' . clean_url_tienda((int)$sale_id, $sale['title'] ?? '');
-if (!str_starts_with(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '', '/tienda/')) {
-    header('Location: ' . $cleanUrl, true, 301);
-    exit;
-}
-
 logStore('SALE_LOADED', [
     'sale_id' => $sale['id'],
     'title' => $sale['title']
@@ -270,11 +263,11 @@ foreach ($_SESSION['cart'] as $it) {
   <title><?= h($sale['title']) ?> - <?= h($APP_NAME) ?></title>
   <meta name="description" content="Venta de garaje de <?= h($sale['affiliate_name']) ?> en CompraTica. Encuentra productos usados y nuevos con pago por SINPE en Costa Rica.">
   <meta name="robots" content="index, follow, max-image-preview:large">
-  <link rel="canonical" href="<?= htmlspecialchars($cleanUrl, ENT_QUOTES) ?>">
+  <link rel="canonical" href="https://compratica.com/store?sale_id=<?= (int)$sale_id ?>">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="<?= htmlspecialchars($cleanUrl, ENT_QUOTES) ?>">
+  <meta property="og:url" content="https://compratica.com/store?sale_id=<?= (int)$sale_id ?>">
   <meta property="og:title" content="<?= h($sale['title']) ?> — CompraTica Venta de Garaje">
   <meta property="og:description" content="Venta de garaje de <?= h($sale['affiliate_name']) ?> en CompraTica. Compra con SINPE desde Costa Rica.">
   <meta property="og:image" content="https://compratica.com/assets/img/og-venta-garaje.jpg">
@@ -283,7 +276,7 @@ foreach ($_SESSION['cart'] as $it) {
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="<?= htmlspecialchars($cleanUrl, ENT_QUOTES) ?>">
+  <meta name="twitter:url" content="https://compratica.com/store?sale_id=<?= (int)$sale_id ?>">
   <meta name="twitter:title" content="<?= h($sale['title']) ?> — CompraTica Venta de Garaje">
   <meta name="twitter:description" content="Venta de garaje de <?= h($sale['affiliate_name']) ?> en CompraTica. Compra con SINPE desde Costa Rica.">
   <meta name="twitter:image" content="https://compratica.com/assets/img/og-venta-garaje.jpg">

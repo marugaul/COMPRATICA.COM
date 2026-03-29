@@ -36,12 +36,6 @@ AddDefaultCharset utf-8
   RewriteRule ^api/ - [L]
   RewriteRule ^auth/ - [L]
 
-  # ── URLs limpias para páginas de detalle ─────────────────────────────────
-  RewriteRule ^publicacion/([0-9]+)(-[^/]*)?/?$ publicacion-detalle.php?id=$1 [L,QSA]
-  RewriteRule ^propiedad/([0-9]+)(-[^/]*)?/?$   propiedad-detalle.php?id=$1  [L,QSA]
-  RewriteRule ^tienda/([0-9]+)(-[^/]*)?/?$      store.php?sale_id=$1         [L,QSA]
-  RewriteRule ^producto/([0-9]+)(-[^/]*)?/?$    emprendedoras-producto.php?id=$1 [L,QSA]
-
   # No reescribir portales privados (mantienen .php y routing propio)
   RewriteRule ^admin/ - [L]
   RewriteRule ^affiliate/ - [L]

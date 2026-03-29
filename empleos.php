@@ -2016,7 +2016,7 @@ if (empty($categories)) {
   <?php else: ?>
     <div class="jobs-grid">
       <?php foreach ($empleos as $job): ?>
-        <div class="job-card" onclick="window.location.href='publicacion-detalle.php?id=<?php echo $job['id']; ?>'">
+        <div class="job-card" onclick="window.location.href='<?php echo clean_url_publicacion((int)$job['id'], $job['title'] ?? ''); ?>'">
           <?php if ($job['company_logo']): ?>
             <img src="<?php echo htmlspecialchars($job['company_logo']); ?>" alt="Logo" class="job-logo">
           <?php else: ?>
@@ -2166,7 +2166,7 @@ if (empty($categories)) {
                   </button>
                 <?php endif; ?>
 
-                <button class="btn-apply" onclick="event.stopPropagation(); window.location.href='publicacion-detalle.php?id=<?php echo $job['id']; ?>';">
+                <button class="btn-apply" onclick="event.stopPropagation(); window.location.href='<?php echo clean_url_publicacion((int)$job['id'], $job['title'] ?? ''); ?>';">
                   Ver Detalles
                   <i class="fas fa-arrow-right"></i>
                 </button>

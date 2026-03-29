@@ -867,7 +867,7 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
         <!-- Productos (grilla 3×) -->
         <div class="puesto-products">
             <?php foreach ($products as $prod): ?>
-            <a href="emprendedores-producto.php?id=<?= $prod['id'] ?>"
+            <a href="<?= clean_url_producto((int)$prod['id'], $prod['name'] ?? '') ?>"
                class="puesto-product-cell"
                data-pid="<?= $prod['id'] ?>">
                 <?php if ($prod['image_1']): ?>

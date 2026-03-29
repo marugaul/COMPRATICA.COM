@@ -593,7 +593,7 @@ try {
   <?php else: ?>
     <div class="services-grid">
       <?php foreach ($servicios as $service): ?>
-        <div class="service-card" onclick="window.location.href='publicacion-detalle.php?id=<?php echo $service['id']; ?>'">
+        <div class="service-card" onclick="window.location.href='<?php echo clean_url_publicacion((int)$service['id'], $service['title'] ?? ''); ?>'">
           <?php if ($service['image_1']): ?>
             <img src="<?php echo htmlspecialchars($service['image_1']); ?>" alt="<?php echo htmlspecialchars($service['title']); ?>" class="service-image">
           <?php else: ?>
