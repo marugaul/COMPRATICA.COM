@@ -176,7 +176,11 @@ try {
         $params[] = $searchLike;
     }
 
-    if ($categoryFilter) {
+    if (defined('PAGE_TRANSPORTE') && !empty($TRANSPORT_CATS)) {
+        $placeholders = implode(',', array_fill(0, count($TRANSPORT_CATS), '?'));
+        $whereClauses[] = "jl.category IN ($placeholders)";
+        foreach ($TRANSPORT_CATS as $tc) $params[] = $tc;
+    } elseif ($categoryFilter) {
         $whereClauses[] = "jl.category = ?";
         $params[] = $categoryFilter;
     }
