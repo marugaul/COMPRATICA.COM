@@ -52,6 +52,7 @@ session_start();
 debug_log("Sesión iniciada - UID: " . ($_SESSION['uid'] ?? 'no set'));
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/mailer.php';
 require_once __DIR__ . '/includes/logger.php';
 require_once __DIR__ . '/includes/chat_helpers.php';
 require_once __DIR__ . '/includes/live_cam.php';
@@ -416,6 +417,78 @@ try {
     $userPayment = $pmRow->fetch(PDO::FETCH_ASSOC) ?: [];
 } catch (Throwable $_e) {
     $userPayment = [];
+}
+
+// ── Actualizar estado de pedido ──────────────────────────────────────────────
+$orderMsg     = '';
+$orderMsgType = 'success';
+$empOrderStatuses = ['pending'=>'Pendiente','paid'=>'Pagado','shipped'=>'Enviado','delivered'=>'Entregado','cancelled'=>'Cancelado','completed'=>'Completado'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_emp_order') {
+    $ordId     = (int)($_POST['order_id'] ?? 0);
+    $newStatus = $_POST['new_status'] ?? '';
+    if ($ordId > 0 && array_key_exists($newStatus, $empOrderStatuses)) {
+        try {
+            // Cargar pedido verificando pertenencia al vendedor
+            $ordRow = $pdo->prepare("
+                SELECT o.*, p.name AS product_name
+                FROM entrepreneur_orders o
+                JOIN entrepreneur_products p ON o.product_id = p.id
+                WHERE o.id = ? AND o.seller_user_id = ?
+            ");
+            $ordRow->execute([$ordId, $userId]);
+            $ordData = $ordRow->fetch(PDO::FETCH_ASSOC);
+            if (!$ordData) throw new RuntimeException('Pedido no encontrado.');
+
+            $prevStatus  = $ordData['status'] ?? '';
+            $buyerEmail  = $ordData['buyer_email'] ?? '';
+            $buyerName   = $ordData['buyer_name']  ?? '';
+            $productName = $ordData['product_name'] ?? '';
+            $total       = (float)($ordData['total_price'] ?? 0);
+
+            $pdo->prepare("UPDATE entrepreneur_orders SET status=?, updated_at=datetime('now') WHERE id=? AND seller_user_id=?")
+                ->execute([$newStatus, $ordId, $userId]);
+
+            $orderMsg = 'Pedido #' . $ordId . ' actualizado a "' . $empOrderStatuses[$newStatus] . '".';
+
+            // Email al comprador si el estado cambió
+            if ($prevStatus !== $newStatus && $buyerEmail !== '') {
+                $statusLabel = $empOrderStatuses[$newStatus];
+                $icons = ['pending'=>'⏳','paid'=>'✅','shipped'=>'🚚','delivered'=>'🎉','cancelled'=>'❌','completed'=>'✅'];
+                $icon  = $icons[$newStatus] ?? '📦';
+                $sellerName = $storeDesign['store_name'] ?: ($_SESSION['name'] ?? 'El vendedor');
+                $html = "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
+                    <div style='background:linear-gradient(135deg,#667eea,#764ba2);padding:32px;text-align:center;border-radius:14px 14px 0 0;'>
+                        <h1 style='color:#fff;margin:0;font-size:1.6rem;'>{$icon} Actualización de tu pedido</h1>
+                    </div>
+                    <div style='background:#fff;padding:32px;border:1px solid #e0e0e0;'>
+                        <p style='font-size:1rem;'>Hola <strong>" . htmlspecialchars($buyerName) . "</strong>,</p>
+                        <p style='font-size:1rem;color:#555;'>Tu pedido de <strong>" . htmlspecialchars($productName) . "</strong> en <strong>" . htmlspecialchars($sellerName) . "</strong> ha cambiado de estado:</p>
+                        <div style='text-align:center;margin:24px 0;padding:20px;background:#f8f7ff;border-radius:12px;'>
+                            <span style='font-size:1.4rem;font-weight:700;color:#667eea;'>{$icon} {$statusLabel}</span>
+                        </div>
+                        <p style='font-size:.9rem;color:#777;'>Total: <strong>₡" . number_format($total,0) . "</strong> | Pedido #" . $ordId . "</p>
+                    </div>
+                    <div style='background:#f9fafb;padding:16px;text-align:center;border-radius:0 0 14px 14px;color:#999;font-size:.8rem;'>
+                        CompraTica — El marketplace costarricense
+                    </div>
+                </div>";
+                try {
+                    send_email($buyerEmail, "{$icon} Tu pedido está: {$statusLabel} — CompraTica", $html);
+                } catch (Throwable $_e) {}
+            }
+
+            // PRG para evitar reenvío
+            header('Location: ' . $_SERVER['PHP_SELF'] . '?order_ok=' . urlencode($orderMsg) . '#tab-pedidos');
+            exit;
+        } catch (Throwable $e) {
+            $orderMsg     = 'Error: ' . $e->getMessage();
+            $orderMsgType = 'error';
+        }
+    }
+}
+if (isset($_GET['order_ok'])) {
+    $orderMsg     = $_GET['order_ok'];
+    $orderMsgType = 'success';
 }
 
 // Verificar límite de productos
@@ -2320,6 +2393,15 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             <div class="section-header">
                 <h2><i class="fas fa-receipt"></i> Pedidos <span style="font-size:.85rem;font-weight:500;color:#6b7280;">(<?= count($orders) ?> total<?= count($orders) !== 1 ? 'es' : '' ?>)</span></h2>
             </div>
+            <?php if ($orderMsg): ?>
+                <div style="margin:0 0 14px;padding:12px 16px;border-radius:10px;font-weight:500;
+                    background:<?= $orderMsgType==='success'?'#d1fae5':'#fee2e2' ?>;
+                    color:<?= $orderMsgType==='success'?'#065f46':'#991b1b' ?>;
+                    border:1px solid <?= $orderMsgType==='success'?'#6ee7b7':'#fca5a5' ?>;">
+                    <i class="fas fa-<?= $orderMsgType==='success'?'check-circle':'exclamation-circle' ?>"></i>
+                    <?= htmlspecialchars($orderMsg) ?>
+                </div>
+            <?php endif; ?>
 
             <?php if (empty($orders)): ?>
                 <div class="empty-state">
@@ -2342,6 +2424,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                             <th>Comprobante / Ref.</th>
                             <th>Envío</th>
                             <th>Estado</th>
+                            <th>Acciones</th>
                             <th>Fecha</th>
                         </tr>
                     </thead>
@@ -2435,6 +2518,33 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                                     color:<?= $stInfo['color'] ?>;background:<?= $stInfo['bg'] ?>;">
                                     <?= $stInfo['label'] ?>
                                 </span>
+                            </td>
+                            <td style="white-space:nowrap;">
+                                <?php
+                                $canValidate = !empty($rcpt) && $st === 'pending' && $pm === 'sinpe';
+                                ?>
+                                <?php if ($canValidate): ?>
+                                    <form method="post" style="display:inline;" onsubmit="return confirm('¿Marcar este pedido SINPE como Pagado?');">
+                                        <input type="hidden" name="action"     value="update_emp_order">
+                                        <input type="hidden" name="order_id"  value="<?= (int)$order['id'] ?>">
+                                        <input type="hidden" name="new_status" value="paid">
+                                        <button type="submit" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:none;border-radius:8px;background:#10b981;color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+                                            <i class="fas fa-check-circle"></i> Validar pago
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+                                <form method="post" style="display:inline-flex;align-items:center;gap:4px;margin-top:<?= $canValidate?'4':'0' ?>px;">
+                                    <input type="hidden" name="action"    value="update_emp_order">
+                                    <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
+                                    <select name="new_status" style="padding:4px 6px;border:1.5px solid #d1d5db;border-radius:7px;font-size:.76rem;cursor:pointer;">
+                                        <?php foreach ($empOrderStatuses as $sv => $sl): ?>
+                                            <option value="<?= $sv ?>" <?= $st===$sv?'selected':'' ?>><?= $sl ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button type="submit" style="padding:4px 9px;border:none;border-radius:7px;background:#667eea;color:#fff;font-size:.76rem;font-weight:700;cursor:pointer;" title="Guardar estado">
+                                        <i class="fas fa-save"></i>
+                                    </button>
+                                </form>
                             </td>
                             <td style="white-space:nowrap;font-size:.82rem;color:#6b7280;">
                                 <?= date('d/m/Y H:i', strtotime($order['created_at'])) ?>
