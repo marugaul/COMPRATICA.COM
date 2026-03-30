@@ -738,6 +738,11 @@ function db() {
                     )
                 ");
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_affiliates_email ON affiliates(email)");
+            } else {
+                // Migración silenciosa: añadir columnas oauth si no existen
+                $colsAff = array_column($pdo->query("PRAGMA table_info(affiliates)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+                if (!in_array('oauth_provider', $colsAff)) $pdo->exec("ALTER TABLE affiliates ADD COLUMN oauth_provider TEXT DEFAULT NULL");
+                if (!in_array('oauth_id',       $colsAff)) $pdo->exec("ALTER TABLE affiliates ADD COLUMN oauth_id TEXT DEFAULT NULL");
             }
 
             // ── Términos y Condiciones ──────────────────────────────────────
