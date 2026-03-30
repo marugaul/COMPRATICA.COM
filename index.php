@@ -495,43 +495,13 @@ logDebug("RENDERING_PAGE");
     </a>
 
     <!-- EMPRENDEDORAS Y EMPRENDEDORES -->
-    <a href="emprendedores-catalogo" class="category-card category-emprendedoras" style="
-      position: relative;
-      overflow: hidden;
-      background: #0f172a;
-      min-height: 200px;
-    ">
-      <!-- Fondo fotográfico difuminado -->
-      <div style="
-        position: absolute; inset: 0;
-        background-image: url('https://images.unsplash.com/photo-1533900298318-6b8da08a523e?w=800&h=500&fit=crop&crop=top&auto=format');
-        background-size: cover; background-position: center top;
-        opacity: 0.80;
-      "></div>
-      <!-- Overlay degradado profesional -->
-      <div style="
-        position: absolute; inset: 0;
-        background: linear-gradient(135deg,
-          rgba(15,23,42,0.40) 0%,
-          rgba(30,41,59,0.28) 50%,
-          rgba(51,65,85,0.20) 100%);
-      "></div>
-      <!-- Acento de color lateral -->
-      <div style="
-        position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-        background: linear-gradient(to bottom, #f472b6, #60a5fa);
-        z-index: 2;
-      "></div>
-      <div class="category-content" style="position: relative; z-index: 3;">
-        <div class="category-icon" style="
-          background: rgba(255,255,255,0.08);
-          border: 1.5px solid rgba(255,255,255,0.15);
-          backdrop-filter: blur(6px);
-        ">
-          <i class="fas fa-store" style="color: #fff;"></i>
+    <a href="emprendedores-catalogo" class="category-card category-emprendedoras">
+      <div class="category-content">
+        <div class="category-icon">
+          <i class="fas fa-store"></i>
         </div>
-        <h3 class="category-title" style="color: #fff;">Emprendedoras y Emprendedores</h3>
-        <p class="category-description" style="color: rgba(255,255,255,0.90);">Mercadito tico: comprá directo a quienes venden. Apoyá el talento costarricense.</p>
+        <h3 class="category-title">Emprendedoras y Emprendedores</h3>
+        <p class="category-description">Mercadito tico: comprá directo a quienes venden. Apoyá el talento costarricense.</p>
       </div>
     </a>
   </div>
