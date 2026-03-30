@@ -120,6 +120,45 @@ foreach (($cap_data['purchase_units'] ?? []) as $pu) {
 
 emp_cap_log("CAPTURE_OK", ['txn_id' => $txn_id]);
 
+// --- Crear registros en entrepreneur_orders ---
+try {
+    require_once __DIR__ . '/../includes/db.php';
+    $pdo_ord = db();
+    $insOrd = $pdo_ord->prepare("
+        INSERT INTO entrepreneur_orders
+            (product_id, seller_user_id, buyer_name, buyer_email, buyer_phone, quantity, total_price, status,
+             payment_method, payment_ref, shipping_method, shipping_zone, shipping_cost, shipping_address,
+             created_at, updated_at)
+        VALUES (?,?,?,?,?,?,?,'paid','paypal',?,?,?,?,?,?,?)
+    ");
+    $pp_buyer_name  = (string)($pending['buyer_name']  ?? '');
+    $pp_buyer_email = (string)($pending['buyer_email'] ?? '');
+    $pp_buyer_phone = (string)($pending['buyer_phone'] ?? '');
+    $pp_ship_method = (string)($pending['shipping_method']  ?? '');
+    $pp_ship_zone   = (string)($pending['shipping_zone']    ?? '');
+    $pp_ship_cost   = (int)($pending['shipping_cost']       ?? 0);
+    $pp_ship_addr   = (string)($pending['shipping_address'] ?? '');
+    foreach ((array)($pending['items'] ?? []) as $it) {
+        $oPid   = (int)($it['product_id'] ?? 0);
+        $oQty   = (int)($it['qty'] ?? 1);
+        $oPrice = (float)($it['price'] ?? 0);
+        $insOrd->execute([
+            $oPid, $sid, $pp_buyer_name, $pp_buyer_email, $pp_buyer_phone,
+            $oQty, $oQty * $oPrice,
+            $txn_id,
+            $pp_ship_method, $pp_ship_zone, $pp_ship_cost, $pp_ship_addr,
+            date('Y-m-d H:i:s'), date('Y-m-d H:i:s'),
+        ]);
+        if ($oPid > 0 && $oQty > 0) {
+            $pdo_ord->prepare("UPDATE entrepreneur_products SET stock = stock - ?, updated_at = datetime('now') WHERE id = ? AND stock >= ?")
+                ->execute([$oQty, $oPid, $oQty]);
+        }
+    }
+    emp_cap_log("DB_ORDERS_OK", ['sid' => $sid]);
+} catch (Throwable $e) {
+    emp_cap_log("DB_ORDERS_ERROR", ['err' => $e->getMessage()]);
+}
+
 // --- Limpiar carrito de ese vendedor en sesión ---
 $cartItems = $_SESSION['emp_cart'] ?? [];
 foreach ($cartItems as $pid => $item) {

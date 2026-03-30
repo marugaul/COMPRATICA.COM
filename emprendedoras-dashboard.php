@@ -178,6 +178,19 @@ try {
     if (!in_array('global_accepts_card',   $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN global_accepts_card INTEGER DEFAULT 0");
 } catch (Throwable $_e) {}
 
+// ── Migración: columnas de pago y envío en entrepreneur_orders ────────────────
+try {
+    $colsO = array_column($pdo->query("PRAGMA table_info(entrepreneur_orders)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+    if (!in_array('payment_method',   $colsO)) $pdo->exec("ALTER TABLE entrepreneur_orders ADD COLUMN payment_method TEXT");
+    if (!in_array('payment_ref',      $colsO)) $pdo->exec("ALTER TABLE entrepreneur_orders ADD COLUMN payment_ref TEXT");
+    if (!in_array('receipt_url',      $colsO)) $pdo->exec("ALTER TABLE entrepreneur_orders ADD COLUMN receipt_url TEXT");
+    if (!in_array('shipping_method',  $colsO)) $pdo->exec("ALTER TABLE entrepreneur_orders ADD COLUMN shipping_method TEXT");
+    if (!in_array('shipping_zone',    $colsO)) $pdo->exec("ALTER TABLE entrepreneur_orders ADD COLUMN shipping_zone TEXT");
+    if (!in_array('shipping_cost',    $colsO)) $pdo->exec("ALTER TABLE entrepreneur_orders ADD COLUMN shipping_cost INTEGER DEFAULT 0");
+    if (!in_array('shipping_address', $colsO)) $pdo->exec("ALTER TABLE entrepreneur_orders ADD COLUMN shipping_address TEXT");
+    if (!in_array('buyer_phone',      $colsO)) $pdo->exec("ALTER TABLE entrepreneur_orders ADD COLUMN buyer_phone TEXT");
+} catch (Throwable $_e) {}
+
 // ── Manejar guardado de avatar ────────────────────────────────────────────────
 $avatarMsg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_store_avatar') {
@@ -2322,11 +2335,12 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                             <th>Producto</th>
                             <th>Cliente</th>
                             <th>Teléfono</th>
-                            <th>Email</th>
                             <th>Cant.</th>
                             <th>Total</th>
+                            <th>Pago</th>
+                            <th>Comprobante / Ref.</th>
+                            <th>Envío</th>
                             <th>Estado</th>
-                            <th>Notas</th>
                             <th>Fecha</th>
                         </tr>
                     </thead>
@@ -2340,33 +2354,86 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                             'cancelled'  => ['label' => 'Cancelado',  'color' => '#ef4444', 'bg' => '#fee2e2'],
                             'completed'  => ['label' => 'Completado', 'color' => '#7c3aed', 'bg' => '#ede9fe'],
                         ];
+                        $payBadge = [
+                            'sinpe'    => ['icon'=>'fa-mobile-alt',  'label'=>'SINPE',    'color'=>'#059669','bg'=>'#d1fae5'],
+                            'paypal'   => ['icon'=>'fa-paypal',      'label'=>'PayPal',   'color'=>'#1d4ed8','bg'=>'#dbeafe'],
+                            'swiftpay' => ['icon'=>'fa-credit-card', 'label'=>'Tarjeta',  'color'=>'#7c3aed','bg'=>'#ede9fe'],
+                            'card'     => ['icon'=>'fa-credit-card', 'label'=>'Tarjeta',  'color'=>'#7c3aed','bg'=>'#ede9fe'],
+                        ];
+                        $shipLabels = [
+                            'pickup'  => ['icon'=>'fa-store',         'label'=>'Retiro en local'],
+                            'free'    => ['icon'=>'fa-gift',          'label'=>'Envío gratis'],
+                            'express' => ['icon'=>'fa-shipping-fast', 'label'=>'Express'],
+                            'mooving' => ['icon'=>'fa-motorcycle',    'label'=>'Mooving'],
+                        ];
                         foreach ($orders as $order):
-                            $st = $order['status'] ?? 'pending';
-                            $stInfo = $statusLabels[$st] ?? ['label' => ucfirst($st), 'color' => '#6b7280', 'bg' => '#f3f4f6'];
+                            $st    = $order['status']          ?? 'pending';
+                            $pm    = $order['payment_method']  ?? '';
+                            $pref  = $order['payment_ref']     ?? '';
+                            $rcpt  = $order['receipt_url']     ?? '';
+                            $shm   = $order['shipping_method'] ?? '';
+                            $shz   = $order['shipping_zone']   ?? '';
+                            $stInfo  = $statusLabels[$st]   ?? ['label'=>ucfirst($st),'color'=>'#6b7280','bg'=>'#f3f4f6'];
+                            $pmInfo  = $payBadge[$pm]        ?? null;
+                            $shInfo  = $shipLabels[$shm]     ?? null;
+                            // Fallback: detectar pago por notas (órdenes antiguas)
+                            if (!$pmInfo && !empty($order['notes']) && stripos($order['notes'], 'swiftpay') !== false) {
+                                $pmInfo = $payBadge['swiftpay'];
+                                if (preg_match('/SwiftPay\s+(\S+)/i', $order['notes'], $m)) $pref = $m[1];
+                            }
                         ?>
                         <tr>
                             <td style="font-weight:700;color:#667eea;">#<?= $order['id'] ?></td>
                             <td><?= htmlspecialchars($order['product_name']) ?></td>
-                            <td style="font-weight:600;"><?= htmlspecialchars($order['buyer_name'] ?? '—') ?></td>
+                            <td style="font-weight:600;">
+                                <?= htmlspecialchars($order['buyer_name'] ?? '—') ?>
+                                <?php if (!empty($order['buyer_email'])): ?>
+                                <br><span style="font-size:.75rem;color:#9ca3af;font-weight:400;"><?= htmlspecialchars($order['buyer_email']) ?></span>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <?php if (!empty($order['buyer_phone'])): ?>
                                 <a href="https://wa.me/506<?= preg_replace('/\D/','',$order['buyer_phone']) ?>"
-                                   target="_blank" style="color:#25d366;text-decoration:none;font-weight:600;">
+                                   target="_blank" style="color:#25d366;text-decoration:none;font-weight:600;white-space:nowrap;">
                                     <i class="fab fa-whatsapp"></i> <?= htmlspecialchars($order['buyer_phone']) ?>
                                 </a>
                                 <?php else: ?>—<?php endif; ?>
                             </td>
-                            <td style="font-size:.82rem;color:#6b7280;"><?= htmlspecialchars($order['buyer_email'] ?? '—') ?></td>
                             <td style="text-align:center;"><?= (int)($order['quantity'] ?? 1) ?></td>
-                            <td style="font-weight:700;">₡<?= number_format($order['total_price'] ?? 0, 0) ?></td>
+                            <td style="font-weight:700;white-space:nowrap;">₡<?= number_format($order['total_price'] ?? 0, 0) ?></td>
+                            <td>
+                                <?php if ($pmInfo): ?>
+                                <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.75rem;font-weight:700;color:<?= $pmInfo['color'] ?>;background:<?= $pmInfo['bg'] ?>;">
+                                    <i class="fas <?= $pmInfo['icon'] ?>"></i> <?= $pmInfo['label'] ?>
+                                </span>
+                                <?php else: ?>—<?php endif; ?>
+                            </td>
+                            <td style="font-size:.82rem;">
+                                <?php if (!empty($rcpt)): ?>
+                                    <a href="<?= htmlspecialchars($rcpt) ?>" target="_blank"
+                                       style="color:#667eea;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
+                                        <i class="fas fa-paperclip"></i> Ver comprobante
+                                    </a>
+                                <?php elseif (!empty($pref)): ?>
+                                    <span style="font-family:monospace;font-size:.78rem;color:#374151;" title="Referencia de transacción">
+                                        <?= htmlspecialchars(substr($pref,0,20)) ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span style="color:#d1d5db;">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td style="font-size:.82rem;">
+                                <?php if ($shInfo): ?>
+                                <span style="white-space:nowrap;"><i class="fas <?= $shInfo['icon'] ?>" style="color:#667eea;"></i>
+                                    <?= $shInfo['label'] ?><?= $shz ? ' — '.$shz : '' ?>
+                                </span>
+                                <?php else: ?>—<?php endif; ?>
+                            </td>
                             <td>
                                 <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700;
                                     color:<?= $stInfo['color'] ?>;background:<?= $stInfo['bg'] ?>;">
                                     <?= $stInfo['label'] ?>
                                 </span>
-                            </td>
-                            <td style="font-size:.82rem;color:#6b7280;max-width:160px;">
-                                <?= htmlspecialchars($order['notes'] ?? '') ?: '<span style="color:#d1d5db;">—</span>' ?>
                             </td>
                             <td style="white-space:nowrap;font-size:.82rem;color:#6b7280;">
                                 <?= date('d/m/Y H:i', strtotime($order['created_at'])) ?>
