@@ -360,13 +360,14 @@ $awningPalette = [
         /* Ticker del toldo en catálogo */
         .puesto-ticker-wrap {
             position: absolute;
-            top: -20px; left: -8px; right: -8px;
+            top: -26px; left: 0; right: 0;
             height: 20px;
             background: rgba(0,0,0,.50);
             overflow: hidden;
             display: flex;
             align-items: center;
             z-index: 4;
+            border-radius: 6px 6px 0 0;
         }
         .puesto-ticker {
             display: inline-flex;
