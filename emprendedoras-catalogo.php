@@ -103,6 +103,42 @@ foreach ($sellers as $seller) {
     $productsBySeller[$sid] = $stP->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// Banners activos para el catálogo (show_on = 'catalog' o 'both')
+$catalogBanners = [];
+if (!empty($sellers)) {
+    $today  = date('Y-m-d');
+    $sids   = array_column($sellers, 'seller_id');
+    $ph     = implode(',', array_fill(0, count($sids), '?'));
+    try {
+        // Asegurar tabla y columna existen
+        $pdo->exec("CREATE TABLE IF NOT EXISTS store_banners (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+            banner_text TEXT, image_url TEXT, scroll_speed TEXT DEFAULT 'normal',
+            starts_at TEXT, ends_at TEXT, is_active INTEGER DEFAULT 1,
+            sort_order INTEGER DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )");
+        $colsBnr = array_column($pdo->query("PRAGMA table_info(store_banners)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+        if (!in_array('show_on', $colsBnr)) $pdo->exec("ALTER TABLE store_banners ADD COLUMN show_on TEXT DEFAULT 'store'");
+        // Cargar primer banner activo por vendedor
+        $stBnr = $pdo->prepare("
+            SELECT user_id, banner_text, image_url, scroll_speed
+            FROM store_banners
+            WHERE user_id IN ($ph)
+              AND is_active = 1
+              AND (show_on = 'catalog' OR show_on = 'both')
+              AND (starts_at IS NULL OR starts_at <= ?)
+              AND (ends_at   IS NULL OR ends_at   >= ?)
+            ORDER BY sort_order ASC, id ASC
+        ");
+        $stBnr->execute(array_merge($sids, [$today, $today]));
+        foreach ($stBnr->fetchAll(PDO::FETCH_ASSOC) as $bnr) {
+            if (!isset($catalogBanners[$bnr['user_id']])) {
+                $catalogBanners[$bnr['user_id']] = $bnr;
+            }
+        }
+    } catch (Throwable $_e) {}
+}
+
 // Carrito
 $empCartCount = 0;
 foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
@@ -319,6 +355,36 @@ $awningPalette = [
             background: radial-gradient(circle at 50% 0%, transparent 11px, #f5f1e8 11px);
             background-size: 24px 16px;
             box-shadow: 0 2px 4px rgba(0,0,0,.15);
+        }
+
+        /* Ticker del toldo en catálogo */
+        .puesto-ticker-wrap {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 20px;
+            background: rgba(0,0,0,.45);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            z-index: 2;
+        }
+        .puesto-ticker {
+            display: inline-flex;
+            white-space: nowrap;
+            animation: puestoTickerScroll linear infinite;
+            will-change: transform;
+        }
+        .puesto-ticker span {
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .03em;
+            padding: 0 4px;
+        }
+        .puesto-ticker .pt-sep { color: rgba(255,255,255,.55); }
+        @keyframes puestoTickerScroll {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
         }
 
         /* Cabecera del puesto */
@@ -786,6 +852,19 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
             <svg class="puesto-awning-stripes" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="none">
                 <?= $awningInner ?>
             </svg>
+            <?php
+            $catBnr = $catalogBanners[$seller['seller_id']] ?? null;
+            if ($catBnr && !empty($catBnr['banner_text'])):
+                $speeds = ['slow'=>'28s','normal'=>'14s','fast'=>'7s'];
+                $dur = $speeds[$catBnr['scroll_speed'] ?? 'normal'] ?? '14s';
+                $et  = htmlspecialchars($catBnr['banner_text']);
+            ?>
+            <div class="puesto-ticker-wrap">
+                <div class="puesto-ticker" style="animation-duration:<?= $dur ?>;">
+                    <?php for ($i=0;$i<4;$i++) echo "<span>{$et}</span><span class='pt-sep'> ✦ </span>"; ?>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
         <div class="puesto">
 

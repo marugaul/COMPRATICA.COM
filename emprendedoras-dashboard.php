@@ -289,6 +289,9 @@ try {
         sort_order INTEGER DEFAULT 0,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )");
+    // Agregar columna show_on si no existe aún
+    $colsBnr = array_column($pdo->query("PRAGMA table_info(store_banners)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+    if (!in_array('show_on', $colsBnr)) $pdo->exec("ALTER TABLE store_banners ADD COLUMN show_on TEXT DEFAULT 'store'");
 } catch (Throwable $_e) {}
 
 // ── POST handlers para banners ────────────────────────────────────────────
@@ -302,17 +305,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $btext  = mb_substr(trim($_POST['banner_text'] ?? ''), 0, 200);
         $bimg   = trim($_POST['image_url'] ?? '');
         if ($bimg && !preg_match('/^https?:\/\//i', $bimg)) $bimg = '';
-        $bspeed = in_array($_POST['scroll_speed'] ?? '', ['slow','normal','fast']) ? $_POST['scroll_speed'] : 'normal';
-        $bstart = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['starts_at'] ?? '') ? $_POST['starts_at'] : null;
-        $bend   = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['ends_at']   ?? '') ? $_POST['ends_at']   : null;
+        $bspeed  = in_array($_POST['scroll_speed'] ?? '', ['slow','normal','fast']) ? $_POST['scroll_speed'] : 'normal';
+        $bshowon = in_array($_POST['show_on'] ?? '', ['store','catalog','both']) ? $_POST['show_on'] : 'store';
+        $bstart  = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['starts_at'] ?? '') ? $_POST['starts_at'] : null;
+        $bend    = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['ends_at']   ?? '') ? $_POST['ends_at']   : null;
         try {
             if ($bid > 0) {
-                $pdo->prepare("UPDATE store_banners SET banner_text=?,image_url=?,scroll_speed=?,starts_at=?,ends_at=? WHERE id=? AND user_id=?")
-                    ->execute([$btext ?: null, $bimg ?: null, $bspeed, $bstart, $bend, $bid, $userId]);
+                $pdo->prepare("UPDATE store_banners SET banner_text=?,image_url=?,scroll_speed=?,show_on=?,starts_at=?,ends_at=? WHERE id=? AND user_id=?")
+                    ->execute([$btext ?: null, $bimg ?: null, $bspeed, $bshowon, $bstart, $bend, $bid, $userId]);
                 $bannerMsg = ['ok', '✅ Banner actualizado.'];
             } else {
-                $pdo->prepare("INSERT INTO store_banners (user_id,banner_text,image_url,scroll_speed,starts_at,ends_at,is_active) VALUES (?,?,?,?,?,?,1)")
-                    ->execute([$userId, $btext ?: null, $bimg ?: null, $bspeed, $bstart, $bend]);
+                $pdo->prepare("INSERT INTO store_banners (user_id,banner_text,image_url,scroll_speed,show_on,starts_at,ends_at,is_active) VALUES (?,?,?,?,?,?,?,1)")
+                    ->execute([$userId, $btext ?: null, $bimg ?: null, $bspeed, $bshowon, $bstart, $bend]);
                 $bannerMsg = ['ok', '✅ Banner creado correctamente.'];
             }
         } catch (Exception $e) { $bannerMsg = ['err', '❌ Error: ' . $e->getMessage()]; }
@@ -2649,6 +2653,9 @@ $currentStep = $onboardingSteps[$currentStepIdx];
         .bnr-badge.inactive { background:#fee2e2;color:#991b1b; }
         .bnr-badge.speed    { background:#ede9fe;color:#4c1d95; }
         .bnr-badge.dates    { background:#fef3c7;color:#78350f; }
+        .bnr-badge.showon   { background:#e0f2fe;color:#0c4a6e; }
+        .bnr-show-btn { border:2px solid #e5e7eb;background:#fff;border-radius:9px;padding:7px 14px;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .18s; }
+        .bnr-show-btn.sel { border-color:<?= htmlspecialchars($prevC1) ?>;background:<?= htmlspecialchars($prevC1) ?>;color:#fff; }
         .bnr-actions { margin-left:auto;display:flex;gap:6px; }
         .bnr-btn  { border:none;border-radius:8px;padding:5px 12px;font-size:.78rem;font-weight:700;cursor:pointer;transition:opacity .2s; }
         .bnr-btn:hover { opacity:.8; }
@@ -2731,6 +2738,17 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                         <input type="hidden" name="scroll_speed" id="bnr-speed-val" value="normal">
                     </div>
 
+                    <!-- Mostrar en -->
+                    <div style="margin-bottom:14px;">
+                        <label for="bnr-show-val" style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:8px;"><i class="fas fa-eye"></i> Mostrar en</label>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button type="button" class="bnr-show-btn sel" data-show="store"   onclick="bnrSetShow('store')">🏪 Solo tienda</button>
+                            <button type="button" class="bnr-show-btn"     data-show="catalog" onclick="bnrSetShow('catalog')">🛍️ Solo catálogo</button>
+                            <button type="button" class="bnr-show-btn"     data-show="both"    onclick="bnrSetShow('both')">✅ Ambos</button>
+                        </div>
+                        <input type="hidden" name="show_on" id="bnr-show-val" value="store">
+                    </div>
+
                     <!-- Fechas -->
                     <div style="margin-bottom:18px;display:flex;gap:14px;flex-wrap:wrap;">
                         <div style="flex:1;min-width:140px;">
@@ -2768,13 +2786,15 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                 </div>
             <?php else: ?>
                 <?php foreach ($userBanners as $bnr):
-                    $bActive = (bool)$bnr['is_active'];
-                    $bText   = htmlspecialchars($bnr['banner_text'] ?? '');
-                    $bImg    = htmlspecialchars($bnr['image_url']   ?? '');
-                    $bSpeed  = $speedLabels[$bnr['scroll_speed']] ?? '⚡ Normal';
-                    $bStart  = $bnr['starts_at'] ?? '';
-                    $bEnd    = $bnr['ends_at']   ?? '';
-                    $dateStr = $bStart || $bEnd ? ('📅 ' . ($bStart ?: '∞') . ' → ' . ($bEnd ?: '∞')) : '';
+                    $bActive  = (bool)$bnr['is_active'];
+                    $bText    = htmlspecialchars($bnr['banner_text'] ?? '');
+                    $bImg     = htmlspecialchars($bnr['image_url']   ?? '');
+                    $bSpeed   = $speedLabels[$bnr['scroll_speed']] ?? '⚡ Normal';
+                    $bStart   = $bnr['starts_at'] ?? '';
+                    $bEnd     = $bnr['ends_at']   ?? '';
+                    $dateStr  = $bStart || $bEnd ? ('📅 ' . ($bStart ?: '∞') . ' → ' . ($bEnd ?: '∞')) : '';
+                    $showLabels = ['store'=>'🏪 Tienda','catalog'=>'🛍️ Catálogo','both'=>'✅ Ambos'];
+                    $bShowOn  = $showLabels[$bnr['show_on'] ?? 'store'] ?? '🏪 Tienda';
                     $previewBgBnr = $bImg ? "url(".htmlspecialchars($bnr['image_url']).")  center/cover no-repeat" : $prevBg;
                 ?>
                 <div class="bnr-card">
@@ -2794,6 +2814,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                             <?= $bActive ? '● Activo' : '○ Inactivo' ?>
                         </span>
                         <span class="bnr-badge speed"><?= $bSpeed ?></span>
+                        <span class="bnr-badge showon"><?= $bShowOn ?></span>
                         <?php if ($dateStr): ?>
                             <span class="bnr-badge dates"><?= htmlspecialchars($dateStr) ?></span>
                         <?php endif; ?>
@@ -2812,11 +2833,12 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                             <!-- Editar -->
                             <button type="button" class="bnr-btn" style="background:#ede9fe;color:#4c1d95;"
                                 onclick="bnrShowForm(<?= (int)$bnr['id'] ?>,<?= htmlspecialchars(json_encode([
-                                    'text'  => $bnr['banner_text']   ?? '',
-                                    'img'   => $bnr['image_url']     ?? '',
-                                    'speed' => $bnr['scroll_speed']  ?? 'normal',
-                                    'start' => $bnr['starts_at']     ?? '',
-                                    'end'   => $bnr['ends_at']       ?? '',
+                                    'text'   => $bnr['banner_text']  ?? '',
+                                    'img'    => $bnr['image_url']    ?? '',
+                                    'speed'  => $bnr['scroll_speed'] ?? 'normal',
+                                    'showon' => $bnr['show_on']      ?? 'store',
+                                    'start'  => $bnr['starts_at']    ?? '',
+                                    'end'    => $bnr['ends_at']      ?? '',
                                 ]), ENT_QUOTES) ?>)">
                                 <i class="fas fa-pen"></i>
                             </button>
@@ -2847,6 +2869,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                     document.getElementById('bnr-start').value = data.start || '';
                     document.getElementById('bnr-end').value   = data.end   || '';
                     bnrSetSpeed(data.speed || 'normal');
+                    bnrSetShow(data.showon || 'store');
                     bnrPreviewImg(data.img || '');
                     document.getElementById('bnr-chars').textContent = (200 - (data.text||'').length) + ' restantes';
                 } else {
@@ -2856,6 +2879,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                     document.getElementById('bnr-start').value = '';
                     document.getElementById('bnr-end').value   = '';
                     bnrSetSpeed('normal');
+                    bnrSetShow('store');
                     bnrPreviewImg('');
                     document.getElementById('bnr-chars').textContent = '200 restantes';
                 }
@@ -2876,6 +2900,12 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                 document.getElementById('bnr-speed-val').value = speed;
                 document.querySelectorAll('.bnr-speed-btn').forEach(function(b) {
                     b.classList.toggle('sel', b.dataset.speed === speed);
+                });
+            }
+            function bnrSetShow(show) {
+                document.getElementById('bnr-show-val').value = show;
+                document.querySelectorAll('.bnr-show-btn').forEach(function(b) {
+                    b.classList.toggle('sel', b.dataset.show === show);
                 });
             }
             function bnrPreviewImg(url) {
