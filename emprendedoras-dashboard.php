@@ -363,9 +363,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 }
 
 // ── Cargar configuración de diseño actual del usuario ─────────────────────────
-$storeDesign = ['store_color1'=>'#667eea','store_color2'=>'#764ba2','store_banner_style'=>'stripes','store_logo'=>'','seller_type'=>'emprendedora','store_name'=>'','store_banner_text'=>''];
+$storeDesign = ['store_color1'=>'#667eea','store_color2'=>'#764ba2','store_banner_style'=>'stripes','store_logo'=>'','seller_type'=>'emprendedora','store_name'=>''];
 try {
-    $sd = $pdo->prepare("SELECT store_color1, store_color2, store_banner_style, store_logo, seller_type, store_name, store_banner_text FROM users WHERE id=?");
+    $sd = $pdo->prepare("SELECT store_color1, store_color2, store_banner_style, store_logo, seller_type, store_name FROM users WHERE id=?");
     $sd->execute([$userId]);
     $row = $sd->fetch(PDO::FETCH_ASSOC);
     if ($row) $storeDesign = array_merge($storeDesign, array_filter($row, fn($v) => $v !== null));
@@ -2680,8 +2680,8 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                 </div>
             <?php endif; ?>
 
-            <!-- Formulario add/edit (oculto por defecto) -->
-            <div id="bnr-form-wrap" class="bnr-form-wrap" style="display:none;">
+            <!-- Formulario add/edit (visible si no hay banners) -->
+            <div id="bnr-form-wrap" class="bnr-form-wrap" style="display:<?= empty($userBanners) ? 'block' : 'none' ?>;"><?php if (empty($userBanners)): ?><p style="font-size:.8rem;color:#6b7280;margin:0 0 14px;">Crea tu primer banner para activarlo en tu tienda.</p><?php endif; ?>
                 <h3 style="margin:0 0 14px;font-size:1rem;color:#111;" id="bnr-form-title"><i class="fas fa-plus-circle" style="color:<?= htmlspecialchars($prevC1) ?>;"></i> Nuevo Banner</h3>
                 <form method="POST" id="bnr-form">
                     <input type="hidden" name="action" value="save_banner">
@@ -2699,7 +2699,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
 
                     <!-- Texto -->
                     <div style="margin-bottom:14px;">
-                        <label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-align-left"></i> Texto del banner <span style="color:#9ca3af;font-weight:400;">(opcional si usas imagen)</span></label>
+                        <label for="bnr-text" style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-align-left"></i> Texto del banner <span style="color:#9ca3af;font-weight:400;">(opcional si usas imagen)</span></label>
                         <textarea name="banner_text" id="bnr-text" maxlength="200" rows="2"
                             placeholder="Ej: 🔥 ¡20% OFF este fin de semana! · Envío gratis en compras mayores a ₡8,000"
                             oninput="document.getElementById('bnr-chars').textContent=(200-this.value.length)+' restantes'"
@@ -2711,7 +2711,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
 
                     <!-- Imagen URL -->
                     <div style="margin-bottom:14px;">
-                        <label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-image"></i> URL de imagen de banner <span style="color:#9ca3af;font-weight:400;">(opcional)</span></label>
+                        <label for="bnr-img-url" style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-image"></i> URL de imagen de banner <span style="color:#9ca3af;font-weight:400;">(opcional)</span></label>
                         <input type="url" name="image_url" id="bnr-img-url" placeholder="https://... (imagen ancha, ej. 960×110px)"
                             oninput="bnrPreviewImg(this.value)"
                             style="width:100%;padding:9px 12px;border:2px solid #e5e7eb;border-radius:9px;font-size:.88rem;outline:none;"
@@ -2722,7 +2722,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
 
                     <!-- Velocidad -->
                     <div style="margin-bottom:14px;">
-                        <label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:8px;"><i class="fas fa-tachometer-alt"></i> Velocidad del texto</label>
+                        <label for="bnr-speed-val" style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:8px;"><i class="fas fa-tachometer-alt"></i> Velocidad del texto</label>
                         <div class="bnr-speed-btns">
                             <button type="button" class="bnr-speed-btn" data-speed="slow"   onclick="bnrSetSpeed('slow')">🐢 Lento</button>
                             <button type="button" class="bnr-speed-btn sel" data-speed="normal" onclick="bnrSetSpeed('normal')">⚡ Normal</button>
@@ -2734,14 +2734,14 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                     <!-- Fechas -->
                     <div style="margin-bottom:18px;display:flex;gap:14px;flex-wrap:wrap;">
                         <div style="flex:1;min-width:140px;">
-                            <label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-calendar-alt"></i> Inicio <span style="color:#9ca3af;font-weight:400;">(opcional)</span></label>
+                            <label for="bnr-start" style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-calendar-alt"></i> Inicio <span style="color:#9ca3af;font-weight:400;">(opcional)</span></label>
                             <input type="date" name="starts_at" id="bnr-start"
                                 style="width:100%;padding:9px 12px;border:2px solid #e5e7eb;border-radius:9px;font-size:.88rem;outline:none;"
                                 onfocus="this.style.borderColor='<?= htmlspecialchars($prevC1) ?>'"
                                 onblur="this.style.borderColor='#e5e7eb'">
                         </div>
                         <div style="flex:1;min-width:140px;">
-                            <label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-calendar-check"></i> Fin <span style="color:#9ca3af;font-weight:400;">(opcional)</span></label>
+                            <label for="bnr-end" style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-calendar-check"></i> Fin <span style="color:#9ca3af;font-weight:400;">(opcional)</span></label>
                             <input type="date" name="ends_at" id="bnr-end"
                                 style="width:100%;padding:9px 12px;border:2px solid #e5e7eb;border-radius:9px;font-size:.88rem;outline:none;"
                                 onfocus="this.style.borderColor='<?= htmlspecialchars($prevC1) ?>'"

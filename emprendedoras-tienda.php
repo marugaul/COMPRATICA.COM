@@ -389,22 +389,23 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
 
         /* ── Live embed en tienda ── */
         .store-live-section {
-            max-width: 960px; margin: 0 auto 24px; padding: 0 20px;
+            max-width: 540px; margin: 0 auto 20px; padding: 0 20px;
         }
         .store-live-box {
-            border-radius: 14px; overflow: hidden;
-            box-shadow: 0 6px 28px rgba(0,0,0,.15);
+            border-radius: 12px; overflow: hidden;
+            box-shadow: 0 4px 18px rgba(0,0,0,.15);
         }
         .store-live-box-header {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 16px; color: white; gap: 10px;
+            padding: 8px 14px; color: white; gap: 10px;
         }
         .store-live-box-header span {
-            display: flex; align-items: center; gap: 8px;
-            font-weight: 700; font-size: 0.95rem;
+            display: flex; align-items: center; gap: 6px;
+            font-weight: 700; font-size: 0.85rem;
         }
         .store-live-iframe-wrap {
             position: relative; width: 100%; padding-bottom: 56.25%; background: #000;
+            max-height: 280px;
         }
         .store-live-iframe-wrap iframe {
             position: absolute; inset: 0; width: 100%; height: 100%; border: none;
