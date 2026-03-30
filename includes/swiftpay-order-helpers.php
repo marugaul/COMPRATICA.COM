@@ -229,12 +229,19 @@ function crearOrdenEmprendedoraSwiftPay(PDO $pdo, SwiftPayResult $result, int $s
     }
 
     // ── Crear registros en entrepreneur_orders ─────────────────────
+    $shippingMethod  = (string)($ctx['shipping_method']  ?? '');
+    $shippingZone    = (string)($ctx['shipping_zone']    ?? '');
+    $shippingCost    = (int)($ctx['shipping_cost']       ?? 0);
+    $shippingAddress = (string)($ctx['shipping_address'] ?? '');
+
     try {
         $pdo->beginTransaction();
         $ins = $pdo->prepare("
             INSERT INTO entrepreneur_orders
-                (product_id, seller_user_id, buyer_name, buyer_email, buyer_phone, quantity, total_price, status, notes, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                (product_id, seller_user_id, buyer_name, buyer_email, buyer_phone, quantity, total_price, status, notes,
+                 payment_method, payment_ref, shipping_method, shipping_zone, shipping_cost, shipping_address,
+                 created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ");
 
         foreach ($items as $it) {
@@ -244,7 +251,9 @@ function crearOrdenEmprendedoraSwiftPay(PDO $pdo, SwiftPayResult $result, int $s
             $ins->execute([
                 $pid, $sellerId, $buyerName, $buyerEmail, $buyerPhone,
                 $qty, $qty * $price, 'paid',
-                trim('SwiftPay ' . $txnId . ($deliveryNotes ? ' | ' . $deliveryNotes : '')),
+                trim($deliveryNotes),
+                'swiftpay', $txnId,
+                $shippingMethod, $shippingZone, $shippingCost, $shippingAddress,
                 date('Y-m-d H:i:s'), date('Y-m-d H:i:s'),
             ]);
             if ($pid > 0 && $qty > 0) {

@@ -117,6 +117,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sinpe
                     $uid = (int)($_SESSION['uid'] ?? 0);
                     $pdo->prepare("INSERT INTO payment_receipts (listing_type,listing_id,user_id,receipt_url,status,notes) VALUES ('emp_product',?,?,?,'pending',?)")
                         ->execute([$sellerId, $uid ?: null, $receiptUrl, "Comprador: {$buyerNameP} | {$buyerEmailP} | {$buyerPhone}"]);
+
+                    // Crear registros en entrepreneur_orders para cada producto
+                    $insOrd = $pdo->prepare("
+                        INSERT INTO entrepreneur_orders
+                            (product_id, seller_user_id, buyer_name, buyer_email, buyer_phone, quantity, total_price, status,
+                             payment_method, receipt_url, shipping_method, shipping_zone, shipping_cost, shipping_address,
+                             created_at, updated_at)
+                        VALUES (?,?,?,?,?,?,?,'pending','sinpe',?,?,?,?,?,?,?)
+                    ");
+                    foreach ($group['items'] as $oi) {
+                        $oPid  = (int)($oi['product_id'] ?? $oi['id'] ?? 0);
+                        $oQty  = (int)($oi['qty'] ?? 1);
+                        $oPrice= (float)($oi['price'] ?? 0);
+                        $insOrd->execute([
+                            $oPid, $sellerId, $buyerNameP, $buyerEmailP, $buyerPhone,
+                            $oQty, $oQty * $oPrice,
+                            $receiptUrl,
+                            $group['shipping_method'] ?? '', $group['shipping_zone'] ?? '',
+                            (int)($group['shipping_cost'] ?? 0), $group['shipping_address'] ?? '',
+                            date('Y-m-d H:i:s'), date('Y-m-d H:i:s'),
+                        ]);
+                    }
                 } catch (Throwable $e) { /* non-blocking */ }
 
                 // Armar lista de productos del grupo
@@ -256,18 +278,22 @@ foreach ($groups as $sid => $group) {
         if ($total_usd_pp < 0.01) $total_usd_pp = 0.01;
         $items_for_pp = [];
         foreach ($group['items'] as $it) {
-            $items_for_pp[] = ['name' => $it['name'], 'qty' => $it['qty'], 'price' => $it['price']];
+            $items_for_pp[] = ['product_id' => (int)($it['product_id'] ?? $it['id'] ?? 0), 'name' => $it['name'], 'qty' => $it['qty'], 'price' => $it['price']];
         }
         $_SESSION['emp_paypal_pending'][$sid] = [
-            'seller_name'  => $group['seller_name'],
-            'seller_email' => $group['seller_email'],
-            'paypal_email' => $group['paypal_email'],
-            'buyer_name'   => $buyerName,
-            'buyer_email'  => $buyerEmail,
-            'total_crc'    => $total_crc_pp,
-            'total_usd'    => $total_usd_pp,
-            'items'        => $items_for_pp,
-            'order_ref'    => 'EMP-' . $sid,
+            'seller_name'    => $group['seller_name'],
+            'seller_email'   => $group['seller_email'],
+            'paypal_email'   => $group['paypal_email'],
+            'buyer_name'     => $buyerName,
+            'buyer_email'    => $buyerEmail,
+            'total_crc'      => $total_crc_pp,
+            'total_usd'      => $total_usd_pp,
+            'items'          => $items_for_pp,
+            'order_ref'      => 'EMP-' . $sid,
+            'shipping_method'=> $group['shipping_method'] ?? '',
+            'shipping_zone'  => $group['shipping_zone'] ?? '',
+            'shipping_cost'  => (int)($group['shipping_cost'] ?? 0),
+            'shipping_address'=> $group['shipping_address'] ?? '',
         ];
     }
 
@@ -280,10 +306,12 @@ foreach ($groups as $sid => $group) {
             'buyer_name'   => $buyerName,
             'buyer_email'  => $buyerEmail,
             'buyer_phone'  => '',  // se sobreescribe con lo que manda el widget
-            'items'        => $group['items'],
-            'total'        => $group['total'],
-            'shipping_cost'=> $group['shipping_cost'],
+            'items'          => $group['items'],
+            'total'          => $group['total'],
+            'shipping_cost'  => $group['shipping_cost'],
             'shipping_method'=> $group['shipping_method'],
+            'shipping_zone'  => $group['shipping_zone'] ?? '',
+            'shipping_address'=> $group['shipping_address'] ?? '',
         ];
     }
 }
