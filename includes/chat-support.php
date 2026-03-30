@@ -11,7 +11,7 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
 #ct-chat-btn {
   position: fixed;
   bottom: 24px;
-  right: 24px;
+  left: 24px;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -46,7 +46,7 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
 #ct-chat-panel {
   position: fixed;
   bottom: 90px;
-  right: 24px;
+  left: 24px;
   width: 340px;
   max-width: calc(100vw - 32px);
   background: #fff;
