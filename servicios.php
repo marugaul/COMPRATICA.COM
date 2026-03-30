@@ -145,10 +145,17 @@ logDebug("SEARCH_QUERY", ['q' => $searchQuery, 'cat' => $categoryFilter]);
 $pdo = db();
 $servicios = [];
 $availableCategories = [];
+// Categorías que pertenecen exclusivamente a /transporte
+if (!isset($TRANSPORT_CATS)) {
+    $TRANSPORT_CATS = ['SERV: Shuttle y Transporte', 'SERV: Fletes y Mudanzas'];
+}
 
 try {
     // Obtener categorías disponibles para el filtro
-    $catStmt = $pdo->query("
+    $catExclude = !defined('PAGE_TRANSPORTE')
+        ? " AND jl.category NOT IN (" . implode(',', array_fill(0, count($TRANSPORT_CATS), '?')) . ")"
+        : '';
+    $catStmt = $pdo->prepare("
         SELECT DISTINCT jl.category
         FROM job_listings jl
         INNER JOIN users u ON u.id = jl.employer_id
@@ -157,8 +164,10 @@ try {
           AND u.status = 'active'
           AND jl.category IS NOT NULL
           AND jl.category != ''
+          $catExclude
         ORDER BY jl.category
     ");
+    $catStmt->execute(!defined('PAGE_TRANSPORTE') ? $TRANSPORT_CATS : []);
     $availableCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
 
     // Construir cláusulas WHERE dinámicas
@@ -176,13 +185,26 @@ try {
         $params[] = $searchLike;
     }
 
-    if (defined('PAGE_TRANSPORTE') && !empty($TRANSPORT_CATS)) {
+    if (defined('PAGE_TRANSPORTE')) {
+        // Transporte: filtrar $availableCategories a solo las de transporte
+        $availableCategories = array_values(array_filter($availableCategories, fn($c) => in_array($c, $TRANSPORT_CATS)));
+        if ($categoryFilter && in_array($categoryFilter, $TRANSPORT_CATS)) {
+            $whereClauses[] = "jl.category = ?";
+            $params[] = $categoryFilter;
+        } else {
+            $placeholders = implode(',', array_fill(0, count($TRANSPORT_CATS), '?'));
+            $whereClauses[] = "jl.category IN ($placeholders)";
+            foreach ($TRANSPORT_CATS as $tc) $params[] = $tc;
+        }
+    } else {
+        // Servicios: excluir categorías de transporte
         $placeholders = implode(',', array_fill(0, count($TRANSPORT_CATS), '?'));
-        $whereClauses[] = "jl.category IN ($placeholders)";
+        $whereClauses[] = "jl.category NOT IN ($placeholders)";
         foreach ($TRANSPORT_CATS as $tc) $params[] = $tc;
-    } elseif ($categoryFilter) {
-        $whereClauses[] = "jl.category = ?";
-        $params[] = $categoryFilter;
+        if ($categoryFilter) {
+            $whereClauses[] = "jl.category = ?";
+            $params[] = $categoryFilter;
+        }
     }
 
     $whereSQL = implode(' AND ', $whereClauses);
@@ -1585,7 +1607,7 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
       <span class="filter-label"><i class="fas fa-filter"></i> Filtrar por tipo de servicio:</span>
       <div class="filter-chips">
         <?php
-        $baseUrl = 'servicios';
+        $baseUrl = defined('PAGE_TRANSPORTE') ? 'transporte' : 'servicios';
         $allParams = [];
         if ($searchQuery) $allParams['q'] = $searchQuery;
         $allUrl = $baseUrl . ($allParams ? '?' . http_build_query($allParams) : '');
