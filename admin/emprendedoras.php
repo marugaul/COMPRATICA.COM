@@ -27,6 +27,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $subId  = (int)($_POST['sub_id'] ?? 0);
     $act    = $_POST['action'] ?? '';
 
+// ── Cambiar contraseña de emprendedor/a ─────────────────────────────────────
+    if ($act === 'change_password') {
+        $userId  = (int)($_POST['user_id'] ?? 0);
+        $newPass = trim($_POST['new_pass'] ?? '');
+        if ($userId <= 0 || $newPass === '') {
+            $msg = 'ID de usuario o contraseña inválidos.';
+            $msgType = 'error';
+        } else {
+            try {
+                $hash = password_hash($newPass, PASSWORD_BCRYPT);
+                $upd = $pdo->prepare("UPDATE users SET password_hash=?, oauth_provider=NULL, oauth_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?");
+                $upd->execute([$hash, $userId]);
+                if ($upd->rowCount() === 0) throw new RuntimeException('Usuario no encontrado.');
+                $msg = 'Contraseña actualizada correctamente.';
+            } catch (Throwable $e) {
+                $msg = 'Error: ' . $e->getMessage();
+                $msgType = 'error';
+            }
+        }
+    }
+
     if ($subId > 0 && in_array($act, ['approve', 'reject', 'activate', 'inactivate'], true)) {
         try {
             // Obtener suscripción
@@ -371,6 +392,16 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
         .btn-inactivate:hover { background: #d97706; }
         .empty { text-align: center; padding: 40px; color: #999; }
         .empty i { font-size: 2.5rem; margin-bottom: 10px; }
+        .btn-edit { background: #6366f1; color: white; }
+        .btn-edit:hover { background: #4f46e5; }
+        .edit-row { display: none; background: #f8f7ff; }
+        .edit-row td { padding: 16px 20px; }
+        .edit-form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .edit-form label { font-size: .85rem; font-weight: 600; color: #4c1d95; white-space: nowrap; }
+        .edit-form input[type=password] { padding: 8px 12px; border: 1.5px solid #c4b5fd; border-radius: 8px; font-size: .9rem; width: 220px; }
+        .btn-save-pass { background: #10b981; color: white; padding: 8px 18px; border: none; border-radius: 8px; font-size: .85rem; font-weight: 600; cursor: pointer; }
+        .btn-save-pass:hover { background: #059669; }
+        .btn-cancel-edit { background: #e5e7eb; color: #374151; padding: 8px 14px; border: none; border-radius: 8px; font-size: .85rem; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -501,7 +532,7 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                         </td>
                         <td><?php echo $row['start_date'] ? date('d/m/Y', strtotime($row['start_date'])) : '—'; ?></td>
                         <td><?php echo $row['end_date'] ? date('d/m/Y', strtotime($row['end_date'])) : '—'; ?></td>
-                        <td>
+                        <td style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                             <?php if ($row['status'] === 'active'): ?>
                                 <form method="post" onsubmit="return confirm('¿Desactivar esta suscripción?');" style="display:inline;">
                                     <input type="hidden" name="sub_id" value="<?php echo $row['id']; ?>">
@@ -518,9 +549,22 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                                         <i class="fas fa-play"></i> Reactivar
                                     </button>
                                 </form>
-                            <?php else: ?>
-                                <span style="color:#999;">—</span>
                             <?php endif; ?>
+                            <button type="button" class="btn btn-edit" onclick="toggleEdit(<?php echo $row['id']; ?>)">
+                                <i class="fas fa-key"></i> Editar
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="edit-row" id="edit-row-<?php echo $row['id']; ?>">
+                        <td colspan="9">
+                            <form method="post" class="edit-form" onsubmit="return confirm('¿Cambiar la contraseña de <?php echo h(addslashes($row['user_name'])); ?>?');">
+                                <input type="hidden" name="action" value="change_password">
+                                <input type="hidden" name="user_id" value="<?php echo (int)$row['user_id']; ?>">
+                                <label><i class="fas fa-lock"></i> Nueva contraseña para <?php echo h($row['user_name']); ?>:</label>
+                                <input type="password" name="new_pass" placeholder="Mínimo 6 caracteres" minlength="6" required>
+                                <button type="submit" class="btn-save-pass"><i class="fas fa-save"></i> Guardar</button>
+                                <button type="button" class="btn-cancel-edit" onclick="toggleEdit(<?php echo $row['id']; ?>)">Cancelar</button>
+                            </form>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -529,5 +573,14 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
         <?php endif; ?>
     </div>
 </div>
+<script>
+function toggleEdit(id) {
+    var row = document.getElementById('edit-row-' + id);
+    row.style.display = (row.style.display === 'table-row') ? 'none' : 'table-row';
+    if (row.style.display === 'table-row') {
+        row.querySelector('input[type=password]').focus();
+    }
+}
+</script>
 </body>
 </html>
