@@ -850,6 +850,8 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             .ob-current-title { font-size: 1.2rem; }
             .ob-cta-btn { width: 100%; justify-content: center; }
         }
+        /* Pre-ocultar tabs no-resumen antes de que corra JS (evita flash) */
+        [data-tab]:not([data-tab="resumen"]) { display: none; }
     </style>
 </head>
 <body>
@@ -1814,13 +1816,13 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                             <h4><i class="fas fa-fill-drip"></i> Colores del toldo</h4>
                             <div class="color-row">
                                 <div class="color-item">
-                                    <label>Color principal</label>
+                                    <label for="color1-pick">Color principal</label>
                                     <input type="color" name="store_color1" id="color1-pick"
                                            value="<?= htmlspecialchars($storeDesign['store_color1']) ?>"
                                            oninput="updatePreview()">
                                 </div>
                                 <div class="color-item">
-                                    <label>Color secundario</label>
+                                    <label for="color2-pick">Color secundario</label>
                                     <input type="color" name="store_color2" id="color2-pick"
                                            value="<?= htmlspecialchars($storeDesign['store_color2']) ?>"
                                            oninput="updatePreview()">
