@@ -129,7 +129,7 @@ try {
             (product_id, seller_user_id, buyer_name, buyer_email, buyer_phone, quantity, total_price, status,
              payment_method, payment_ref, shipping_method, shipping_zone, shipping_cost, shipping_address,
              created_at, updated_at)
-        VALUES (?,?,?,?,?,?,?,'paid','paypal',?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,'confirmed','paypal',?,?,?,?,?,?,?)
     ");
     $pp_buyer_name  = (string)($pending['buyer_name']  ?? '');
     $pp_buyer_email = (string)($pending['buyer_email'] ?? '');

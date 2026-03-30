@@ -250,7 +250,7 @@ function crearOrdenEmprendedoraSwiftPay(PDO $pdo, SwiftPayResult $result, int $s
             $price = (float)($it['price'] ?? 0);
             $ins->execute([
                 $pid, $sellerId, $buyerName, $buyerEmail, $buyerPhone,
-                $qty, $qty * $price, 'paid',
+                $qty, $qty * $price, 'confirmed',
                 trim($deliveryNotes),
                 'swiftpay', $txnId,
                 $shippingMethod, $shippingZone, $shippingCost, $shippingAddress,
