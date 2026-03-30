@@ -1137,6 +1137,19 @@ if (empty($categories)) {
         margin-bottom: 2rem;
       }
 
+      .section-toggle {
+        display: flex;
+        width: 100%;
+        margin-bottom: 1.5rem;
+      }
+
+      .section-toggle a {
+        flex: 1;
+        justify-content: center;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+      }
+
       .hero-title {
         font-size: 1.75rem;
         margin-bottom: 0.875rem;
@@ -1247,7 +1260,7 @@ if (empty($categories)) {
       }
 
       .badge {
-        font-size: 0.6875rem;
+        font-size: 0.75rem;
         padding: 0.3125rem 0.625rem;
       }
 
