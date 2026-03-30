@@ -435,25 +435,30 @@
       background: linear-gradient(135deg, rgba(230, 126, 34, 0.5) 0%, rgba(241, 148, 138, 0.5) 100%);
     }
 
-    .empleos-flags-wrap {
+    .empleos-flags-banner {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 34px;
+      background: rgba(0,0,0,0.55);
       overflow: hidden;
-      margin-top: 16px;
-      background: rgba(0,0,0,0.30);
-      border-radius: 20px;
-      padding: 5px 8px;
-      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      z-index: 2;
+      border-top: 1px solid rgba(255,255,255,0.10);
     }
 
     .empleos-flags-track {
       display: inline-flex;
-      gap: 6px;
+      align-items: center;
+      gap: 10px;
       white-space: nowrap;
-      animation: flagsScroll 14s linear infinite;
+      animation: flagsScroll 22s linear infinite;
       will-change: transform;
+      padding: 0 10px;
     }
 
     .empleos-flags-track span {
-      font-size: 1.1rem;
+      font-size: 1.25rem;
       line-height: 1;
     }
 
