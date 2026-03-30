@@ -1814,7 +1814,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
 
     <a href="emprendedores-dashboard" class="menu-item">
       <i class="fas fa-store"></i>
-      <span>Portal Emprendedoras/Emprendedores</span>
+      <span>Portal Emprendedores</span>
     </a>
 
     <a href="admin/login.php" class="menu-item">

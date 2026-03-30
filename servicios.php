@@ -1531,7 +1531,7 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
 
     <a href="emprendedores-dashboard" class="menu-item">
       <i class="fas fa-store"></i>
-      <span>Portal Emprendedoras/Emprendedores</span>
+      <span>Portal Emprendedores</span>
     </a>
 
     <a href="admin/login.php" class="menu-item">
