@@ -506,15 +506,15 @@ logDebug("RENDERING_PAGE");
         position: absolute; inset: 0;
         background-image: url('https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=500&fit=crop&auto=format');
         background-size: cover; background-position: center;
-        opacity: 0.55;
+        opacity: 0.80;
       "></div>
       <!-- Overlay degradado profesional -->
       <div style="
         position: absolute; inset: 0;
         background: linear-gradient(135deg,
-          rgba(15,23,42,0.72) 0%,
-          rgba(30,41,59,0.55) 50%,
-          rgba(51,65,85,0.45) 100%);
+          rgba(15,23,42,0.40) 0%,
+          rgba(30,41,59,0.28) 50%,
+          rgba(51,65,85,0.20) 100%);
       "></div>
       <!-- Acento de color lateral -->
       <div style="
