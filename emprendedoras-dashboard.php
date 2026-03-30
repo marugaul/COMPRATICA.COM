@@ -422,7 +422,7 @@ try {
 // ── Actualizar estado de pedido ──────────────────────────────────────────────
 $orderMsg     = '';
 $orderMsgType = 'success';
-$empOrderStatuses = ['pending'=>'Pendiente','paid'=>'Pagado','shipped'=>'Enviado','delivered'=>'Entregado','cancelled'=>'Cancelado','completed'=>'Completado'];
+$empOrderStatuses = ['pending'=>'Pendiente','confirmed'=>'Pagado','completed'=>'Completado','cancelled'=>'Cancelado'];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_emp_order') {
     $ordId     = (int)($_POST['order_id'] ?? 0);
     $newStatus = $_POST['new_status'] ?? '';
@@ -2431,12 +2431,10 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                     <tbody>
                         <?php
                         $statusLabels = [
-                            'pending'    => ['label' => 'Pendiente',  'color' => '#f59e0b', 'bg' => '#fffbeb'],
-                            'paid'       => ['label' => 'Pagado',     'color' => '#10b981', 'bg' => '#ecfdf5'],
-                            'shipped'    => ['label' => 'Enviado',    'color' => '#3b82f6', 'bg' => '#eff6ff'],
-                            'delivered'  => ['label' => 'Entregado',  'color' => '#059669', 'bg' => '#d1fae5'],
-                            'cancelled'  => ['label' => 'Cancelado',  'color' => '#ef4444', 'bg' => '#fee2e2'],
-                            'completed'  => ['label' => 'Completado', 'color' => '#7c3aed', 'bg' => '#ede9fe'],
+                            'pending'   => ['label' => 'Pendiente',  'color' => '#f59e0b', 'bg' => '#fffbeb'],
+                            'confirmed' => ['label' => 'Pagado',     'color' => '#10b981', 'bg' => '#ecfdf5'],
+                            'completed' => ['label' => 'Completado', 'color' => '#7c3aed', 'bg' => '#ede9fe'],
+                            'cancelled' => ['label' => 'Cancelado',  'color' => '#ef4444', 'bg' => '#fee2e2'],
                         ];
                         $payBadge = [
                             'sinpe'    => ['icon'=>'fa-mobile-alt',  'label'=>'SINPE',    'color'=>'#059669','bg'=>'#d1fae5'],
@@ -2527,7 +2525,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                                     <form method="post" style="display:inline;" onsubmit="return confirm('¿Marcar este pedido SINPE como Pagado?');">
                                         <input type="hidden" name="action"     value="update_emp_order">
                                         <input type="hidden" name="order_id"  value="<?= (int)$order['id'] ?>">
-                                        <input type="hidden" name="new_status" value="paid">
+                                        <input type="hidden" name="new_status" value="confirmed">
                                         <button type="submit" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:none;border-radius:8px;background:#10b981;color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">
                                             <i class="fas fa-check-circle"></i> Validar pago
                                         </button>
