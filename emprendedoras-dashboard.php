@@ -411,6 +411,68 @@ $canAddProducts = true;
 if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscription['max_products']) {
     $canAddProducts = false;
 }
+
+// ── Calcular pasos de onboarding ─────────────────────────────────────────
+$ob_hasStore    = !empty($storeDesign['store_name']);
+$ob_hasPayment  = !empty($userPayment['global_accepts_sinpe'])  ||
+                  !empty($userPayment['global_accepts_paypal']) ||
+                  !empty($userPayment['global_accepts_card']);
+$ob_hasShipping = !empty($shippingConfig['enable_pickup'])        ||
+                  !empty($shippingConfig['enable_free_shipping']) ||
+                  !empty($shippingConfig['enable_express']);
+$ob_hasProduct  = ($stats['total_products'] ?? 0) > 0;
+$ob_hasActiveSub = !$isPending;
+
+$onboardingSteps = [
+    [
+        'num'   => 1,
+        'icon'  => 'fa-store',
+        'label' => 'Nombra y personaliza tu puesto',
+        'desc'  => 'Elige el nombre de tu tienda, colores y diseño del toldo. Esto es lo primero que verán tus clientes al entrar a tu puesto en el mercadito.',
+        'done'  => $ob_hasStore,
+        'link'  => '#design-section',
+        'btn'   => 'Personalizar puesto',
+    ],
+    [
+        'num'   => 2,
+        'icon'  => 'fa-credit-card',
+        'label' => 'Configura cómo recibes pagos',
+        'desc'  => 'Activa SINPE Móvil, PayPal o tarjeta de crédito para que tus clientes puedan pagarte. Sin esto no podrás recibir pedidos.',
+        'done'  => $ob_hasPayment,
+        'link'  => '#payment-section',
+        'btn'   => 'Configurar pagos',
+    ],
+    [
+        'num'   => 3,
+        'icon'  => 'fa-truck',
+        'label' => 'Define cómo entregas tus productos',
+        'desc'  => 'Indica si haces envíos express por zona, si tienes retiro en local o si ofreces envío gratis. El cliente ve estas opciones al comprar.',
+        'done'  => $ob_hasShipping,
+        'link'  => '#shipping-section',
+        'btn'   => 'Configurar envíos',
+    ],
+    [
+        'num'   => 4,
+        'icon'  => 'fa-plus-circle',
+        'label' => 'Agrega tu primer producto',
+        'desc'  => 'Crea la ficha de tu primer producto con foto, precio, descripción y stock. Una vez publicado aparecerá en el catálogo de Compratica.',
+        'done'  => $ob_hasProduct,
+        'link'  => 'emprendedoras-producto-crear.php',
+        'btn'   => 'Crear producto',
+    ],
+    [
+        'num'   => 5,
+        'icon'  => 'fa-crown',
+        'label' => 'Activa tu suscripción',
+        'desc'  => 'Tu cuenta está pendiente de aprobación por el equipo de Compratica. Una vez aprobada, tu tienda quedará visible para todos los clientes.',
+        'done'  => $ob_hasActiveSub,
+        'link'  => 'emprendedores-planes.php',
+        'btn'   => 'Ver estado',
+    ],
+];
+$ob_done  = (int)array_sum(array_column($onboardingSteps, 'done'));
+$ob_total = count($onboardingSteps);
+$showOnboarding = $ob_done < $ob_total;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -629,6 +691,117 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
             border: 1px solid #ffc107;
             color: #856404;
         }
+
+        /* ── ONBOARDING WIZARD ───────────────────────────────── */
+        .ob-wizard {
+            background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+            border: 2px solid #c7d2fe;
+            border-radius: 20px;
+            padding: 28px 30px;
+            margin-bottom: 30px;
+        }
+        .ob-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .ob-header h2 {
+            font-size: 1.25rem;
+            color: #4338ca;
+            margin: 0 0 5px;
+        }
+        .ob-header > div:first-child p {
+            font-size: 0.86rem;
+            color: #6b7280;
+            margin: 0;
+        }
+        .ob-progress-wrap { margin-left: auto; min-width: 180px; }
+        .ob-progress-label { font-size: 0.8rem; color: #6b7280; margin-bottom: 5px; text-align: right; }
+        .ob-progress-bar { background: #e0e7ff; border-radius: 99px; height: 8px; overflow: hidden; }
+        .ob-progress-fill { background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; border-radius: 99px; transition: width .5s; }
+        .ob-dismiss { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 1.1rem; padding: 4px 8px; flex-shrink: 0; }
+        .ob-dismiss:hover { color: #374151; }
+        .ob-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+        .ob-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: white;
+            border-radius: 14px;
+            padding: 16px;
+            border: 2px solid #e0e7ff;
+            text-decoration: none;
+            color: inherit;
+            transition: all .2s;
+        }
+        .ob-step:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(102,126,234,.18); }
+        .ob-step.ob-done { border-color: #d1fae5; background: #f0fdf4; opacity: .8; }
+        .ob-step-icon {
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; flex-shrink: 0; margin-top: 2px;
+        }
+        .ob-done .ob-step-icon { background: #d1fae5; color: #059669; }
+        .ob-step:not(.ob-done) .ob-step-icon { background: #e0e7ff; color: #667eea; }
+        .ob-step-num { font-weight: 800; font-size: 1rem; }
+        .ob-step-label { font-weight: 700; font-size: 0.9rem; color: #374151; margin-bottom: 4px; }
+        .ob-step-desc { font-size: 0.78rem; color: #6b7280; line-height: 1.5; }
+        .ob-step-cta {
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .ob-collapse-bar {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            border: 1px solid #e0e7ff;
+            border-radius: 12px;
+            padding: 10px 18px;
+            margin-bottom: 30px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            color: #4338ca;
+            font-weight: 600;
+        }
+        .ob-collapse-bar:hover { background: #f0f4ff; }
+
+        /* ── QUICK NAV ───────────────────────────────────────── */
+        .dash-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 15px;
+            padding: 14px 18px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.07);
+            align-items: center;
+        }
+        .dash-nav-label { font-size: 0.78rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-right: 4px; }
+        .dash-nav-item {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 7px 14px; border-radius: 20px;
+            background: #f3f4f6; color: #374151;
+            text-decoration: none; font-size: 0.83rem; font-weight: 500;
+            transition: all .18s;
+        }
+        .dash-nav-item:hover { background: #e0e7ff; color: #4338ca; }
+        .dash-nav-item.dash-highlight { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .dash-nav-item.dash-highlight:hover { opacity: .88; color: white; }
+
+        @media (max-width: 640px) {
+            .ob-wizard { padding: 20px; }
+            .ob-steps { grid-template-columns: 1fr; }
+            .ob-progress-wrap { min-width: 100%; order: 3; }
+        }
     </style>
 </head>
 <body>
@@ -679,6 +852,58 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
         </div>
         <?php endif; ?>
 
+        <?php if ($showOnboarding): ?>
+        <!-- ── ONBOARDING WIZARD ──────────────────────────────────────── -->
+        <div class="ob-wizard" id="onboarding-wizard">
+            <div class="ob-header">
+                <div>
+                    <h2><i class="fas fa-map-signs"></i> Primeros pasos para empezar a vender</h2>
+                    <p>Completa estos pasos para dejar tu puesto listo y que tus clientes puedan encontrarte y comprarte</p>
+                </div>
+                <div class="ob-progress-wrap">
+                    <div class="ob-progress-label"><?= $ob_done ?> de <?= $ob_total ?> completados</div>
+                    <div class="ob-progress-bar">
+                        <div class="ob-progress-fill" style="width:<?= round($ob_done / $ob_total * 100) ?>%"></div>
+                    </div>
+                </div>
+                <button class="ob-dismiss" onclick="collapseOnboarding()" title="Minimizar guía">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+            <div class="ob-steps" id="ob-steps-body">
+                <?php foreach ($onboardingSteps as $step): ?>
+                <a class="ob-step <?= $step['done'] ? 'ob-done' : '' ?>" href="<?= htmlspecialchars($step['link']) ?>">
+                    <div class="ob-step-icon">
+                        <?php if ($step['done']): ?>
+                            <i class="fas fa-check-circle"></i>
+                        <?php else: ?>
+                            <span class="ob-step-num"><?= $step['num'] ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div>
+                        <div class="ob-step-label">
+                            <?php if ($step['done']): ?>
+                                <i class="fas fa-check" style="color:#059669;margin-right:4px;font-size:.75rem;"></i>
+                            <?php endif; ?>
+                            <?= htmlspecialchars($step['label']) ?>
+                        </div>
+                        <div class="ob-step-desc"><?= htmlspecialchars($step['desc']) ?></div>
+                        <?php if (!$step['done']): ?>
+                        <div class="ob-step-cta"><?= htmlspecialchars($step['btn']) ?> <i class="fas fa-arrow-right"></i></div>
+                        <?php endif; ?>
+                    </div>
+                </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <div class="ob-collapse-bar" id="ob-collapsed-bar" onclick="expandOnboarding()">
+            <i class="fas fa-map-signs"></i>
+            Ver guía de inicio &mdash; <?= $ob_done ?> de <?= $ob_total ?> pasos completados
+            <i class="fas fa-chevron-down" style="margin-left:auto;"></i>
+        </div>
+        <!-- ── FIN ONBOARDING WIZARD ──────────────────────────────── -->
+        <?php endif; ?>
+
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="icon"><i class="fas fa-box"></i></div>
@@ -700,6 +925,18 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
                 <div class="value"><?php echo number_format($stats['total_sales']); ?></div>
                 <div class="label">Ventas Totales</div>
             </div>
+        </div>
+
+        <!-- ── ACCESO RÁPIDO A SECCIONES ──────────────────────────── -->
+        <div class="dash-nav">
+            <span class="dash-nav-label">Ir a:</span>
+            <a href="emprendedoras-producto-crear.php" class="dash-nav-item dash-highlight"><i class="fas fa-plus"></i> Nuevo producto</a>
+            <a href="#design-section"   class="dash-nav-item"><i class="fas fa-store"></i> Mi puesto</a>
+            <a href="#payment-section"  class="dash-nav-item"><i class="fas fa-credit-card"></i> Pagos</a>
+            <a href="#shipping-section" class="dash-nav-item"><i class="fas fa-truck"></i> Envíos</a>
+            <a href="#live-section"     class="dash-nav-item"><i class="fas fa-broadcast-tower"></i> En Vivo</a>
+            <a href="#avatar-section"   class="dash-nav-item"><i class="fas fa-user-circle"></i> Avatar</a>
+            <a href="#chat-seller-section" class="dash-nav-item"><i class="fas fa-comments"></i> Chat</a>
         </div>
 
         <?php if (!$isPending && !$canAddProducts): ?>
@@ -2046,6 +2283,28 @@ if ($subscription['max_products'] > 0 && $stats['total_products'] >= $subscripti
     </div>
 
     <script>
+        // ── ONBOARDING WIZARD ──────────────────────────────────────────────
+        (function() {
+            var KEY = 'ob_collapsed_<?= $userId ?>';
+            if (localStorage.getItem(KEY) === '1') {
+                var wiz = document.getElementById('onboarding-wizard');
+                var bar = document.getElementById('ob-collapsed-bar');
+                if (wiz) wiz.style.display = 'none';
+                if (bar) bar.style.display = 'flex';
+            }
+        })();
+        function collapseOnboarding() {
+            document.getElementById('onboarding-wizard').style.display = 'none';
+            var bar = document.getElementById('ob-collapsed-bar');
+            if (bar) bar.style.display = 'flex';
+            localStorage.setItem('ob_collapsed_<?= $userId ?>', '1');
+        }
+        function expandOnboarding() {
+            document.getElementById('onboarding-wizard').style.display = 'block';
+            var bar = document.getElementById('ob-collapsed-bar');
+            if (bar) bar.style.display = 'none';
+            localStorage.removeItem('ob_collapsed_<?= $userId ?>');
+        }
         // ── AVATAR BUILDER ─────────────────────────────────────────────────
         var _avDebounce = null;
 
