@@ -13,6 +13,17 @@ $stats = [
   'orders'   => $pdo->query("SELECT COUNT(1) FROM orders WHERE affiliate_id={$aff_id}")->fetchColumn(),
 ];
 
+// URL de la tienda del afiliado (primer espacio activo, o venta-garaje general)
+$affiliateSaleId = null;
+try {
+    $saleRow = $pdo->prepare("SELECT id FROM sales WHERE affiliate_id=? ORDER BY id ASC LIMIT 1");
+    $saleRow->execute([$aff_id]);
+    $affiliateSaleId = $saleRow->fetchColumn() ?: null;
+} catch (Throwable $_e) {}
+$storeUrl = $affiliateSaleId
+    ? (defined('SITE_URL') ? SITE_URL : 'https://compratica.com') . '/store.php?sale_id=' . (int)$affiliateSaleId
+    : (defined('SITE_URL') ? SITE_URL : 'https://compratica.com') . '/venta-garaje';
+
 // Costo de crear un espacio
 $sale_fee_crc = 3000; // default
 try {
@@ -269,7 +280,7 @@ if (function_exists('mb_internal_encoding')) {
     <?= htmlspecialchars($_SESSION['aff_name'] ?? 'Afiliado') ?>
   </div>
   <nav style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-    <a class="nav-btn" href="../index" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+    <a class="nav-btn" href="<?= htmlspecialchars($storeUrl) ?>" target="_blank" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
       <i class="fas fa-store"></i>
       <span>Ver Tienda</span>
     </a>
