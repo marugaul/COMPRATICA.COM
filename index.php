@@ -490,7 +490,7 @@ logDebug("RENDERING_PAGE");
           <i class="fas fa-briefcase"></i>
         </div>
         <h3 class="category-title">Empleos</h3>
-        <p class="category-description">Encontrá oportunidades laborales en empresas costarricenses. Publicá tu CV o buscá el trabajo ideal para vos</p>
+        <p class="category-description">Empresas costarricenses y del mundo. Presencial, híbrido o remoto — encontrá el trabajo ideal para vos</p>
       </div>
     </a>
 
