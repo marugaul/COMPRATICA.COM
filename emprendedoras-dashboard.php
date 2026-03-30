@@ -275,18 +275,73 @@ try {
 
 // ── Manejar guardado de diseño del puesto ────────────────────────────────────
 $designMsg = '';
-// ── Guardar texto del banner marquee ──────────────────────────────────────
+// ── Tabla store_banners ───────────────────────────────────────────────────
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS store_banners (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        banner_text TEXT,
+        image_url TEXT,
+        scroll_speed TEXT DEFAULT 'normal',
+        starts_at TEXT,
+        ends_at TEXT,
+        is_active INTEGER DEFAULT 1,
+        sort_order INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )");
+} catch (Throwable $_e) {}
+
+// ── POST handlers para banners ────────────────────────────────────────────
 $bannerMsg = null;
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_banners') {
-    $bannerText = mb_substr(trim($_POST['store_banner_text'] ?? ''), 0, 200);
-    try {
-        $pdo->prepare("UPDATE users SET store_banner_text=? WHERE id=?")
-            ->execute([$bannerText ?: null, $userId]);
-        $bannerMsg = ['ok', '✅ Banner guardado correctamente.'];
-    } catch (Exception $e) {
-        $bannerMsg = ['err', '❌ Error al guardar: ' . $e->getMessage()];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $bAction = $_POST['action'] ?? '';
+
+    if ($bAction === 'save_banner') {
+        $bid    = (int)($_POST['banner_id'] ?? 0);
+        $btext  = mb_substr(trim($_POST['banner_text'] ?? ''), 0, 200);
+        $bimg   = trim($_POST['image_url'] ?? '');
+        if ($bimg && !preg_match('/^https?:\/\//i', $bimg)) $bimg = '';
+        $bspeed = in_array($_POST['scroll_speed'] ?? '', ['slow','normal','fast']) ? $_POST['scroll_speed'] : 'normal';
+        $bstart = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['starts_at'] ?? '') ? $_POST['starts_at'] : null;
+        $bend   = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['ends_at']   ?? '') ? $_POST['ends_at']   : null;
+        try {
+            if ($bid > 0) {
+                $pdo->prepare("UPDATE store_banners SET banner_text=?,image_url=?,scroll_speed=?,starts_at=?,ends_at=? WHERE id=? AND user_id=?")
+                    ->execute([$btext ?: null, $bimg ?: null, $bspeed, $bstart, $bend, $bid, $userId]);
+                $bannerMsg = ['ok', '✅ Banner actualizado.'];
+            } else {
+                $pdo->prepare("INSERT INTO store_banners (user_id,banner_text,image_url,scroll_speed,starts_at,ends_at,is_active) VALUES (?,?,?,?,?,?,1)")
+                    ->execute([$userId, $btext ?: null, $bimg ?: null, $bspeed, $bstart, $bend]);
+                $bannerMsg = ['ok', '✅ Banner creado correctamente.'];
+            }
+        } catch (Exception $e) { $bannerMsg = ['err', '❌ Error: ' . $e->getMessage()]; }
+    }
+
+    if ($bAction === 'delete_banner') {
+        $bid = (int)($_POST['banner_id'] ?? 0);
+        try {
+            $pdo->prepare("DELETE FROM store_banners WHERE id=? AND user_id=?")->execute([$bid, $userId]);
+            $bannerMsg = ['ok', '✅ Banner eliminado.'];
+        } catch (Exception $e) { $bannerMsg = ['err', '❌ Error al eliminar.']; }
+    }
+
+    if ($bAction === 'toggle_banner_active') {
+        $bid = (int)($_POST['banner_id'] ?? 0);
+        try {
+            $pdo->prepare("UPDATE store_banners SET is_active = CASE WHEN is_active=1 THEN 0 ELSE 1 END WHERE id=? AND user_id=?")->execute([$bid, $userId]);
+            $bannerMsg = ['ok', '✅ Estado actualizado.'];
+        } catch (Exception $e) { $bannerMsg = ['err', '❌ Error.']; }
     }
 }
+
+// ── Cargar banners del usuario ────────────────────────────────────────────
+$userBanners = [];
+try {
+    $s = $pdo->prepare("SELECT * FROM store_banners WHERE user_id=? ORDER BY is_active DESC, sort_order ASC, id DESC");
+    $s->execute([$userId]);
+    $userBanners = $s->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $_e) {}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_store_design') {
     $color1      = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['store_color1'] ?? '') ? $_POST['store_color1'] : '#667eea';
@@ -2571,93 +2626,270 @@ $currentStep = $onboardingSteps[$currentStepIdx];
         </div>
 
         <!-- ══════════════════ BANNERS ══════════════════ -->
+        <?php
+        $prevC1 = $storeDesign['store_color1'];
+        $prevC2 = $storeDesign['store_color2'];
+        $prevBg = match($storeDesign['store_banner_style'] ?? 'stripes') {
+            'gradient' => "linear-gradient(to right,{$prevC1},{$prevC2})",
+            'solid'    => $prevC1,
+            'wave'     => "linear-gradient(160deg,{$prevC1} 0%,{$prevC2} 50%,{$prevC1} 100%)",
+            default    => "repeating-linear-gradient(-45deg,{$prevC1} 0px,{$prevC1} 28px,{$prevC2} 28px,{$prevC2} 56px)",
+        };
+        $speedLabels = ['slow'=>'🐢 Lento','normal'=>'⚡ Normal','fast'=>'🚀 Rápido'];
+        ?>
+        <style>
+        .bnr-card { background:#fff;border:1.5px solid #e5e7eb;border-radius:14px;overflow:hidden;margin-bottom:14px;transition:box-shadow .2s; }
+        .bnr-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.09); }
+        .bnr-preview { height:60px;position:relative;overflow:hidden;display:flex;align-items:center; }
+        .bnr-ticker  { white-space:nowrap;animation:bnrScroll 14s linear infinite;font-size:.82rem;font-weight:700;color:rgba(255,255,255,.92);text-shadow:0 1px 3px rgba(0,0,0,.45);padding:0 16px;display:inline-block; }
+        @keyframes bnrScroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+        .bnr-meta   { padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid #f0f0f0; }
+        .bnr-badge  { font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:20px; }
+        .bnr-badge.active   { background:#d1fae5;color:#065f46; }
+        .bnr-badge.inactive { background:#fee2e2;color:#991b1b; }
+        .bnr-badge.speed    { background:#ede9fe;color:#4c1d95; }
+        .bnr-badge.dates    { background:#fef3c7;color:#78350f; }
+        .bnr-actions { margin-left:auto;display:flex;gap:6px; }
+        .bnr-btn  { border:none;border-radius:8px;padding:5px 12px;font-size:.78rem;font-weight:700;cursor:pointer;transition:opacity .2s; }
+        .bnr-btn:hover { opacity:.8; }
+        .bnr-form-wrap { background:#f8fafc;border:2px dashed #cbd5e1;border-radius:14px;padding:20px;margin-bottom:20px; }
+        .bnr-emoji-grid { display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px; }
+        .bnr-emoji-grid button { border:1px solid #e5e7eb;background:#fff;border-radius:6px;padding:4px 7px;font-size:1.05rem;cursor:pointer;transition:background .15s;line-height:1; }
+        .bnr-emoji-grid button:hover { background:#ede9fe; }
+        .bnr-speed-btns { display:flex;gap:8px;flex-wrap:wrap; }
+        .bnr-speed-btn  { border:2px solid #e5e7eb;background:#fff;border-radius:9px;padding:7px 16px;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .18s; }
+        .bnr-speed-btn.sel { border-color:<?= htmlspecialchars($prevC1) ?>;background:<?= htmlspecialchars($prevC1) ?>;color:#fff; }
+        .bnr-img-preview { max-height:80px;border-radius:8px;margin-top:8px;display:none;object-fit:cover;width:100%; }
+        </style>
+
         <div class="section" id="banners-section" data-tab="banners" style="display:none;">
-            <h2 class="section-title"><i class="fas fa-bullhorn"></i> Banner de Ofertas</h2>
-            <p style="color:#555;margin-bottom:20px;font-size:.93rem;">
-                Agrega un mensaje que se desplazará sobre el banner de tu tienda. Ideal para anunciar promociones, envíos gratis, descuentos o eventos especiales.<br>
-                <strong>Si no tienes mensaje activo, el banner de colores se muestra igual que siempre.</strong>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:10px;">
+                <h2 class="section-title" style="margin:0;"><i class="fas fa-bullhorn"></i> Banners de Oferta</h2>
+                <button onclick="bnrShowForm(0)" style="background:<?= htmlspecialchars($prevC1) ?>;color:#fff;border:none;padding:9px 20px;border-radius:10px;font-weight:700;font-size:.88rem;cursor:pointer;">
+                    <i class="fas fa-plus"></i> Nuevo Banner
+                </button>
+            </div>
+            <p style="color:#6b7280;font-size:.88rem;margin-bottom:20px;">
+                Múltiples banners con texto desplazable o imagen. Programa fechas de inicio y fin para que se activen solos.
+                <strong>Si no hay banners activos, el banner de colores se muestra igual.</strong>
             </p>
 
             <?php if ($bannerMsg): ?>
-                <div class="alert alert-<?= $bannerMsg[0]==='ok'?'success':'danger' ?>" style="margin-bottom:16px;">
+                <div style="padding:10px 16px;border-radius:10px;margin-bottom:16px;font-weight:600;font-size:.88rem;background:<?= $bannerMsg[0]==='ok'?'#d1fae5':'#fee2e2' ?>;color:<?= $bannerMsg[0]==='ok'?'#065f46':'#991b1b' ?>;">
                     <?= htmlspecialchars($bannerMsg[1]) ?>
                 </div>
             <?php endif; ?>
 
-            <!-- Vista previa -->
-            <?php
-            $previewC1 = $storeDesign['store_color1'];
-            $previewC2 = $storeDesign['store_color2'];
-            $previewBg = match($storeDesign['store_banner_style'] ?? 'stripes') {
-                'gradient' => "linear-gradient(to right, {$previewC1}, {$previewC2})",
-                'solid'    => $previewC1,
-                'wave'     => "linear-gradient(160deg, {$previewC1} 0%, {$previewC2} 50%, {$previewC1} 100%)",
-                default    => "repeating-linear-gradient(-45deg, {$previewC1} 0px, {$previewC1} 28px, {$previewC2} 28px, {$previewC2} 56px)",
-            };
-            $previewText = htmlspecialchars($storeDesign['store_banner_text'] ?: '🔥 ¡Escribe aquí tu mensaje de oferta! · Envío gratis en pedidos mayores a ₡10,000 · 🎁 Especiales de temporada');
-            ?>
-            <div style="border-radius:12px;overflow:hidden;margin-bottom:24px;box-shadow:0 4px 14px rgba(0,0,0,.15);">
-                <div style="background:<?= $previewBg ?>;height:70px;position:relative;overflow:hidden;display:flex;align-items:center;">
-                    <div class="banner-ticker-preview" style="white-space:nowrap;animation:bannerScroll 18s linear infinite;padding:0 20px;font-size:.92rem;font-weight:700;color:rgba(255,255,255,.9);text-shadow:0 1px 3px rgba(0,0,0,.4);letter-spacing:.3px;">
-                        <?= $previewText ?> &nbsp;&nbsp;·&nbsp;&nbsp; <?= $previewText ?>
+            <!-- Formulario add/edit (oculto por defecto) -->
+            <div id="bnr-form-wrap" class="bnr-form-wrap" style="display:none;">
+                <h3 style="margin:0 0 14px;font-size:1rem;color:#111;" id="bnr-form-title"><i class="fas fa-plus-circle" style="color:<?= htmlspecialchars($prevC1) ?>;"></i> Nuevo Banner</h3>
+                <form method="POST" id="bnr-form">
+                    <input type="hidden" name="action" value="save_banner">
+                    <input type="hidden" name="banner_id" id="bnr-id" value="0">
+
+                    <!-- Emoji picker -->
+                    <div style="margin-bottom:12px;">
+                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Insertar emoji / ícono rápido</label>
+                        <div class="bnr-emoji-grid">
+                            <?php foreach(['🔥','🎁','✨','🚀','💯','⏰','🛒','🎉','💥','🏷️','📦','🚚','⭐','💎','🌟','🆕','🎊','🪄','💸','🤩','🛍️','🎀','🏅','🥳','🎈'] as $em): ?>
+                                <button type="button" onclick="bnrInsertEmoji('<?= $em ?>')" title="<?= $em ?>"><?= $em ?></button>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <!-- Texto -->
+                    <div style="margin-bottom:14px;">
+                        <label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-align-left"></i> Texto del banner <span style="color:#9ca3af;font-weight:400;">(opcional si usas imagen)</span></label>
+                        <textarea name="banner_text" id="bnr-text" maxlength="200" rows="2"
+                            placeholder="Ej: 🔥 ¡20% OFF este fin de semana! · Envío gratis en compras mayores a ₡8,000"
+                            oninput="document.getElementById('bnr-chars').textContent=(200-this.value.length)+' restantes'"
+                            style="width:100%;padding:10px 12px;border:2px solid #e5e7eb;border-radius:9px;font-size:.9rem;resize:vertical;font-family:inherit;outline:none;"
+                            onfocus="this.style.borderColor='<?= htmlspecialchars($prevC1) ?>'"
+                            onblur="this.style.borderColor='#e5e7eb'"></textarea>
+                        <span id="bnr-chars" style="font-size:.75rem;color:#9ca3af;">200 restantes</span>
+                    </div>
+
+                    <!-- Imagen URL -->
+                    <div style="margin-bottom:14px;">
+                        <label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-image"></i> URL de imagen de banner <span style="color:#9ca3af;font-weight:400;">(opcional)</span></label>
+                        <input type="url" name="image_url" id="bnr-img-url" placeholder="https://... (imagen ancha, ej. 960×110px)"
+                            oninput="bnrPreviewImg(this.value)"
+                            style="width:100%;padding:9px 12px;border:2px solid #e5e7eb;border-radius:9px;font-size:.88rem;outline:none;"
+                            onfocus="this.style.borderColor='<?= htmlspecialchars($prevC1) ?>'"
+                            onblur="this.style.borderColor='#e5e7eb'">
+                        <img id="bnr-img-preview" class="bnr-img-preview" alt="Vista previa">
+                    </div>
+
+                    <!-- Velocidad -->
+                    <div style="margin-bottom:14px;">
+                        <label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:8px;"><i class="fas fa-tachometer-alt"></i> Velocidad del texto</label>
+                        <div class="bnr-speed-btns">
+                            <button type="button" class="bnr-speed-btn" data-speed="slow"   onclick="bnrSetSpeed('slow')">🐢 Lento</button>
+                            <button type="button" class="bnr-speed-btn sel" data-speed="normal" onclick="bnrSetSpeed('normal')">⚡ Normal</button>
+                            <button type="button" class="bnr-speed-btn" data-speed="fast"   onclick="bnrSetSpeed('fast')">🚀 Rápido</button>
+                        </div>
+                        <input type="hidden" name="scroll_speed" id="bnr-speed-val" value="normal">
+                    </div>
+
+                    <!-- Fechas -->
+                    <div style="margin-bottom:18px;display:flex;gap:14px;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:140px;">
+                            <label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-calendar-alt"></i> Inicio <span style="color:#9ca3af;font-weight:400;">(opcional)</span></label>
+                            <input type="date" name="starts_at" id="bnr-start"
+                                style="width:100%;padding:9px 12px;border:2px solid #e5e7eb;border-radius:9px;font-size:.88rem;outline:none;"
+                                onfocus="this.style.borderColor='<?= htmlspecialchars($prevC1) ?>'"
+                                onblur="this.style.borderColor='#e5e7eb'">
+                        </div>
+                        <div style="flex:1;min-width:140px;">
+                            <label style="font-size:.82rem;font-weight:700;color:#374151;display:block;margin-bottom:5px;"><i class="fas fa-calendar-check"></i> Fin <span style="color:#9ca3af;font-weight:400;">(opcional)</span></label>
+                            <input type="date" name="ends_at" id="bnr-end"
+                                style="width:100%;padding:9px 12px;border:2px solid #e5e7eb;border-radius:9px;font-size:.88rem;outline:none;"
+                                onfocus="this.style.borderColor='<?= htmlspecialchars($prevC1) ?>'"
+                                onblur="this.style.borderColor='#e5e7eb'">
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:10px;">
+                        <button type="submit" style="background:<?= htmlspecialchars($prevC1) ?>;color:#fff;border:none;padding:10px 24px;border-radius:10px;font-weight:700;cursor:pointer;font-size:.9rem;">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                        <button type="button" onclick="bnrHideForm()" style="background:#f3f4f6;color:#374151;border:none;padding:10px 18px;border-radius:10px;font-weight:600;cursor:pointer;font-size:.88rem;">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lista de banners existentes -->
+            <?php if (empty($userBanners)): ?>
+                <div style="text-align:center;padding:40px 20px;background:#f8fafc;border-radius:14px;border:2px dashed #e2e8f0;">
+                    <i class="fas fa-bullhorn" style="font-size:2.5rem;color:#d1d5db;display:block;margin-bottom:10px;"></i>
+                    <p style="color:#9ca3af;font-weight:600;margin:0;">Aún no tienes banners. ¡Crea el primero!</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($userBanners as $bnr):
+                    $bActive = (bool)$bnr['is_active'];
+                    $bText   = htmlspecialchars($bnr['banner_text'] ?? '');
+                    $bImg    = htmlspecialchars($bnr['image_url']   ?? '');
+                    $bSpeed  = $speedLabels[$bnr['scroll_speed']] ?? '⚡ Normal';
+                    $bStart  = $bnr['starts_at'] ?? '';
+                    $bEnd    = $bnr['ends_at']   ?? '';
+                    $dateStr = $bStart || $bEnd ? ('📅 ' . ($bStart ?: '∞') . ' → ' . ($bEnd ?: '∞')) : '';
+                    $previewBgBnr = $bImg ? "url(".htmlspecialchars($bnr['image_url']).")  center/cover no-repeat" : $prevBg;
+                ?>
+                <div class="bnr-card">
+                    <!-- Mini preview -->
+                    <div class="bnr-preview" style="background:<?= $previewBgBnr ?>;opacity:<?= $bActive ? '1' : '.55' ?>;">
+                        <?php if ($bText): ?>
+                        <div class="bnr-ticker">
+                            <?= $bText ?> &nbsp;✦&nbsp; <?= $bText ?>
+                        </div>
+                        <?php elseif (!$bImg): ?>
+                        <span style="color:rgba(255,255,255,.6);font-size:.8rem;padding:0 16px;font-style:italic;">Solo imagen</span>
+                        <?php endif; ?>
+                    </div>
+                    <!-- Meta -->
+                    <div class="bnr-meta">
+                        <span class="bnr-badge <?= $bActive ? 'active' : 'inactive' ?>">
+                            <?= $bActive ? '● Activo' : '○ Inactivo' ?>
+                        </span>
+                        <span class="bnr-badge speed"><?= $bSpeed ?></span>
+                        <?php if ($dateStr): ?>
+                            <span class="bnr-badge dates"><?= htmlspecialchars($dateStr) ?></span>
+                        <?php endif; ?>
+                        <?php if ($bImg): ?>
+                            <span class="bnr-badge" style="background:#e0f2fe;color:#0c4a6e;"><i class="fas fa-image"></i> Con imagen</span>
+                        <?php endif; ?>
+                        <div class="bnr-actions">
+                            <!-- Toggle activo -->
+                            <form method="POST" style="display:inline;">
+                                <input type="hidden" name="action" value="toggle_banner_active">
+                                <input type="hidden" name="banner_id" value="<?= (int)$bnr['id'] ?>">
+                                <button type="submit" class="bnr-btn" style="background:<?= $bActive ? '#fee2e2' : '#d1fae5' ?>;color:<?= $bActive ? '#991b1b' : '#065f46' ?>;" title="<?= $bActive ? 'Desactivar' : 'Activar' ?>">
+                                    <i class="fas fa-<?= $bActive ? 'pause' : 'play' ?>"></i>
+                                </button>
+                            </form>
+                            <!-- Editar -->
+                            <button type="button" class="bnr-btn" style="background:#ede9fe;color:#4c1d95;"
+                                onclick="bnrShowForm(<?= (int)$bnr['id'] ?>,<?= htmlspecialchars(json_encode([
+                                    'text'  => $bnr['banner_text']   ?? '',
+                                    'img'   => $bnr['image_url']     ?? '',
+                                    'speed' => $bnr['scroll_speed']  ?? 'normal',
+                                    'start' => $bnr['starts_at']     ?? '',
+                                    'end'   => $bnr['ends_at']       ?? '',
+                                ]), ENT_QUOTES) ?>)">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <!-- Eliminar -->
+                            <form method="POST" style="display:inline;" onsubmit="return confirm('¿Eliminar este banner?');">
+                                <input type="hidden" name="action" value="delete_banner">
+                                <input type="hidden" name="banner_id" value="<?= (int)$bnr['id'] ?>">
+                                <button type="submit" class="bnr-btn" style="background:#fee2e2;color:#991b1b;"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <style>
-            @keyframes bannerScroll {
-                0%   { transform: translateX(0); }
-                100% { transform: translateX(-50%); }
+                <?php endforeach; ?>
+            <?php endif; ?>
+
+            <!-- JS del manager de banners -->
+            <script>
+            function bnrShowForm(id, data) {
+                var wrap = document.getElementById('bnr-form-wrap');
+                var title = document.getElementById('bnr-form-title');
+                wrap.style.display = 'block';
+                wrap.scrollIntoView({behavior:'smooth', block:'start'});
+                document.getElementById('bnr-id').value = id || 0;
+                if (id && data) {
+                    title.innerHTML = '<i class="fas fa-pen-square" style="color:<?= htmlspecialchars($prevC1) ?>;"></i> Editar Banner';
+                    document.getElementById('bnr-text').value = data.text || '';
+                    document.getElementById('bnr-img-url').value = data.img || '';
+                    document.getElementById('bnr-start').value = data.start || '';
+                    document.getElementById('bnr-end').value   = data.end   || '';
+                    bnrSetSpeed(data.speed || 'normal');
+                    bnrPreviewImg(data.img || '');
+                    document.getElementById('bnr-chars').textContent = (200 - (data.text||'').length) + ' restantes';
+                } else {
+                    title.innerHTML = '<i class="fas fa-plus-circle" style="color:<?= htmlspecialchars($prevC1) ?>;"></i> Nuevo Banner';
+                    document.getElementById('bnr-text').value = '';
+                    document.getElementById('bnr-img-url').value = '';
+                    document.getElementById('bnr-start').value = '';
+                    document.getElementById('bnr-end').value   = '';
+                    bnrSetSpeed('normal');
+                    bnrPreviewImg('');
+                    document.getElementById('bnr-chars').textContent = '200 restantes';
+                }
             }
-            .banner-ticker-preview { display: inline-block; }
-            </style>
-
-            <!-- Formulario -->
-            <form method="POST" id="banner-form">
-                <input type="hidden" name="action" value="save_banners">
-                <div style="margin-bottom:16px;">
-                    <label style="display:block;font-weight:700;margin-bottom:6px;color:#1a1a1a;">
-                        <i class="fas fa-pen" style="color:<?= htmlspecialchars($previewC1) ?>;"></i>
-                        Mensaje del banner
-                    </label>
-                    <textarea name="store_banner_text" id="banner-text-input" maxlength="200"
-                        placeholder="Ej: 🔥 ¡20% de descuento este fin de semana! · Envío gratis en compras mayores a ₡8,000 · 🎁 Nuevos productos disponibles"
-                        rows="3"
-                        oninput="document.getElementById('banner-char-count').textContent=(200-this.value.length)+' caracteres restantes'"
-                        style="width:100%;padding:12px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:.93rem;resize:vertical;font-family:inherit;line-height:1.5;outline:none;transition:border-color .2s;"
-                        onfocus="this.style.borderColor='<?= htmlspecialchars($previewC1) ?>'"
-                        onblur="this.style.borderColor='#e5e7eb'"
-                    ><?= htmlspecialchars($storeDesign['store_banner_text']) ?></textarea>
-                    <div style="font-size:.78rem;color:#9ca3af;margin-top:4px;" id="banner-char-count">
-                        <?= 200 - mb_strlen($storeDesign['store_banner_text']) ?> caracteres restantes
-                    </div>
-                </div>
-                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                    <button type="submit"
-                        style="background:<?= htmlspecialchars($previewC1) ?>;color:#fff;border:none;padding:11px 28px;border-radius:10px;font-weight:700;font-size:.93rem;cursor:pointer;transition:opacity .2s;"
-                        onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-                        <i class="fas fa-save"></i> Guardar banner
-                    </button>
-                    <?php if (!empty($storeDesign['store_banner_text'])): ?>
-                    <button type="button" onclick="document.getElementById('banner-text-input').value='';document.getElementById('banner-char-count').textContent='200 caracteres restantes';"
-                        style="background:#f3f4f6;color:#374151;border:none;padding:11px 20px;border-radius:10px;font-weight:600;font-size:.88rem;cursor:pointer;">
-                        <i class="fas fa-times"></i> Limpiar
-                    </button>
-                    <?php endif; ?>
-                </div>
-            </form>
-
-            <!-- Tips -->
-            <div style="margin-top:28px;background:#f8fafc;border-radius:12px;padding:18px 20px;border:1px solid #e2e8f0;">
-                <p style="font-weight:700;color:#374151;margin-bottom:10px;font-size:.9rem;"><i class="fas fa-lightbulb" style="color:#f59e0b;"></i> Ideas para mensajes efectivos</p>
-                <ul style="color:#555;font-size:.85rem;line-height:1.8;padding-left:18px;margin:0;">
-                    <li>🔥 ¡20% OFF este fin de semana en todos los productos!</li>
-                    <li>🚚 Envío gratis en pedidos mayores a ₡10,000</li>
-                    <li>🎁 Compra 2 y lleva el 3ro a mitad de precio</li>
-                    <li>⏰ Oferta válida solo hasta el domingo</li>
-                    <li>✨ Nuevos productos cada semana — ¡Síguenos!</li>
-                </ul>
-                <p style="margin-top:10px;font-size:.8rem;color:#9ca3af;margin-bottom:0;">Tip: Separa ideas con · o ★ para que se vea más dinámico al desplazarse.</p>
-            </div>
+            function bnrHideForm() {
+                document.getElementById('bnr-form-wrap').style.display = 'none';
+            }
+            function bnrInsertEmoji(emoji) {
+                var ta = document.getElementById('bnr-text');
+                var s = ta.selectionStart, e = ta.selectionEnd;
+                var cur = ta.value;
+                ta.value = cur.substring(0,s) + emoji + cur.substring(e);
+                ta.selectionStart = ta.selectionEnd = s + emoji.length;
+                ta.focus();
+                document.getElementById('bnr-chars').textContent = (200 - ta.value.length) + ' restantes';
+            }
+            function bnrSetSpeed(speed) {
+                document.getElementById('bnr-speed-val').value = speed;
+                document.querySelectorAll('.bnr-speed-btn').forEach(function(b) {
+                    b.classList.toggle('sel', b.dataset.speed === speed);
+                });
+            }
+            function bnrPreviewImg(url) {
+                var img = document.getElementById('bnr-img-preview');
+                if (url && /^https?:\/\//i.test(url)) {
+                    img.src = url;
+                    img.style.display = 'block';
+                    img.onerror = function(){ img.style.display='none'; };
+                } else {
+                    img.style.display = 'none';
+                    img.src = '';
+                }
+            }
+            </script>
         </div>
 
     </div>

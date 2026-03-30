@@ -19,14 +19,25 @@ if ($sid <= 0) { header('Location: emprendedores-catalogo.php'); exit; }
 
 $pdo = db();
 
-// Asegurar columnas de tienda en users (por si el dashboard aún no las creó)
+// Asegurar columnas de tienda en users y tabla store_banners
 try {
     $colsU = array_column($pdo->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC), 'name');
     if (!in_array('store_color1',      $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color1 TEXT DEFAULT '#667eea'");
     if (!in_array('store_color2',      $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color2 TEXT DEFAULT '#764ba2'");
     if (!in_array('store_banner_style',$colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_style TEXT DEFAULT 'stripes'");
     if (!in_array('store_name',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_name TEXT");
-    if (!in_array('store_banner_text', $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_text TEXT");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS store_banners (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        banner_text TEXT,
+        image_url TEXT,
+        scroll_speed TEXT DEFAULT 'normal',
+        starts_at TEXT,
+        ends_at TEXT,
+        is_active INTEGER DEFAULT 1,
+        sort_order INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )");
 } catch (Throwable $_e) {}
 
 // Datos del vendedor
@@ -37,7 +48,6 @@ $stSeller = $pdo->prepare("
            COALESCE(u.store_color1,'#2563eb') AS store_color1,
            COALESCE(u.store_color2,'#1e3a8a') AS store_color2,
            COALESCE(u.store_banner_style,'stripes') AS store_banner_style,
-           u.store_banner_text,
            COALESCE(u.is_live,0)         AS is_live,
            u.live_title, u.live_link,
            COALESCE(u.live_type,'link')  AS live_type,
@@ -57,7 +67,36 @@ $c1          = $seller['store_color1'];
 $c2          = $seller['store_color2'];
 $bstyle      = $seller['store_banner_style'];
 $displayName = $seller['display_name'];
-$bannerText  = trim($seller['store_banner_text'] ?? '');
+
+// Cargar banners activos dentro del rango de fechas
+$today = date('Y-m-d');
+$activeBanners = [];
+try {
+    $stBnr = $pdo->prepare("
+        SELECT * FROM store_banners
+        WHERE user_id=? AND is_active=1
+          AND (starts_at IS NULL OR starts_at <= ?)
+          AND (ends_at   IS NULL OR ends_at   >= ?)
+        ORDER BY sort_order ASC, id ASC
+    ");
+    $stBnr->execute([$sid, $today, $today]);
+    $activeBanners = $stBnr->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $_e) {}
+
+// Primer banner con imagen → fondo del banner
+$imageBanner = null;
+// Textos de todos los banners activos → ticker combinado
+$tickerParts  = [];
+$tickerSpeed  = 'normal';
+foreach ($activeBanners as $bnr) {
+    if (!$imageBanner && !empty($bnr['image_url'])) $imageBanner = $bnr;
+    if (!empty($bnr['banner_text'])) {
+        $tickerParts[] = $bnr['banner_text'];
+        $tickerSpeed   = $bnr['scroll_speed'] ?? 'normal'; // última velocidad configurada
+    }
+}
+$tickerText = implode(' ✦ ', $tickerParts);
+$speedPxPerSec = ['slow'=>40,'normal'=>80,'fast'=>150][$tickerSpeed] ?? 80;
 
 // Generar fondo del toldo igual que el catálogo
 switch ($bstyle) {
@@ -145,7 +184,9 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
         /* ── Banner / Toldo ── */
         .store-banner {
             height: 110px;
-            background: <?= htmlspecialchars($awningBg) ?>;
+            background: <?= $imageBanner
+                ? 'url('.htmlspecialchars($imageBanner['image_url']).') center/cover no-repeat'
+                : htmlspecialchars($awningBg) ?>;
             position: relative;
             overflow: hidden;
         }
@@ -488,29 +529,23 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
 
 <!-- Banner de la tienda -->
 <div class="store-banner">
-    <?php if ($bannerText !== ''): ?>
+    <?php if ($tickerText !== ''): ?>
     <div class="store-ticker">
-        <!-- 2 copias idénticas para loop seamless con translateX(-50%) -->
         <div class="store-ticker-track" id="store-ticker-track">
             <?php
-            $escaped = htmlspecialchars($bannerText);
-            // Separadores y repeticiones para un scroll fluido visible en pantalla ancha
+            $escaped = htmlspecialchars($tickerText);
             $chunk = "<span class='store-ticker-text'>{$escaped}</span><span class='store-ticker-sep'> ✦ </span>";
-            // Mitad 1
-            for ($i = 0; $i < 3; $i++) echo $chunk;
-            // Mitad 2 (copia exacta = loop seamless)
-            for ($i = 0; $i < 3; $i++) echo $chunk;
+            for ($i = 0; $i < 3; $i++) echo $chunk; // mitad 1
+            for ($i = 0; $i < 3; $i++) echo $chunk; // mitad 2 (loop seamless)
             ?>
         </div>
     </div>
     <script>
     (function(){
-        // Ajustar velocidad al ancho real del texto para scroll uniforme
         var track = document.getElementById('store-ticker-track');
         if (!track) return;
         var half = track.scrollWidth / 2;
-        // ~80px/s de velocidad
-        var dur = Math.max(8, half / 80);
+        var dur = Math.max(6, half / <?= (int)$speedPxPerSec ?>);
         track.style.animationDuration = dur.toFixed(1) + 's';
     })();
     </script>
