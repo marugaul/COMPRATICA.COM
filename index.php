@@ -504,8 +504,8 @@ logDebug("RENDERING_PAGE");
       <!-- Fondo fotográfico difuminado -->
       <div style="
         position: absolute; inset: 0;
-        background-image: url('https://images.unsplash.com/photo-1533900298318-6b8da08a523e?w=800&h=500&fit=crop&auto=format');
-        background-size: cover; background-position: center;
+        background-image: url('https://images.unsplash.com/photo-1533900298318-6b8da08a523e?w=800&h=500&fit=crop&crop=top&auto=format');
+        background-size: cover; background-position: center top;
         opacity: 0.80;
       "></div>
       <!-- Overlay degradado profesional -->
