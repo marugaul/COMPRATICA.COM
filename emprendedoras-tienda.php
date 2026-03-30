@@ -38,6 +38,8 @@ try {
         sort_order INTEGER DEFAULT 0,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )");
+    $colsBnr = array_column($pdo->query("PRAGMA table_info(store_banners)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+    if (!in_array('show_on', $colsBnr)) $pdo->exec("ALTER TABLE store_banners ADD COLUMN show_on TEXT DEFAULT 'store'");
 } catch (Throwable $_e) {}
 
 // Datos del vendedor
@@ -75,6 +77,7 @@ try {
     $stBnr = $pdo->prepare("
         SELECT * FROM store_banners
         WHERE user_id=? AND is_active=1
+          AND (show_on = 'store' OR show_on = 'both')
           AND (starts_at IS NULL OR starts_at <= ?)
           AND (ends_at   IS NULL OR ends_at   >= ?)
         ORDER BY sort_order ASC, id ASC
