@@ -360,13 +360,13 @@ $awningPalette = [
         /* Ticker del toldo en catálogo */
         .puesto-ticker-wrap {
             position: absolute;
-            bottom: 0; left: 0; right: 0;
+            top: -20px; left: -8px; right: -8px;
             height: 20px;
-            background: rgba(0,0,0,.45);
+            background: rgba(0,0,0,.50);
             overflow: hidden;
             display: flex;
             align-items: center;
-            z-index: 2;
+            z-index: 4;
         }
         .puesto-ticker {
             display: inline-flex;
@@ -738,13 +738,13 @@ $awningPalette = [
         <h2><span class="live-badge" style="font-size:1rem;"><span class="live-dot"></span>EN VIVO</span> Puestos en vivo ahora</h2>
     </div>
     <div class="puestos-grid" style="margin-bottom:0;">
-        <?php foreach ($liveSellers as $i => $seller): renderPuesto($seller, $i, $productsBySeller, $awningPalette); endforeach; ?>
+        <?php foreach ($liveSellers as $i => $seller): renderPuesto($seller, $i, $productsBySeller, $awningPalette, $catalogBanners); endforeach; ?>
     </div>
     <div class="section-divider"><span>Todos los puestos</span></div>
     <?php endif; ?>
 
     <div class="puestos-grid">
-        <?php foreach ($normalSellers as $i => $seller): renderPuesto($seller, $i, $productsBySeller, $awningPalette); endforeach; ?>
+        <?php foreach ($normalSellers as $i => $seller): renderPuesto($seller, $i, $productsBySeller, $awningPalette, $catalogBanners); endforeach; ?>
     </div>
 
     <?php endif; ?>
@@ -771,7 +771,7 @@ $awningPalette = [
 
 <?php
 // ─── Helper: renderizar un puesto ───────────────────────────────────────────
-function renderPuesto(array $seller, int $idx, array $productsBySeller, array $palette): void {
+function renderPuesto(array $seller, int $idx, array $productsBySeller, array $palette, array $catalogBanners = []): void {
     $sid         = (int)$seller['seller_id'];
     $name        = htmlspecialchars($seller['seller_name']);
     $initial     = strtoupper(mb_substr($seller['seller_name'], 0, 1));
@@ -852,20 +852,20 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
             <svg class="puesto-awning-stripes" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="none">
                 <?= $awningInner ?>
             </svg>
-            <?php
-            $catBnr = $catalogBanners[$seller['seller_id']] ?? null;
-            if ($catBnr && !empty($catBnr['banner_text'])):
-                $speeds = ['slow'=>'28s','normal'=>'14s','fast'=>'7s'];
-                $dur = $speeds[$catBnr['scroll_speed'] ?? 'normal'] ?? '14s';
-                $et  = htmlspecialchars($catBnr['banner_text']);
-            ?>
-            <div class="puesto-ticker-wrap">
-                <div class="puesto-ticker" style="animation-duration:<?= $dur ?>;">
-                    <?php for ($i=0;$i<4;$i++) echo "<span>{$et}</span><span class='pt-sep'> ✦ </span>"; ?>
-                </div>
-            </div>
-            <?php endif; ?>
         </div>
+        <?php
+        $catBnr = $catalogBanners[$seller['seller_id']] ?? null;
+        if ($catBnr && !empty($catBnr['banner_text'])):
+            $speeds = ['slow'=>'28s','normal'=>'14s','fast'=>'7s'];
+            $dur = $speeds[$catBnr['scroll_speed'] ?? 'normal'] ?? '14s';
+            $et  = htmlspecialchars($catBnr['banner_text']);
+        ?>
+        <div class="puesto-ticker-wrap">
+            <div class="puesto-ticker" style="animation-duration:<?= $dur ?>;">
+                <?php for ($i=0;$i<4;$i++) echo "<span>{$et}</span><span class='pt-sep'> ✦ </span>"; ?>
+            </div>
+        </div>
+        <?php endif; ?>
         <div class="puesto">
 
         <!-- Cabecera -->
