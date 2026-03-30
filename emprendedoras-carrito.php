@@ -712,7 +712,7 @@ function locateMe(sid, isMooving = false) {
             if (addrEl) { addrEl.disabled = false; addrEl.placeholder = 'Dirección de entrega'; }
             alert('No se pudo obtener tu ubicación. Por favor escribe la dirección manualmente.');
         },
-        { timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
 }
 
