@@ -24,8 +24,10 @@ try {
                COALESCE(updated_at, created_at) AS lastmod
         FROM job_listings
         WHERE is_active = 1
+          AND title IS NOT NULL AND TRIM(title) != ''
+          AND description IS NOT NULL AND LENGTH(TRIM(description)) >= 80
         ORDER BY lastmod DESC
-        LIMIT 50000
+        LIMIT 5000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $slug = url_slug($row['title'] ?? '');
@@ -45,8 +47,10 @@ try {
                COALESCE(updated_at, created_at) AS lastmod
         FROM real_estate_listings
         WHERE is_active = 1
+          AND title IS NOT NULL AND TRIM(title) != ''
+          AND description IS NOT NULL AND LENGTH(TRIM(description)) >= 80
         ORDER BY lastmod DESC
-        LIMIT 20000
+        LIMIT 5000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $slug = url_slug($row['title'] ?? '');
@@ -59,15 +63,20 @@ try {
     }
 } catch (Exception $e) { /* continuar */ }
 
-// ─── VENTA GARAJE (tiendas) ───────────────────────────────────────────────────
+// ─── VENTA GARAJE (tiendas con al menos 1 producto activo) ───────────────────
 try {
     $stmt = $pdo->query("
-        SELECT id, title,
-               COALESCE(updated_at, created_at) AS lastmod
-        FROM sales
-        WHERE active = 1
+        SELECT s.id, s.title,
+               COALESCE(s.updated_at, s.created_at) AS lastmod
+        FROM sales s
+        WHERE s.active = 1
+          AND s.title IS NOT NULL AND TRIM(s.title) != ''
+          AND EXISTS (
+              SELECT 1 FROM products p
+              WHERE p.sale_id = s.id AND p.active = 1
+          )
         ORDER BY lastmod DESC
-        LIMIT 20000
+        LIMIT 5000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $slug = url_slug($row['title'] ?? '');
@@ -80,15 +89,18 @@ try {
     }
 } catch (Exception $e) { /* continuar */ }
 
-// ─── EMPRENDEDORAS (productos) ────────────────────────────────────────────────
+// ─── EMPRENDEDORAS (productos con imagen y descripción) ──────────────────────
 try {
     $stmt = $pdo->query("
         SELECT id, name,
                COALESCE(updated_at, created_at) AS lastmod
         FROM entrepreneur_products
         WHERE is_active = 1
+          AND name IS NOT NULL AND TRIM(name) != ''
+          AND description IS NOT NULL AND LENGTH(TRIM(description)) >= 50
+          AND image_url IS NOT NULL AND TRIM(image_url) != ''
         ORDER BY lastmod DESC
-        LIMIT 20000
+        LIMIT 5000
     ");
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $slug = url_slug($row['name'] ?? '');
