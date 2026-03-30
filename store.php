@@ -1130,7 +1130,7 @@ foreach ($_SESSION['cart'] as $it) {
       <i class="fas fa-building"></i> Bienes Raíces
     </a>
     <a href="emprendedores-catalogo" class="menu-link">
-      <i class="fas fa-store"></i> Emprendedoras y Emprendedores
+      <i class="fas fa-store"></i> Emprendedores
     </a>
 
     <!-- ── VENDEDORES ────────────────────────── -->
