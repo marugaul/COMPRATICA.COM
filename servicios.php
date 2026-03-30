@@ -962,6 +962,37 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
     }
 
     @media (max-width: 480px) {
+      .main-wrapper {
+        padding: 1.25rem 0.875rem;
+      }
+
+      .hero-section {
+        padding: 1.75rem 1.25rem;
+        margin-bottom: 1.5rem;
+        border-radius: var(--radius-lg);
+      }
+
+      .hero-title {
+        font-size: 1.75rem;
+      }
+
+      .hero-description {
+        font-size: 0.9375rem;
+      }
+
+      .section-toggle {
+        display: flex;
+        width: 100%;
+        margin-bottom: 1.5rem;
+      }
+
+      .section-toggle a {
+        flex: 1;
+        justify-content: center;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+      }
+
       .category-card {
         padding: 1.5rem;
       }
@@ -973,11 +1004,21 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
       }
 
       .category-title {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
       }
 
       .section-title {
-        font-size: 2rem;
+        font-size: 1.75rem;
+      }
+
+      .filter-chip {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.75rem;
+      }
+
+      .search-section {
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
       }
     }
     /* Filtros por categoría */

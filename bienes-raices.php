@@ -631,6 +631,60 @@ logDebug("RENDERING_PAGE", ['listings_count' => count($listings)]);
       .container {
         padding: 2rem 1.25rem;
       }
+
+      .filters-section {
+        padding: 1.5rem 1.25rem;
+      }
+
+      .property-actions {
+        flex-direction: column;
+        gap: 0.625rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 1.25rem 0.875rem;
+      }
+
+      h1 {
+        font-size: 1.6rem;
+      }
+
+      .subtitle {
+        font-size: 1rem;
+      }
+
+      .filters-section {
+        padding: 1rem 0.875rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .search-bar {
+        gap: 0.625rem;
+      }
+
+      .filters-row {
+        gap: 0.75rem;
+      }
+
+      .grid {
+        gap: 1.25rem;
+      }
+
+      .property-img-container {
+        height: 190px;
+      }
+
+      .property-features {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+      }
+
+      .property-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
     }
   </style>
 </head>
