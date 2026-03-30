@@ -491,6 +491,12 @@ logDebug("RENDERING_PAGE");
         </div>
         <h3 class="category-title">Empleos</h3>
         <p class="category-description">Empresas costarricenses y del mundo. Presencial, híbrido o remoto — encontrá el trabajo ideal para vos</p>
+        <div class="empleos-flags-wrap">
+          <div class="empleos-flags-track">
+            <span>🇨🇷</span><span>🇺🇸</span><span>🇪🇸</span><span>🇲🇽</span><span>🇨🇴</span><span>🇵🇦</span><span>🇦🇷</span><span>🇨🇱</span><span>🇬🇧</span><span>🇨🇦</span><span>🇩🇪</span><span>🇳🇱</span>
+            <span>🇨🇷</span><span>🇺🇸</span><span>🇪🇸</span><span>🇲🇽</span><span>🇨🇴</span><span>🇵🇦</span><span>🇦🇷</span><span>🇨🇱</span><span>🇬🇧</span><span>🇨🇦</span><span>🇩🇪</span><span>🇳🇱</span>
+          </div>
+        </div>
       </div>
     </a>
 
