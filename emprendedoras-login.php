@@ -324,7 +324,7 @@ $facebookLoginUrl = $FACEBOOK_APP_ID ? 'https://www.facebook.com/v18.0/dialog/oa
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: system-ui, -apple-system, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -340,7 +340,7 @@ body {
     overflow: hidden;
 }
 .header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
     color: #fff;
     padding: 40px 30px 30px;
     text-align: center;
@@ -369,8 +369,8 @@ body {
 }
 .tab.active {
     background: #fff;
-    color: #667eea;
-    border-bottom: 3px solid #667eea;
+    color: #2563eb;
+    border-bottom: 3px solid #2563eb;
 }
 .tab:hover { background: #f3f4f6; }
 .content { padding: 28px; }
@@ -394,7 +394,7 @@ body {
 }
 .form-group input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
 }
 .btn {
@@ -409,7 +409,7 @@ body {
     margin-top: 6px;
 }
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
     color: #fff;
 }
 .btn-primary:hover {
@@ -434,7 +434,7 @@ body {
     text-decoration: none;
     color: #374151;
 }
-.btn-oauth:hover { border-color: #667eea; background: #f9fafb; transform: translateY(-2px); }
+.btn-oauth:hover { border-color: #2563eb; background: #f9fafb; transform: translateY(-2px); }
 .btn-oauth.google:hover { background: #4285f4; color: #fff; border-color: #4285f4; }
 .btn-oauth.facebook:hover { background: #1877f2; color: #fff; border-color: #1877f2; }
 .divider {
@@ -462,14 +462,14 @@ body {
     font-size: 0.9rem;
     border-top: 1px solid #e5e7eb;
 }
-.footer a { color: #667eea; text-decoration: none; font-weight: 600; }
+.footer a { color: #2563eb; text-decoration: none; font-weight: 600; }
 .footer a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <div class="logo">🌸</div>
+        <div class="logo">🚀</div>
         <h1>Área de Emprendedores</h1>
         <p>Inicia sesión para acceder a tu dashboard</p>
     </div>
@@ -573,7 +573,7 @@ body {
                 <div class="form-group" style="display:flex;align-items:flex-start;gap:0.5rem;">
                     <input type="checkbox" id="accept_terms_reg" name="accept_terms" value="1" required style="margin-top:3px;flex-shrink:0;">
                     <label for="accept_terms_reg" style="cursor:pointer;font-size:0.875rem;">
-                        Acepto los <a href="/terminos-condiciones.php?type=emprendedor" target="_blank" style="color:#667eea">Términos y Condiciones</a> para emprendedores de CompraTica.
+                        Acepto los <a href="/terminos-condiciones.php?type=emprendedor" target="_blank" style="color:#2563eb">Términos y Condiciones</a> para emprendedores de CompraTica.
                     </label>
                 </div>
                 <button type="submit" class="btn btn-primary">
