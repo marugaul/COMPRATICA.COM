@@ -840,7 +840,14 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             <h1>👋 Hola, <?php echo htmlspecialchars($userName); ?></h1>
             <p>Bienvenid<?= ($storeDesign['seller_type'] ?? 'emprendedora') === 'emprendedor' ? 'o' : 'a' ?> a tu dashboard de <?= ($storeDesign['seller_type'] ?? 'emprendedora') === 'emprendedor' ? 'emprendedor' : 'emprendedora' ?></p>
             <div class="plan-badge">
-                <i class="fas fa-crown"></i> <?php echo htmlspecialchars($subscription['plan_name']); ?>
+                <?php
+                $sellerType  = ($storeDesign['seller_type'] ?? 'emprendedora');
+                $planDisplay = htmlspecialchars($subscription['plan_name']);
+                if ($sellerType === 'emprendedor') {
+                    $planDisplay = str_ireplace('emprendedora', 'Emprendedor', $planDisplay);
+                }
+                ?>
+                <i class="fas fa-crown"></i> <?= $planDisplay ?>
                 <?php if ($isPending): ?>
                     &nbsp;— <span style="color:#fde68a;">⏳ Pendiente de aprobación</span>
                 <?php else: ?>
