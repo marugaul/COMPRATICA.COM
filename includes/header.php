@@ -138,7 +138,7 @@
 
     <a href="/emprendedores-dashboard" class="menu-item">
       <i class="fas fa-store"></i>
-      <span>Portal Emprendedoras/Emprendedores</span>
+      <span>Portal Emprendedores</span>
     </a>
 
     <?php if ($isLoggedIn): ?>
