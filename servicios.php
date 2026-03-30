@@ -1537,7 +1537,8 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
 
       <div class="section-toggle">
         <a href="/empleos">💼 Empleos</a>
-        <a href="/servicios" class="active">🔧 Servicios</a>
+        <a href="/servicios" <?= (!defined('PAGE_TRANSPORTE') && $categoryFilter !== 'Transporte') ? 'class="active"' : '' ?>>🔧 Servicios</a>
+        <a href="/transporte" <?= defined('PAGE_TRANSPORTE') ? 'class="active"' : '' ?>>🚗 Transporte</a>
       </div>
 
       <div class="hero-stats">

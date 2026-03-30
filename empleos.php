@@ -1889,6 +1889,7 @@ if (empty($categories)) {
       <div class="section-toggle">
         <a href="/empleos" class="active">💼 Empleos</a>
         <a href="/servicios">🔧 Servicios</a>
+        <a href="/transporte">🚗 Transporte</a>
       </div>
 
       <div class="hero-stats">
