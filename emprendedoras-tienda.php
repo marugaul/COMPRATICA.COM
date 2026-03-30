@@ -21,7 +21,12 @@ $pdo = db();
 
 // Datos del vendedor
 $stSeller = $pdo->prepare("
-    SELECT u.id, u.name, u.email,
+    SELECT u.id, u.name,
+           COALESCE(NULLIF(u.store_name,''), u.name) AS display_name,
+           u.email,
+           COALESCE(u.store_color1,'#2563eb') AS store_color1,
+           COALESCE(u.store_color2,'#1e3a8a') AS store_color2,
+           COALESCE(u.store_banner_style,'stripes') AS store_banner_style,
            COALESCE(u.is_live,0)         AS is_live,
            u.live_title, u.live_link,
            COALESCE(u.live_type,'link')  AS live_type,
@@ -36,6 +41,26 @@ $stSeller = $pdo->prepare("
 $stSeller->execute([$sid]);
 $seller = $stSeller->fetch(PDO::FETCH_ASSOC);
 if (!$seller) { header('Location: emprendedores-catalogo.php'); exit; }
+
+$c1          = $seller['store_color1'];
+$c2          = $seller['store_color2'];
+$bstyle      = $seller['store_banner_style'];
+$displayName = $seller['display_name'];
+
+// Generar fondo del toldo igual que el catálogo
+switch ($bstyle) {
+    case 'gradient':
+        $awningBg = "linear-gradient(to right, {$c1}, {$c2})";
+        break;
+    case 'solid':
+        $awningBg = $c1;
+        break;
+    case 'wave':
+        $awningBg = "linear-gradient(160deg, {$c1} 0%, {$c2} 50%, {$c1} 100%)";
+        break;
+    default: // stripes
+        $awningBg = "repeating-linear-gradient(-45deg, {$c1} 0px, {$c1} 28px, {$c2} 28px, {$c2} 56px)";
+}
 
 // Inicializar tablas de cámara (también añade columnas si es necesario)
 initLiveCamTables($pdo);
@@ -94,136 +119,161 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($seller['name']) ?> | Mercadito Emprendedores</title>
+    <title><?= htmlspecialchars($displayName) ?> | Mercadito Emprendedores</title>
     <style>#cartButton{display:none!important;}</style>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/compratica-header.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Toldo de la tienda */
-        .store-awning {
-            height: 90px;
-            background: repeating-linear-gradient(
-                -45deg,
-                #667eea 0px,  #667eea 28px,
-                #764ba2 28px, #764ba2 56px
-            );
-            position: relative;
-            overflow: visible;
-        }
-        /* Banda roja en la base */
-        .store-awning::before {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: 7px;
-            background: #dc2626;
-        }
-        /* Flecos triangulares (picos) colgando */
-        .store-awning::after {
-            content: '';
-            position: absolute;
-            bottom: -18px; left: 0; right: 0;
-            height: 18px;
-            background:
-                linear-gradient(135deg, #dc2626 50%, transparent 50%),
-                linear-gradient(225deg, #dc2626 50%, transparent 50%);
-            background-size: 18px 18px;
-            background-repeat: repeat-x;
-            background-position: 0 0, 9px 0;
-            z-index: 1;
+        :root {
+            --c1: <?= htmlspecialchars($c1) ?>;
+            --c2: <?= htmlspecialchars($c2) ?>;
         }
 
+        /* ── Banner / Toldo ── */
+        .store-banner {
+            height: 110px;
+            background: <?= htmlspecialchars($awningBg) ?>;
+            position: relative;
+        }
+        /* Flecos triangulares usando los colores de la tienda */
+        .store-banner::after {
+            content: '';
+            position: absolute;
+            bottom: -16px; left: 0; right: 0;
+            height: 16px;
+            background:
+                linear-gradient(135deg, var(--c2) 50%, transparent 50%),
+                linear-gradient(225deg, var(--c2) 50%, transparent 50%);
+            background-size: 16px 16px;
+            background-repeat: repeat-x;
+            background-position: 0 0, 8px 0;
+        }
+
+        /* ── Header de la tienda ── */
         .store-header {
-            max-width: 960px; margin: 0 auto; padding: 48px 20px 24px;
-            display: flex; align-items: flex-start; gap: 24px;
+            max-width: 980px; margin: 0 auto;
+            padding: 0 24px 20px;
+        }
+        .store-header-top {
+            display: flex; align-items: flex-end; gap: 20px;
+            margin-top: -40px; position: relative; z-index: 2;
         }
         .store-avatar {
-            width: 80px; height: 80px; border-radius: 50%; flex-shrink: 0;
-            background: linear-gradient(135deg,#667eea,#764ba2);
+            width: 88px; height: 88px; border-radius: 50%; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--c1), var(--c2));
             display: flex; align-items: center; justify-content: center;
-            font-size: 2.2rem; font-weight: 800; color: white;
-            box-shadow: 0 6px 20px rgba(102,126,234,.35);
+            font-size: 2.4rem; font-weight: 900; color: white;
+            box-shadow: 0 6px 24px rgba(0,0,0,.22);
             border: 4px solid white;
-            margin-top: -60px;
         }
-        .store-meta h1 { font-size: 1.8rem; font-weight: 800; color: #222; margin: 0 0 6px; }
-        .store-stats { display: flex; gap: 20px; font-size: 0.88rem; color: #777; flex-wrap: wrap; }
-        .store-stats span { display: flex; align-items: center; gap: 5px; }
+        .store-name-row {
+            flex: 1; padding-bottom: 4px;
+        }
+        .store-name-row h1 {
+            font-size: 1.55rem; font-weight: 800; color: #111;
+            margin: 0 0 4px; line-height: 1.2;
+        }
+        .store-stats {
+            display: flex; gap: 16px; font-size: 0.83rem;
+            color: #666; flex-wrap: wrap;
+        }
+        .store-stats span { display: flex; align-items: center; gap: 4px; }
+        .store-stats i { color: var(--c1); }
 
         .live-badge {
             display: inline-flex; align-items: center; gap: 6px;
             background: #ef4444; color: white;
-            padding: 6px 14px; border-radius: 20px; font-size: 0.82rem;
-            font-weight: 700; text-decoration: none; margin-left: 8px;
+            padding: 5px 12px; border-radius: 20px; font-size: 0.78rem;
+            font-weight: 700; text-decoration: none; margin-left: 10px;
+            vertical-align: middle;
         }
-        .live-dot { width: 9px; height: 9px; background: white; border-radius: 50%; animation: pls 1.2s infinite; }
+        .live-dot { width: 8px; height: 8px; background: white; border-radius: 50%; animation: pls 1.2s infinite; }
         @keyframes pls { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
 
-        /* Filtros */
-        .store-filters {
-            max-width: 960px; margin: 0 auto 28px; padding: 0 20px;
-            display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+        /* ── Barra de búsqueda / filtros ── */
+        .store-filters-bar {
+            max-width: 980px; margin: 0 auto 28px; padding: 0 24px;
+            display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
         }
-        .store-filters form { display: flex; gap: 10px; flex: 1; flex-wrap: wrap; }
-        .store-filters input {
-            flex: 1; min-width: 180px; padding: 10px 16px;
-            border: 2px solid #e0e0e0; border-radius: 10px; font-size: 0.9rem;
+        .store-filters-bar form {
+            display: flex; gap: 8px; flex: 1; min-width: 0; flex-wrap: wrap;
         }
-        .store-filters select {
-            padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 10px;
-            font-size: 0.9rem; background: white;
+        .store-filters-bar input[type=text] {
+            flex: 1; min-width: 160px; padding: 10px 16px;
+            border: 2px solid #e5e7eb; border-radius: 10px;
+            font-size: 0.9rem; outline: none; transition: border-color .2s;
         }
-        .store-filters button {
-            background: linear-gradient(135deg,#667eea,#764ba2); color: white;
-            border: none; padding: 10px 20px; border-radius: 10px;
-            font-weight: 700; cursor: pointer;
+        .store-filters-bar input[type=text]:focus { border-color: var(--c1); }
+        .store-filters-bar select {
+            padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 10px;
+            font-size: 0.9rem; background: white; outline: none;
         }
+        .store-filters-bar button[type=submit] {
+            background: var(--c1); color: white;
+            border: none; padding: 10px 18px; border-radius: 10px;
+            font-weight: 700; cursor: pointer; font-size: 0.9rem;
+            transition: opacity .2s;
+        }
+        .store-filters-bar button[type=submit]:hover { opacity: .88; }
+        .store-back-link {
+            color: var(--c1); font-size: 0.88rem; white-space: nowrap;
+            text-decoration: none; font-weight: 600;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .store-back-link:hover { text-decoration: underline; }
 
-        /* Grid productos */
+        /* ── Grid de productos ── */
         .store-products {
-            max-width: 960px; margin: 0 auto; padding: 0 20px 80px;
-            display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap: 24px;
+            max-width: 980px; margin: 0 auto; padding: 0 24px 80px;
+            display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 20px;
         }
         .store-product-card {
             background: white; border-radius: 14px;
-            box-shadow: 0 4px 16px rgba(0,0,0,.08);
+            box-shadow: 0 2px 12px rgba(0,0,0,.07);
+            border: 1px solid #f0f0f0;
             overflow: hidden; text-decoration: none; color: inherit;
-            transition: all .25s; display: block;
+            transition: all .22s; display: flex; flex-direction: column;
         }
-        .store-product-card:hover { transform: translateY(-6px); box-shadow: 0 12px 32px rgba(0,0,0,.15); }
+        .store-product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 28px rgba(0,0,0,.13);
+            border-color: transparent;
+        }
         .store-product-card img {
-            width: 100%; height: 200px; object-fit: contain; background: #f8f8f8;
+            width: 100%; height: 190px; object-fit: contain; background: #fafafa;
         }
         .store-product-noimg {
-            width: 100%; height: 200px; background: #f5f5f5;
+            width: 100%; height: 190px; background: #f5f5f5;
             display: flex; align-items: center; justify-content: center;
         }
-        .spc-body { padding: 14px 16px; }
-        .spc-cat  { font-size: 0.75rem; color: #667eea; font-weight: 700; margin-bottom: 4px; }
-        .spc-name { font-size: 0.98rem; font-weight: 700; color: #222; margin-bottom: 6px; line-height: 1.3; }
-        .spc-price { font-size: 1.25rem; font-weight: 800; color: #667eea; margin-bottom: 10px; }
+        .spc-body { padding: 12px 14px 14px; flex: 1; display: flex; flex-direction: column; }
+        .spc-cat  { font-size: 0.72rem; color: var(--c1); font-weight: 700;
+                    text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+        .spc-name { font-size: 0.93rem; font-weight: 700; color: #1a1a1a;
+                    margin-bottom: 6px; line-height: 1.35; flex: 1; }
+        .spc-price { font-size: 1.2rem; font-weight: 800; color: var(--c1); margin-bottom: 10px; }
         .spc-add {
             display: block; width: 100%; padding: 9px;
-            background: linear-gradient(135deg,#667eea,#764ba2);
+            background: var(--c1);
             color: white; border: none; border-radius: 8px;
-            font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: all .2s;
+            font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all .2s;
         }
-        .spc-add:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(102,126,234,.4); }
-        .spc-add:disabled { opacity: .6; cursor: not-allowed; transform: none; }
-        .spc-nostock { text-align: center; color: #ef4444; font-size: 0.8rem; font-weight: 700; padding: 8px 0 0; }
+        .spc-add:hover { opacity: .88; transform: translateY(-1px); }
+        .spc-add:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+        .spc-nostock { text-align: center; color: #ef4444; font-size: 0.78rem; font-weight: 700; padding: 6px 0 0; }
 
-        /* Empty */
+        /* ── Empty state ── */
         .empty-state { text-align: center; padding: 60px 20px; }
         .empty-state i { font-size: 4rem; color: #ddd; display: block; margin-bottom: 16px; }
 
-        /* FAB carrito — encima del chat, con separación clara */
+        /* ── FAB carrito ── */
         .emp-cart-fab {
             position: fixed; bottom: 110px; right: 28px; z-index: 9001;
-            background: linear-gradient(135deg,#667eea,#764ba2);
+            background: var(--c1);
             color: white; width: 62px; height: 62px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 6px 20px rgba(102,126,234,.5);
+            box-shadow: 0 6px 20px rgba(0,0,0,.25);
             text-decoration: none; font-size: 1.4rem; transition: transform .2s;
         }
         .emp-cart-fab:hover { transform: scale(1.1); }
@@ -241,10 +291,12 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
         }
         .catalog-toast.show { transform: translateY(0); opacity: 1; }
 
-        @media (max-width: 540px) {
-            .store-header { flex-direction: column; }
-            .store-avatar { margin-top: -50px; }
-            .store-products { grid-template-columns: repeat(2,1fr); gap: 14px; }
+        @media (max-width: 560px) {
+            .store-header-top { flex-direction: row; align-items: flex-end; }
+            .store-avatar { width: 70px; height: 70px; font-size: 1.9rem; }
+            .store-name-row h1 { font-size: 1.2rem; }
+            .store-products { grid-template-columns: repeat(2,1fr); gap: 12px; }
+            .store-filters-bar { gap: 8px; }
         }
 
         /* ── Live embed en tienda ── */
@@ -302,7 +354,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
         }
         #chat-toggle-btn {
             width: 58px; height: 58px; border-radius: 50%;
-            background: linear-gradient(135deg,#667eea,#764ba2);
+            background: linear-gradient(135deg,var(--c1),var(--c2));
             color: white; border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             font-size: 1.4rem; box-shadow: 0 6px 20px rgba(102,126,234,.5);
@@ -333,7 +385,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
         #chat-panel.open { display: flex; }
         @media (max-width: 400px) { #chat-panel { width: calc(100vw - 16px); } }
         .chat-header {
-            background: linear-gradient(135deg,#667eea,#764ba2);
+            background: linear-gradient(135deg,var(--c1),var(--c2));
             color: white; padding: 12px 16px;
             display: flex; align-items: center; justify-content: space-between;
         }
@@ -353,7 +405,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
             padding: 8px 12px; border-radius: 12px;
             font-size: 0.85rem; line-height: 1.4; word-break: break-word;
         }
-        .chat-msg.mine   .chat-bubble { background: #667eea; color: white; border-bottom-right-radius: 4px; }
+        .chat-msg.mine   .chat-bubble { background: var(--c1); color: white; border-bottom-right-radius: 4px; }
         .chat-msg.theirs .chat-bubble { background: white; color: #1f2937; box-shadow: 0 1px 4px rgba(0,0,0,.08); border-bottom-left-radius: 4px; }
         .chat-msg.seller-msg .chat-bubble { background: #fef3c7; color: #92400e; border-bottom-left-radius: 4px; }
         .chat-msg.private-msg .chat-bubble { background: #f0fdf4; color: #166534; border: 1px dashed #86efac; }
@@ -369,9 +421,9 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
             padding: 8px 12px; font-size: 0.88rem; resize: none;
             max-height: 80px; font-family: inherit; line-height: 1.4;
         }
-        #chat-input:focus { border-color: #667eea; outline: none; }
+        #chat-input:focus { border-color: var(--c1); outline: none; }
         #chat-send-btn {
-            background: linear-gradient(135deg,#667eea,#764ba2);
+            background: linear-gradient(135deg,var(--c1),var(--c2));
             color: white; border: none; border-radius: 10px;
             padding: 9px 14px; cursor: pointer; font-size: 1rem;
             transition: all .2s; flex-shrink: 0;
@@ -387,24 +439,26 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
 <body>
 <?php include __DIR__ . '/includes/header.php'; ?>
 
-<!-- Toldo de la tienda -->
-<div class="store-awning"></div>
+<!-- Banner de la tienda -->
+<div class="store-banner"></div>
 
 <div class="store-header">
-    <div class="store-avatar"><?= strtoupper(mb_substr($seller['name'], 0, 1)) ?></div>
-    <div class="store-meta">
-        <h1>
-            <?= htmlspecialchars($seller['name']) ?>
-            <?php if ($seller['is_live']): ?>
-                <a href="<?= htmlspecialchars($seller['live_link'] ?? '#') ?>" target="_blank" class="live-badge">
-                    <span class="live-dot"></span>
-                    <?= htmlspecialchars($seller['live_title'] ?: 'EN VIVO') ?>
-                </a>
-            <?php endif; ?>
-        </h1>
-        <div class="store-stats">
-            <span><i class="fas fa-box" style="color:#667eea;"></i> <?= (int)$seller['product_count'] ?> productos</span>
-            <span><i class="fas fa-shopping-cart" style="color:#667eea;"></i> <?= number_format((int)$seller['total_sales']) ?> ventas</span>
+    <div class="store-header-top">
+        <div class="store-avatar"><?= strtoupper(mb_substr($displayName, 0, 1)) ?></div>
+        <div class="store-name-row">
+            <h1>
+                <?= htmlspecialchars($displayName) ?>
+                <?php if ($seller['is_live']): ?>
+                    <a href="<?= htmlspecialchars($seller['live_link'] ?? '#') ?>" target="_blank" class="live-badge">
+                        <span class="live-dot"></span>
+                        <?= htmlspecialchars($seller['live_title'] ?: 'EN VIVO') ?>
+                    </a>
+                <?php endif; ?>
+            </h1>
+            <div class="store-stats">
+                <span><i class="fas fa-box"></i> <?= (int)$seller['product_count'] ?> productos</span>
+                <span><i class="fas fa-shopping-cart"></i> <?= number_format((int)$seller['total_sales']) ?> ventas</span>
+            </div>
         </div>
     </div>
 </div>
@@ -624,7 +678,7 @@ window.camUnmute = function() {
 <?php endif; /* liveIsCam */ ?>
 
 <!-- Filtros -->
-<div class="store-filters">
+<div class="store-filters-bar">
     <form method="GET">
         <input type="hidden" name="id" value="<?= $sid ?>">
         <input type="text" name="q" placeholder="Buscar en esta tienda…" value="<?= htmlspecialchars($search) ?>">
@@ -640,7 +694,7 @@ window.camUnmute = function() {
         <?php endif; ?>
         <button type="submit"><i class="fas fa-search"></i></button>
     </form>
-    <a href="emprendedores-catalogo.php" style="color:#667eea;font-size:0.9rem;white-space:nowrap;">
+    <a href="emprendedores-catalogo.php" class="store-back-link">
         <i class="fas fa-arrow-left"></i> Volver al Mercadito
     </a>
 </div>
@@ -650,7 +704,7 @@ window.camUnmute = function() {
 <div class="empty-state">
     <i class="fas fa-box-open"></i>
     <h3 style="color:#555;">No se encontraron productos</h3>
-    <a href="?id=<?= $sid ?>" style="color:#667eea;">Ver todos</a>
+    <a href="?id=<?= $sid ?>" style="color:var(--c1);">Ver todos</a>
 </div>
 <?php else: ?>
 <div class="store-products">
@@ -787,9 +841,9 @@ fetch('/api/emp-cart.php?action=get', {credentials:'same-origin'})
         </div>
         <div style="padding:22px;text-align:center;">
             <i class="fas fa-lock" style="font-size:2rem;color:#9ca3af;display:block;margin-bottom:10px;"></i>
-            <strong>Inicia sesión para chatear con<br><?= htmlspecialchars($seller['name']) ?></strong>
+            <strong>Inicia sesión para chatear con<br><?= htmlspecialchars($displayName) ?></strong>
             <div style="margin-top:14px;">
-                <a href="/login" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:700;">
+                <a href="/login" style="display:inline-flex;align-items:center;gap:8px;background:var(--c1);color:white;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:700;">
                     <i class="fas fa-sign-in-alt"></i> Iniciar sesión
                 </a>
             </div>
