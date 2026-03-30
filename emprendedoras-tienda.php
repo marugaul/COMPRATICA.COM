@@ -19,6 +19,16 @@ if ($sid <= 0) { header('Location: emprendedores-catalogo.php'); exit; }
 
 $pdo = db();
 
+// Asegurar columnas de tienda en users (por si el dashboard aún no las creó)
+try {
+    $colsU = array_column($pdo->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC), 'name');
+    if (!in_array('store_color1',      $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color1 TEXT DEFAULT '#667eea'");
+    if (!in_array('store_color2',      $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color2 TEXT DEFAULT '#764ba2'");
+    if (!in_array('store_banner_style',$colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_style TEXT DEFAULT 'stripes'");
+    if (!in_array('store_name',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_name TEXT");
+    if (!in_array('store_banner_text', $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_text TEXT");
+} catch (Throwable $_e) {}
+
 // Datos del vendedor
 $stSeller = $pdo->prepare("
     SELECT u.id, u.name,
