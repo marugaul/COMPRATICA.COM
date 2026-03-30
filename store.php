@@ -223,11 +223,11 @@ function getProductImage(array $product): string {
     $image2 = $product['image2'] ?? null;
     
     if ($image) {
-    return 'uploads/' . ltrim($image, '/');
+    return '/uploads/' . ltrim($image, '/');
     }
-    
+
     if ($image2) {
-    return 'uploads/' . ltrim($image2, '/');
+    return '/uploads/' . ltrim($image2, '/');
     }
     
     return 'assets/placeholder.jpg';
@@ -1219,10 +1219,10 @@ foreach ($_SESSION['cart'] as $it) {
     // Preparar imágenes para galería
     $images = [];
     if (!empty($product['image'])) {
-      $images[] = 'uploads/' . ltrim($product['image'], '/');
+      $images[] = '/uploads/' . ltrim($product['image'], '/');
     }
     if (!empty($product['image2'])) {
-      $images[] = 'uploads/' . ltrim($product['image2'], '/');
+      $images[] = '/uploads/' . ltrim($product['image2'], '/');
     }
     if (empty($images)) {
       $images[] = 'assets/placeholder.jpg';
