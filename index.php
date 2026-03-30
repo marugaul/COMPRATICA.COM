@@ -504,7 +504,7 @@ logDebug("RENDERING_PAGE");
       <!-- Fondo fotográfico difuminado -->
       <div style="
         position: absolute; inset: 0;
-        background-image: url('https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&h=500&fit=crop&auto=format');
+        background-image: url('https://images.unsplash.com/photo-1556742208-999815fca738?w=800&h=500&fit=crop&auto=format');
         background-size: cover; background-position: center;
         opacity: 0.80;
       "></div>
