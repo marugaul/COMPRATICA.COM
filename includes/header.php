@@ -104,7 +104,7 @@
 
     <a href="/emprendedores-catalogo" class="menu-item">
       <i class="fas fa-store"></i>
-      <span>Emprendedoras y Emprendedores</span>
+      <span>Emprendedores</span>
     </a>
 
     <!-- ── VENDEDORES ────────────────────────── -->

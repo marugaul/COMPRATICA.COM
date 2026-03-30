@@ -1780,7 +1780,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
 
     <a href="emprendedores-catalogo" class="menu-item">
       <i class="fas fa-store"></i>
-      <span>Emprendedoras y Emprendedores</span>
+      <span>Emprendedores</span>
     </a>
 
     <!-- ── VENDEDORES ────────────────────────── -->
@@ -2187,7 +2187,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       <a href="servicios">Servicios</a>
       <a href="venta-garaje">Venta de Garaje</a>
       <a href="bienes-raices">Bienes Raíces</a>
-      <a href="emprendedores-catalogo">Emprendedoras y Emprendedores</a>
+      <a href="emprendedores-catalogo">Emprendedores</a>
     </div>
     <div class="footer-section">
       <h3>Para Emprendedores</h3>
