@@ -171,6 +171,7 @@ try {
     if (!in_array('seller_type',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedora'");
     if (!in_array('store_avatar',       $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_avatar TEXT");
     if (!in_array('store_name',         $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_name TEXT");
+    if (!in_array('store_banner_text',  $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_text TEXT");
     // Métodos de pago globales del emprendedor
     if (!in_array('global_accepts_sinpe',  $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN global_accepts_sinpe INTEGER DEFAULT 0");
     if (!in_array('global_sinpe_phone',    $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN global_sinpe_phone TEXT");
@@ -274,6 +275,19 @@ try {
 
 // ── Manejar guardado de diseño del puesto ────────────────────────────────────
 $designMsg = '';
+// ── Guardar texto del banner marquee ──────────────────────────────────────
+$bannerMsg = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_banners') {
+    $bannerText = mb_substr(trim($_POST['store_banner_text'] ?? ''), 0, 200);
+    try {
+        $pdo->prepare("UPDATE users SET store_banner_text=? WHERE id=?")
+            ->execute([$bannerText ?: null, $userId]);
+        $bannerMsg = ['ok', '✅ Banner guardado correctamente.'];
+    } catch (Exception $e) {
+        $bannerMsg = ['err', '❌ Error al guardar: ' . $e->getMessage()];
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_store_design') {
     $color1      = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['store_color1'] ?? '') ? $_POST['store_color1'] : '#667eea';
     $color2      = preg_match('/^#[0-9a-fA-F]{6}$/', $_POST['store_color2'] ?? '') ? $_POST['store_color2'] : '#764ba2';
@@ -294,9 +308,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 }
 
 // ── Cargar configuración de diseño actual del usuario ─────────────────────────
-$storeDesign = ['store_color1'=>'#667eea','store_color2'=>'#764ba2','store_banner_style'=>'stripes','store_logo'=>'','seller_type'=>'emprendedora','store_name'=>''];
+$storeDesign = ['store_color1'=>'#667eea','store_color2'=>'#764ba2','store_banner_style'=>'stripes','store_logo'=>'','seller_type'=>'emprendedora','store_name'=>'','store_banner_text'=>''];
 try {
-    $sd = $pdo->prepare("SELECT store_color1, store_color2, store_banner_style, store_logo, seller_type, store_name FROM users WHERE id=?");
+    $sd = $pdo->prepare("SELECT store_color1, store_color2, store_banner_style, store_logo, seller_type, store_name, store_banner_text FROM users WHERE id=?");
     $sd->execute([$userId]);
     $row = $sd->fetch(PDO::FETCH_ASSOC);
     if ($row) $storeDesign = array_merge($storeDesign, array_filter($row, fn($v) => $v !== null));
@@ -1088,6 +1102,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             <button class="tab-btn" onclick="showTab('pagos',this)"><i class="fas fa-credit-card"></i> Pagos</button>
             <button class="tab-btn" onclick="showTab('pedidos',this)"><i class="fas fa-receipt"></i> Pedidos</button>
             <button class="tab-btn" onclick="showTab('live',this)"><i class="fas fa-broadcast-tower"></i> En Vivo</button>
+            <button class="tab-btn" onclick="showTab('banners',this)"><i class="fas fa-bullhorn"></i> Banners</button>
             <a href="emprendedoras-producto-crear.php" class="tab-btn tab-create"><i class="fas fa-plus"></i> Nuevo Producto</a>
         </div>
 
@@ -2554,6 +2569,97 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                 </div>
             <?php endif; ?>
         </div>
+
+        <!-- ══════════════════ BANNERS ══════════════════ -->
+        <div class="section" id="banners-section" data-tab="banners" style="display:none;">
+            <h2 class="section-title"><i class="fas fa-bullhorn"></i> Banner de Ofertas</h2>
+            <p style="color:#555;margin-bottom:20px;font-size:.93rem;">
+                Agrega un mensaje que se desplazará sobre el banner de tu tienda. Ideal para anunciar promociones, envíos gratis, descuentos o eventos especiales.<br>
+                <strong>Si no tienes mensaje activo, el banner de colores se muestra igual que siempre.</strong>
+            </p>
+
+            <?php if ($bannerMsg): ?>
+                <div class="alert alert-<?= $bannerMsg[0]==='ok'?'success':'danger' ?>" style="margin-bottom:16px;">
+                    <?= htmlspecialchars($bannerMsg[1]) ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- Vista previa -->
+            <?php
+            $previewC1 = $storeDesign['store_color1'];
+            $previewC2 = $storeDesign['store_color2'];
+            $previewBg = match($storeDesign['store_banner_style'] ?? 'stripes') {
+                'gradient' => "linear-gradient(to right, {$previewC1}, {$previewC2})",
+                'solid'    => $previewC1,
+                'wave'     => "linear-gradient(160deg, {$previewC1} 0%, {$previewC2} 50%, {$previewC1} 100%)",
+                default    => "repeating-linear-gradient(-45deg, {$previewC1} 0px, {$previewC1} 28px, {$previewC2} 28px, {$previewC2} 56px)",
+            };
+            $previewText = htmlspecialchars($storeDesign['store_banner_text'] ?: '🔥 ¡Escribe aquí tu mensaje de oferta! · Envío gratis en pedidos mayores a ₡10,000 · 🎁 Especiales de temporada');
+            ?>
+            <div style="border-radius:12px;overflow:hidden;margin-bottom:24px;box-shadow:0 4px 14px rgba(0,0,0,.15);">
+                <div style="background:<?= $previewBg ?>;height:70px;position:relative;overflow:hidden;display:flex;align-items:center;">
+                    <div class="banner-ticker-preview" style="white-space:nowrap;animation:bannerScroll 18s linear infinite;padding:0 20px;font-size:.92rem;font-weight:700;color:rgba(255,255,255,.9);text-shadow:0 1px 3px rgba(0,0,0,.4);letter-spacing:.3px;">
+                        <?= $previewText ?> &nbsp;&nbsp;·&nbsp;&nbsp; <?= $previewText ?>
+                    </div>
+                </div>
+            </div>
+            <style>
+            @keyframes bannerScroll {
+                0%   { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
+            }
+            .banner-ticker-preview { display: inline-block; }
+            </style>
+
+            <!-- Formulario -->
+            <form method="POST" id="banner-form">
+                <input type="hidden" name="action" value="save_banners">
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;font-weight:700;margin-bottom:6px;color:#1a1a1a;">
+                        <i class="fas fa-pen" style="color:<?= htmlspecialchars($previewC1) ?>;"></i>
+                        Mensaje del banner
+                    </label>
+                    <textarea name="store_banner_text" id="banner-text-input" maxlength="200"
+                        placeholder="Ej: 🔥 ¡20% de descuento este fin de semana! · Envío gratis en compras mayores a ₡8,000 · 🎁 Nuevos productos disponibles"
+                        rows="3"
+                        oninput="document.getElementById('banner-char-count').textContent=(200-this.value.length)+' caracteres restantes'"
+                        style="width:100%;padding:12px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:.93rem;resize:vertical;font-family:inherit;line-height:1.5;outline:none;transition:border-color .2s;"
+                        onfocus="this.style.borderColor='<?= htmlspecialchars($previewC1) ?>'"
+                        onblur="this.style.borderColor='#e5e7eb'"
+                    ><?= htmlspecialchars($storeDesign['store_banner_text']) ?></textarea>
+                    <div style="font-size:.78rem;color:#9ca3af;margin-top:4px;" id="banner-char-count">
+                        <?= 200 - mb_strlen($storeDesign['store_banner_text']) ?> caracteres restantes
+                    </div>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <button type="submit"
+                        style="background:<?= htmlspecialchars($previewC1) ?>;color:#fff;border:none;padding:11px 28px;border-radius:10px;font-weight:700;font-size:.93rem;cursor:pointer;transition:opacity .2s;"
+                        onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                        <i class="fas fa-save"></i> Guardar banner
+                    </button>
+                    <?php if (!empty($storeDesign['store_banner_text'])): ?>
+                    <button type="button" onclick="document.getElementById('banner-text-input').value='';document.getElementById('banner-char-count').textContent='200 caracteres restantes';"
+                        style="background:#f3f4f6;color:#374151;border:none;padding:11px 20px;border-radius:10px;font-weight:600;font-size:.88rem;cursor:pointer;">
+                        <i class="fas fa-times"></i> Limpiar
+                    </button>
+                    <?php endif; ?>
+                </div>
+            </form>
+
+            <!-- Tips -->
+            <div style="margin-top:28px;background:#f8fafc;border-radius:12px;padding:18px 20px;border:1px solid #e2e8f0;">
+                <p style="font-weight:700;color:#374151;margin-bottom:10px;font-size:.9rem;"><i class="fas fa-lightbulb" style="color:#f59e0b;"></i> Ideas para mensajes efectivos</p>
+                <ul style="color:#555;font-size:.85rem;line-height:1.8;padding-left:18px;margin:0;">
+                    <li>🔥 ¡20% OFF este fin de semana en todos los productos!</li>
+                    <li>🚚 Envío gratis en pedidos mayores a ₡10,000</li>
+                    <li>🎁 Compra 2 y lleva el 3ro a mitad de precio</li>
+                    <li>⏰ Oferta válida solo hasta el domingo</li>
+                    <li>✨ Nuevos productos cada semana — ¡Síguenos!</li>
+                </ul>
+                <p style="margin-top:10px;font-size:.8rem;color:#9ca3af;margin-bottom:0;">Tip: Separa ideas con · o ★ para que se vea más dinámico al desplazarse.</p>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -2597,6 +2703,8 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             'tab-pagos':     'pagos',
             'tab-live':      'live',
             'tab-pedidos':   'pedidos',
+            'tab-banners':   'banners',
+            'banners-section': 'banners',
         };
 
         function showTab(name, btn) {

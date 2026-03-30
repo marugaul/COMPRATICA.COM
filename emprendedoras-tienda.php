@@ -27,6 +27,7 @@ $stSeller = $pdo->prepare("
            COALESCE(u.store_color1,'#2563eb') AS store_color1,
            COALESCE(u.store_color2,'#1e3a8a') AS store_color2,
            COALESCE(u.store_banner_style,'stripes') AS store_banner_style,
+           u.store_banner_text,
            COALESCE(u.is_live,0)         AS is_live,
            u.live_title, u.live_link,
            COALESCE(u.live_type,'link')  AS live_type,
@@ -46,6 +47,7 @@ $c1          = $seller['store_color1'];
 $c2          = $seller['store_color2'];
 $bstyle      = $seller['store_banner_style'];
 $displayName = $seller['display_name'];
+$bannerText  = trim($seller['store_banner_text'] ?? '');
 
 // Generar fondo del toldo igual que el catálogo
 switch ($bstyle) {
@@ -135,6 +137,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
             height: 110px;
             background: <?= htmlspecialchars($awningBg) ?>;
             position: relative;
+            overflow: hidden;
         }
         /* Flecos triangulares usando los colores de la tienda */
         .store-banner::after {
@@ -148,6 +151,38 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
             background-size: 16px 16px;
             background-repeat: repeat-x;
             background-position: 0 0, 8px 0;
+            z-index: 2;
+        }
+
+        /* ── Ticker / Marquee de oferta ── */
+        .store-ticker {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 38px;
+            background: rgba(0,0,0,.45);
+            backdrop-filter: blur(2px);
+            overflow: hidden;
+            display: flex; align-items: center;
+            z-index: 1;
+        }
+        .store-ticker-track {
+            display: inline-flex; align-items: center;
+            white-space: nowrap;
+            animation: storeTicker 20s linear infinite;
+            will-change: transform;
+        }
+        .store-ticker-track:hover { animation-play-state: paused; }
+        .store-ticker-text {
+            font-size: .88rem; font-weight: 700; color: #fff;
+            letter-spacing: .3px; text-shadow: 0 1px 4px rgba(0,0,0,.5);
+            padding: 0 40px;
+        }
+        .store-ticker-sep {
+            color: rgba(255,255,255,.4); font-size: .8rem; flex-shrink: 0;
+        }
+        @keyframes storeTicker {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
         }
 
         /* ── Header de la tienda ── */
@@ -442,7 +477,35 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
 <?php include __DIR__ . '/includes/header.php'; ?>
 
 <!-- Banner de la tienda -->
-<div class="store-banner"></div>
+<div class="store-banner">
+    <?php if ($bannerText !== ''): ?>
+    <div class="store-ticker">
+        <!-- 2 copias idénticas para loop seamless con translateX(-50%) -->
+        <div class="store-ticker-track" id="store-ticker-track">
+            <?php
+            $escaped = htmlspecialchars($bannerText);
+            // Separadores y repeticiones para un scroll fluido visible en pantalla ancha
+            $chunk = "<span class='store-ticker-text'>{$escaped}</span><span class='store-ticker-sep'> ✦ </span>";
+            // Mitad 1
+            for ($i = 0; $i < 3; $i++) echo $chunk;
+            // Mitad 2 (copia exacta = loop seamless)
+            for ($i = 0; $i < 3; $i++) echo $chunk;
+            ?>
+        </div>
+    </div>
+    <script>
+    (function(){
+        // Ajustar velocidad al ancho real del texto para scroll uniforme
+        var track = document.getElementById('store-ticker-track');
+        if (!track) return;
+        var half = track.scrollWidth / 2;
+        // ~80px/s de velocidad
+        var dur = Math.max(8, half / 80);
+        track.style.animationDuration = dur.toFixed(1) + 's';
+    })();
+    </script>
+    <?php endif; ?>
+</div>
 
 <div class="store-header">
     <!-- Avatar: se solapa con el banner, no tapa el nombre -->
