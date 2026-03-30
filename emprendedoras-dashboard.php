@@ -473,6 +473,13 @@ $onboardingSteps = [
 $ob_done  = (int)array_sum(array_column($onboardingSteps, 'done'));
 $ob_total = count($onboardingSteps);
 $showOnboarding = $ob_done < $ob_total;
+
+// Primer paso incompleto
+$currentStepIdx = 0;
+foreach ($onboardingSteps as $i => $step) {
+    if (!$step['done']) { $currentStepIdx = $i; break; }
+}
+$currentStep = $onboardingSteps[$currentStepIdx];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -692,86 +699,101 @@ $showOnboarding = $ob_done < $ob_total;
             color: #856404;
         }
 
-        /* ── ONBOARDING WIZARD ───────────────────────────────── */
+        /* ── ONBOARDING WIZARD SECUENCIAL ────────────────────── */
         .ob-wizard {
-            background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
-            border: 2px solid #c7d2fe;
-            border-radius: 20px;
-            padding: 28px 30px;
-            margin-bottom: 30px;
-        }
-        .ob-header {
-            display: flex;
-            align-items: flex-start;
-            gap: 20px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-        .ob-header h2 {
-            font-size: 1.25rem;
-            color: #4338ca;
-            margin: 0 0 5px;
-        }
-        .ob-header > div:first-child p {
-            font-size: 0.86rem;
-            color: #6b7280;
-            margin: 0;
-        }
-        .ob-progress-wrap { margin-left: auto; min-width: 180px; }
-        .ob-progress-label { font-size: 0.8rem; color: #6b7280; margin-bottom: 5px; text-align: right; }
-        .ob-progress-bar { background: #e0e7ff; border-radius: 99px; height: 8px; overflow: hidden; }
-        .ob-progress-fill { background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; border-radius: 99px; transition: width .5s; }
-        .ob-dismiss { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 1.1rem; padding: 4px 8px; flex-shrink: 0; }
-        .ob-dismiss:hover { color: #374151; }
-        .ob-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-        .ob-step {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
             background: white;
-            border-radius: 14px;
-            padding: 16px;
             border: 2px solid #e0e7ff;
-            text-decoration: none;
-            color: inherit;
+            border-radius: 24px;
+            padding: 36px 40px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(102,126,234,.12);
+        }
+
+        /* Track de progreso */
+        .ob-track {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 36px;
+            flex-wrap: nowrap;
+            gap: 0;
+        }
+        .ob-track-step { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
+        .ob-track-circle {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.9rem;
+            background: #f3f4f6; color: #9ca3af;
+            border: 2px solid #e5e7eb;
+            transition: all .3s;
+        }
+        .ob-track-done .ob-track-circle  { background: #d1fae5; color: #059669; border-color: #6ee7b7; }
+        .ob-track-active .ob-track-circle { background: linear-gradient(135deg,#667eea,#764ba2); color: white; border-color: #667eea; box-shadow: 0 0 0 4px rgba(102,126,234,.18); }
+        .ob-track-label { font-size: 0.7rem; color: #9ca3af; max-width: 72px; text-align: center; line-height: 1.3; white-space: normal; }
+        .ob-track-done .ob-track-label   { color: #059669; }
+        .ob-track-active .ob-track-label  { color: #4338ca; font-weight: 600; }
+        .ob-track-line { flex: 1; height: 2px; background: #e5e7eb; min-width: 20px; margin-bottom: 22px; }
+        .ob-track-line-done { background: #6ee7b7; }
+
+        /* Cuerpo del paso actual */
+        .ob-current { max-width: 480px; margin: 0 auto; }
+        .ob-current-icon {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: linear-gradient(135deg, #ede9fe, #dbeafe);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; color: #667eea;
+            margin: 0 auto 16px;
+        }
+        .ob-current-num { font-size: 0.8rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+        .ob-current-title { font-size: 1.5rem; font-weight: 700; color: #1f2937; margin: 0 0 12px; }
+        .ob-current-desc { font-size: 0.95rem; color: #6b7280; line-height: 1.65; margin: 0 0 28px; }
+        .ob-cta-btn {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; text-decoration: none;
+            padding: 14px 32px; border-radius: 30px;
+            font-size: 1rem; font-weight: 600;
+            box-shadow: 0 4px 16px rgba(102,126,234,.35);
             transition: all .2s;
         }
-        .ob-step:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(102,126,234,.18); }
-        .ob-step.ob-done { border-color: #d1fae5; background: #f0fdf4; opacity: .8; }
-        .ob-step-icon {
-            width: 40px; height: 40px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; flex-shrink: 0; margin-top: 2px;
+        .ob-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(102,126,234,.4); color: white; }
+
+        /* Footer */
+        .ob-footer { margin-top: 24px; display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; }
+        .ob-skip-btn {
+            background: none; border: none; cursor: pointer;
+            color: #9ca3af; font-size: 0.85rem;
+            text-decoration: underline; padding: 4px;
         }
-        .ob-done .ob-step-icon { background: #d1fae5; color: #059669; }
-        .ob-step:not(.ob-done) .ob-step-icon { background: #e0e7ff; color: #667eea; }
-        .ob-step-num { font-weight: 800; font-size: 1rem; }
-        .ob-step-label { font-weight: 700; font-size: 0.9rem; color: #374151; margin-bottom: 4px; }
-        .ob-step-desc { font-size: 0.78rem; color: #6b7280; line-height: 1.5; }
-        .ob-step-cta {
-            margin-top: 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: #667eea;
-        }
+        .ob-skip-btn:hover { color: #6b7280; }
+        .ob-dash-link { font-size: 0.85rem; color: #667eea; text-decoration: none; font-weight: 500; }
+        .ob-dash-link:hover { text-decoration: underline; }
+
+        /* Barra colapsada */
         .ob-collapse-bar {
             display: none;
             align-items: center;
             gap: 12px;
             background: white;
-            border: 1px solid #e0e7ff;
-            border-radius: 12px;
-            padding: 10px 18px;
+            border: 2px solid #e0e7ff;
+            border-radius: 14px;
+            padding: 12px 20px;
             margin-bottom: 30px;
             cursor: pointer;
-            font-size: 0.88rem;
+            font-size: 0.9rem;
             color: #4338ca;
             font-weight: 600;
+            box-shadow: 0 2px 8px rgba(102,126,234,.08);
         }
         .ob-collapse-bar:hover { background: #f0f4ff; }
+        .ob-collapse-bar .ob-mini-dots { display: flex; gap: 4px; }
+        .ob-mini-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: #e0e7ff;
+        }
+        .ob-mini-dot.done { background: #6ee7b7; }
+        .ob-mini-dot.active { background: #667eea; }
 
         /* ── QUICK NAV ───────────────────────────────────────── */
         .dash-nav {
@@ -798,9 +820,11 @@ $showOnboarding = $ob_done < $ob_total;
         .dash-nav-item.dash-highlight:hover { opacity: .88; color: white; }
 
         @media (max-width: 640px) {
-            .ob-wizard { padding: 20px; }
-            .ob-steps { grid-template-columns: 1fr; }
-            .ob-progress-wrap { min-width: 100%; order: 3; }
+            .ob-wizard { padding: 24px 20px; }
+            .ob-track-label { display: none; }
+            .ob-track-line { min-width: 12px; }
+            .ob-current-title { font-size: 1.2rem; }
+            .ob-cta-btn { width: 100%; justify-content: center; }
         }
     </style>
 </head>
@@ -853,56 +877,65 @@ $showOnboarding = $ob_done < $ob_total;
         <?php endif; ?>
 
         <?php if ($showOnboarding): ?>
-        <!-- ── ONBOARDING WIZARD ──────────────────────────────────────── -->
+        <!-- ── ONBOARDING WIZARD SECUENCIAL ──────────────────────────── -->
         <div class="ob-wizard" id="onboarding-wizard">
-            <div class="ob-header">
-                <div>
-                    <h2><i class="fas fa-map-signs"></i> Primeros pasos para empezar a vender</h2>
-                    <p>Completa estos pasos para dejar tu puesto listo y que tus clientes puedan encontrarte y comprarte</p>
+
+            <!-- Track de pasos -->
+            <div class="ob-track">
+                <?php foreach ($onboardingSteps as $i => $step):
+                    $trackClass = $step['done'] ? 'ob-track-done' : ($i === $currentStepIdx ? 'ob-track-active' : '');
+                ?>
+                <div class="ob-track-step <?= $trackClass ?>">
+                    <div class="ob-track-circle">
+                        <?= $step['done'] ? '<i class="fas fa-check"></i>' : ($i + 1) ?>
+                    </div>
+                    <div class="ob-track-label"><?= htmlspecialchars($step['label']) ?></div>
                 </div>
-                <div class="ob-progress-wrap">
-                    <div class="ob-progress-label"><?= $ob_done ?> de <?= $ob_total ?> completados</div>
-                    <div class="ob-progress-bar">
-                        <div class="ob-progress-fill" style="width:<?= round($ob_done / $ob_total * 100) ?>%"></div>
-                    </div>
-                </div>
-                <button class="ob-dismiss" onclick="collapseOnboarding()" title="Minimizar guía">
-                    <i class="fas fa-chevron-up"></i>
-                </button>
-            </div>
-            <div class="ob-steps" id="ob-steps-body">
-                <?php foreach ($onboardingSteps as $step): ?>
-                <a class="ob-step <?= $step['done'] ? 'ob-done' : '' ?>" href="<?= htmlspecialchars($step['link']) ?>">
-                    <div class="ob-step-icon">
-                        <?php if ($step['done']): ?>
-                            <i class="fas fa-check-circle"></i>
-                        <?php else: ?>
-                            <span class="ob-step-num"><?= $step['num'] ?></span>
-                        <?php endif; ?>
-                    </div>
-                    <div>
-                        <div class="ob-step-label">
-                            <?php if ($step['done']): ?>
-                                <i class="fas fa-check" style="color:#059669;margin-right:4px;font-size:.75rem;"></i>
-                            <?php endif; ?>
-                            <?= htmlspecialchars($step['label']) ?>
-                        </div>
-                        <div class="ob-step-desc"><?= htmlspecialchars($step['desc']) ?></div>
-                        <?php if (!$step['done']): ?>
-                        <div class="ob-step-cta"><?= htmlspecialchars($step['btn']) ?> <i class="fas fa-arrow-right"></i></div>
-                        <?php endif; ?>
-                    </div>
-                </a>
+                <?php if ($i < $ob_total - 1): ?>
+                <div class="ob-track-line <?= $step['done'] ? 'ob-track-line-done' : '' ?>"></div>
+                <?php endif; ?>
                 <?php endforeach; ?>
             </div>
+
+            <!-- Paso actual -->
+            <div class="ob-current">
+                <div class="ob-current-icon">
+                    <i class="fas <?= htmlspecialchars($currentStep['icon']) ?>"></i>
+                </div>
+                <div class="ob-current-num">Paso <?= $currentStepIdx + 1 ?> de <?= $ob_total ?></div>
+                <h2 class="ob-current-title"><?= htmlspecialchars($currentStep['label']) ?></h2>
+                <p class="ob-current-desc"><?= htmlspecialchars($currentStep['desc']) ?></p>
+                <a href="<?= htmlspecialchars($currentStep['link']) ?>" class="ob-cta-btn">
+                    <?= htmlspecialchars($currentStep['btn']) ?>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- Footer -->
+            <div class="ob-footer">
+                <button class="ob-skip-btn" onclick="collapseOnboarding()">Omitir configuración</button>
+                <a href="#main-dashboard" class="ob-dash-link">
+                    <i class="fas fa-chevron-down"></i> Ver mi dashboard
+                </a>
+            </div>
+
         </div>
+
+        <!-- Barra mini cuando está colapsado -->
         <div class="ob-collapse-bar" id="ob-collapsed-bar" onclick="expandOnboarding()">
-            <i class="fas fa-map-signs"></i>
-            Ver guía de inicio &mdash; <?= $ob_done ?> de <?= $ob_total ?> pasos completados
-            <i class="fas fa-chevron-down" style="margin-left:auto;"></i>
+            <i class="fas fa-map-signs" style="color:#667eea;"></i>
+            <span>Guía de inicio &mdash; paso <?= $currentStepIdx + 1 ?> de <?= $ob_total ?></span>
+            <div class="ob-mini-dots">
+                <?php foreach ($onboardingSteps as $i => $step): ?>
+                <div class="ob-mini-dot <?= $step['done'] ? 'done' : ($i === $currentStepIdx ? 'active' : '') ?>"></div>
+                <?php endforeach; ?>
+            </div>
+            <i class="fas fa-chevron-down" style="margin-left:auto; color:#9ca3af;"></i>
         </div>
         <!-- ── FIN ONBOARDING WIZARD ──────────────────────────────── -->
         <?php endif; ?>
+
+        <div id="main-dashboard"></div>
 
         <div class="stats-grid">
             <div class="stat-card">
