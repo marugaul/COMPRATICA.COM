@@ -795,29 +795,53 @@ $currentStep = $onboardingSteps[$currentStepIdx];
         .ob-mini-dot.done { background: #6ee7b7; }
         .ob-mini-dot.active { background: #667eea; }
 
-        /* ── QUICK NAV ───────────────────────────────────────── */
-        .dash-nav {
+        /* ── TAB NAV ───────────────────────────────────────────── */
+        .tab-nav {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 30px;
             background: white;
-            border-radius: 15px;
-            padding: 14px 18px;
-            box-shadow: 0 3px 15px rgba(0,0,0,.07);
+            border-radius: 16px;
+            padding: 8px;
+            gap: 4px;
+            margin-bottom: 28px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+            flex-wrap: wrap;
             align-items: center;
         }
-        .dash-nav-label { font-size: 0.78rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-right: 4px; }
-        .dash-nav-item {
-            display: inline-flex; align-items: center; gap: 5px;
-            padding: 7px 14px; border-radius: 20px;
-            background: #f3f4f6; color: #374151;
-            text-decoration: none; font-size: 0.83rem; font-weight: 500;
+        .tab-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
             transition: all .18s;
+            white-space: nowrap;
+            font-family: inherit;
         }
-        .dash-nav-item:hover { background: #e0e7ff; color: #4338ca; }
-        .dash-nav-item.dash-highlight { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-        .dash-nav-item.dash-highlight:hover { opacity: .88; color: white; }
+        .tab-btn:hover { background: #f3f4f6; color: #374151; }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(102,126,234,.3);
+        }
+        .tab-btn.tab-create {
+            margin-left: auto;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(102,126,234,.25);
+        }
+        .tab-btn.tab-create:hover { opacity: .88; }
+        @media (max-width: 768px) {
+            .tab-btn { padding: 9px 13px; font-size: .82rem; gap: 5px; }
+            .tab-btn.tab-create { margin-left: 0; }
+        }
 
         @media (max-width: 640px) {
             .ob-wizard { padding: 24px 20px; }
@@ -944,7 +968,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
 
         <div id="main-dashboard"></div>
 
-        <div class="stats-grid">
+        <div class="stats-grid" data-tab="resumen">
             <div class="stat-card">
                 <div class="icon"><i class="fas fa-box"></i></div>
                 <div class="value"><?php echo number_format($stats['total_products']); ?></div>
@@ -968,19 +992,19 @@ $currentStep = $onboardingSteps[$currentStepIdx];
         </div>
 
         <!-- ── ACCESO RÁPIDO A SECCIONES ──────────────────────────── -->
-        <div class="dash-nav">
-            <span class="dash-nav-label">Ir a:</span>
-            <a href="emprendedoras-producto-crear.php" class="dash-nav-item dash-highlight"><i class="fas fa-plus"></i> Nuevo producto</a>
-            <a href="#design-section"   class="dash-nav-item"><i class="fas fa-store"></i> Mi puesto</a>
-            <a href="#payment-section"  class="dash-nav-item"><i class="fas fa-credit-card"></i> Pagos</a>
-            <a href="#shipping-section" class="dash-nav-item"><i class="fas fa-truck"></i> Envíos</a>
-            <a href="#live-section"     class="dash-nav-item"><i class="fas fa-broadcast-tower"></i> En Vivo</a>
-            <a href="#avatar-section"   class="dash-nav-item"><i class="fas fa-user-circle"></i> Avatar</a>
-            <a href="#chat-seller-section" class="dash-nav-item"><i class="fas fa-comments"></i> Chat</a>
+        <div class="tab-nav" id="main-tab-nav">
+            <button class="tab-btn active" onclick="showTab('resumen',this)"><i class="fas fa-chart-bar"></i> Resumen</button>
+            <button class="tab-btn" onclick="showTab('productos',this)"><i class="fas fa-box"></i> Productos</button>
+            <button class="tab-btn" onclick="showTab('avatar',this)"><i class="fas fa-user-circle"></i> Avatar</button>
+            <button class="tab-btn" onclick="showTab('puesto',this)"><i class="fas fa-store"></i> Mi Puesto</button>
+            <button class="tab-btn" onclick="showTab('envios',this)"><i class="fas fa-truck"></i> Envíos</button>
+            <button class="tab-btn" onclick="showTab('pagos',this)"><i class="fas fa-credit-card"></i> Pagos</button>
+            <button class="tab-btn" onclick="showTab('live',this)"><i class="fas fa-broadcast-tower"></i> En Vivo</button>
+            <a href="emprendedoras-producto-crear.php" class="tab-btn tab-create"><i class="fas fa-plus"></i> Nuevo Producto</a>
         </div>
 
         <?php if (!$isPending && !$canAddProducts): ?>
-            <div class="alert alert-warning">
+            <div class="alert alert-warning" data-tab="resumen">
                 <i class="fas fa-exclamation-triangle"></i>
                 <strong>Límite alcanzado:</strong> Has llegado al límite de productos de tu plan (<?php echo $subscription['max_products']; ?> productos).
                 <a href="emprendedores-planes.php" style="color: #667eea; font-weight: 600;">Actualiza tu plan</a> para agregar más productos.
@@ -989,7 +1013,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
 
         <!-- ── SECCIÓN EN VIVO ──────────────────────────────────────── -->
         <?php if (!$isPaidPlan): ?>
-        <div class="section" id="live-section" style="border: 2px solid #e2e8f0; opacity:.6; pointer-events:none;">
+        <div class="section" id="live-section" data-tab="live" style="border: 2px solid #e2e8f0; opacity:.6; pointer-events:none;">
             <div class="section-header">
                 <h2><i class="fas fa-broadcast-tower"></i> Transmisión en Vivo</h2>
                 <span style="background:#f3f4f6;color:#6b7280;padding:6px 14px;border-radius:8px;font-size:.85rem;font-weight:600;">
@@ -1006,7 +1030,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             </div>
         </div>
         <?php else: ?>
-        <div class="section" id="live-section" style="border: 2px solid <?= $liveData['is_live'] ? '#ef4444' : '#e2e8f0' ?>; transition: border-color .3s;">
+        <div class="section" id="live-section" data-tab="live" style="border: 2px solid <?= $liveData['is_live'] ? '#ef4444' : '#e2e8f0' ?>; transition: border-color .3s;">
             <div class="section-header">
                 <h2>
                     <?php if ($liveData['is_live']): ?>
@@ -1189,7 +1213,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
 
         <?php if ($isPaidPlan && $liveData['is_live']): ?>
         <!-- ── PANEL DE CHAT EN VIVO (vendedora) ─────────────────────── -->
-        <div class="section" id="chat-seller-section">
+        <div class="section" id="chat-seller-section" data-tab="live">
             <div class="section-header">
                 <h2>
                     <span style="display:inline-flex;align-items:center;gap:8px;">
@@ -1319,7 +1343,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
         <!-- ══════════════════════════════════════════════════════════════ -->
         <!-- ── SECCIÓN CREADOR DE AVATAR ──────────────────────────────── -->
         <!-- ══════════════════════════════════════════════════════════════ -->
-        <div class="section" id="avatar-section">
+        <div class="section" id="avatar-section" data-tab="avatar">
             <div class="section-header">
                 <h2><i class="fas fa-user-astronaut" style="color:#8b5cf6;"></i> Mi Avatar Animado</h2>
                 <p style="color:#6b7280;font-size:.9rem;margin-top:4px;">Crea tu personaje chibi que aparecerá en el catálogo como tu representante en el mercado.</p>
@@ -1695,7 +1719,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
         <!-- ── FIN SECCIÓN AVATAR ─────────────────────────────────────── -->
 
         <!-- ── SECCIÓN PERSONALIZAR MI PUESTO ──────────────────────────── -->
-        <div class="section" id="design-section">
+        <div class="section" id="design-section" data-tab="puesto">
             <div class="section-header">
                 <h2><i class="fas fa-palette" style="color:#8b5cf6;"></i> Personalizar mi Puesto</h2>
             </div>
@@ -1923,7 +1947,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
         <!-- ── FIN SECCIÓN PERSONALIZAR ──────────────────────────────────── -->
 
         <!-- ── SECCIÓN ENVÍO Y ENTREGA ─────────────────────────────────── -->
-        <div class="section" id="shipping-section">
+        <div class="section" id="shipping-section" data-tab="envios">
             <div class="section-header">
                 <h2><i class="fas fa-truck"></i> Envío y Entrega</h2>
             </div>
@@ -2079,7 +2103,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
         <!-- ── FIN ENVÍO Y ENTREGA ─────────────────────────────────────── -->
 
         <!-- ── SECCIÓN MÉTODOS DE PAGO ──────────────────────────────────── -->
-        <div class="section" id="payment-section">
+        <div class="section" id="payment-section" data-tab="pagos">
             <div class="section-header">
                 <h2><i class="fas fa-credit-card"></i> Métodos de Pago</h2>
             </div>
@@ -2199,7 +2223,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
         </div>
         <!-- ── FIN MÉTODOS DE PAGO ───────────────────────────────────────── -->
 
-        <div class="section">
+        <div class="section" id="productos-section" data-tab="productos">
             <div class="section-header">
                 <h2><i class="fas fa-box"></i> Mis Productos</h2>
                 <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
@@ -2277,7 +2301,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             <?php endif; ?>
         </div>
 
-        <div class="section">
+        <div class="section" data-tab="resumen">
             <div class="section-header">
                 <h2><i class="fas fa-receipt"></i> Pedidos Recientes</h2>
                 <a href="emprendedoras-orders.php" class="btn-primary">Ver todos</a>
@@ -2345,6 +2369,56 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             if (bar) bar.style.display = 'none';
             localStorage.removeItem('ob_collapsed_<?= $userId ?>');
         }
+
+        // ── TAB NAVIGATION ─────────────────────────────────────────────────
+        var _hashToTab = {
+            'shipping-section':   'envios',
+            'payment-section':    'pagos',
+            'live-section':       'live',
+            'chat-seller-section':'live',
+            'avatar-section':     'avatar',
+            'design-section':     'puesto',
+            'productos-section':  'productos',
+            'tab-resumen':   'resumen',
+            'tab-productos': 'productos',
+            'tab-avatar':    'avatar',
+            'tab-puesto':    'puesto',
+            'tab-envios':    'envios',
+            'tab-pagos':     'pagos',
+            'tab-live':      'live',
+        };
+
+        function showTab(name, btn) {
+            document.querySelectorAll('[data-tab]').forEach(function(el) {
+                el.style.display = el.dataset.tab === name ? '' : 'none';
+            });
+            document.querySelectorAll('.tab-btn').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            if (btn) {
+                btn.classList.add('active');
+            } else {
+                var found = document.querySelector('.tab-btn[onclick*="' + name + '"]');
+                if (found) found.classList.add('active');
+            }
+            history.replaceState(null, '', '#tab-' + name);
+            // Scroll to top of tab content
+            var nav = document.getElementById('main-tab-nav');
+            if (nav) nav.scrollIntoView({behavior:'smooth', block:'nearest'});
+        }
+
+        // Activate tab from URL hash
+        (function() {
+            var hash = window.location.hash.replace('#','');
+            var tab  = _hashToTab[hash] || 'resumen';
+            showTab(tab, null);
+        })();
+
+        window.addEventListener('hashchange', function() {
+            var hash = window.location.hash.replace('#','');
+            var tab  = _hashToTab[hash];
+            if (tab) showTab(tab, null);
+        });
         // ── AVATAR BUILDER ─────────────────────────────────────────────────
         var _avDebounce = null;
 
