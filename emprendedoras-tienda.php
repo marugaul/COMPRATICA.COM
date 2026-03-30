@@ -155,24 +155,27 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
             max-width: 980px; margin: 0 auto;
             padding: 0 24px 20px;
         }
-        .store-header-top {
-            display: flex; align-items: flex-end; gap: 20px;
-            margin-top: -40px; position: relative; z-index: 2;
+        /* Fila del avatar: se solapa con el banner */
+        .store-avatar-row {
+            margin-top: -44px;
+            position: relative; z-index: 3;
+            margin-bottom: 10px;
         }
         .store-avatar {
-            width: 88px; height: 88px; border-radius: 50%; flex-shrink: 0;
+            width: 88px; height: 88px; border-radius: 50%;
             background: linear-gradient(135deg, var(--c1), var(--c2));
             display: flex; align-items: center; justify-content: center;
             font-size: 2.4rem; font-weight: 900; color: white;
             box-shadow: 0 6px 24px rgba(0,0,0,.22);
             border: 4px solid white;
         }
+        /* Nombre e info: debajo del banner y del avatar, nunca tapado */
         .store-name-row {
-            flex: 1; padding-bottom: 4px;
+            padding-top: 6px;
         }
         .store-name-row h1 {
             font-size: 1.55rem; font-weight: 800; color: #111;
-            margin: 0 0 4px; line-height: 1.2;
+            margin: 0 0 6px; line-height: 1.2;
         }
         .store-stats {
             display: flex; gap: 16px; font-size: 0.83rem;
@@ -292,9 +295,8 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
         .catalog-toast.show { transform: translateY(0); opacity: 1; }
 
         @media (max-width: 560px) {
-            .store-header-top { flex-direction: row; align-items: flex-end; }
-            .store-avatar { width: 70px; height: 70px; font-size: 1.9rem; }
-            .store-name-row h1 { font-size: 1.2rem; }
+            .store-avatar { width: 72px; height: 72px; font-size: 1.9rem; }
+            .store-name-row h1 { font-size: 1.25rem; }
             .store-products { grid-template-columns: repeat(2,1fr); gap: 12px; }
             .store-filters-bar { gap: 8px; }
         }
@@ -443,22 +445,24 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
 <div class="store-banner"></div>
 
 <div class="store-header">
-    <div class="store-header-top">
+    <!-- Avatar: se solapa con el banner, no tapa el nombre -->
+    <div class="store-avatar-row">
         <div class="store-avatar"><?= strtoupper(mb_substr($displayName, 0, 1)) ?></div>
-        <div class="store-name-row">
-            <h1>
-                <?= htmlspecialchars($displayName) ?>
-                <?php if ($seller['is_live']): ?>
-                    <a href="<?= htmlspecialchars($seller['live_link'] ?? '#') ?>" target="_blank" class="live-badge">
-                        <span class="live-dot"></span>
-                        <?= htmlspecialchars($seller['live_title'] ?: 'EN VIVO') ?>
-                    </a>
-                <?php endif; ?>
-            </h1>
-            <div class="store-stats">
-                <span><i class="fas fa-box"></i> <?= (int)$seller['product_count'] ?> productos</span>
-                <span><i class="fas fa-shopping-cart"></i> <?= number_format((int)$seller['total_sales']) ?> ventas</span>
-            </div>
+    </div>
+    <!-- Nombre e info: siempre debajo de los flecos del banner -->
+    <div class="store-name-row">
+        <h1>
+            <?= htmlspecialchars($displayName) ?>
+            <?php if ($seller['is_live']): ?>
+                <a href="<?= htmlspecialchars($seller['live_link'] ?? '#') ?>" target="_blank" class="live-badge">
+                    <span class="live-dot"></span>
+                    <?= htmlspecialchars($seller['live_title'] ?: 'EN VIVO') ?>
+                </a>
+            <?php endif; ?>
+        </h1>
+        <div class="store-stats">
+            <span><i class="fas fa-box"></i> <?= (int)$seller['product_count'] ?> productos</span>
+            <span><i class="fas fa-shopping-cart"></i> <?= number_format((int)$seller['total_sales']) ?> ventas</span>
         </div>
     </div>
 </div>
