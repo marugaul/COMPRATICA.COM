@@ -67,8 +67,8 @@ function migrate_guest_cart_to_user(PDO $pdo, int $uid, string $guest_sid): void
         return;
     }
     try {
-        // Buscar carrito invitado y asignarlo al usuario
-        $s = $pdo->prepare("SELECT id FROM carts WHERE guest_sid = ? LIMIT 1");
+        // Buscar carrito invitado
+        $s = $pdo->prepare("SELECT id FROM carts WHERE guest_sid = ? AND (user_id IS NULL OR user_id = 0) LIMIT 1");
         $s->execute([$guest_sid]);
         $guestCartId = (int)($s->fetchColumn() ?: 0);
         if ($guestCartId <= 0) {
@@ -76,18 +76,49 @@ function migrate_guest_cart_to_user(PDO $pdo, int $uid, string $guest_sid): void
             return;
         }
 
-        // Contar items para log
-        $itemCount = (int)$pdo->prepare("SELECT COUNT(*) FROM cart_items WHERE cart_id = ?")->execute([$guestCartId]) ? 0 : 0;
+        // Contar items del carrito invitado para log
         $ic = $pdo->prepare("SELECT COUNT(*) FROM cart_items WHERE cart_id = ?");
         $ic->execute([$guestCartId]);
         $itemCount = (int)$ic->fetchColumn();
 
-        // Asignar el carrito invitado al usuario Y actualizar updated_at para que
-        // get_or_create_cart_id() (ORDER BY updated_at DESC) lo encuentre primero
-        $pdo->prepare("UPDATE carts SET user_id = ?, updated_at = datetime('now') WHERE id = ? AND (user_id IS NULL OR user_id = 0)")
-            ->execute([$uid, $guestCartId]);
-        logDebug("MIGRATE_OK", ['cart_id' => $guestCartId, 'uid' => $uid, 'guest_sid' => $guest_sid, 'items' => $itemCount]);
-        error_log("[login] migrated cart_id={$guestCartId} to uid={$uid} items={$itemCount}");
+        // ¿El usuario ya tiene un carrito propio?
+        $eu = $pdo->prepare("SELECT id FROM carts WHERE user_id = ? LIMIT 1");
+        $eu->execute([$uid]);
+        $userCartId = (int)($eu->fetchColumn() ?: 0);
+
+        if ($userCartId <= 0) {
+            // Sin carrito existente: simplemente asignar el carrito invitado al usuario
+            $pdo->prepare("UPDATE carts SET user_id = ?, updated_at = datetime('now') WHERE id = ?")
+                ->execute([$uid, $guestCartId]);
+            logDebug("MIGRATE_OK", ['cart_id' => $guestCartId, 'uid' => $uid, 'guest_sid' => $guest_sid, 'items' => $itemCount, 'mode' => 'assign']);
+        } else {
+            // Ya tiene carrito: fusionar items del carrito invitado al carrito del usuario
+            $items = $pdo->prepare("SELECT product_id, variant_id, qty, unit_price, tax_rate FROM cart_items WHERE cart_id = ?");
+            $items->execute([$guestCartId]);
+            $guestItems = $items->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($guestItems as $item) {
+                // Si ya existe el producto en el carrito del usuario, sumar cantidades
+                $exists = $pdo->prepare("SELECT id, qty FROM cart_items WHERE cart_id = ? AND product_id = ? AND (variant_id = ? OR (variant_id IS NULL AND ? IS NULL)) LIMIT 1");
+                $exists->execute([$userCartId, $item['product_id'], $item['variant_id'], $item['variant_id']]);
+                $existing = $exists->fetch(PDO::FETCH_ASSOC);
+
+                if ($existing) {
+                    $pdo->prepare("UPDATE cart_items SET qty = qty + ? WHERE id = ?")
+                        ->execute([$item['qty'], $existing['id']]);
+                } else {
+                    $pdo->prepare("INSERT INTO cart_items (cart_id, product_id, variant_id, qty, unit_price, tax_rate) VALUES (?, ?, ?, ?, ?, ?)")
+                        ->execute([$userCartId, $item['product_id'], $item['variant_id'], $item['qty'], $item['unit_price'], $item['tax_rate'] ?? 0]);
+                }
+            }
+
+            // Eliminar carrito invitado ya fusionado
+            $pdo->prepare("DELETE FROM cart_items WHERE cart_id = ?")->execute([$guestCartId]);
+            $pdo->prepare("DELETE FROM carts WHERE id = ?")->execute([$guestCartId]);
+
+            logDebug("MIGRATE_OK", ['guest_cart_id' => $guestCartId, 'user_cart_id' => $userCartId, 'uid' => $uid, 'guest_sid' => $guest_sid, 'items_merged' => $itemCount, 'mode' => 'merge']);
+        }
+        error_log("[login] migrate cart guest_sid={$guest_sid} to uid={$uid} items={$itemCount}");
     } catch (Throwable $e) {
         logDebug("MIGRATE_ERROR", ['error' => $e->getMessage(), 'uid' => $uid, 'guest_sid' => $guest_sid]);
         error_log("[login.php] migrate_guest_cart_to_user error: " . $e->getMessage());
