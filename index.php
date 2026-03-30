@@ -493,8 +493,8 @@ logDebug("RENDERING_PAGE");
         <p class="category-description">Empresas costarricenses y del mundo. Presencial, híbrido o remoto — encontrá el trabajo ideal para vos</p>
         <div class="empleos-flags-wrap">
           <div class="empleos-flags-track">
-            <span>🇨🇷</span><span>🇺🇸</span><span>🇪🇸</span><span>🇲🇽</span><span>🇨🇴</span><span>🇵🇦</span><span>🇦🇷</span><span>🇨🇱</span><span>🇬🇧</span><span>🇨🇦</span><span>🇩🇪</span><span>🇳🇱</span>
-            <span>🇨🇷</span><span>🇺🇸</span><span>🇪🇸</span><span>🇲🇽</span><span>🇨🇴</span><span>🇵🇦</span><span>🇦🇷</span><span>🇨🇱</span><span>🇬🇧</span><span>🇨🇦</span><span>🇩🇪</span><span>🇳🇱</span>
+            <span>🇨🇷</span><span>🇺🇸</span><span>🇪🇸</span><span>🇲🇽</span><span>🇨🇴</span><span>🇵🇦</span><span>🇦🇷</span><span>🇨🇱</span><span>🇬🇧</span><span>🇨🇦</span><span>🇩🇪</span><span>🇳🇱</span><span>🇫🇷</span><span>🇧🇷</span><span>🇵🇪</span><span>🇺🇾</span><span>🇮🇹</span><span>🇯🇵</span><span>🇦🇺</span><span>🇸🇬</span><span>🇵🇹</span><span>🇸🇻</span><span>🇬🇹</span><span>🇭🇳</span>
+            <span>🇨🇷</span><span>🇺🇸</span><span>🇪🇸</span><span>🇲🇽</span><span>🇨🇴</span><span>🇵🇦</span><span>🇦🇷</span><span>🇨🇱</span><span>🇬🇧</span><span>🇨🇦</span><span>🇩🇪</span><span>🇳🇱</span><span>🇫🇷</span><span>🇧🇷</span><span>🇵🇪</span><span>🇺🇾</span><span>🇮🇹</span><span>🇯🇵</span><span>🇦🇺</span><span>🇸🇬</span><span>🇵🇹</span><span>🇸🇻</span><span>🇬🇹</span><span>🇭🇳</span>
           </div>
         </div>
       </div>
