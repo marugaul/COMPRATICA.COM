@@ -639,6 +639,7 @@ $orders = array_values($orders_grouped);
         <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">Los pedidos de tus clientes aparecerán aquí</p>
       </div>
     <?php else: ?>
+      <div style="overflow-x:auto;">
       <table class="table">
         <thead>
           <tr>
@@ -783,6 +784,7 @@ $orders = array_values($orders_grouped);
           <?php endforeach; ?>
         </tbody>
       </table>
+      </div>
     <?php endif; ?>
   </div>
 </div>
