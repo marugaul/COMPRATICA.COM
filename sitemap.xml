@@ -53,20 +53,20 @@
     <priority>0.85</priority>
   </url>
 
+  <!-- Transporte -->
+  <url>
+    <loc>https://compratica.com/transporte</loc>
+    <lastmod>2026-03-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+  </url>
+
   <!-- Shuttle / Transporte -->
   <url>
     <loc>https://compratica.com/shuttle_search</loc>
     <lastmod>2026-03-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
-  </url>
-
-  <!-- Ofertas de Servicios -->
-  <url>
-    <loc>https://compratica.com/ofertas-servicios</loc>
-    <lastmod>2026-03-15</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.75</priority>
   </url>
 
 </urlset>
