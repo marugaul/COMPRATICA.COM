@@ -141,14 +141,13 @@ $stmt = $pdo->prepare("
 $stmt->execute([$userId]);
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Obtener pedidos recientes
+// Obtener todos los pedidos con detalle completo
 $stmt = $pdo->prepare("
-    SELECT o.*, p.name as product_name
+    SELECT o.*, p.name as product_name, p.price as product_price
     FROM entrepreneur_orders o
     JOIN entrepreneur_products p ON o.product_id = p.id
     WHERE o.seller_user_id = ?
     ORDER BY o.created_at DESC
-    LIMIT 10
 ");
 $stmt->execute([$userId]);
 $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -2303,10 +2302,9 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             <?php endif; ?>
         </div>
 
-        <div class="section" data-tab="resumen">
+        <div class="section" data-tab="resumen" id="orders-section">
             <div class="section-header">
-                <h2><i class="fas fa-receipt"></i> Pedidos Recientes</h2>
-                <a href="emprendedoras-orders.php" class="btn-primary">Ver todos</a>
+                <h2><i class="fas fa-receipt"></i> Pedidos <span style="font-size:.85rem;font-weight:500;color:#6b7280;">(<?= count($orders) ?> total<?= count($orders) !== 1 ? 'es' : '' ?>)</span></h2>
             </div>
 
             <?php if (empty($orders)): ?>
@@ -2316,34 +2314,68 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                     <p>Los pedidos de tus productos aparecerán aquí</p>
                 </div>
             <?php else: ?>
+                <div style="overflow-x:auto;">
                 <table class="orders-table">
                     <thead>
                         <tr>
-                            <th>Pedido #</th>
+                            <th>#</th>
                             <th>Producto</th>
                             <th>Cliente</th>
+                            <th>Teléfono</th>
+                            <th>Email</th>
+                            <th>Cant.</th>
                             <th>Total</th>
                             <th>Estado</th>
+                            <th>Notas</th>
                             <th>Fecha</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($orders as $order): ?>
-                            <tr>
-                                <td>#<?php echo $order['id']; ?></td>
-                                <td><?php echo htmlspecialchars($order['product_name']); ?></td>
-                                <td><?php echo htmlspecialchars($order['buyer_name']); ?></td>
-                                <td>₡<?php echo number_format($order['total_price'], 0); ?></td>
-                                <td>
-                                    <span class="status-badge status-<?php echo $order['status']; ?>">
-                                        <?php echo ucfirst($order['status']); ?>
-                                    </span>
-                                </td>
-                                <td><?php echo date('d/m/Y', strtotime($order['created_at'])); ?></td>
-                            </tr>
+                        <?php
+                        $statusLabels = [
+                            'pending'    => ['label' => 'Pendiente',  'color' => '#f59e0b', 'bg' => '#fffbeb'],
+                            'paid'       => ['label' => 'Pagado',     'color' => '#10b981', 'bg' => '#ecfdf5'],
+                            'shipped'    => ['label' => 'Enviado',    'color' => '#3b82f6', 'bg' => '#eff6ff'],
+                            'delivered'  => ['label' => 'Entregado',  'color' => '#059669', 'bg' => '#d1fae5'],
+                            'cancelled'  => ['label' => 'Cancelado',  'color' => '#ef4444', 'bg' => '#fee2e2'],
+                            'completed'  => ['label' => 'Completado', 'color' => '#7c3aed', 'bg' => '#ede9fe'],
+                        ];
+                        foreach ($orders as $order):
+                            $st = $order['status'] ?? 'pending';
+                            $stInfo = $statusLabels[$st] ?? ['label' => ucfirst($st), 'color' => '#6b7280', 'bg' => '#f3f4f6'];
+                        ?>
+                        <tr>
+                            <td style="font-weight:700;color:#667eea;">#<?= $order['id'] ?></td>
+                            <td><?= htmlspecialchars($order['product_name']) ?></td>
+                            <td style="font-weight:600;"><?= htmlspecialchars($order['buyer_name'] ?? '—') ?></td>
+                            <td>
+                                <?php if (!empty($order['buyer_phone'])): ?>
+                                <a href="https://wa.me/506<?= preg_replace('/\D/','',$order['buyer_phone']) ?>"
+                                   target="_blank" style="color:#25d366;text-decoration:none;font-weight:600;">
+                                    <i class="fab fa-whatsapp"></i> <?= htmlspecialchars($order['buyer_phone']) ?>
+                                </a>
+                                <?php else: ?>—<?php endif; ?>
+                            </td>
+                            <td style="font-size:.82rem;color:#6b7280;"><?= htmlspecialchars($order['buyer_email'] ?? '—') ?></td>
+                            <td style="text-align:center;"><?= (int)($order['quantity'] ?? 1) ?></td>
+                            <td style="font-weight:700;">₡<?= number_format($order['total_price'] ?? 0, 0) ?></td>
+                            <td>
+                                <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700;
+                                    color:<?= $stInfo['color'] ?>;background:<?= $stInfo['bg'] ?>;">
+                                    <?= $stInfo['label'] ?>
+                                </span>
+                            </td>
+                            <td style="font-size:.82rem;color:#6b7280;max-width:160px;">
+                                <?= htmlspecialchars($order['notes'] ?? '') ?: '<span style="color:#d1d5db;">—</span>' ?>
+                            </td>
+                            <td style="white-space:nowrap;font-size:.82rem;color:#6b7280;">
+                                <?= date('d/m/Y H:i', strtotime($order['created_at'])) ?>
+                            </td>
+                        </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                </div>
             <?php endif; ?>
         </div>
     </div>
@@ -2392,7 +2424,12 @@ $currentStep = $onboardingSteps[$currentStepIdx];
 
         function showTab(name, btn) {
             document.querySelectorAll('[data-tab]').forEach(function(el) {
-                el.style.display = el.dataset.tab === name ? '' : 'none';
+                if (el.dataset.tab === name) {
+                    // Forzar display explícito para vencer la regla CSS
+                    el.style.display = el.classList.contains('stats-grid') ? 'grid' : 'block';
+                } else {
+                    el.style.display = 'none';
+                }
             });
             document.querySelectorAll('.tab-btn').forEach(function(b) {
                 b.classList.remove('active');
