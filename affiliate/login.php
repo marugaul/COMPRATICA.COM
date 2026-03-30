@@ -162,9 +162,11 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
 
     // Exchange code for access token
     $tokenUrl = 'https://oauth2.googleapis.com/token';
-    $redirectUri = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http')
-                 . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+    $redirectUri = ($__isHttps ? 'https' : 'http')
+                 . '://' . ($host ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'))
                  . '/affiliate/login.php';
+
+    logDebug("OAUTH_REDIRECT_URI", ['redirect_uri' => $redirectUri, 'isHttps' => $__isHttps, 'host' => $host]);
 
     $postData = [
       'code' => $code,
@@ -184,7 +186,8 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
     curl_close($ch);
 
     if ($httpCode !== 200) {
-      throw new RuntimeException('Error al obtener token de Google');
+      logDebug("OAUTH_TOKEN_ERROR", ['http_code' => $httpCode, 'response' => $response]);
+      throw new RuntimeException('Error al obtener token de Google (HTTP ' . $httpCode . ')');
     }
 
     $tokenData = json_decode($response, true);
@@ -623,8 +626,8 @@ logDebug("RENDERING_LOGIN_FORM", ['has_error_msg' => !empty($msg)]);
     // OAuth Google - Generar URL
     $googleAuthUrl = '';
     if (!empty(GOOGLE_CLIENT_ID)) {
-      $redirectUri = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http')
-                   . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+      $redirectUri = ($__isHttps ? 'https' : 'http')
+                   . '://' . ($host ?: ($_SERVER['HTTP_HOST'] ?? 'localhost'))
                    . '/affiliate/login.php';
 
       $params = [

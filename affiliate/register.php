@@ -12,6 +12,14 @@ if (file_exists(__DIR__ . '/../includes/mailer.php')) {
 if (session_status() === PHP_SESSION_NONE) session_start();
 $pdo = db();
 
+// Detectar HTTPS (incluyendo Cloudflare y proxies inversos)
+$__isHttps = false;
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') $__isHttps = true;
+if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') $__isHttps = true;
+if (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') $__isHttps = true;
+if (!empty($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], '"scheme":"https"') !== false) $__isHttps = true;
+$__regHost = $_SERVER['HTTP_HOST'] ?? '';
+
 // ============================================
 // OAUTH GOOGLE - Callback Handler
 // ============================================
@@ -26,8 +34,8 @@ if (isset($_GET['code']) && !empty($_GET['code'])) {
 
     // Exchange code for access token
     $tokenUrl = 'https://oauth2.googleapis.com/token';
-    $redirectUri = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http')
-                 . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+    $redirectUri = ($__isHttps ? 'https' : 'http')
+                 . '://' . ($__regHost ?: 'localhost')
                  . '/affiliate/register.php';
 
     $postData = [
