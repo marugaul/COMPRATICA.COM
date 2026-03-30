@@ -1013,6 +1013,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             <button class="tab-btn" onclick="showTab('puesto',this)"><i class="fas fa-store"></i> Mi Puesto</button>
             <button class="tab-btn" onclick="showTab('envios',this)"><i class="fas fa-truck"></i> Envíos</button>
             <button class="tab-btn" onclick="showTab('pagos',this)"><i class="fas fa-credit-card"></i> Pagos</button>
+            <button class="tab-btn" onclick="showTab('pedidos',this)"><i class="fas fa-receipt"></i> Pedidos</button>
             <button class="tab-btn" onclick="showTab('live',this)"><i class="fas fa-broadcast-tower"></i> En Vivo</button>
             <a href="emprendedoras-producto-crear.php" class="tab-btn tab-create"><i class="fas fa-plus"></i> Nuevo Producto</a>
         </div>
@@ -2315,7 +2316,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             <?php endif; ?>
         </div>
 
-        <div class="section" data-tab="resumen" id="orders-section">
+        <div class="section" data-tab="pedidos" id="orders-section">
             <div class="section-header">
                 <h2><i class="fas fa-receipt"></i> Pedidos <span style="font-size:.85rem;font-weight:500;color:#6b7280;">(<?= count($orders) ?> total<?= count($orders) !== 1 ? 'es' : '' ?>)</span></h2>
             </div>
@@ -2487,6 +2488,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
             'tab-envios':    'envios',
             'tab-pagos':     'pagos',
             'tab-live':      'live',
+            'tab-pedidos':   'pedidos',
         };
 
         function showTab(name, btn) {
