@@ -133,7 +133,7 @@ if (!$sale_id || $sale_id <= 0) {
 }
 
 $stmt = $pdo->prepare("
-    SELECT s.*, a.name AS affiliate_name
+    SELECT s.*, a.name AS affiliate_name, a.phone AS affiliate_phone
     FROM sales s
     JOIN affiliates a ON a.id = s.affiliate_id
     WHERE s.id = ? AND s.is_active = 1
@@ -266,6 +266,7 @@ foreach ($_SESSION['cart'] as $it) {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= h($sale['title']) ?> - <?= h($APP_NAME) ?></title>
   <meta name="description" content="Venta de garaje de <?= h($sale['affiliate_name']) ?> en CompraTica. Encuentra productos usados y nuevos con pago por SINPE en Costa Rica.">
@@ -304,13 +305,13 @@ foreach ($_SESSION['cart'] as $it) {
     --gray-500: #718096;
     --gray-300: #cbd5e0;
     --gray-100: #f7fafc;
-    --white: #ffff;
-    --bg-primary: #f8f9fa;
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
-    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    --radius: 8px;
+    --white: #ffffff;
+    --bg-primary: #f0f2f5;
+    --shadow-sm: 0 1px 3px 0 rgba(0,0,0,.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+    --shadow-lg: 0 12px 24px rgba(0,0,0,.10);
+    --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius: 10px;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -487,40 +488,141 @@ foreach ($_SESSION['cart'] as $it) {
 
     /* HERO SECTION */
     .hero {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    background: linear-gradient(135deg, #1a2a3a 0%, #2c3e50 60%, #3d5a70 100%);
     color: var(--white);
-    padding: 3rem 2rem;
+    padding: 2.75rem 2rem 2.5rem;
     text-align: center;
-    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+    }
+    .hero::before {
+    content:'';
+    position:absolute;
+    inset:0;
+    background: radial-gradient(ellipse at 70% 50%, rgba(52,152,219,.18) 0%, transparent 65%);
+    pointer-events:none;
     }
 
     .hero-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 0.75rem;
-    letter-spacing: -0.02em;
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
     }
 
-    .hero-subtitle {
-    font-size: 1.25rem;
-    opacity: 0.9;
-    margin-bottom: 0.5rem;
+    .hero-seller {
+    font-size: 1rem;
+    opacity: 0.75;
+    margin-bottom: 1.25rem;
+    font-weight: 500;
+    letter-spacing: .01em;
     }
+
+    .hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    }
+
+    .hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: var(--transition);
+    border: none;
+    cursor: pointer;
+    }
+    .hero-btn.whatsapp { background: #25D366; color: #fff; }
+    .hero-btn.whatsapp:hover { background: #1da952; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37,211,102,.35); }
+    .hero-btn.outline { background: rgba(255,255,255,.12); color: #fff; border: 1.5px solid rgba(255,255,255,.35); }
+    .hero-btn.outline:hover { background: rgba(255,255,255,.22); transform: translateY(-2px); }
 
     .hero-info {
     display: flex;
     justify-content: center;
-    gap: 2rem;
-    margin-top: 1.5rem;
+    gap: 1.5rem;
     flex-wrap: wrap;
     }
 
     .hero-info-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    opacity: 0.95;
+    gap: 0.45rem;
+    font-size: 0.9rem;
+    opacity: 0.85;
+    background: rgba(255,255,255,.08);
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.12);
+    }
+
+    /* SEARCH + SORT BAR */
+    .products-controls {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    }
+
+    .search-wrap {
+    flex: 1;
+    min-width: 180px;
+    position: relative;
+    }
+    .search-wrap i {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-500);
+    font-size: 0.95rem;
+    pointer-events: none;
+    }
+    .search-input {
+    width: 100%;
+    padding: 0.65rem 1rem 0.65rem 2.5rem;
+    border: 1.5px solid var(--gray-300);
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    background: var(--white);
+    color: var(--gray-900);
+    outline: none;
+    transition: var(--transition);
+    font-family: inherit;
+    }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(52,152,219,.12); }
+
+    .sort-select {
+    padding: 0.65rem 2rem 0.65rem 0.9rem;
+    border: 1.5px solid var(--gray-300);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    background: var(--white);
+    color: var(--gray-700);
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23718096' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    transition: var(--transition);
+    }
+    .sort-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(52,152,219,.12); }
+
+    .products-count-label {
+    font-size: 0.9rem;
+    color: var(--gray-500);
+    white-space: nowrap;
     }
 
     /* CONTAINER */
@@ -553,13 +655,13 @@ foreach ($_SESSION['cart'] as $it) {
 
     .products-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
     }
 
     .product-card {
     background: var(--white);
-    border: 1px solid var(--gray-300);
+    border: 1px solid #e2e8f0;
     border-radius: var(--radius);
     overflow: hidden;
     transition: var(--transition);
@@ -569,8 +671,25 @@ foreach ($_SESSION['cart'] as $it) {
     }
 
     .product-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-3px);
     box-shadow: var(--shadow-lg);
+    border-color: #cbd5e0;
+    }
+
+    .product-card[data-hidden="true"] { display: none; }
+
+    /* Categoría badge */
+    .product-category-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--accent);
+    background: rgba(52,152,219,.1);
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin-bottom: 0.4rem;
     }
 
     /* GALERÍA ESTILO EBAY */
@@ -1041,27 +1160,24 @@ foreach ($_SESSION['cart'] as $it) {
     }
 
     @media (max-width: 768px) {
-    .container {
-    padding: 1rem;
+    .container { padding: 1rem; }
+    .hero { padding: 1.75rem 1rem 1.5rem; }
+    .hero-title { font-size: 1.6rem; }
+    .hero-seller { font-size: 0.9rem; }
+    .hero-info { gap: 0.5rem; }
+    .hero-info-item { font-size: 0.8rem; padding: 0.3rem 0.65rem; }
+    .products-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    .product-image { height: 180px; }
+    .gallery-main-wrapper { min-height: 180px; }
+    .product-body { padding: 0.85rem; }
+    .product-name { font-size: 0.95rem; }
+    .product-price { font-size: 1.2rem; }
+    .products-controls { gap: 0.5rem; }
+    .sort-select { font-size: 0.85rem; padding: 0.6rem 1.75rem 0.6rem 0.75rem; }
+    .toast { bottom: 1rem; right: 1rem; left: 1rem; }
     }
-    .hero {
-    padding: 2rem 1rem;
-    }
-    .hero-title {
-    font-size: 1.75rem;
-    }
-    .hero-subtitle {
-    font-size: 1rem;
-    }
-    .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1rem;
-    }
-    .toast {
-    bottom: 1rem;
-    right: 1rem;
-    left: 1rem;
-    }
+    @media (max-width: 400px) {
+    .products-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -1173,23 +1289,35 @@ foreach ($_SESSION['cart'] as $it) {
 <!-- HERO SECTION -->
 <section class="hero">
   <h1 class="hero-title"><?= h($sale['title']) ?></h1>
-  <p class="hero-subtitle"><?= h($sale['affiliate_name']) ?></p>
+  <p class="hero-seller"><i class="fas fa-user-circle" style="opacity:.6;margin-right:4px;"></i><?= h($sale['affiliate_name']) ?></p>
+
+  <div class="hero-actions">
+    <?php if (!empty($sale['affiliate_phone'])): ?>
+      <?php $waPhone = preg_replace('/\D/', '', $sale['affiliate_phone']); ?>
+      <a href="https://wa.me/506<?= $waPhone ?>?text=<?= urlencode('Hola, vi tu venta de garaje "' . $sale['title'] . '" en CompraTica y me interesa un producto.') ?>"
+         target="_blank" rel="noopener" class="hero-btn whatsapp">
+        <i class="fab fa-whatsapp"></i> Contactar vendedor
+      </a>
+    <?php endif; ?>
+    <a href="venta-garaje" class="hero-btn outline">
+      <i class="fas fa-store"></i> Ver más ventas
+    </a>
+  </div>
+
   <div class="hero-info">
     <div class="hero-info-item">
-    <i class="fas fa-calendar"></i>
-    <?= date('d/m/Y', strtotime($sale['start_at'])) ?> - <?= date('d/m/Y', strtotime($sale['end_at'])) ?>
+      <i class="fas fa-boxes"></i>
+      <?= count($products) ?> producto<?= count($products) !== 1 ? 's' : '' ?>
     </div>
     <div class="hero-info-item">
-    <i class="fas fa-boxes"></i>
-    <?= count($products) ?> productos
+      <i class="fas fa-calendar-alt"></i>
+      <?= date('d/m/Y', strtotime($sale['start_at'])) ?> – <?= date('d/m/Y', strtotime($sale['end_at'])) ?>
     </div>
-
-    <!-- CONTADOR: agregado aquí (no altera diseño existente) -->
     <div class="hero-info-item countdown-item"
          data-start="<?= h(date('d/m/Y H:i:s', strtotime($sale['start_at']))) ?>"
          data-end="<?= h(date('d/m/Y H:i:s', strtotime($sale['end_at']))) ?>">
       <i class="fas fa-hourglass-half"></i>
-      <span class="countdown-text">calculando...</span>
+      <span class="countdown-text">…</span>
     </div>
   </div>
 </section>
@@ -1197,8 +1325,21 @@ foreach ($_SESSION['cart'] as $it) {
 <!-- PRODUCTS -->
 <div class="container">
   <div class="products-header">
-    <h2 class="products-title">Productos Disponibles</h2>
-    <span class="products-count"><?= count($products) ?> productos</span>
+    <h2 class="products-title">Productos</h2>
+  </div>
+
+  <div class="products-controls">
+    <div class="search-wrap">
+      <i class="fas fa-search"></i>
+      <input type="text" id="searchInput" class="search-input" placeholder="Buscar producto…" oninput="filterProducts()">
+    </div>
+    <select id="sortSelect" class="sort-select" onchange="filterProducts()">
+      <option value="default">Orden original</option>
+      <option value="price-asc">Precio: menor a mayor</option>
+      <option value="price-desc">Precio: mayor a menor</option>
+      <option value="name-asc">Nombre A–Z</option>
+    </select>
+    <span id="resultsCount" class="products-count-label"><?= count($products) ?> productos</span>
   </div>
 
   <?php if (empty($products)): ?>
@@ -1228,7 +1369,12 @@ foreach ($_SESSION['cart'] as $it) {
       $images[] = 'assets/placeholder.jpg';
     }
     ?>
-    <div id="product-<?= (int)$product['id'] ?>" class="product-card <?= $isOutOfStock ? 'out-of-stock' : '' ?>" data-product-id="<?= (int)$product['id'] ?>">
+    <div id="product-<?= (int)$product['id'] ?>"
+         class="product-card <?= $isOutOfStock ? 'out-of-stock' : '' ?>"
+         data-product-id="<?= (int)$product['id'] ?>"
+         data-name="<?= h(strtolower($product['name'] . ' ' . ($product['description'] ?? ''))) ?>"
+         data-price="<?= (float)$product['price'] ?>"
+         data-currency="<?= h($product['currency']) ?>">
     <!-- Galería de imágenes estilo eBay -->
     <div class="product-image-gallery">
       <?php if (count($images) > 1): ?>
@@ -1240,6 +1386,7 @@ foreach ($_SESSION['cart'] as $it) {
               class="gallery-thumb <?= $idx === 0 ? 'active' : '' ?>"
               data-index="<?= $idx ?>"
               onclick="switchImage(this)"
+              onerror="this.src='/assets/img/placeholder-product.svg'"
             >
           <?php endforeach; ?>
         </div>
@@ -1252,6 +1399,7 @@ foreach ($_SESSION['cart'] as $it) {
           alt="<?= h($product['name']) ?>"
           class="product-image"
           loading="lazy"
+          onerror="this.src='/assets/img/placeholder-product.svg'"
           data-images='<?= json_encode($images, JSON_HEX_QUOT | JSON_HEX_APOS) ?>'
         >
         <div class="zoom-icon">
@@ -1261,6 +1409,9 @@ foreach ($_SESSION['cart'] as $it) {
       </div>
     </div>
     <div class="product-body">
+    <?php if (!empty($product['category'])): ?>
+      <span class="product-category-badge"><?= h($product['category']) ?></span>
+    <?php endif; ?>
     <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem;">
       <h3 class="product-name" style="margin-bottom: 0;"><?= h($product['name']) ?></h3>
 
@@ -1675,6 +1826,61 @@ document.querySelectorAll('.btn-add-cart').forEach(button => {
 
 // Cargar badge al inicio
 updateCartBadge();
+
+// ========== BÚSQUEDA Y ORDENAMIENTO ==========
+function filterProducts() {
+  const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  const sort = document.getElementById('sortSelect').value;
+  const grid = document.querySelector('.products-grid');
+  const cards = [...grid.querySelectorAll('.product-card')];
+
+  // Filtrar
+  let visible = cards.filter(card => {
+    const name = (card.dataset.name || '').toLowerCase();
+    const match = !q || name.includes(q);
+    card.dataset.hidden = match ? 'false' : 'true';
+    return match;
+  });
+
+  // Ordenar
+  if (sort !== 'default') {
+    visible.sort((a, b) => {
+      if (sort === 'price-asc' || sort === 'price-desc') {
+        const pa = parseFloat(a.dataset.price) || 0;
+        const pb = parseFloat(b.dataset.price) || 0;
+        return sort === 'price-asc' ? pa - pb : pb - pa;
+      }
+      if (sort === 'name-asc') {
+        return (a.dataset.name || '').localeCompare(b.dataset.name || '', 'es');
+      }
+      return 0;
+    });
+    visible.forEach(c => grid.appendChild(c));
+  }
+
+  // Contador
+  const countEl = document.getElementById('resultsCount');
+  if (countEl) {
+    const total = cards.length;
+    countEl.textContent = visible.length === total
+      ? `${total} producto${total !== 1 ? 's' : ''}`
+      : `${visible.length} de ${total} producto${total !== 1 ? 's' : ''}`;
+  }
+
+  // Empty state dinámico
+  let emptyMsg = grid.querySelector('.search-empty');
+  if (visible.length === 0) {
+    if (!emptyMsg) {
+      emptyMsg = document.createElement('p');
+      emptyMsg.className = 'search-empty';
+      emptyMsg.style.cssText = 'grid-column:1/-1;text-align:center;padding:3rem;color:#718096;font-size:1.05rem;';
+      emptyMsg.innerHTML = '<i class="fas fa-search" style="display:block;font-size:2rem;margin-bottom:.75rem;opacity:.4;"></i>Sin resultados para "<strong>' + q + '</strong>"';
+      grid.appendChild(emptyMsg);
+    }
+  } else if (emptyMsg) {
+    emptyMsg.remove();
+  }
+}
 </script>
 
 <!-- SCRIPT DEL CONTADOR (soporta múltiples elementos y usa start/end) -->
