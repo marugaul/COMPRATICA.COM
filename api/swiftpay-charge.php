@@ -116,6 +116,8 @@ try {
         // Elegir flujo según tabla de referencia
         if ($refTable === 'entrepreneur_orders') {
             $redirectUrl = crearOrdenEmprendedoraSwiftPay($pdo, $result, $refId, $customerPhone, $deliveryNotes);
+        } elseif ($refTable === 'real_estate_listings') {
+            $redirectUrl = crearOrdenRealEstateSwiftPay($pdo, $result, $refId);
         } else {
             $redirectUrl = crearOrdenSwiftPay($pdo, $result, $customerPhone, $deliveryNotes);
         }

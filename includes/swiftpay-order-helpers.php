@@ -338,3 +338,25 @@ function crearOrdenEmprendedoraSwiftPay(PDO $pdo, SwiftPayResult $result, int $s
 
     return '/emprendedoras-checkout.php?payment=ok';
 }
+
+// ══════════════════════════════════════════════════════════════════════
+// Activa una publicación de Bienes Raíces tras pago SwiftPay aprobado.
+// ══════════════════════════════════════════════════════════════════════
+function crearOrdenRealEstateSwiftPay(PDO $pdo, SwiftPayResult $result, int $listingId): string
+{
+    try {
+        $pdo->prepare("
+            UPDATE real_estate_listings
+            SET payment_status = 'confirmed',
+                is_active      = 1,
+                payment_id     = ?,
+                payment_date   = datetime('now'),
+                updated_at     = datetime('now')
+            WHERE id = ?
+        ")->execute([$result->txId ?? $result->orderId ?? '', $listingId]);
+    } catch (Throwable $e) {
+        error_log('[swiftpay-order-helpers] real_estate update error: ' . $e->getMessage());
+    }
+
+    return '/real-estate/dashboard.php?msg=payment_success';
+}
