@@ -195,6 +195,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
     }
+
+    if ($action === 'deactivate_listing') {
+        $listing_id = (int)($_POST['listing_id'] ?? 0);
+        if ($listing_id > 0) {
+            try {
+                $pdo->prepare("UPDATE real_estate_listings SET is_active = 0, updated_at = datetime('now') WHERE id = ?")
+                    ->execute([$listing_id]);
+                $msg = "✅ Publicación desactivada.";
+                $msgType = 'success';
+            } catch (Exception $e) {
+                $msg = "❌ Error: " . $e->getMessage();
+                $msgType = 'error';
+            }
+        }
+    }
+
+    if ($action === 'activate_listing') {
+        $listing_id = (int)($_POST['listing_id'] ?? 0);
+        if ($listing_id > 0) {
+            try {
+                $pdo->prepare("UPDATE real_estate_listings SET is_active = 1, updated_at = datetime('now') WHERE id = ?")
+                    ->execute([$listing_id]);
+                $msg = "✅ Publicación activada.";
+                $msgType = 'success';
+            } catch (Exception $e) {
+                $msg = "❌ Error: " . $e->getMessage();
+                $msgType = 'error';
+            }
+        }
+    }
+
+    if ($action === 'delete_listing') {
+        $listing_id = (int)($_POST['listing_id'] ?? 0);
+        if ($listing_id > 0) {
+            try {
+                $pdo->prepare("DELETE FROM real_estate_listings WHERE id = ?")
+                    ->execute([$listing_id]);
+                $msg = "✅ Publicación eliminada.";
+                $msgType = 'success';
+            } catch (Exception $e) {
+                $msg = "❌ Error: " . $e->getMessage();
+                $msgType = 'error';
+            }
+        }
+    }
 }
 
 // Cargar todos los planes
@@ -221,6 +266,22 @@ $pending_listings = $pdo->query("
     LEFT JOIN listing_pricing p ON l.pricing_plan_id = p.id
     LEFT JOIN real_estate_agents a ON l.agent_id = a.id
     WHERE l.payment_status IN ('pending', 'pending_review')
+    ORDER BY l.created_at DESC
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// Cargar TODAS las publicaciones (activas, expiradas, rechazadas)
+$all_listings = $pdo->query("
+    SELECT
+        l.*,
+        p.name as plan_name,
+        p.duration_days,
+        a.name as agent_name,
+        a.email as agent_email,
+        a.phone as agent_phone
+    FROM real_estate_listings l
+    LEFT JOIN listing_pricing p ON l.pricing_plan_id = p.id
+    LEFT JOIN real_estate_agents a ON l.agent_id = a.id
+    WHERE l.payment_status NOT IN ('pending', 'pending_review')
     ORDER BY l.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -745,6 +806,112 @@ $pending_listings = $pdo->query("
   </div>
   <?php endif; ?>
 
+  <!-- Todas las publicaciones -->
+  <div class="section">
+    <h2 class="section-title">
+      <i class="fas fa-home"></i>
+      Todas las Publicaciones
+      <span class="badge info" style="margin-left:1rem"><?= count($all_listings) ?> publicaciones</span>
+    </h2>
+    <?php if (empty($all_listings)): ?>
+      <p style="color:var(--gray-600);padding:1rem">No hay publicaciones registradas.</p>
+    <?php else: ?>
+    <div style="margin-bottom:1rem">
+      <input type="text" id="listingSearch" onkeyup="filterListings()" placeholder="Buscar por título, agente..." style="padding:.6rem 1rem;border:1px solid var(--gray-300);border-radius:8px;width:280px;font-size:.9rem">
+    </div>
+    <div class="table-wrap">
+      <table class="table" id="listingsTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Propiedad</th>
+            <th>Agente</th>
+            <th>Plan</th>
+            <th>Estado</th>
+            <th>Pago</th>
+            <th>Creado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($all_listings as $l): ?>
+          <?php
+            $isActive  = (bool)$l['is_active'];
+            $payStatus = $l['payment_status'] ?? '';
+            $rowBg = '';
+            if ($isActive)                    $rowBg = 'background:rgba(39,174,96,.04)';
+            elseif ($payStatus === 'rejected') $rowBg = 'background:rgba(231,76,60,.04)';
+          ?>
+          <tr style="<?= $rowBg ?>">
+            <td><strong><?= $l['id'] ?></strong></td>
+            <td>
+              <strong><?= h($l['title']) ?></strong>
+              <?php if (!empty($l['property_type'])): ?>
+                <br><small style="color:var(--gray-600)"><?= h($l['property_type']) ?> · <?= h($l['operation_type'] ?? '') ?></small>
+              <?php endif; ?>
+            </td>
+            <td>
+              <strong><?= h($l['agent_name']) ?></strong>
+              <br><small style="color:var(--gray-600)"><?= h($l['agent_email']) ?></small>
+              <?php if ($l['agent_phone']): ?>
+                <br><small style="color:var(--gray-600)"><i class="fas fa-phone"></i> <?= h($l['agent_phone']) ?></small>
+              <?php endif; ?>
+            </td>
+            <td><small><?= h($l['plan_name'] ?? '—') ?></small></td>
+            <td>
+              <?php if ($isActive): ?>
+                <span class="badge success"><i class="fas fa-check"></i> Activa</span>
+              <?php elseif ($payStatus === 'rejected'): ?>
+                <span class="badge danger"><i class="fas fa-times"></i> Rechazada</span>
+              <?php elseif ($payStatus === 'free'): ?>
+                <span class="badge info">Gratuita</span>
+              <?php else: ?>
+                <span class="badge" style="background:#e2e8f0;color:#4a5568">Inactiva</span>
+              <?php endif; ?>
+            </td>
+            <td>
+              <?php
+                $pBadge = [
+                  'confirmed' => ['success', 'Confirmado'],
+                  'free'      => ['info',    'Gratis'],
+                  'rejected'  => ['danger',  'Rechazado'],
+                  'pending'   => ['warning', 'Pendiente'],
+                  'pending_review' => ['warning', 'En revisión'],
+                ];
+                [$bc, $bl] = $pBadge[$payStatus] ?? ['', $payStatus];
+              ?>
+              <span class="badge <?= $bc ?>"><?= $bl ?></span>
+            </td>
+            <td><small><?= date('d/m/Y', strtotime($l['created_at'])) ?></small></td>
+            <td>
+              <?php if ($isActive): ?>
+                <form method="post" style="display:inline" onsubmit="return confirm('¿Desactivar esta publicación?')">
+                  <input type="hidden" name="action" value="deactivate_listing">
+                  <input type="hidden" name="listing_id" value="<?= $l['id'] ?>">
+                  <button class="btn warning" type="submit" title="Desactivar"><i class="fas fa-pause"></i> Desactivar</button>
+                </form>
+              <?php else: ?>
+                <form method="post" style="display:inline" onsubmit="return confirm('¿Activar esta publicación?')">
+                  <input type="hidden" name="action" value="activate_listing">
+                  <input type="hidden" name="listing_id" value="<?= $l['id'] ?>">
+                  <button class="btn success" type="submit" title="Activar"><i class="fas fa-play"></i> Activar</button>
+                </form>
+              <?php endif; ?>
+              <a href="/propiedad-detalle?id=<?= $l['id'] ?>" class="btn" target="_blank" title="Ver publicación" style="display:inline-flex;align-items:center;gap:.3rem;margin-left:.3rem"><i class="fas fa-eye"></i></a>
+              <form method="post" style="display:inline;margin-left:.3rem" onsubmit="return confirm('¿ELIMINAR permanentemente esta publicación?')">
+                <input type="hidden" name="action" value="delete_listing">
+                <input type="hidden" name="listing_id" value="<?= $l['id'] ?>">
+                <button class="btn danger" type="submit" title="Eliminar"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+    <?php endif; ?>
+  </div>
+
   <!-- Botón para crear nuevo plan -->
   <div class="section">
     <button class="btn primary" onclick="openModal('create')">
@@ -982,6 +1149,13 @@ document.getElementById('planModal').addEventListener('click', function(e) {
     closeModal();
   }
 });
+
+function filterListings() {
+  const q = document.getElementById('listingSearch').value.toLowerCase();
+  document.querySelectorAll('#listingsTable tbody tr').forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
 </script>
 
 </body>
