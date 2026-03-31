@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#f1f5f9"/>
+  <g opacity=".35">
+    <rect x="155" y="95" width="90" height="75" rx="6" fill="none" stroke="#94a3b8" stroke-width="3"/>
+    <circle cx="175" cy="115" r="8" fill="#94a3b8"/>
+    <polyline points="155,155 185,130 210,148 235,120 245,170" fill="none" stroke="#94a3b8" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+  <text x="200" y="200" text-anchor="middle" fill="#94a3b8" font-family="sans-serif" font-size="13">Sin imagen</text>
+</svg>
