@@ -266,6 +266,7 @@ foreach ($_SESSION['cart'] as $it) {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= h($sale['title']) ?> - <?= h($APP_NAME) ?></title>
   <meta name="description" content="Venta de garaje de <?= h($sale['affiliate_name']) ?> en CompraTica. Encuentra productos usados y nuevos con pago por SINPE en Costa Rica.">
