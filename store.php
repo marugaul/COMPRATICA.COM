@@ -146,8 +146,48 @@ logStore('SALE_QUERY_EXECUTED', ['found' => $sale ? 'yes' : 'no']);
 
 if (!$sale) {
     logStore('ERROR_SALE_NOT_FOUND', ['sale_id' => $sale_id]);
-    http_response_code(404);
-    echo 'Espacio no encontrado o inactivo';
+    // Verificar si existe pero está inactivo
+    $checkStmt = $pdo->prepare("SELECT title, is_active FROM sales WHERE id = ? LIMIT 1");
+    $checkStmt->execute([$sale_id]);
+    $inactiveSale = $checkStmt->fetch(PDO::FETCH_ASSOC);
+    if ($inactiveSale && !$inactiveSale['is_active']) {
+        // Existe pero está inactivo: mostrar página de "Venta finalizada"
+        http_response_code(404);
+        ?><!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espacio no disponible – CompraTica</title>
+  <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:system-ui,sans-serif;background:#f0f2f5;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
+    .card{background:#fff;border-radius:16px;padding:3rem 2.5rem;max-width:460px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.08)}
+    .icon{font-size:3.5rem;margin-bottom:1.25rem;color:#cbd5e0}
+    h1{font-size:1.5rem;font-weight:700;color:#2d3748;margin-bottom:.75rem}
+    p{color:#718096;font-size:1rem;line-height:1.6;margin-bottom:1.75rem}
+    .badge{display:inline-flex;align-items:center;gap:.5rem;background:#fff7ed;color:#c05621;border:1px solid #fbd38d;border-radius:999px;padding:.4rem 1rem;font-size:.85rem;font-weight:600;margin-bottom:1.5rem}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.75rem;background:#2c3e50;color:#fff;text-decoration:none;border-radius:999px;font-weight:600;font-size:.95rem;transition:background .2s}
+    .btn:hover{background:#34495e}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon"><i class="fas fa-store-slash"></i></div>
+    <span class="badge"><i class="fas fa-clock"></i> Venta finalizada</span>
+    <h1><?= htmlspecialchars($inactiveSale['title'], ENT_QUOTES) ?></h1>
+    <p>Esta venta de garaje ya no está activa. Podés explorar otras ventas disponibles en CompraTica.</p>
+    <a href="/venta-garaje" class="btn"><i class="fas fa-store"></i> Ver ventas activas</a>
+  </div>
+</body>
+</html><?php
+        exit;
+    }
+
+    // No existe: redirigir al catálogo
+    header('Location: /venta-garaje', true, 302);
     exit;
 }
 
