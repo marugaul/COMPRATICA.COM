@@ -55,6 +55,8 @@ try {
         // Crear orden igual que el flujo sin 3DS
         if ($refTable === 'entrepreneur_orders') {
             $redirectUrl = crearOrdenEmprendedoraSwiftPay($pdo, $result, $refId, $customerPhone, $deliveryNotes);
+        } elseif ($refTable === 'real_estate_listings') {
+            $redirectUrl = crearOrdenRealEstateSwiftPay($pdo, $result, $refId);
         } else {
             $redirectUrl = crearOrdenSwiftPay($pdo, $result, $customerPhone, $deliveryNotes);
         }

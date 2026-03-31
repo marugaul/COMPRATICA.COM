@@ -220,7 +220,7 @@ $pending_listings = $pdo->query("
     FROM real_estate_listings l
     LEFT JOIN listing_pricing p ON l.pricing_plan_id = p.id
     LEFT JOIN real_estate_agents a ON l.agent_id = a.id
-    WHERE l.payment_status = 'pending'
+    WHERE l.payment_status IN ('pending', 'pending_review')
     ORDER BY l.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -668,7 +668,13 @@ $pending_listings = $pdo->query("
             $payment_methods = explode(',', $listing['payment_methods'] ?? '');
           ?>
           <tr style="background: rgba(243, 156, 18, 0.05);">
-            <td><strong><?= $listing['id'] ?></strong></td>
+            <td><strong><?= $listing['id'] ?></strong>
+              <?php if (($listing['payment_status'] ?? '') === 'pending_review'): ?>
+                <br><span class="badge info" style="font-size:.7rem">Comprobante adjunto</span>
+              <?php else: ?>
+                <br><span class="badge warning" style="font-size:.7rem">Sin comprobante</span>
+              <?php endif; ?>
+            </td>
             <td>
               <strong><?= h($listing['title']) ?></strong>
               <br><small style="color: var(--gray-600);"><?= h(substr($listing['description'] ?? '', 0, 50)) ?>...</small>
