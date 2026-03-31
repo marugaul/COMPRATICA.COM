@@ -167,6 +167,12 @@ $products = $stProds->fetchAll(PDO::FETCH_ASSOC);
 // Carrito
 $empCartCount = 0;
 foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
+
+// Carrito de emprendedoras en el header (reemplaza el carrito estándar)
+$extra_nav_item = '<a href="/emprendedores-carrito.php" class="btn-icon" id="emp-cart-header-btn" title="Carrito" style="position:relative">'
+    . '<i class="fas fa-shopping-bag"></i>'
+    . '<span class="cart-badge" id="fab-count" style="' . ($empCartCount > 0 ? '' : 'display:none') . '">' . $empCartCount . '</span>'
+    . '</a>';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -174,7 +180,7 @@ foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($displayName) ?> | Mercadito Emprendedores</title>
-    <style>#cartButton{display:none!important;}</style>
+    <style>#cartButton{display:none!important;} .emp-cart-fab{display:none!important;}</style>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/compratica-header.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -850,10 +856,9 @@ window.camUnmute = function() {
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
 
-<a href="emprendedores-carrito.php" class="emp-cart-fab" id="emp-fab"
-   style="display:<?= $empCartCount > 0 ? 'flex' : 'none' ?>">
+<a href="emprendedores-carrito.php" class="emp-cart-fab" id="emp-fab">
     <i class="fas fa-shopping-bag"></i>
-    <span class="fab-count" id="fab-count"><?= $empCartCount ?></span>
+    <span class="fab-count"><?= $empCartCount ?></span>
 </a>
 <div class="catalog-toast" id="catalog-toast"></div>
 
@@ -872,9 +877,8 @@ function showToast(msg, ok) {
     setTimeout(() => t.classList.remove('show'), 3000);
 }
 function updateFab(count) {
-    const fab = document.getElementById('emp-fab');
-    document.getElementById('fab-count').textContent = count;
-    fab.style.display = count > 0 ? 'flex' : 'none';
+    const badge = document.getElementById('fab-count');
+    if (badge) { badge.textContent = count; badge.style.display = count > 0 ? '' : 'none'; }
 }
 function addToCart(pid, btn) {
     btn.disabled = true;

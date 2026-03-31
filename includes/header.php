@@ -11,6 +11,7 @@
     </div>
   </a>
   <nav class="header-nav">
+    <?php if (!empty($extra_nav_item)) echo $extra_nav_item; ?>
     <button class="btn-icon" id="cartButton" title="Carrito">
       <i class="fas fa-shopping-cart"></i>
       <span class="cart-badge" id="cartBadge"><?php echo $cantidadProductos; ?></span>
