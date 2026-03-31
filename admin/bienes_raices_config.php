@@ -597,9 +597,9 @@ $pending_listings = $pdo->query("
       <i class="fas fa-arrow-left"></i>
       <span>Volver al Dashboard</span>
     </a>
-    <a class="nav-btn" href="../real-estate/dashboard.php">
+    <a class="nav-btn" href="/bienes-raices.php" target="_blank">
       <i class="fas fa-building"></i>
-      <span>Ver Publicaciones</span>
+      <span>Ver Catálogo</span>
     </a>
     <a class="nav-btn" href="logout.php">
       <i class="fas fa-sign-out-alt"></i>
