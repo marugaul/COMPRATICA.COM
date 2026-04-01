@@ -143,6 +143,11 @@ if (!empty($sellers)) {
 $empCartCount = 0;
 foreach ($_SESSION['emp_cart'] ?? [] as $it) $empCartCount += (int)$it['qty'];
 
+$extra_nav_item = '<a href="/emprendedores-carrito.php" class="btn-icon" id="emp-cart-header-btn" title="Carrito" style="position:relative">'
+    . '<i class="fas fa-shopping-bag"></i>'
+    . '<span class="cart-badge" id="fab-count" style="' . ($empCartCount > 0 ? '' : 'display:none') . '">' . $empCartCount . '</span>'
+    . '</a>';
+
 // Paleta de toldos
 $awningPalette = [
     ['#ef4444','#dc2626'],
@@ -516,7 +521,7 @@ $awningPalette = [
 
         /* FAB carrito */
         .emp-cart-fab {
-            position: fixed; bottom: 28px; right: 28px; z-index: 999;
+            position: fixed; bottom: 28px; right: 28px; z-index: 999; display: none !important;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white; width: 62px; height: 62px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
@@ -1032,9 +1037,8 @@ function showToast(msg, ok) {
 }
 
 function updateFab(count) {
-    const fab = document.getElementById('emp-fab');
-    document.getElementById('fab-count').textContent = count;
-    fab.style.display = count > 0 ? 'flex' : 'none';
+    const badge = document.getElementById('fab-count');
+    if (badge) { badge.textContent = count; badge.style.display = count > 0 ? '' : 'none'; }
 }
 
 function addToCart(pid, btn) {
