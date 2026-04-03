@@ -46,7 +46,7 @@ try {
             ]);
             break;
 
-        // ── Previsualizar archivo ──────────────────────────────────────
+        // ── Previsualizar archivo (guarda en servidor, devuelve solo preview) ──
         case 'preview':
             $file = $_FILES['file'] ?? null;
             if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
@@ -57,27 +57,53 @@ try {
                 throw new RuntimeException('Formato no soportado. Usá .xlsx, .xls, .csv u .ods');
             }
 
+            // Guardar archivo en carpeta temporal del servidor
+            $tmpDir = sys_get_temp_dir() . '/importa_excel';
+            if (!is_dir($tmpDir)) mkdir($tmpDir, 0700, true);
+            // Limpiar archivos viejos (> 2h)
+            foreach (glob($tmpDir . '/*.json') as $old) {
+                if (filemtime($old) < time() - 7200) @unlink($old);
+            }
+            $fileId  = bin2hex(random_bytes(12));
+            $jsonPath = $tmpDir . '/' . $fileId . '.json';
+
             [$headers, $rows] = parseFile($file['tmp_name'], $ext);
+            $total = count($rows);
+
+            // Guardar todas las filas en JSON en disco
+            file_put_contents($jsonPath, json_encode(['headers'=>$headers,'rows'=>$rows]));
 
             echo json_encode([
                 'ok'         => true,
+                'file_id'    => $fileId,
                 'headers'    => $headers,
-                'rows'       => $rows,          // todas las filas para importación
-                'total_rows' => count($rows),
+                'preview'    => array_slice($rows, 0, 5),
+                'total_rows' => $total,
             ]);
             break;
 
-        // ── Importar lote ──────────────────────────────────────────────
+        // ── Importar lote (lee del archivo guardado en servidor) ───────
         case 'import_batch':
-            $rows         = json_decode($_POST['rows']    ?? '[]', true);
-            $colMap       = json_decode($_POST['col_map'] ?? '{}', true);
-            $tipoId       = (int)($_POST['tipo_correo_id'] ?? 0);
-            $skipDup      = ($_POST['skip_dup'] ?? '1') === '1';
+            $fileId  = preg_replace('/[^a-f0-9]/', '', $_POST['file_id'] ?? '');
+            $offset  = (int)($_POST['offset']  ?? 0);
+            $limit   = (int)($_POST['limit']   ?? 500);
+            $colMap  = json_decode($_POST['col_map'] ?? '{}', true);
+            $tipoId  = (int)($_POST['tipo_correo_id'] ?? 0);
+            $skipDup = ($_POST['skip_dup'] ?? '1') === '1';
 
-            if (empty($rows) || empty($colMap)) {
-                echo json_encode(['ok'=>true,'imported'=>0,'skipped'=>0,'errors'=>0]);
+            if (!$fileId || empty($colMap)) {
+                echo json_encode(['ok'=>true,'imported'=>0,'skipped'=>0,'errors'=>0,'done'=>true]);
                 break;
             }
+
+            $jsonPath = sys_get_temp_dir() . '/importa_excel/' . $fileId . '.json';
+            if (!file_exists($jsonPath)) {
+                throw new RuntimeException('Archivo temporal no encontrado. Volvé a subir el archivo.');
+            }
+
+            $data   = json_decode(file_get_contents($jsonPath), true);
+            $rows   = array_slice($data['rows'], $offset, $limit);
+            $done   = ($offset + $limit) >= count($data['rows']);
 
             $imported = $skipped = $errors = 0;
             $now = date('Y-m-d H:i:s');
@@ -114,7 +140,10 @@ try {
                 }
             }
 
-            echo json_encode(['ok'=>true,'imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors]);
+            // Borrar archivo temporal si terminamos
+            if ($done) @unlink($jsonPath);
+
+            echo json_encode(['ok'=>true,'imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors,'done'=>$done,'total'=>count($data['rows'])]);
             break;
 
         // ── Listar contactos ───────────────────────────────────────────
