@@ -290,6 +290,16 @@ function h($str) {
                     case 'setup-importa-excel':
                         include __DIR__ . '/email_marketing/setup_importa_excel.php';
                         break;
+                    case 'api-log':
+                        $logFile = __DIR__ . '/logs/importar_excel_api.log';
+                        echo '<div class="card"><div class="card-header"><i class="fas fa-file-alt"></i> Log API Importar Excel</div><div class="card-body">';
+                        echo '<a href="?page=api-log&clear=1" class="btn btn-sm btn-danger mb-3">Limpiar log</a> ';
+                        echo '<a href="?page=api-log" class="btn btn-sm btn-secondary mb-3">Recargar</a>';
+                        if (($_GET['clear'] ?? '') === '1') { @file_put_contents($logFile, ''); echo '<div class="alert alert-success">Log limpiado.</div>'; }
+                        echo '<pre style="max-height:600px;overflow:auto;background:#1e1e1e;color:#d4d4d4;padding:1rem;font-size:12px">';
+                        echo htmlspecialchars(file_exists($logFile) ? (file_get_contents($logFile) ?: '(vacío)') : '(archivo no existe aún)');
+                        echo '</pre></div></div>';
+                        break;
                     case 'importar-lugares':
                         include __DIR__ . '/email_marketing/importar_lugares.php';
                         break;
