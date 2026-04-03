@@ -23,7 +23,7 @@ $tipos = $pdo_mysql->query("SELECT id, nombre FROM tipos_correo ORDER BY nombre"
 // Estadísticas rápidas
 $total   = (int)$pdo_mysql->query("SELECT COUNT(*) FROM importa_excel")->fetchColumn();
 $porTipo = $pdo_mysql->query("
-    SELECT t.nombre, COUNT(i.id) AS cnt
+    SELECT t.id, t.nombre, COUNT(i.id) AS cnt
     FROM tipos_correo t
     LEFT JOIN importa_excel i ON i.tipo_correo_id = t.id
     GROUP BY t.id, t.nombre
