@@ -258,7 +258,8 @@ $porTipo = $pdo_mysql->query("
 </div><!-- /container -->
 
 <script>
-let parsedData   = [];   // filas del archivo (array de arrays)
+let parsedFileId = null; // ID del archivo guardado en servidor
+let parsedTotal  = 0;    // total de filas
 let parsedHeader = [];   // encabezados detectados
 
 // ── Previsualización del archivo ───────────────────────────────────────
@@ -279,7 +280,8 @@ async function previewFile() {
     const d  = await r.json();
     if (!d.ok) throw new Error(d.error || 'Error al procesar archivo');
 
-    parsedData   = d.rows;
+    parsedFileId = d.file_id;
+    parsedTotal  = d.total_rows;
     parsedHeader = d.headers;
 
     // Poblar selects de columnas
@@ -296,7 +298,7 @@ async function previewFile() {
       `Archivo: ${file.name} · ${parsedHeader.length} columnas · ${d.total_rows} filas`;
 
     // Renderizar tabla de preview (primeras 5 filas)
-    renderPreview(parsedHeader, parsedData.slice(0, 5), d.total_rows);
+    renderPreview(parsedHeader, d.preview, d.total_rows);
 
     document.getElementById('step2').style.display = '';
     document.getElementById('previewCount').textContent = d.total_rows + ' filas';
@@ -350,6 +352,8 @@ async function doImport() {
     return;
   }
 
+  if (!parsedFileId) { alert('Primero previsualiza el archivo.'); return; }
+
   const skipDup = document.getElementById('skipDuplicates').checked;
   const btn = document.getElementById('btnImport');
   btn.disabled = true;
@@ -360,27 +364,31 @@ async function doImport() {
   const progressText = document.getElementById('progressText');
   progressWrap.style.display = '';
 
-  const BATCH = 200;
+  const BATCH = 500;
   let imported = 0, skipped = 0, errors = 0;
-  const total  = parsedData.length;
+  let offset = 0, done = false, total = parsedTotal;
 
-  for (let i = 0; i < parsedData.length; i += BATCH) {
-    const batch = parsedData.slice(i, i + BATCH);
-    const pct   = Math.round(((i + batch.length) / total) * 100);
-    progressBar.style.width = pct + '%';
-    progressBar.textContent = pct + '%';
-    progressText.textContent = `Procesando ${Math.min(i + BATCH, total)} de ${total}...`;
+  while (!done) {
+    const pct = total > 0 ? Math.round(((offset + BATCH) / total) * 100) : 100;
+    progressBar.style.width = Math.min(pct, 100) + '%';
+    progressBar.textContent = Math.min(pct, 100) + '%';
+    progressText.textContent = `Procesando ${Math.min(offset + BATCH, total)} de ${total}...`;
 
     const fd = new FormData();
     fd.append('action', 'import_batch');
-    fd.append('rows',       JSON.stringify(batch));
-    fd.append('col_map',    JSON.stringify(colMap));
+    fd.append('file_id',        parsedFileId);
+    fd.append('offset',         offset);
+    fd.append('limit',          BATCH);
+    fd.append('col_map',        JSON.stringify(colMap));
     fd.append('tipo_correo_id', tipo);
-    fd.append('skip_dup',   skipDup ? '1' : '0');
+    fd.append('skip_dup',       skipDup ? '1' : '0');
 
     const r = await fetch('/admin/email_marketing_importar_excel_api.php', { method: 'POST', body: fd });
     const d = await r.json();
-    if (d.ok) { imported += d.imported; skipped += d.skipped; errors += d.errors; }
+    if (!d.ok) { errors += BATCH; }
+    else { imported += d.imported; skipped += d.skipped; errors += d.errors; total = d.total || total; }
+    done   = d.done || !d.ok;
+    offset += BATCH;
   }
 
   progressBar.classList.remove('progress-bar-animated');
@@ -401,7 +409,7 @@ async function doImport() {
 }
 
 function resetWizard() {
-  parsedData = []; parsedHeader = [];
+  parsedFileId = null; parsedTotal = 0; parsedHeader = [];
   document.getElementById('fileInput').value = '';
   document.getElementById('step2').style.display = 'none';
   document.getElementById('previewTable').innerHTML = '<div class="p-4 text-muted text-center small">Subí un archivo para ver una vista previa.</div>';
