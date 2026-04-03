@@ -16,17 +16,52 @@ echo "=== Composer Install - " . date('Y-m-d H:i:s') . " ===\n\n";
 if ($action === 'run') {
     if (!file_exists($composerPhar)) {
         echo "ERROR: composer.phar no encontrado en {$composerPhar}\n";
-        echo "Descárgalo primero con ?action=download\n";
+        $token = htmlspecialchars($_GET['token']);
+        echo "<a href='?token={$token}&action=download'>Descargar composer.phar</a>";
         echo "</pre>"; exit;
     }
     @unlink($logFile);
-    $cmd = "cd {$repoDir} && php composer.phar install --no-dev --no-interaction --no-progress --prefer-dist > {$logFile} 2>&1 &";
-    shell_exec($cmd);
-    echo "Composer corriendo en background...\n";
-    echo "Espera 60-90 segundos y recarga con ?action=log\n\n";
+    // Escribir script shell temporal para lanzar en background real
+    $shScript = $repoDir . '/composer_run.sh';
+    file_put_contents($shScript, "#!/bin/sh\ncd {$repoDir}\nphp composer.phar install --no-dev --no-interaction --no-progress --prefer-dist > {$logFile} 2>&1\necho 'DONE' >> {$logFile}\n");
+    chmod($shScript, 0755);
+    // Intentar nohup primero, luego fallback a exec con &
+    $launched = false;
+    if (shell_exec('which nohup 2>/dev/null')) {
+        exec("nohup {$shScript} > /dev/null 2>&1 &");
+        $launched = true;
+    } else {
+        exec("{$shScript} > /dev/null 2>&1 &");
+        $launched = true;
+    }
+    sleep(2); // dar 2 seg para que arranque
     $token = htmlspecialchars($_GET['token']);
-    echo '<a href="?token=' . $token . '&action=log">Ver log</a> | ';
-    echo '<a href="?token=' . $token . '&action=check">Verificar resultado</a>';
+    if (file_exists($logFile) && filesize($logFile) > 0) {
+        echo "✓ Composer corriendo. Log inicial:\n";
+        echo htmlspecialchars(file_get_contents($logFile)) . "\n";
+    } else {
+        echo "Proceso lanzado. Si el log está vacío en 10 seg, intenta ?action=sync\n";
+    }
+    echo "\n<a href='?token={$token}&action=log'>Ver log</a> | ";
+    echo "<a href='?token={$token}&action=sync'>Instalar sincrónico (lento)</a> | ";
+    echo "<a href='?token={$token}&action=check'>Verificar resultado</a>";
+    echo "</pre>"; exit;
+}
+
+// --- ACCIÓN: instalar sincrónico (sin background) ---
+if ($action === 'sync') {
+    if (!file_exists($composerPhar)) {
+        echo "ERROR: composer.phar no encontrado\n"; echo "</pre>"; exit;
+    }
+    set_time_limit(300);
+    echo "Corriendo composer install (puede tardar 2-3 min)...\n";
+    flush(); ob_flush();
+    $output = [];
+    exec("cd {$repoDir} && php composer.phar install --no-dev --no-interaction --no-progress --prefer-dist 2>&1", $output, $code);
+    echo htmlspecialchars(implode("\n", $output)) . "\n";
+    echo "\nCódigo de salida: {$code}\n";
+    $token = htmlspecialchars($_GET['token']);
+    echo "\n<a href='?token={$token}&action=check'>Verificar resultado</a>";
     echo "</pre>"; exit;
 }
 
