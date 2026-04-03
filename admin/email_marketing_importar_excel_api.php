@@ -59,11 +59,10 @@ try {
 
             [$headers, $rows] = parseFile($file['tmp_name'], $ext);
 
-            $preview = array_slice($rows, 0, 5);
             echo json_encode([
                 'ok'         => true,
                 'headers'    => $headers,
-                'rows'       => $preview,
+                'rows'       => $rows,          // todas las filas para importación
                 'total_rows' => count($rows),
             ]);
             break;
