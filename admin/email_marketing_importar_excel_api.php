@@ -8,7 +8,7 @@ ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
 // Log helper
-$_LOG_FILE = __DIR__ . '/logs/importar_excel_api.log';
+$_LOG_FILE = __DIR__ . '/importar_excel_debug.log';
 function apiLog(string $msg, array $ctx = []): void {
     global $_LOG_FILE;
     $line = date('Y-m-d H:i:s') . ' ' . $msg;
