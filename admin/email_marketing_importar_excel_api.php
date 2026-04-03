@@ -7,51 +7,57 @@ declare(strict_types=1);
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
-// Log helper
-$_LOG_FILE = __DIR__ . '/importar_excel_debug.log';
+define('API_LOG', __DIR__ . '/importar_excel_debug.log');
 function apiLog(string $msg, array $ctx = []): void {
-    global $_LOG_FILE;
     $line = date('Y-m-d H:i:s') . ' ' . $msg;
     if ($ctx) $line .= ' ' . json_encode($ctx, JSON_UNESCAPED_UNICODE);
-    @file_put_contents($_LOG_FILE, $line . "\n", FILE_APPEND);
+    @file_put_contents(API_LOG, $line . "\n", FILE_APPEND);
 }
+// Capturar errores PHP y fatales en el log
 set_error_handler(function(int $errno, string $errstr, string $errfile, int $errline) {
-    apiLog("PHP_ERROR [$errno]", ['msg'=>$errstr,'file'=>basename($errfile),'line'=>$errline]);
+    apiLog("PHP_ERROR[$errno]", ['msg'=>$errstr,'file'=>basename($errfile),'line'=>$errline]);
     return false;
 });
 register_shutdown_function(function() {
     $e = error_get_last();
-    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
         apiLog("FATAL", ['msg'=>$e['message'],'file'=>basename($e['file']),'line'=>$e['line']]);
+        // Si ya salió algo, intentar forzar JSON de error
+        if (!headers_sent()) {
+            http_response_code(500);
+            echo json_encode(['ok'=>false,'error'=>'Fatal: '.$e['message']]);
+        }
     }
 });
 
-// Enviar header JSON ANTES de cualquier include para evitar HTML contaminando la respuesta
+// JSON header PRIMERO, antes de cualquier include
 header('Content-Type: application/json; charset=utf-8');
 
 apiLog("REQUEST", ['action'=>$_POST['action']??$_GET['action']??'?','ip'=>$_SERVER['REMOTE_ADDR']??'']);
 
 require_once __DIR__ . '/../includes/config.php';
 
-// Verificar autenticación de admin (igual que email_marketing_api.php)
+// Auth check
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
-    apiLog("AUTH_FAIL", ['session_keys'=>array_keys($_SESSION)]);
+    apiLog("AUTH_FAIL", ['keys'=>implode(',', array_keys($_SESSION))]);
     http_response_code(403);
-    echo json_encode(['ok' => false, 'error' => 'No autorizado']);
+    echo json_encode(['ok'=>false,'error'=>'No autorizado']);
     exit;
 }
 apiLog("AUTH_OK");
 
-$config   = require __DIR__ . '/../config/database.php';
-$pdo      = new PDO(
-    "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
-    $config['username'], $config['password'],
-    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
-);
-
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
+// Todo dentro del try para capturar PDOException y cualquier otro error
 try {
+    $config = require __DIR__ . '/../config/database.php';
+    $pdo    = new PDO(
+        "mysql:host={$config['host']};dbname={$config['database']};charset=utf8mb4",
+        $config['username'], $config['password'],
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
+    );
+    apiLog("DB_OK");
+
     switch ($action) {
 
         // ── Debug: ver raw primera línea del CSV ─────────────────────
