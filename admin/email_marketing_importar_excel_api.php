@@ -59,6 +59,20 @@ try {
 
     switch ($action) {
 
+        // ── Deduplicar: eliminar correos duplicados ───────────────────
+        case 'deduplicar':
+            set_time_limit(300);
+            // Eliminar duplicados conservando el de mayor id (más reciente)
+            $deleted = $pdo->exec("
+                DELETE i1 FROM importa_excel i1
+                INNER JOIN importa_excel i2
+                ON i1.correo = i2.correo AND i1.id < i2.id
+            ");
+            $remaining = (int)$pdo->query("SELECT COUNT(*) FROM importa_excel")->fetchColumn();
+            apiLog("DEDUP", ['deleted'=>$deleted,'remaining'=>$remaining]);
+            echo json_encode(['ok'=>true,'deleted'=>$deleted,'remaining'=>$remaining]);
+            break;
+
         // ── Stats por tipo ────────────────────────────────────────────
         case 'stats':
             $total = (int)$pdo->query("SELECT COUNT(*) FROM importa_excel")->fetchColumn();
