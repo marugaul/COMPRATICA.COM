@@ -385,8 +385,8 @@ async function doImport() {
 
     const r = await fetch('/admin/email_marketing_importar_excel_api.php', { method: 'POST', body: fd });
     const d = await r.json();
-    if (!d.ok) { errors += BATCH; }
-    else { imported += d.imported; skipped += d.skipped; errors += d.errors; total = d.total || total; }
+    if (!d.ok) { console.error('Batch error:', d); progressText.textContent = 'Error: ' + (d.error || 'desconocido'); errors += BATCH; done = true; }
+    else { imported += d.imported; skipped += d.skipped; errors += d.errors; total = d.total || total; if (d.debug) console.log('Batch debug:', d.debug); }
     done   = d.done || !d.ok;
     offset += BATCH;
   }
