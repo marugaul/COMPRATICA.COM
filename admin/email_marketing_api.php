@@ -130,6 +130,8 @@ function handleCreateCampaign() {
         $recipients = processDatabaseCampaign($campaign_id);
     } elseif ($source_type === 'lugares_comerciales') {
         $recipients = processLugaresComercialesCampaign($campaign_id);
+    } elseif ($source_type === 'importa_excel') {
+        $recipients = processImportaExcelCampaign($campaign_id);
     } elseif ($source_type === 'manual') {
         $recipients = processManualRecipients($campaign_id);
     }
@@ -720,5 +722,42 @@ function getCampaignProgress() {
         'campaign_status' => $campaign['status']
     ]);
     exit;
+}
+
+/**
+ * Procesar contactos importados desde Excel/CSV (tabla importa_excel)
+ */
+function processImportaExcelCampaign($campaign_id) {
+    global $pdo;
+
+    $tipo_id = (int)($_POST['importa_excel_tipo_id'] ?? 0);
+
+    $sql    = "SELECT correo AS email, nombre AS name, telefono AS phone
+               FROM importa_excel
+               WHERE correo IS NOT NULL AND correo != ''";
+    $params = [];
+
+    if ($tipo_id > 0) {
+        $sql   .= " AND tipo_correo_id = ?";
+        $params[] = $tipo_id;
+    }
+
+    $sql .= " ORDER BY fecha_ingreso DESC";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $recipients = [];
+    foreach ($rows as $row) {
+        if (!filter_var($row['email'], FILTER_VALIDATE_EMAIL)) continue;
+        $recipients[] = [
+            'email' => $row['email'],
+            'name'  => $row['name'] ?? null,
+            'phone' => $row['phone'] ?? null,
+        ];
+    }
+
+    return $recipients;
 }
 ?>
