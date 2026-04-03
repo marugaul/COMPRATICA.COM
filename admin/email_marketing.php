@@ -291,7 +291,7 @@ function h($str) {
                         include __DIR__ . '/email_marketing/setup_importa_excel.php';
                         break;
                     case 'api-log':
-                        $logFile = __DIR__ . '/logs/importar_excel_api.log';
+                        $logFile = __DIR__ . '/importar_excel_debug.log';
                         echo '<div class="card"><div class="card-header"><i class="fas fa-file-alt"></i> Log API Importar Excel</div><div class="card-body">';
                         echo '<a href="?page=api-log&clear=1" class="btn btn-sm btn-danger mb-3">Limpiar log</a> ';
                         echo '<a href="?page=api-log" class="btn btn-sm btn-secondary mb-3">Recargar</a>';
