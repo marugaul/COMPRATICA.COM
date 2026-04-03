@@ -7,9 +7,17 @@ declare(strict_types=1);
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+// Enviar header JSON ANTES de cualquier include para evitar HTML contaminando la respuesta
+header('Content-Type: application/json; charset=utf-8');
+
 require_once __DIR__ . '/../includes/config.php';
 
-header('Content-Type: application/json; charset=utf-8');
+// Verificar autenticación de admin (igual que email_marketing_api.php)
+if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'No autorizado']);
+    exit;
+}
 
 $config   = require __DIR__ . '/../config/database.php';
 $pdo      = new PDO(
