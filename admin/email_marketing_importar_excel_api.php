@@ -57,27 +57,51 @@ try {
                 throw new RuntimeException('Formato no soportado. Usá .xlsx, .xls, .csv u .ods');
             }
 
-            // Guardar archivo en carpeta temporal del servidor
             $tmpDir = sys_get_temp_dir() . '/importa_excel';
             if (!is_dir($tmpDir)) mkdir($tmpDir, 0700, true);
             // Limpiar archivos viejos (> 2h)
-            foreach (glob($tmpDir . '/*.json') as $old) {
+            foreach (glob($tmpDir . '/file_*') as $old) {
                 if (filemtime($old) < time() - 7200) @unlink($old);
             }
-            $fileId  = bin2hex(random_bytes(12));
-            $jsonPath = $tmpDir . '/' . $fileId . '.json';
 
-            [$headers, $rows] = parseFile($file['tmp_name'], $ext);
-            $total = count($rows);
+            $fileId   = bin2hex(random_bytes(12));
+            $savedPath = $tmpDir . '/file_' . $fileId . '.' . $ext;
+            move_uploaded_file($file['tmp_name'], $savedPath);
 
-            // Guardar todas las filas en JSON en disco
-            file_put_contents($jsonPath, json_encode(['headers'=>$headers,'rows'=>$rows]));
+            // Para CSV: contar filas y leer preview sin cargar todo en RAM
+            if ($ext === 'csv') {
+                $handle   = fopen($savedPath, 'r');
+                $firstLine = fgets($handle); rewind($handle);
+                $sep      = (substr_count($firstLine, ';') >= substr_count($firstLine, ',')) ? ';' : ',';
+
+                $headers  = [];
+                $preview  = [];
+                $total    = 0;
+                $first    = true;
+                while (($row = fgetcsv($handle, 0, $sep)) !== false) {
+                    if ($first) { $headers = $row; $first = false; continue; }
+                    if (!array_filter($row)) continue;
+                    if (count($preview) < 5) $preview[] = $row;
+                    $total++;
+                }
+                fclose($handle);
+                // Guardar metadata (sep + headers)
+                file_put_contents($tmpDir . '/meta_' . $fileId . '.json', json_encode(['sep'=>$sep,'headers'=>$headers,'ext'=>$ext,'total'=>$total]));
+            } else {
+                // Para xlsx/ods: cargar en memoria (PhpSpreadsheet requerido)
+                [$headers, $rows] = parseFile($savedPath, $ext);
+                $total   = count($rows);
+                $preview = array_slice($rows, 0, 5);
+                // Guardar todas las filas en JSON (xlsx suele ser más pequeño)
+                file_put_contents($tmpDir . '/meta_' . $fileId . '.json', json_encode(['sep'=>null,'headers'=>$headers,'ext'=>$ext,'total'=>$total]));
+                file_put_contents($tmpDir . '/rows_' . $fileId . '.json', json_encode($rows));
+            }
 
             echo json_encode([
                 'ok'         => true,
                 'file_id'    => $fileId,
                 'headers'    => $headers,
-                'preview'    => array_slice($rows, 0, 5),
+                'preview'    => $preview,
                 'total_rows' => $total,
             ]);
             break;
@@ -96,14 +120,37 @@ try {
                 break;
             }
 
-            $jsonPath = sys_get_temp_dir() . '/importa_excel/' . $fileId . '.json';
-            if (!file_exists($jsonPath)) {
-                throw new RuntimeException('Archivo temporal no encontrado. Volvé a subir el archivo.');
+            $tmpDir  = sys_get_temp_dir() . '/importa_excel';
+            $metaPath = $tmpDir . '/meta_' . $fileId . '.json';
+            if (!file_exists($metaPath)) {
+                throw new RuntimeException('Sesión expirada. Volvé a subir el archivo.');
+            }
+            $meta = json_decode(file_get_contents($metaPath), true);
+            $total = (int)$meta['total'];
+
+            if ($meta['ext'] === 'csv') {
+                // Leer CSV por offset sin cargar todo en RAM
+                $savedPath = $tmpDir . '/file_' . $fileId . '.csv';
+                $handle    = fopen($savedPath, 'r');
+                $sep       = $meta['sep'];
+                $rows      = [];
+                $lineNum   = -1; // -1 = header
+                while (($row = fgetcsv($handle, 0, $sep)) !== false) {
+                    if ($lineNum === -1) { $lineNum = 0; continue; } // skip header
+                    if (!array_filter($row)) continue;
+                    if ($lineNum < $offset) { $lineNum++; continue; }
+                    if (count($rows) >= $limit) break;
+                    $rows[] = $row;
+                    $lineNum++;
+                }
+                fclose($handle);
+            } else {
+                $rowsPath = $tmpDir . '/rows_' . $fileId . '.json';
+                $allRows  = json_decode(file_get_contents($rowsPath), true);
+                $rows     = array_slice($allRows, $offset, $limit);
             }
 
-            $data   = json_decode(file_get_contents($jsonPath), true);
-            $rows   = array_slice($data['rows'], $offset, $limit);
-            $done   = ($offset + $limit) >= count($data['rows']);
+            $done = ($offset + $limit) >= $total;
 
             $imported = $skipped = $errors = 0;
             $now = date('Y-m-d H:i:s');
@@ -140,8 +187,10 @@ try {
                 }
             }
 
-            // Borrar archivo temporal si terminamos
-            if ($done) @unlink($jsonPath);
+            // Borrar archivos temporales si terminamos
+            if ($done) {
+                foreach (glob($tmpDir . '/*_' . $fileId . '.*') as $f) @unlink($f);
+            }
 
             echo json_encode(['ok'=>true,'imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors,'done'=>$done,'total'=>count($data['rows'])]);
             break;
