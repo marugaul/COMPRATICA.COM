@@ -7,17 +7,40 @@ declare(strict_types=1);
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+// Log helper
+$_LOG_FILE = __DIR__ . '/logs/importar_excel_api.log';
+function apiLog(string $msg, array $ctx = []): void {
+    global $_LOG_FILE;
+    $line = date('Y-m-d H:i:s') . ' ' . $msg;
+    if ($ctx) $line .= ' ' . json_encode($ctx, JSON_UNESCAPED_UNICODE);
+    @file_put_contents($_LOG_FILE, $line . "\n", FILE_APPEND);
+}
+set_error_handler(function(int $errno, string $errstr, string $errfile, int $errline) {
+    apiLog("PHP_ERROR [$errno]", ['msg'=>$errstr,'file'=>basename($errfile),'line'=>$errline]);
+    return false;
+});
+register_shutdown_function(function() {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        apiLog("FATAL", ['msg'=>$e['message'],'file'=>basename($e['file']),'line'=>$e['line']]);
+    }
+});
+
 // Enviar header JSON ANTES de cualquier include para evitar HTML contaminando la respuesta
 header('Content-Type: application/json; charset=utf-8');
+
+apiLog("REQUEST", ['action'=>$_POST['action']??$_GET['action']??'?','ip'=>$_SERVER['REMOTE_ADDR']??'']);
 
 require_once __DIR__ . '/../includes/config.php';
 
 // Verificar autenticación de admin (igual que email_marketing_api.php)
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
+    apiLog("AUTH_FAIL", ['session_keys'=>array_keys($_SESSION)]);
     http_response_code(403);
     echo json_encode(['ok' => false, 'error' => 'No autorizado']);
     exit;
 }
+apiLog("AUTH_OK");
 
 $config   = require __DIR__ . '/../config/database.php';
 $pdo      = new PDO(
