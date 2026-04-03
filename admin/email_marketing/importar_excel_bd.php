@@ -39,7 +39,7 @@ $porTipo = $pdo_mysql->query("
       <small class="text-muted">Subí un archivo Excel u OpenOffice y mapeá las columnas a la base de datos de contactos.</small>
     </div>
     <div class="text-end">
-      <span class="badge bg-primary fs-6"><?= number_format($total) ?> contactos totales</span>
+      <span class="badge bg-primary fs-6" id="statTotal"><?= number_format($total) ?> contactos totales</span>
     </div>
   </div>
 
@@ -49,7 +49,7 @@ $porTipo = $pdo_mysql->query("
     <?php foreach ($porTipo as $pt): ?>
     <div class="col-auto">
       <div class="card border-0 shadow-sm text-center px-4 py-2">
-        <div class="fw-bold fs-5"><?= number_format($pt['cnt']) ?></div>
+        <div class="fw-bold fs-5" id="statTipo<?= $pt['id'] ?>"><?= number_format($pt['cnt']) ?></div>
         <small class="text-muted"><?= htmlspecialchars($pt['nombre']) ?></small>
       </div>
     </div>
@@ -404,6 +404,20 @@ async function doImport() {
   btn.disabled = false;
   btn.innerHTML = '<i class="fas fa-database"></i> Importar a la BD';
   loadContacts();
+  refreshStats();
+}
+
+async function refreshStats() {
+  const fd = new FormData(); fd.append('action', 'stats');
+  const r = await fetch('/admin/email_marketing_importar_excel_api.php', { method:'POST', body:fd });
+  const d = await r.json();
+  if (!d.ok) return;
+  const el = document.getElementById('statTotal');
+  if (el) el.textContent = d.total.toLocaleString() + ' contactos totales';
+  (d.por_tipo || []).forEach(t => {
+    const e = document.getElementById('statTipo' + t.id);
+    if (e) e.textContent = parseInt(t.cnt).toLocaleString();
+  });
 }
 
 function resetWizard() {
