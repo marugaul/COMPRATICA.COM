@@ -57,7 +57,7 @@ try {
                 throw new RuntimeException('Formato no soportado. Usá .xlsx, .xls, .csv u .ods');
             }
 
-            $tmpDir = sys_get_temp_dir() . '/importa_excel';
+            $tmpDir = dirname(__DIR__) . '/uploads/import_tmp';
             if (!is_dir($tmpDir)) mkdir($tmpDir, 0700, true);
             // Limpiar archivos viejos (> 2h)
             foreach (glob($tmpDir . '/file_*') as $old) {
@@ -120,7 +120,7 @@ try {
                 break;
             }
 
-            $tmpDir  = sys_get_temp_dir() . '/importa_excel';
+            $tmpDir  = dirname(__DIR__) . '/uploads/import_tmp';
             $metaPath = $tmpDir . '/meta_' . $fileId . '.json';
             if (!file_exists($metaPath)) {
                 throw new RuntimeException('Sesión expirada. Volvé a subir el archivo.');
@@ -162,6 +162,22 @@ try {
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
 
+            // Debug: muestra info del primer row si offset=0
+            $debugInfo = null;
+            if ($offset === 0 && !empty($rows)) {
+                $firstRow = $rows[0];
+                $correoIdx = $colMap['correo'] ?? null;
+                $debugInfo = [
+                    'first_row'   => $firstRow,
+                    'col_map'     => $colMap,
+                    'correo_idx'  => $correoIdx,
+                    'correo_val'  => $correoIdx !== null ? ($firstRow[$correoIdx] ?? 'INDEX_NOT_FOUND') : 'NO_MAPPING',
+                    'sep_used'    => $meta['sep'] ?? 'NULL',
+                    'row_count'   => count($rows),
+                    'total_file'  => $total,
+                ];
+            }
+
             foreach ($rows as $row) {
                 try {
                     $correo = isset($colMap['correo']) ? trim((string)($row[$colMap['correo']] ?? '')) : '';
@@ -192,7 +208,7 @@ try {
                 foreach (glob($tmpDir . '/*_' . $fileId . '.*') as $f) @unlink($f);
             }
 
-            echo json_encode(['ok'=>true,'imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors,'done'=>$done,'total'=>count($data['rows'])]);
+            echo json_encode(['ok'=>true,'imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors,'done'=>$done,'total'=>$total,'debug'=>$debugInfo]);
             break;
 
         // ── Listar contactos ───────────────────────────────────────────
