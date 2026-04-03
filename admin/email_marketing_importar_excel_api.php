@@ -202,56 +202,60 @@ try {
             $done = ($offset + $limit) >= $total;
             apiLog("BATCH_ROWS", ['rows_read'=>count($rows),'done'=>$done]);
 
+            set_time_limit(120);
             $imported = $skipped = $errors = 0;
             $now = date('Y-m-d H:i:s');
 
-            $stmtCheck = $pdo->prepare("SELECT id FROM importa_excel WHERE correo = ? LIMIT 1");
-            $stmtIns   = $pdo->prepare("
+            // Bulk duplicate check: un solo SELECT para todos los correos del batch
+            $correos = [];
+            $validRows = [];
+            foreach ($rows as $row) {
+                $correo = isset($colMap['correo']) ? trim((string)($row[$colMap['correo']] ?? '')) : '';
+                if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) { $errors++; continue; }
+                $correos[] = $correo;
+                $validRows[] = ['row' => $row, 'correo' => $correo];
+            }
+
+            $existingEmails = [];
+            if ($skipDup && !empty($correos)) {
+                $placeholders = implode(',', array_fill(0, count($correos), '?'));
+                $stmt = $pdo->prepare("SELECT correo FROM importa_excel WHERE correo IN ($placeholders)");
+                $stmt->execute($correos);
+                $existingEmails = array_flip($stmt->fetchAll(PDO::FETCH_COLUMN));
+            }
+
+            $stmtIns = $pdo->prepare("
                 INSERT INTO importa_excel
                     (cedula, nombre, correo, telefono, direccion, tipo_correo_id, fecha_ingreso)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
 
-            // Debug: muestra info del primer row si offset=0
-            $debugInfo = null;
-            if ($offset === 0 && !empty($rows)) {
-                $firstRow = $rows[0];
-                $correoIdx = $colMap['correo'] ?? null;
-                $debugInfo = [
-                    'first_row'   => $firstRow,
-                    'col_map'     => $colMap,
-                    'correo_idx'  => $correoIdx,
-                    'correo_val'  => $correoIdx !== null ? ($firstRow[$correoIdx] ?? 'INDEX_NOT_FOUND') : 'NO_MAPPING',
-                    'sep_used'    => $meta['sep'] ?? 'NULL',
-                    'row_count'   => count($rows),
-                    'total_file'  => $total,
-                ];
-            }
-
-            foreach ($rows as $row) {
-                try {
-                    $correo = isset($colMap['correo']) ? trim((string)($row[$colMap['correo']] ?? '')) : '';
-                    if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) { $errors++; continue; }
-
-                    if ($skipDup) {
-                        $stmtCheck->execute([$correo]);
-                        if ($stmtCheck->fetchColumn()) { $skipped++; continue; }
-                    }
-
-                    $stmtIns->execute([
-                        isset($colMap['cedula'])    ? trim((string)($row[$colMap['cedula']]    ?? '')) : null,
-                        isset($colMap['nombre'])    ? trim((string)($row[$colMap['nombre']]    ?? '')) : null,
-                        $correo,
-                        isset($colMap['telefono'])  ? trim((string)($row[$colMap['telefono']]  ?? '')) : null,
-                        isset($colMap['direccion']) ? trim((string)($row[$colMap['direccion']] ?? '')) : null,
-                        $tipoId ?: null,
-                        $now,
-                    ]);
-                    $imported++;
-                } catch (Throwable $e) {
-                    $errors++;
+            $pdo->beginTransaction();
+            try {
+                foreach ($validRows as $vr) {
+                    $correo = $vr['correo'];
+                    $row    = $vr['row'];
+                    if ($skipDup && isset($existingEmails[$correo])) { $skipped++; continue; }
+                    try {
+                        $stmtIns->execute([
+                            isset($colMap['cedula'])    ? trim((string)($row[$colMap['cedula']]    ?? '')) : null,
+                            isset($colMap['nombre'])    ? trim((string)($row[$colMap['nombre']]    ?? '')) : null,
+                            $correo,
+                            isset($colMap['telefono'])  ? trim((string)($row[$colMap['telefono']]  ?? '')) : null,
+                            isset($colMap['direccion']) ? trim((string)($row[$colMap['direccion']] ?? '')) : null,
+                            $tipoId ?: null,
+                            $now,
+                        ]);
+                        $imported++;
+                    } catch (Throwable $e) { $errors++; }
                 }
+                $pdo->commit();
+            } catch (Throwable $e) {
+                $pdo->rollBack();
+                throw $e;
             }
+
+            apiLog("BATCH_DONE", ['imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors]);
 
             // Borrar archivos temporales si terminamos
             if ($done) {
