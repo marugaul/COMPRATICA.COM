@@ -10,6 +10,13 @@ $pdo_mysql = new PDO(
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
 );
 
+// Detectar si PhpSpreadsheet está disponible
+$phpspreadsheet_ok = false;
+foreach ([__DIR__.'/../../vendor/autoload.php', __DIR__.'/../../../vendor/autoload.php'] as $_ap) {
+    if (file_exists($_ap)) { require_once $_ap; break; }
+}
+$phpspreadsheet_ok = class_exists('\PhpOffice\PhpSpreadsheet\IOFactory');
+
 // Cargar tipos de correo
 $tipos = $pdo_mysql->query("SELECT id, nombre FROM tipos_correo ORDER BY nombre")->fetchAll();
 
@@ -69,8 +76,17 @@ $porTipo = $pdo_mysql->query("
 
             <div class="mb-3">
               <label class="form-label fw-semibold">Archivo Excel / CSV / ODS</label>
+              <?php if ($phpspreadsheet_ok): ?>
               <input type="file" id="fileInput" class="form-control" accept=".xlsx,.xls,.csv,.ods">
               <div class="form-text">Formatos: .xlsx, .xls, .csv, .ods — Máx. 10 MB</div>
+              <?php else: ?>
+              <input type="file" id="fileInput" class="form-control" accept=".csv">
+              <div class="alert alert-warning mt-2 mb-0 py-2">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Solo CSV disponible.</strong> El servidor no tiene PhpSpreadsheet instalado.
+                Exporta tu Excel como <strong>.csv</strong> desde Excel → Archivo → Guardar como → CSV UTF-8.
+              </div>
+              <?php endif; ?>
             </div>
 
             <button class="btn btn-success" id="btnPreview" onclick="previewFile()">
