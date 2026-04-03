@@ -363,32 +363,30 @@ async function doImport() {
   const progressBar  = document.getElementById('progressBar');
   const progressText = document.getElementById('progressText');
   progressWrap.style.display = '';
+  progressBar.style.width = '100%';
+  progressBar.textContent = '100%';
+  progressText.textContent = `Procesando ${parsedTotal} filas en el servidor...`;
 
-  const BATCH = 500;
+  // Un solo request: el servidor procesa todo el archivo sin batches del cliente
+  const fd = new FormData();
+  fd.append('action',         'import_all');
+  fd.append('file_id',        parsedFileId);
+  fd.append('col_map',        JSON.stringify(colMap));
+  fd.append('tipo_correo_id', tipo);
+  fd.append('skip_dup',       skipDup ? '1' : '0');
+
   let imported = 0, skipped = 0, errors = 0;
-  let offset = 0, done = false, total = parsedTotal;
-
-  while (!done) {
-    const pct = total > 0 ? Math.round(((offset + BATCH) / total) * 100) : 100;
-    progressBar.style.width = Math.min(pct, 100) + '%';
-    progressBar.textContent = Math.min(pct, 100) + '%';
-    progressText.textContent = `Procesando ${Math.min(offset + BATCH, total)} de ${total}...`;
-
-    const fd = new FormData();
-    fd.append('action', 'import_batch');
-    fd.append('file_id',        parsedFileId);
-    fd.append('offset',         offset);
-    fd.append('limit',          BATCH);
-    fd.append('col_map',        JSON.stringify(colMap));
-    fd.append('tipo_correo_id', tipo);
-    fd.append('skip_dup',       skipDup ? '1' : '0');
-
+  try {
     const r = await fetch('/admin/email_marketing_importar_excel_api.php', { method: 'POST', body: fd });
     const d = await r.json();
-    if (!d.ok) { console.error('Batch error:', d); progressText.textContent = 'Error: ' + (d.error || 'desconocido'); errors += BATCH; done = true; }
-    else { imported += d.imported; skipped += d.skipped; errors += d.errors; total = d.total || total; if (d.debug) console.log('Batch debug:', d.debug); }
-    done   = d.done || !d.ok;
-    offset += BATCH;
+    if (!d.ok) {
+      progressText.textContent = 'Error: ' + (d.error || 'desconocido');
+    } else {
+      imported = d.imported; skipped = d.skipped; errors = d.errors;
+      progressText.textContent = `Procesados ${d.total} de ${d.total}...`;
+    }
+  } catch(e) {
+    progressText.textContent = 'Error de red: ' + e.message;
   }
 
   progressBar.classList.remove('progress-bar-animated');

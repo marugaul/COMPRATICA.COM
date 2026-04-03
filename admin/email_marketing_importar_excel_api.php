@@ -37,11 +37,10 @@ apiLog("REQUEST", ['action'=>$_POST['action']??$_GET['action']??'?','ip'=>$_SERV
 
 require_once __DIR__ . '/../includes/config.php';
 
-// Auth check
+// Auth check - usar 200 con ok:false para que Apache no reemplace con HTML
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
     apiLog("AUTH_FAIL", ['keys'=>implode(',', array_keys($_SESSION))]);
-    http_response_code(403);
-    echo json_encode(['ok'=>false,'error'=>'No autorizado']);
+    echo json_encode(['ok'=>false,'error'=>'No autorizado','auth'=>false]);
     exit;
 }
 apiLog("AUTH_OK");
@@ -153,7 +152,118 @@ try {
             ]);
             break;
 
-        // ── Importar lote (lee del archivo guardado en servidor) ───────
+        // ── Importar todo el archivo en un solo request ────────────────
+        case 'import_all':
+            set_time_limit(600);
+            ini_set('memory_limit', '256M');
+            session_write_close(); // liberar sesión para no bloquear otros requests
+
+            $fileId  = preg_replace('/[^a-f0-9]/', '', $_POST['file_id'] ?? '');
+            $colMap  = json_decode($_POST['col_map'] ?? '{}', true);
+            $tipoId  = (int)($_POST['tipo_correo_id'] ?? 0);
+            $skipDup = ($_POST['skip_dup'] ?? '1') === '1';
+
+            $tmpDir   = dirname(__DIR__) . '/uploads/import_tmp';
+            $metaPath = $tmpDir . '/meta_' . $fileId . '.json';
+            if (!file_exists($metaPath)) throw new RuntimeException('Archivo expirado. Volvé a subir.');
+            $meta = json_decode(file_get_contents($metaPath), true);
+
+            apiLog("IMPORT_ALL_START", ['fileId'=>$fileId,'total'=>$meta['total'],'ext'=>$meta['ext']]);
+
+            $imported = $skipped = $errors = 0;
+            $now = date('Y-m-d H:i:s');
+
+            $stmtIns = $pdo->prepare("
+                INSERT INTO importa_excel (cedula,nombre,correo,telefono,direccion,tipo_correo_id,fecha_ingreso)
+                VALUES (?,?,?,?,?,?,?)
+            ");
+
+            if ($meta['ext'] === 'csv') {
+                $savedPath = $tmpDir . '/file_' . $fileId . '.csv';
+                $handle    = fopen($savedPath, 'r');
+                $sep       = $meta['sep'];
+                $first     = true;
+                $CHUNK     = 500; // bulk duplicate check cada 500 filas
+                $buffer    = [];
+
+                $flushBuffer = function() use (&$buffer, &$imported, &$skipped, &$errors, $skipDup, $pdo, $stmtIns, $tipoId, $now, $colMap) {
+                    if (empty($buffer)) return;
+                    $existingEmails = [];
+                    if ($skipDup) {
+                        $ph   = implode(',', array_fill(0, count($buffer), '?'));
+                        $stmt = $pdo->prepare("SELECT correo FROM importa_excel WHERE correo IN ($ph)");
+                        $stmt->execute(array_column($buffer, 'correo'));
+                        $existingEmails = array_flip($stmt->fetchAll(PDO::FETCH_COLUMN));
+                    }
+                    $pdo->beginTransaction();
+                    try {
+                        foreach ($buffer as $vr) {
+                            if ($skipDup && isset($existingEmails[$vr['correo']])) { $skipped++; continue; }
+                            try {
+                                $stmtIns->execute([
+                                    $vr['cedula'], $vr['nombre'], $vr['correo'],
+                                    $vr['telefono'], $vr['direccion'], $tipoId ?: null, $now
+                                ]);
+                                $imported++;
+                            } catch (Throwable $e) { $errors++; }
+                        }
+                        $pdo->commit();
+                    } catch (Throwable $e) { $pdo->rollBack(); throw $e; }
+                    $buffer = [];
+                };
+
+                while (($row = fgetcsv($handle, 4096, $sep)) !== false) {
+                    if ($first) {
+                        $row[0] = ltrim($row[0], "\xEF\xBB\xBF");
+                        $first = false; continue;
+                    }
+                    if (!array_filter($row)) continue;
+                    $correo = isset($colMap['correo']) ? trim((string)($row[$colMap['correo']] ?? '')) : '';
+                    if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) { $errors++; continue; }
+                    $buffer[] = [
+                        'correo'   => $correo,
+                        'cedula'   => isset($colMap['cedula'])    ? trim((string)($row[$colMap['cedula']]    ?? '')) : null,
+                        'nombre'   => isset($colMap['nombre'])    ? trim((string)($row[$colMap['nombre']]    ?? '')) : null,
+                        'telefono' => isset($colMap['telefono'])  ? trim((string)($row[$colMap['telefono']]  ?? '')) : null,
+                        'direccion'=> isset($colMap['direccion']) ? trim((string)($row[$colMap['direccion']] ?? '')) : null,
+                    ];
+                    if (count($buffer) >= $CHUNK) $flushBuffer();
+                }
+                $flushBuffer(); // último bloque
+                fclose($handle);
+            } else {
+                // xlsx: rows guardados en JSON
+                $rowsPath = $tmpDir . '/rows_' . $fileId . '.json';
+                $allRows  = json_decode(file_get_contents($rowsPath), true);
+                foreach ($allRows as $row) {
+                    $correo = isset($colMap['correo']) ? trim((string)($row[$colMap['correo']] ?? '')) : '';
+                    if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) { $errors++; continue; }
+                    if ($skipDup) {
+                        $s = $pdo->prepare("SELECT id FROM importa_excel WHERE correo=? LIMIT 1");
+                        $s->execute([$correo]); if ($s->fetchColumn()) { $skipped++; continue; }
+                    }
+                    try {
+                        $stmtIns->execute([
+                            isset($colMap['cedula'])    ? trim((string)($row[$colMap['cedula']]    ?? '')) : null,
+                            isset($colMap['nombre'])    ? trim((string)($row[$colMap['nombre']]    ?? '')) : null,
+                            $correo,
+                            isset($colMap['telefono'])  ? trim((string)($row[$colMap['telefono']]  ?? '')) : null,
+                            isset($colMap['direccion']) ? trim((string)($row[$colMap['direccion']] ?? '')) : null,
+                            $tipoId ?: null, $now,
+                        ]);
+                        $imported++;
+                    } catch (Throwable $e) { $errors++; }
+                }
+            }
+
+            // Limpiar archivos temporales
+            foreach (glob($tmpDir . '/*_' . $fileId . '.*') as $f) @unlink($f);
+            apiLog("IMPORT_ALL_DONE", ['imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors]);
+
+            echo json_encode(['ok'=>true,'imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors,'total'=>($imported+$skipped+$errors),'done'=>true]);
+            break;
+
+        // ── Importar lote (legacy - mantenido por compatibilidad) ──────
         case 'import_batch':
             $fileId  = preg_replace('/[^a-f0-9]/', '', $_POST['file_id'] ?? '');
             $offset  = (int)($_POST['offset']  ?? 0);
