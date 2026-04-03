@@ -228,8 +228,13 @@ function parseCSV(string $path): array
     $handle  = fopen($path, 'r');
     if (!$handle) throw new RuntimeException('No se pudo leer el archivo CSV.');
 
+    // Auto-detectar separador: leer primera línea y contar comas vs punto y coma
+    $firstLine = fgets($handle);
+    rewind($handle);
+    $sep = (substr_count($firstLine, ';') >= substr_count($firstLine, ',')) ? ';' : ',';
+
     $first = true;
-    while (($row = fgetcsv($handle, 0, ',')) !== false) {
+    while (($row = fgetcsv($handle, 0, $sep)) !== false) {
         if ($first) { $headers = $row; $first = false; continue; }
         if (!array_filter($row)) continue;
         $rows[] = $row;
