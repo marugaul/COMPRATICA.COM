@@ -187,6 +187,20 @@ $porTipo = $pdo_mysql->query("
         </div>
       </div>
 
+      <!-- Deduplicar BD -->
+      <div class="card shadow-sm border-warning">
+        <div class="card-header bg-warning text-dark">
+          <i class="fas fa-broom"></i> <strong>Deduplicar Base de Datos</strong>
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-2">Elimina registros con el mismo correo, conservando el más reciente de cada uno.</p>
+          <button class="btn btn-warning w-100" onclick="deduplicar()">
+            <i class="fas fa-broom"></i> Eliminar duplicados
+          </button>
+          <div id="dedupResult" class="mt-2" style="display:none"></div>
+        </div>
+      </div>
+
       <!-- Gestión de tipos de correo -->
       <div class="card shadow-sm">
         <div class="card-header">
@@ -405,6 +419,26 @@ async function doImport() {
   btn.innerHTML = '<i class="fas fa-database"></i> Importar a la BD';
   loadContacts();
   refreshStats();
+}
+
+async function deduplicar() {
+  if (!confirm('¿Eliminar correos duplicados? Se conservará el registro más reciente de cada email.')) return;
+  const btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+  const fd = new FormData(); fd.append('action', 'deduplicar');
+  const r = await fetch('/admin/email_marketing_importar_excel_api.php', { method:'POST', body:fd });
+  const d = await r.json();
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-broom"></i> Eliminar duplicados';
+  const res = document.getElementById('dedupResult');
+  res.style.display = '';
+  if (d.ok) {
+    res.innerHTML = `<div class="alert alert-success py-2"><i class="fas fa-check-circle"></i> ${d.deleted} duplicados eliminados. Quedan ${d.remaining} contactos únicos.</div>`;
+    loadContacts(); refreshStats();
+  } else {
+    res.innerHTML = `<div class="alert alert-danger py-2">${d.error}</div>`;
+  }
 }
 
 async function refreshStats() {
