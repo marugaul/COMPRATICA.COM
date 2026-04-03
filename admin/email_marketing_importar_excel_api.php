@@ -59,6 +59,18 @@ try {
 
     switch ($action) {
 
+        // ── Stats por tipo ────────────────────────────────────────────
+        case 'stats':
+            $total = (int)$pdo->query("SELECT COUNT(*) FROM importa_excel")->fetchColumn();
+            $porTipo = $pdo->query("
+                SELECT t.id, t.nombre, COUNT(i.id) AS cnt
+                FROM tipos_correo t
+                LEFT JOIN importa_excel i ON i.tipo_correo_id = t.id
+                GROUP BY t.id, t.nombre ORDER BY t.nombre
+            ")->fetchAll();
+            echo json_encode(['ok'=>true,'total'=>$total,'por_tipo'=>$porTipo]);
+            break;
+
         // ── Debug: ver raw primera línea del CSV ─────────────────────
         case 'debug_csv':
             $file = $_FILES['file'] ?? null;
