@@ -222,6 +222,10 @@ function h($str) {
                     <li><a href="?page=blacklist" class="<?= $page === 'blacklist' ? 'active' : '' ?>">
                         <i class="fas fa-ban"></i> Blacklist
                     </a></li>
+                    <li><a href="?page=importar-excel-bd" class="<?= $page === 'importar-excel-bd' ? 'active' : '' ?>"
+                           style="color:#22c55e;font-weight:600">
+                        <i class="fas fa-file-excel"></i> Importar Excel / CSV
+                    </a></li>
                     <li><a href="?page=importar-lugares" class="<?= $page === 'importar-lugares' ? 'active' : '' ?>">
                         <i class="fas fa-cloud-download-alt"></i> Importar OSM
                     </a></li>
@@ -279,6 +283,12 @@ function h($str) {
                         break;
                     case 'blacklist':
                         include __DIR__ . '/email_marketing/blacklist.php';
+                        break;
+                    case 'importar-excel-bd':
+                        include __DIR__ . '/email_marketing/importar_excel_bd.php';
+                        break;
+                    case 'setup-importa-excel':
+                        include __DIR__ . '/email_marketing/setup_importa_excel.php';
                         break;
                     case 'importar-lugares':
                         include __DIR__ . '/email_marketing/importar_lugares.php';

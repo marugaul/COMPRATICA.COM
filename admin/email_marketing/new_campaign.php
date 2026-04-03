@@ -5,6 +5,19 @@
 $smtp_configs = $pdo->query("SELECT * FROM email_smtp_configs WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC);
 $templates = $pdo->query("SELECT * FROM email_templates WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC);
 
+// Cargar tipos de correo de importa_excel
+$importa_excel_tipos = [];
+try {
+    $importa_excel_tipos = $pdo->query("
+        SELECT t.id, t.nombre, COUNT(i.id) AS total
+        FROM tipos_correo t
+        LEFT JOIN importa_excel i ON i.tipo_correo_id = t.id
+        GROUP BY t.id, t.nombre
+        HAVING total > 0
+        ORDER BY t.nombre
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) { $importa_excel_tipos = []; }
+
 // Verificar si existe la tabla lugares_comerciales
 $table_lugares_exists = false;
 try {
@@ -165,6 +178,9 @@ if ($table_lugares_exists) {
                         <?php endif; ?>
                         <?php if ($table_pa_exists): ?>
                         <option value="lugares_paginas_amarillas">📒 Páginas Amarillas CR</option>
+                        <?php endif; ?>
+                        <?php if (!empty($importa_excel_tipos)): ?>
+                        <option value="importa_excel">📊 Contactos Importados (Excel/CSV)</option>
                         <?php endif; ?>
                         <option value="manual">✍️ Ingresar Manualmente</option>
                     </select>
@@ -737,6 +753,28 @@ if ($table_lugares_exists) {
                 </div>
             </div>
 
+            <!-- Opción: Contactos Importados (Excel/CSV) -->
+            <div id="importaExcelOption" class="mt-4" style="display: none;">
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Correo *</label>
+                    <select name="importa_excel_tipo_id" id="importaExcelTipoId" class="form-control">
+                        <option value="">— Todos los tipos —</option>
+                        <?php foreach ($importa_excel_tipos as $tipo): ?>
+                        <option value="<?= (int)$tipo['id'] ?>">
+                            <?= h($tipo['nombre']) ?> (<?= (int)$tipo['total'] ?> contactos)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="text-muted">Seleccione un tipo para filtrar, o deje en blanco para incluir todos los importados.</small>
+                </div>
+                <?php if (!empty($importa_excel_tipos)): ?>
+                <div class="alert alert-success py-2">
+                    <i class="fas fa-users"></i>
+                    Total disponible: <strong><?= array_sum(array_column($importa_excel_tipos, 'total')) ?></strong> contactos importados con correo válido.
+                </div>
+                <?php endif; ?>
+            </div>
+
             <!-- Opción: Manual -->
             <div id="manualOption" class="mt-4" style="display: none;">
                 <div class="mb-3">
@@ -917,6 +955,8 @@ document.getElementById('sourceType').addEventListener('change', function() {
     const paginasAmarillasOption = document.getElementById('paginasAmarillasOption');
     if (paginasAmarillasOption) paginasAmarillasOption.style.display = 'none';
     document.getElementById('manualOption').style.display = 'none';
+    const importaExcelOption = document.getElementById('importaExcelOption');
+    if (importaExcelOption) importaExcelOption.style.display = 'none';
 
     if (this.value === 'excel') {
         document.getElementById('excelOption').style.display = 'block';
@@ -930,6 +970,8 @@ document.getElementById('sourceType').addEventListener('change', function() {
         if (yelpOption) yelpOption.style.display = 'block';
     } else if (this.value === 'lugares_paginas_amarillas') {
         if (paginasAmarillasOption) paginasAmarillasOption.style.display = 'block';
+    } else if (this.value === 'importa_excel') {
+        if (importaExcelOption) importaExcelOption.style.display = 'block';
     } else if (this.value === 'manual') {
         document.getElementById('manualOption').style.display = 'block';
     }
