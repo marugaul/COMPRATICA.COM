@@ -109,7 +109,7 @@ try {
                 $preview  = [];
                 $total    = 0;
                 $first    = true;
-                while (($row = fgetcsv($handle, 0, $sep)) !== false) {
+                while (($row = fgetcsv($handle, 4096, $sep)) !== false) {
                     if ($first) { $headers = $row; $first = false; continue; }
                     if (!array_filter($row)) continue;
                     if (count($preview) < 5) $preview[] = $row;
@@ -153,11 +153,13 @@ try {
 
             $tmpDir  = dirname(__DIR__) . '/uploads/import_tmp';
             $metaPath = $tmpDir . '/meta_' . $fileId . '.json';
+            apiLog("BATCH_START", ['fileId'=>$fileId,'offset'=>$offset,'limit'=>$limit,'metaExists'=>file_exists($metaPath)]);
             if (!file_exists($metaPath)) {
                 throw new RuntimeException('Sesión expirada. Volvé a subir el archivo.');
             }
             $meta = json_decode(file_get_contents($metaPath), true);
             $total = (int)$meta['total'];
+            apiLog("BATCH_META", ['total'=>$total,'ext'=>$meta['ext'],'sep'=>$meta['sep']]);
 
             if ($meta['ext'] === 'csv') {
                 // Leer CSV por offset sin cargar todo en RAM
@@ -166,7 +168,7 @@ try {
                 $sep       = $meta['sep'];
                 $rows      = [];
                 $lineNum   = -1; // -1 = header
-                while (($row = fgetcsv($handle, 0, $sep)) !== false) {
+                while (($row = fgetcsv($handle, 4096, $sep)) !== false) {
                     if ($lineNum === -1) { $lineNum = 0; continue; } // skip header
                     if (!array_filter($row)) continue;
                     if ($lineNum < $offset) { $lineNum++; continue; }
@@ -182,6 +184,7 @@ try {
             }
 
             $done = ($offset + $limit) >= $total;
+            apiLog("BATCH_ROWS", ['rows_read'=>count($rows),'done'=>$done]);
 
             $imported = $skipped = $errors = 0;
             $now = date('Y-m-d H:i:s');
