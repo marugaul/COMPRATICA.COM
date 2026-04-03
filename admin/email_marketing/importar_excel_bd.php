@@ -92,6 +92,9 @@ $porTipo = $pdo_mysql->query("
             <button class="btn btn-success" id="btnPreview" onclick="previewFile()">
               <i class="fas fa-eye"></i> Previsualizar columnas
             </button>
+            <button class="btn btn-outline-secondary btn-sm ms-2" onclick="debugCSV()" title="Diagnóstico del separador">
+              <i class="fas fa-bug"></i> Debug separador
+            </button>
           </div>
 
           <!-- Paso 2: Mapeo de columnas (oculto hasta step1 completado) -->
@@ -510,4 +513,21 @@ async function deleteTipo(id, btn) {
 
 // Cargar contactos al iniciar
 loadContacts();
+
+async function debugCSV() {
+  const file = document.getElementById('fileInput').files[0];
+  if (!file) { alert('Seleccioná un archivo primero.'); return; }
+  const fd = new FormData();
+  fd.append('action', 'debug_csv');
+  fd.append('file', file);
+  const r = await fetch('/admin/email_marketing_importar_excel_api.php', { method: 'POST', body: fd });
+  const d = await r.json();
+  alert(
+    'Primera línea (200 chars):\n' + d.first_500 +
+    '\n\nComas: ' + d.commas +
+    '\nPuntos y coma: ' + d.semicolons +
+    '\nTabs: ' + d.tabs +
+    '\nSeparador detectado: "' + d.detected_sep + '"'
+  );
+}
 </script>

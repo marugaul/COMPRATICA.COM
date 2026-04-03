@@ -23,6 +23,29 @@ $action = $_POST['action'] ?? $_GET['action'] ?? '';
 try {
     switch ($action) {
 
+        // ── Debug: ver raw primera línea del CSV ─────────────────────
+        case 'debug_csv':
+            $file = $_FILES['file'] ?? null;
+            if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+                throw new RuntimeException('Error al subir el archivo.');
+            }
+            $handle = fopen($file['tmp_name'], 'r');
+            $raw = fread($handle, 500);
+            fclose($handle);
+            $commas    = substr_count(strtok($raw, "\n"), ',');
+            $semis     = substr_count(strtok($raw, "\n"), ';');
+            $tabs      = substr_count(strtok($raw, "\n"), "\t");
+            $detectedSep = $semis >= $commas ? ';' : ($tabs >= $commas ? 'TAB' : ',');
+            echo json_encode([
+                'ok'          => true,
+                'first_500'   => mb_substr($raw, 0, 200),
+                'commas'      => $commas,
+                'semicolons'  => $semis,
+                'tabs'        => $tabs,
+                'detected_sep'=> $detectedSep,
+            ]);
+            break;
+
         // ── Previsualizar archivo ──────────────────────────────────────
         case 'preview':
             $file = $_FILES['file'] ?? null;
