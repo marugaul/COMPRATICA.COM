@@ -107,16 +107,26 @@ try {
 
             // Para CSV: contar filas y leer preview sin cargar todo en RAM
             if ($ext === 'csv') {
-                $handle   = fopen($savedPath, 'r');
+                set_time_limit(300);
+                ini_set('memory_limit', '256M');
+                $handle    = fopen($savedPath, 'r');
                 $firstLine = fgets($handle); rewind($handle);
-                $sep      = (substr_count($firstLine, ';') >= substr_count($firstLine, ',')) ? ';' : ',';
+                // Strip UTF-8 BOM si existe
+                $firstLine = ltrim($firstLine, "\xEF\xBB\xBF");
+                $sep       = (substr_count($firstLine, ';') >= substr_count($firstLine, ',')) ? ';' : ',';
 
                 $headers  = [];
                 $preview  = [];
                 $total    = 0;
                 $first    = true;
                 while (($row = fgetcsv($handle, 4096, $sep)) !== false) {
-                    if ($first) { $headers = $row; $first = false; continue; }
+                    if ($first) {
+                        // Strip BOM del primer campo del header
+                        $row[0] = ltrim($row[0], "\xEF\xBB\xBF");
+                        $headers = $row;
+                        $first = false;
+                        continue;
+                    }
                     if (!array_filter($row)) continue;
                     if (count($preview) < 5) $preview[] = $row;
                     $total++;
