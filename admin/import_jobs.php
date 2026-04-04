@@ -142,6 +142,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = ['ok', "Se marcaron {$n} empleos expirados como inactivos."];
     }
 
+    if ($action === 'delete_old_auto') {
+        $quick     = $_POST['quick']     ?? '';
+        $date_from = trim($_POST['date_from'] ?? '');
+        $date_to   = trim($_POST['date_to']   ?? '');
+
+        if ($quick === '2weeks') {
+            $n = $pdo->exec("DELETE FROM job_listings WHERE import_source IS NOT NULL AND created_at < datetime('now', '-14 days')");
+            $msg = ['ok', "Se eliminaron <strong>{$n}</strong> empleos automáticos con más de 2 semanas."];
+        } elseif ($date_from && $date_to) {
+            if ($date_from > $date_to) { [$date_from, $date_to] = [$date_to, $date_from]; }
+            $stmt = $pdo->prepare("DELETE FROM job_listings WHERE import_source IS NOT NULL AND date(created_at) BETWEEN ? AND ?");
+            $stmt->execute([$date_from, $date_to]);
+            $n = $stmt->rowCount();
+            $msg = ['ok', "Se eliminaron <strong>{$n}</strong> empleos automáticos publicados entre {$date_from} y {$date_to}."];
+        } else {
+            $msg = ['error', 'Seleccioná un rango de fechas o usá el botón rápido.'];
+        }
+    }
+
     if ($action === 'run_bac_import') {
         admin_debug_log("========== ACCIÓN: run_bac_import ==========");
         $logFile = dirname(__DIR__) . '/logs/import_bac.log';
@@ -514,6 +533,52 @@ tr:last-child td { border-bottom:none; }
     </form>
 </div>
 <?php endif; ?>
+
+<!-- LIMPIEZA DE AUTOMÁTICOS -->
+<div class="card" style="border-left:4px solid #ef4444;">
+    <h2><i class="fas fa-trash-alt" style="color:#ef4444;"></i> Limpieza de empleos automáticos</h2>
+    <p style="color:#6b7280;font-size:.9rem;margin:0 0 16px;">
+        Elimina empleos importados automáticamente (<code>import_source</code> no nulo).
+        Los empleos publicados por clientes <strong>no se tocan</strong>: se rigen por su plan.
+    </p>
+
+    <!-- Botón rápido: 2 semanas -->
+    <form method="POST" onsubmit="return confirm('¿Eliminar TODOS los empleos automáticos con más de 2 semanas? Esta acción no se puede deshacer.')" style="margin-bottom:20px;">
+        <input type="hidden" name="action" value="delete_old_auto">
+        <input type="hidden" name="quick" value="2weeks">
+        <button type="submit" class="btn btn-red">
+            <i class="fas fa-trash"></i> Eliminar automáticos &gt; 2 semanas
+        </button>
+        <span style="font-size:.82rem;color:#9ca3af;margin-left:10px;">Borra todo lo que tenga más de 14 días de publicación inicial.</span>
+    </form>
+
+    <hr style="border:none;border-top:1px solid #f3f4f6;margin:0 0 16px;">
+
+    <!-- Filtro por rango de fechas -->
+    <form method="POST" onsubmit="return confirm('¿Eliminar empleos automáticos en el rango seleccionado?')">
+        <input type="hidden" name="action" value="delete_old_auto">
+        <p style="font-weight:600;font-size:.9rem;margin:0 0 10px;"><i class="fas fa-calendar-alt"></i> Eliminar por rango de fecha de publicación inicial</p>
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px;">
+            <div>
+                <label style="font-size:.82rem;color:#6b7280;display:block;margin-bottom:4px;">Desde</label>
+                <input type="date" name="date_from" required
+                    max="<?= date('Y-m-d') ?>"
+                    style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.9rem;">
+            </div>
+            <div>
+                <label style="font-size:.82rem;color:#6b7280;display:block;margin-bottom:4px;">Hasta</label>
+                <input type="date" name="date_to" required
+                    max="<?= date('Y-m-d') ?>"
+                    style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.9rem;">
+            </div>
+            <div>
+                <button type="submit" class="btn btn-red">
+                    <i class="fas fa-trash"></i> Eliminar rango
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
 
 <!-- LOG DE IMPORTACIONES -->
 <?php if ($logs): ?>
