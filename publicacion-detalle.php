@@ -69,7 +69,7 @@ if (!headers_sent()) {
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id <= 0) {
-    header('Location: index.php');
+    header('Location: /');
     exit;
 }
 
@@ -249,7 +249,7 @@ try {
 }
 
 if (!$publicacion) {
-    header('Location: index.php');
+    header('Location: /');
     exit;
 }
 
@@ -274,7 +274,7 @@ if ($extractedUrl && empty($publicacion['application_url'])) {
 $publicacion['description'] = $cleanDescription;
 
 $isJob = $publicacion['listing_type'] === 'job';
-$backUrl = $isJob ? 'empleos.php' : 'ofertas-servicios.php';
+$backUrl = $isJob ? '/empleos' : '/ofertas-servicios';
 ?>
 <!doctype html>
 <html lang="es">
