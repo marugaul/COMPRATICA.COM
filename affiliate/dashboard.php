@@ -2,9 +2,41 @@
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/affiliate_auth.php';
+require_once __DIR__ . '/../includes/live_cam.php';
 aff_require_login();
 $pdo = db();
 $aff_id = (int)$_SESSION['aff_id'];
+
+// ── Manejar toggle EN VIVO ────────────────────────────────────────────────
+$liveMsg = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle_live') {
+    initLiveCamTables($pdo);
+    $goLive    = (int)($_POST['go_live']    ?? 0);
+    $liveTitle = trim($_POST['live_title']  ?? '');
+    $liveLink  = trim($_POST['live_link']   ?? '');
+    if ($goLive) {
+        $pdo->prepare("UPDATE affiliates SET is_live=1, live_title=?, live_link=?, live_started_at=datetime('now'), live_type='link' WHERE id=?")
+            ->execute([$liveTitle ?: 'EN VIVO', $liveLink ?: null, $aff_id]);
+        $liveMsg = ['ok', '🔴 ¡Estás EN VIVO! Tu venta aparece primero en el listado.'];
+    } else {
+        $pdo->prepare("UPDATE affiliates SET is_live=0, live_title=NULL, live_link=NULL, live_started_at=NULL, live_type='link', live_session_id=NULL WHERE id=?")
+            ->execute([$aff_id]);
+        $liveMsg = ['info', '⚫ Transmisión finalizada.'];
+    }
+    header('Location: dashboard.php#live-section');
+    exit;
+}
+
+// Inicializar columnas live si no existen y cargar estado actual
+initLiveCamTables($pdo);
+try {
+    $liveStmt = $pdo->prepare("SELECT COALESCE(is_live,0) AS is_live, live_title, live_link,
+                                      COALESCE(live_type,'link') AS live_type, live_session_id
+                               FROM affiliates WHERE id=?");
+    $liveStmt->execute([$aff_id]);
+    $liveData = $liveStmt->fetch(PDO::FETCH_ASSOC);
+} catch (Throwable $_e) {}
+$liveData = $liveData ?? ['is_live'=>0,'live_title'=>'','live_link'=>'','live_type'=>'link','live_session_id'=>''];
 
 // Estadísticas básicas
 $stats = [
@@ -312,6 +344,21 @@ if (function_exists('mb_internal_encoding')) {
       <i class="fas fa-file-invoice"></i>
       <span>Inventario</span>
     </a>
+    <a class="nav-btn" href="#live-section"
+       style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem;
+              background: <?= $liveData['is_live'] ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.1)' ?>;
+              color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem;
+              font-weight: <?= $liveData['is_live'] ? '700' : '500' ?>; transition: all 0.3s ease;
+              border: 1px solid <?= $liveData['is_live'] ? 'rgba(239,68,68,1)' : 'rgba(255,255,255,0.2)' ?>;"
+       onmouseover="this.style.background='rgba(239,68,68,0.9)'"
+       onmouseout="this.style.background='<?= $liveData['is_live'] ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.1)' ?>'">
+      <?php if ($liveData['is_live']): ?>
+        <span style="width:8px;height:8px;background:white;border-radius:50%;display:inline-block;animation:live-pulse 1.2s infinite;"></span>
+      <?php else: ?>
+        <i class="fas fa-broadcast-tower"></i>
+      <?php endif; ?>
+      <span>En Vivo</span>
+    </a>
   </nav>
 </header>
 
@@ -558,6 +605,236 @@ if (function_exists('mb_internal_encoding')) {
       </a>
     </div>
   <?php endif; ?>
+
+  <!-- ── SECCIÓN EN VIVO ──────────────────────────────────────────────────── -->
+  <style>
+  @keyframes live-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+  .aff-live-card { background:#fafafa; border-radius:12px; padding:20px; }
+  .aff-live-field { margin-bottom:14px; }
+  .aff-live-field label { display:block; font-weight:600; margin-bottom:6px; color:#555; font-size:.9rem; }
+  .aff-live-field input { width:100%; padding:10px 14px; border:2px solid #e0e0e0; border-radius:8px; font-size:.95rem; box-sizing:border-box; }
+  .aff-live-field input:focus { border-color:#ef4444; outline:none; }
+  .btn-go-live-aff { background:linear-gradient(135deg,#ef4444,#dc2626); color:white; border:none; padding:12px 28px; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+  .btn-go-live-aff:hover { opacity:.88; }
+  .aff-live-mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  @media(max-width:600px){ .aff-live-mode-grid { grid-template-columns:1fr; } }
+  .aff-live-mode-card { border:2px solid #e2e8f0; border-radius:14px; padding:20px; cursor:pointer; transition:all .2s; text-align:center; background:#fafafa; }
+  .aff-live-mode-card:hover, .aff-live-mode-card.selected { border-color:#ef4444; background:#fff5f5; }
+  .aff-live-mode-card i { font-size:2.2rem; display:block; margin-bottom:10px; }
+  .aff-cam-preview-wrap { position:relative; background:#000; border-radius:12px; overflow:hidden; margin-bottom:14px; aspect-ratio:16/9; max-width:480px; }
+  #aff-cam-preview { width:100%; height:100%; object-fit:cover; display:block; transform:scaleX(-1); }
+  .aff-cam-live-badge { position:absolute; top:10px; left:10px; background:rgba(220,38,38,.9); color:white; border-radius:20px; padding:3px 10px; font-size:.78rem; font-weight:700; display:flex; align-items:center; gap:5px; }
+  .aff-cam-live-badge .dot { width:8px;height:8px;background:white;border-radius:50%;animation:live-pulse 1s infinite; }
+  #aff-cam-timer { position:absolute; top:10px; right:10px; background:rgba(0,0,0,.6); color:white; border-radius:8px; padding:3px 9px; font-size:.8rem; font-family:monospace; }
+  </style>
+
+  <div id="live-section" style="background:white; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.07);
+       padding:28px; margin-top:2rem; border:2px solid <?= $liveData['is_live'] ? '#ef4444' : '#e2e8f0' ?>; transition:border-color .3s;">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+      <h2 style="margin:0; font-size:1.3rem; color:#1f2937;">
+        <?php if ($liveData['is_live']): ?>
+          <span style="display:inline-flex;align-items:center;gap:8px;">
+            <span style="width:12px;height:12px;background:#ef4444;border-radius:50%;display:inline-block;animation:live-pulse 1.2s infinite;"></span>
+            EN VIVO ahora
+          </span>
+        <?php else: ?>
+          <i class="fas fa-broadcast-tower" style="color:#ef4444;"></i> Transmisión en Vivo
+        <?php endif; ?>
+      </h2>
+      <?php if ($liveData['is_live']): ?>
+        <form method="POST" style="display:inline;">
+          <input type="hidden" name="action" value="toggle_live">
+          <input type="hidden" name="go_live" value="0">
+          <button type="submit" style="background:#ef4444;color:white;border:none;padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;">
+            <i class="fas fa-stop-circle"></i> Terminar Live
+          </button>
+        </form>
+      <?php endif; ?>
+    </div>
+
+    <?php if ($liveData['is_live'] && $liveData['live_type'] === 'camera'): ?>
+    <!-- ── CÁMARA: en vivo ── -->
+    <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
+      <div style="flex:1;min-width:260px;">
+        <div class="aff-cam-preview-wrap">
+          <video id="aff-cam-preview" autoplay muted playsinline></video>
+          <div class="aff-cam-live-badge"><span class="dot"></span> EN VIVO</div>
+          <div id="aff-cam-timer">00:00</div>
+        </div>
+        <p style="color:#888;font-size:.82rem;margin:6px 0;">Tu cámara está transmitiendo en tu venta de garaje.</p>
+      </div>
+      <div>
+        <strong style="color:#dc2626;font-size:1rem;display:block;margin-bottom:8px;">
+          <i class="fas fa-circle" style="animation:live-pulse 1s infinite;"></i>
+          <?= htmlspecialchars($liveData['live_title'] ?? 'En Vivo') ?>
+        </strong>
+        <button id="aff-btn-stop-cam" onclick="affStopCamLive()"
+                style="background:#ef4444;color:white;border:none;padding:11px 22px;border-radius:10px;font-weight:700;cursor:pointer;">
+          <i class="fas fa-stop-circle"></i> Terminar Transmisión
+        </button>
+      </div>
+    </div>
+
+    <?php elseif ($liveData['is_live'] && $liveData['live_type'] !== 'camera'): ?>
+    <!-- ── LINK EXTERNO: en vivo ── -->
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:14px;">
+      <span style="font-size:2rem;">🔴</span>
+      <div>
+        <strong style="color:#dc2626;font-size:1.05rem;"><?= htmlspecialchars($liveData['live_title'] ?? 'EN VIVO') ?></strong><br>
+        <?php if ($liveData['live_link']): ?>
+          <a href="<?= htmlspecialchars($liveData['live_link']) ?>" target="_blank" style="color:#667eea;font-size:.88rem;">
+            <i class="fas fa-external-link-alt"></i> <?= htmlspecialchars($liveData['live_link']) ?>
+          </a>
+        <?php endif; ?>
+        <div style="color:#888;font-size:.82rem;margin-top:4px;">Tu venta aparece primera en el listado con el badge EN VIVO.</div>
+      </div>
+    </div>
+
+    <?php else: ?>
+    <!-- ── No live: elegir modo ── -->
+    <p style="color:#666;margin:0 0 14px;font-size:.9rem;">
+      <i class="fas fa-info-circle" style="color:#ef4444;"></i>
+      Elige cómo querés transmitir en vivo. Tu venta aparecerá primero en el listado.
+    </p>
+
+    <div class="aff-live-mode-grid">
+      <div class="aff-live-mode-card selected" id="aff-card-link" onclick="affSelectMode('link')">
+        <i class="fas fa-link" style="color:#667eea;"></i>
+        <h4 style="margin:0 0 6px;">Link Externo</h4>
+        <p style="margin:0;font-size:.82rem;color:#6b7280;">YouTube, Facebook, Instagram, TikTok</p>
+      </div>
+      <div class="aff-live-mode-card" id="aff-card-cam" onclick="affSelectMode('cam')">
+        <i class="fas fa-video" style="color:#10b981;"></i>
+        <h4 style="margin:0 0 6px;">Mi Cámara</h4>
+        <p style="margin:0;font-size:.82rem;color:#6b7280;">Transmití directo desde tu navegador</p>
+      </div>
+    </div>
+
+    <!-- Formulario modo LINK -->
+    <div id="aff-form-link">
+      <div class="aff-live-card">
+        <form method="POST">
+          <input type="hidden" name="action" value="toggle_live">
+          <input type="hidden" name="go_live" value="1">
+          <div class="aff-live-field">
+            <label><i class="fas fa-tag"></i> Título del live</label>
+            <input type="text" name="live_title" placeholder='Ej: "Ropa y accesorios en oferta 🎉"' maxlength="80">
+          </div>
+          <div class="aff-live-field">
+            <label><i class="fab fa-youtube"></i> Link del live (YouTube, Facebook, Instagram, TikTok)</label>
+            <input type="url" name="live_link" placeholder="https://youtube.com/live/...">
+          </div>
+          <button type="submit" class="btn-go-live-aff">
+            <span style="width:10px;height:10px;background:white;border-radius:50%;display:inline-block;"></span>
+            Iniciar EN VIVO con Link
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Panel modo CÁMARA -->
+    <div id="aff-form-cam" style="display:none;">
+      <div class="aff-live-card" style="background:#f0fdf4;">
+        <div class="aff-live-field">
+          <label><i class="fas fa-tag"></i> Título del live</label>
+          <input type="text" id="aff-cam-title-input" placeholder='Ej: "Mostrando todo lo que tengo 📦"' maxlength="80"
+                 style="width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:.95rem;box-sizing:border-box;">
+        </div>
+        <div id="aff-cam-preview-wrap" class="aff-cam-preview-wrap" style="display:none;">
+          <video id="aff-cam-preview" autoplay muted playsinline></video>
+          <div class="aff-cam-live-badge"><span class="dot"></span> EN VIVO</div>
+          <div id="aff-cam-timer">00:00</div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
+          <button id="aff-btn-preview-cam" onclick="affPreviewCamera()"
+                  style="background:#374151;color:white;border:none;padding:11px 20px;border-radius:10px;font-weight:700;cursor:pointer;">
+            <i class="fas fa-camera"></i> Probar cámara
+          </button>
+          <button id="aff-btn-start-cam" onclick="affStartCamLive()" disabled
+                  class="btn-go-live-aff" style="background:linear-gradient(135deg,#10b981,#059669);">
+            <span style="width:10px;height:10px;background:white;border-radius:50%;display:inline-block;"></span>
+            Iniciar EN VIVO con Cámara
+          </button>
+        </div>
+        <p id="aff-cam-status" style="color:#6b7280;font-size:.82rem;margin:8px 0 0;"></p>
+      </div>
+    </div>
+    <?php endif; ?>
+  </div>
+  <!-- ── FIN EN VIVO ─────────────────────────────────────────────────────── -->
+
 </div>
+
+<script>
+// Selector de modo
+function affSelectMode(mode) {
+  document.getElementById('aff-form-link').style.display = mode === 'link' ? '' : 'none';
+  document.getElementById('aff-form-cam').style.display  = mode === 'cam'  ? '' : 'none';
+  document.getElementById('aff-card-link').classList.toggle('selected', mode === 'link');
+  document.getElementById('aff-card-cam').classList.toggle('selected', mode === 'cam');
+}
+
+// ── Cámara ────────────────────────────────────────────────────────────────
+let affStream, affRecorder, affChunkIndex = 0, affSessionId = '', affTimerInterval;
+const AFF_SESSION_ID = <?= json_encode($liveData['live_session_id'] ?? '') ?>;
+const AFF_IS_CAM     = <?= json_encode($liveData['is_live'] && $liveData['live_type'] === 'camera') ?>;
+
+async function affPreviewCamera() {
+  try {
+    affStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+    const vid = document.getElementById('aff-cam-preview');
+    document.getElementById('aff-cam-preview-wrap').style.display = '';
+    vid.srcObject = affStream;
+    document.getElementById('aff-btn-start-cam').disabled = false;
+    const st = document.getElementById('aff-cam-status');
+    if (st) st.innerHTML = '<i class="fas fa-check-circle" style="color:#10b981;"></i> Cámara lista. Pulsá "Iniciar EN VIVO con Cámara".';
+  } catch(e) {
+    alert('No se pudo acceder a la cámara: ' + e.message);
+  }
+}
+
+async function affStartCamLive() {
+  if (!affStream) return alert('Primero probá la cámara.');
+  const title = document.getElementById('aff-cam-title-input')?.value || 'En Vivo';
+  const res = await fetch('/api/live-cam-start.php', {
+    method:'POST', credentials:'same-origin',
+    body: Object.assign(new FormData(), { title })
+  });
+  const fd = new FormData(); fd.append('title', title);
+  const r = await fetch('/api/live-cam-start.php', { method:'POST', credentials:'same-origin', body: fd });
+  const json = await r.json();
+  if (!json.ok) return alert('Error al iniciar: ' + (json.msg || json.error));
+  affSessionId = json.session_id;
+  affChunkIndex = 0;
+  affRecorder = new MediaRecorder(affStream, { mimeType: 'video/webm;codecs=vp8' });
+  affRecorder.ondataavailable = async (e) => {
+    if (!e.data.size) return;
+    const fd = new FormData();
+    fd.append('session_id', affSessionId);
+    fd.append('index', affChunkIndex++);
+    fd.append('chunk', e.data, 'chunk.webm');
+    await fetch('/api/live-cam-chunk.php', { method:'POST', credentials:'same-origin', body: fd });
+  };
+  affRecorder.start(2000);
+  let secs = 0;
+  affTimerInterval = setInterval(() => {
+    secs++;
+    const t = document.getElementById('aff-cam-timer');
+    if (t) t.textContent = String(Math.floor(secs/60)).padStart(2,'0') + ':' + String(secs%60).padStart(2,'0');
+  }, 1000);
+  document.getElementById('aff-btn-start-cam').style.display = 'none';
+  document.getElementById('aff-btn-preview-cam').style.display = 'none';
+  location.reload();
+}
+
+async function affStopCamLive() {
+  if (affRecorder) { affRecorder.stop(); }
+  clearInterval(affTimerInterval);
+  const fd = new FormData(); fd.append('session_id', AFF_SESSION_ID);
+  await fetch('/api/live-cam-stop.php', { method:'POST', credentials:'same-origin', body: fd });
+  location.reload();
+}
+</script>
 </body>
 </html>

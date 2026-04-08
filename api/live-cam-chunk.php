@@ -10,7 +10,10 @@ header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); echo json_encode(['error'=>'method']); exit; }
 
-$uid = (int)($_SESSION['uid'] ?? 0);
+$uid    = (int)($_SESSION['uid']     ?? 0);
+$affId  = (int)($_SESSION['aff_id'] ?? 0);
+$isAffiliate = $affId > 0;
+$uid    = $isAffiliate ? $affId : $uid;
 if (!$uid) {
     logError('live-cam.log', 'CHUNK blocked: not logged in');
     echo json_encode(['error' => 'not_logged_in']); exit;
@@ -37,8 +40,9 @@ try {
     $pdo = db();
     initLiveCamTables($pdo);
 
-    // Verificar que la sesión pertenece a este usuario y está activa
-    $row = $pdo->prepare("SELECT chunk_count FROM live_cam_sessions WHERE id=? AND seller_id=? AND status='active'");
+    // Verificar que la sesión pertenece a este usuario/afiliado y está activa
+    $col = $isAffiliate ? 'affiliate_id' : 'seller_id';
+    $row = $pdo->prepare("SELECT chunk_count FROM live_cam_sessions WHERE id=? AND $col=? AND status='active'");
     $row->execute([$sessionId, $uid]);
     $session = $row->fetch(PDO::FETCH_ASSOC);
     if (!$session) {

@@ -212,15 +212,20 @@ $orderBy = match($ordenamiento) {
   default => 's.start_at ASC'
 };
 
-// Consulta con contador de productos ACTIVOS
+// Consulta con contador de productos ACTIVOS + estado live del afiliado
 $stmt = $pdo->prepare("
   SELECT s.*,
          a.name AS affiliate_name,
+         COALESCE(a.is_live, 0)         AS aff_is_live,
+         a.live_title                   AS aff_live_title,
+         a.live_link                    AS aff_live_link,
+         COALESCE(a.live_type,'link')   AS aff_live_type,
+         a.live_session_id              AS aff_live_session_id,
          (SELECT COUNT(*) FROM products p WHERE p.sale_id = s.id AND p.active = 1) AS product_count
   FROM sales s
   JOIN affiliates a ON a.id = s.affiliate_id
   WHERE $whereClause
-  ORDER BY $orderBy
+  ORDER BY COALESCE(a.is_live,0) DESC, $orderBy
 ");
 $stmt->execute($params);
 $allSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1208,6 +1213,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.1); }
     }
+    @keyframes live-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
 
     /* FILTROS Y BÚSQUEDA - ETAPA 1 */
     .filters-section {
@@ -1967,6 +1973,12 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
         </div>
 
         <div class="badges-row">
+          <?php if (!empty($s['aff_is_live'])): ?>
+            <span class="badge" style="background:#ef4444;color:#fff;display:inline-flex;align-items:center;gap:5px;animation:none;">
+              <span style="width:7px;height:7px;background:white;border-radius:50%;display:inline-block;animation:live-pulse 1.2s infinite;"></span>
+              EN VIVO
+            </span>
+          <?php endif; ?>
           <span class="badge" style="background:<?php echo $color; ?>;color:#fff">
             <?php echo $state; ?>
           </span>
