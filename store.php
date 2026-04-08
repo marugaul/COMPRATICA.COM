@@ -1432,50 +1432,98 @@ foreach ($_SESSION['cart'] as $it) {
     <div id="storeLiveBody">
       <?php if ($liveType === 'camera' && $liveSid): ?>
         <!-- ── Cámara del vendedor ── -->
-        <div class="store-live-player">
-          <video id="storeLiveVideo" autoplay playsinline style="background:#000;"></video>
+        <div class="store-live-player" id="storeLivePlayerWrap">
+          <video id="storeLiveVideo" autoplay playsinline muted
+                 style="background:#000;cursor:pointer;"
+                 onclick="this.muted=false;this.play();"></video>
         </div>
-        <p style="color:rgba(255,255,255,.5);font-size:.75rem;margin:6px 0 0;text-align:center;">
+        <p id="storeLiveStatus" style="color:rgba(255,255,255,.5);font-size:.75rem;margin:6px 0 0;text-align:center;">
           <i class="fas fa-circle" style="color:#ef4444;font-size:.5rem;animation:store-live-pulse 1.2s infinite;"></i>
-          Transmisión en vivo desde la tienda
+          Conectando transmisión… <span style="opacity:.6;">(tocá el video si no hay sonido)</span>
         </p>
         <script>
         (function(){
-          const SID = <?= json_encode($liveSid) ?>;
-          let nextChunk = 0, sourceBuffer, mediaSource, ended = false;
+          const SID   = <?= json_encode($liveSid) ?>;
           const video = document.getElementById('storeLiveVideo');
-          if (!window.MediaSource) return;
-          mediaSource = new MediaSource();
-          video.src = URL.createObjectURL(mediaSource);
-          mediaSource.addEventListener('sourceopen', () => {
-            sourceBuffer = mediaSource.addSourceBuffer('video/webm;codecs=vp8');
-            poll();
-          });
+          const statusEl = document.getElementById('storeLiveStatus');
+          let nextChunk = 0, sourceBuffer = null, mediaSource = null, ended = false;
+
+          function setStatus(msg) {
+            if (statusEl) statusEl.innerHTML = msg;
+          }
+
+          // Espera a que el sourceBuffer no esté actualizando, luego appendea y espera fin
+          function appendWhenReady(buf) {
+            return new Promise((resolve, reject) => {
+              function doAppend() {
+                try {
+                  sourceBuffer.appendBuffer(buf);
+                  sourceBuffer.addEventListener('updateend', resolve, { once: true });
+                  sourceBuffer.addEventListener('error',     reject,  { once: true });
+                } catch(e) { reject(e); }
+              }
+              if (sourceBuffer.updating) {
+                sourceBuffer.addEventListener('updateend', doAppend, { once: true });
+              } else {
+                doAppend();
+              }
+            });
+          }
+
           async function poll() {
             if (ended) return;
             try {
               const r = await fetch('/api/live-cam-poll.php?session_id=' + SID);
+              if (!r.ok) { setTimeout(poll, 3000); return; }
               const d = await r.json();
+
               if (d.ended && d.chunk_count <= nextChunk) {
                 ended = true;
-                if (mediaSource.readyState === 'open') mediaSource.endOfStream();
+                if (mediaSource && mediaSource.readyState === 'open') mediaSource.endOfStream();
+                // Ocultar panel — el live terminó
+                const wrap = document.getElementById('storeLiveWrap');
+                if (wrap) wrap.style.display = 'none';
                 return;
               }
+
+              // Descargar y appendear todos los chunks nuevos en orden
               while (nextChunk < d.chunk_count) {
                 const cr = await fetch('/api/live-cam-serve.php?session_id=' + SID + '&index=' + nextChunk);
                 if (!cr.ok) break;
                 const buf = await cr.arrayBuffer();
-                await new Promise(res => {
-                  if (sourceBuffer.updating) sourceBuffer.addEventListener('updateend', res, {once:true});
-                  else res();
-                });
-                sourceBuffer.appendBuffer(buf);
+                await appendWhenReady(buf);
                 nextChunk++;
               }
-              if (video.paused && video.readyState >= 2) video.play().catch(()=>{});
-            } catch(e) {}
+
+              // Intentar play (puede estar bloqueado por autoplay policy)
+              if (video.paused && video.readyState >= 2) {
+                video.play().then(() => {
+                  setStatus('<i class="fas fa-circle" style="color:#ef4444;font-size:.5rem;animation:store-live-pulse 1.2s infinite;"></i> Transmisión en vivo 🔴');
+                }).catch(() => {
+                  setStatus('▶ Tocá el video para ver la transmisión en vivo');
+                });
+              }
+            } catch(e) {
+              // error silencioso — reintenta
+            }
             setTimeout(poll, 2000);
           }
+
+          if (!window.MediaSource || !MediaSource.isTypeSupported('video/webm;codecs=vp8')) {
+            setStatus('⚠ Tu navegador no soporta streaming de cámara en vivo.');
+            return;
+          }
+
+          mediaSource = new MediaSource();
+          video.src   = URL.createObjectURL(mediaSource);
+          mediaSource.addEventListener('sourceopen', () => {
+            try {
+              sourceBuffer = mediaSource.addSourceBuffer('video/webm;codecs=vp8');
+              poll();
+            } catch(e) {
+              setStatus('⚠ Error al iniciar el reproductor: ' + e.message);
+            }
+          });
         })();
         </script>
 
@@ -1486,6 +1534,22 @@ foreach ($_SESSION['cart'] as $it) {
                   allow="autoplay; fullscreen; encrypted-media"
                   allowfullscreen loading="lazy"></iframe>
         </div>
+        <script>
+        // Verificar cada 15s si el live sigue activo (modo link)
+        (function(){
+          const AFF_ID = <?= (int)$sale['affiliate_id'] ?>;
+          setInterval(async () => {
+            try {
+              const r = await fetch('/api/aff-live-status.php?affiliate_id=' + AFF_ID);
+              const d = await r.json();
+              if (!d.is_live) {
+                const w = document.getElementById('storeLiveWrap');
+                if (w) w.style.display = 'none';
+              }
+            } catch(e) {}
+          }, 15000);
+        })();
+        </script>
 
       <?php elseif ($liveLink): ?>
         <!-- ── Instagram / TikTok: solo enlace ── -->
@@ -1496,6 +1560,21 @@ foreach ($_SESSION['cart'] as $it) {
           </span>
           <i class="fas fa-external-link-alt" style="margin-left:auto;opacity:.5;"></i>
         </a>
+        <script>
+        (function(){
+          const AFF_ID = <?= (int)$sale['affiliate_id'] ?>;
+          setInterval(async () => {
+            try {
+              const r = await fetch('/api/aff-live-status.php?affiliate_id=' + AFF_ID);
+              const d = await r.json();
+              if (!d.is_live) {
+                const w = document.getElementById('storeLiveWrap');
+                if (w) w.style.display = 'none';
+              }
+            } catch(e) {}
+          }, 15000);
+        })();
+        </script>
 
       <?php else: ?>
         <!-- ── Live activo sin link ── -->
