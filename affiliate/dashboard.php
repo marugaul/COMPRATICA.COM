@@ -344,14 +344,13 @@ if (function_exists('mb_internal_encoding')) {
       <i class="fas fa-file-invoice"></i>
       <span>Inventario</span>
     </a>
-    <a class="nav-btn" href="#live-section"
+    <a class="nav-btn" href="#" onclick="affToggleLiveSection(event)"
+       id="nav-live-btn"
        style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem;
               background: <?= $liveData['is_live'] ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.1)' ?>;
               color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem;
               font-weight: <?= $liveData['is_live'] ? '700' : '500' ?>; transition: all 0.3s ease;
-              border: 1px solid <?= $liveData['is_live'] ? 'rgba(239,68,68,1)' : 'rgba(255,255,255,0.2)' ?>;"
-       onmouseover="this.style.background='rgba(239,68,68,0.9)'"
-       onmouseout="this.style.background='<?= $liveData['is_live'] ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.1)' ?>'">
+              border: 1px solid <?= $liveData['is_live'] ? 'rgba(239,68,68,1)' : 'rgba(255,255,255,0.2)' ?>;">
       <?php if ($liveData['is_live']): ?>
         <span style="width:8px;height:8px;background:white;border-radius:50%;display:inline-block;animation:live-pulse 1.2s infinite;"></span>
       <?php else: ?>
@@ -628,7 +627,7 @@ if (function_exists('mb_internal_encoding')) {
   #aff-cam-timer { position:absolute; top:10px; right:10px; background:rgba(0,0,0,.6); color:white; border-radius:8px; padding:3px 9px; font-size:.8rem; font-family:monospace; }
   </style>
 
-  <div id="live-section" style="background:white; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.07);
+  <div id="live-section" style="display:none; background:white; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.07);
        padding:28px; margin-top:2rem; border:2px solid <?= $liveData['is_live'] ? '#ef4444' : '#e2e8f0' ?>; transition:border-color .3s;">
 
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
@@ -767,6 +766,22 @@ if (function_exists('mb_internal_encoding')) {
 </div>
 
 <script>
+// ── Toggle sección En Vivo ───────────────────────────────────────────────
+function affToggleLiveSection(e) {
+  e && e.preventDefault();
+  const sec = document.getElementById('live-section');
+  const visible = sec.style.display !== 'none';
+  sec.style.display = visible ? 'none' : '';
+  if (!visible) sec.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// Si está en vivo, mostrar automáticamente al cargar
+<?php if ($liveData['is_live']): ?>
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('live-section').style.display = '';
+});
+<?php endif; ?>
+
 // Selector de modo
 function affSelectMode(mode) {
   document.getElementById('aff-form-link').style.display = mode === 'link' ? '' : 'none';
@@ -778,14 +793,14 @@ function affSelectMode(mode) {
 // ── Cámara ────────────────────────────────────────────────────────────────
 let affStream, affRecorder, affChunkIndex = 0, affSessionId = '', affTimerInterval;
 const AFF_SESSION_ID = <?= json_encode($liveData['live_session_id'] ?? '') ?>;
-const AFF_IS_CAM     = <?= json_encode($liveData['is_live'] && $liveData['live_type'] === 'camera') ?>;
 
 async function affPreviewCamera() {
   try {
     affStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
-    const vid = document.getElementById('aff-cam-preview');
-    document.getElementById('aff-cam-preview-wrap').style.display = '';
+    const vid  = document.getElementById('aff-cam-preview');
+    const wrap = document.getElementById('aff-cam-preview-wrap');
     vid.srcObject = affStream;
+    wrap.style.display = '';
     document.getElementById('aff-btn-start-cam').disabled = false;
     const st = document.getElementById('aff-cam-status');
     if (st) st.innerHTML = '<i class="fas fa-check-circle" style="color:#10b981;"></i> Cámara lista. Pulsá "Iniciar EN VIVO con Cámara".';
@@ -797,41 +812,77 @@ async function affPreviewCamera() {
 async function affStartCamLive() {
   if (!affStream) return alert('Primero probá la cámara.');
   const title = document.getElementById('aff-cam-title-input')?.value || 'En Vivo';
-  const res = await fetch('/api/live-cam-start.php', {
-    method:'POST', credentials:'same-origin',
-    body: Object.assign(new FormData(), { title })
-  });
-  const fd = new FormData(); fd.append('title', title);
-  const r = await fetch('/api/live-cam-start.php', { method:'POST', credentials:'same-origin', body: fd });
-  const json = await r.json();
+
+  // ─ Un solo fetch al API ─
+  const fd = new FormData();
+  fd.append('title', title);
+  let json;
+  try {
+    const r = await fetch('/api/live-cam-start.php', { method:'POST', credentials:'same-origin', body: fd });
+    json = await r.json();
+  } catch(e) {
+    return alert('Error de red al iniciar: ' + e.message);
+  }
   if (!json.ok) return alert('Error al iniciar: ' + (json.msg || json.error));
-  affSessionId = json.session_id;
+
+  affSessionId  = json.session_id;
   affChunkIndex = 0;
-  affRecorder = new MediaRecorder(affStream, { mimeType: 'video/webm;codecs=vp8' });
+
+  // Iniciar grabación
+  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
+    ? 'video/webm;codecs=vp8' : 'video/webm';
+  affRecorder = new MediaRecorder(affStream, { mimeType });
   affRecorder.ondataavailable = async (e) => {
-    if (!e.data.size) return;
-    const fd = new FormData();
-    fd.append('session_id', affSessionId);
-    fd.append('index', affChunkIndex++);
-    fd.append('chunk', e.data, 'chunk.webm');
-    await fetch('/api/live-cam-chunk.php', { method:'POST', credentials:'same-origin', body: fd });
+    if (!e.data || !e.data.size) return;
+    const chunk = new FormData();
+    chunk.append('session_id', affSessionId);
+    chunk.append('index', affChunkIndex++);
+    chunk.append('chunk', e.data, 'chunk.webm');
+    fetch('/api/live-cam-chunk.php', { method:'POST', credentials:'same-origin', body: chunk });
   };
   affRecorder.start(2000);
+
+  // ─ Actualizar UI sin recargar ─
+  // Asegurar que el video sigue mostrando el stream
+  const vid  = document.getElementById('aff-cam-preview');
+  const wrap = document.getElementById('aff-cam-preview-wrap');
+  vid.srcObject = affStream;
+  wrap.style.display = '';
+
+  // Ocultar botones de inicio
+  document.getElementById('aff-btn-start-cam').style.display   = 'none';
+  document.getElementById('aff-btn-preview-cam').style.display = 'none';
+
+  // Timer
   let secs = 0;
   affTimerInterval = setInterval(() => {
     secs++;
     const t = document.getElementById('aff-cam-timer');
     if (t) t.textContent = String(Math.floor(secs/60)).padStart(2,'0') + ':' + String(secs%60).padStart(2,'0');
   }, 1000);
-  document.getElementById('aff-btn-start-cam').style.display = 'none';
-  document.getElementById('aff-btn-preview-cam').style.display = 'none';
-  location.reload();
+
+  // Mostrar estado + botón detener
+  const st = document.getElementById('aff-cam-status');
+  if (st) {
+    st.innerHTML = '<span style="color:#ef4444;font-weight:700;"><i class="fas fa-circle" style="animation:live-pulse 1s infinite;margin-right:5px;"></i>EN VIVO — Los clientes te están viendo en tu venta.</span>';
+    const stopBtn = document.createElement('button');
+    stopBtn.innerHTML = '<i class="fas fa-stop-circle"></i> Terminar Transmisión';
+    stopBtn.style.cssText = 'margin-top:12px;background:#ef4444;color:white;border:none;padding:11px 22px;border-radius:10px;font-weight:700;cursor:pointer;display:block;';
+    stopBtn.onclick = affStopCamLive;
+    st.after(stopBtn);
+  }
+
+  // Actualizar cabecera de la sección
+  const sec = document.getElementById('live-section');
+  if (sec) sec.style.borderColor = '#ef4444';
 }
 
 async function affStopCamLive() {
-  if (affRecorder) { affRecorder.stop(); }
+  if (affRecorder && affRecorder.state !== 'inactive') affRecorder.stop();
+  if (affStream) affStream.getTracks().forEach(t => t.stop());
   clearInterval(affTimerInterval);
-  const fd = new FormData(); fd.append('session_id', AFF_SESSION_ID);
+  const fd = new FormData();
+  fd.append('session_id', affSessionId || AFF_SESSION_ID);
   await fetch('/api/live-cam-stop.php', { method:'POST', credentials:'same-origin', body: fd });
   location.reload();
 }
