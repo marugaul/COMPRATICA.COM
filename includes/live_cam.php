@@ -25,6 +25,22 @@ function initLiveCamTables(PDO $pdo): void
     $have = array_column($cols, 'name');
     if (!in_array('live_type',       $have)) $pdo->exec("ALTER TABLE users ADD COLUMN live_type TEXT DEFAULT 'link'");
     if (!in_array('live_session_id', $have)) $pdo->exec("ALTER TABLE users ADD COLUMN live_session_id TEXT");
+
+    // Columna affiliate_id en live_cam_sessions (para afiliados de venta-garaje)
+    $scols = $pdo->query("PRAGMA table_info(live_cam_sessions)")->fetchAll(PDO::FETCH_ASSOC);
+    $shave = array_column($scols, 'name');
+    if (!in_array('affiliate_id', $shave))
+        $pdo->exec("ALTER TABLE live_cam_sessions ADD COLUMN affiliate_id INTEGER DEFAULT NULL");
+
+    // Columnas live en affiliates (si no existen)
+    $acols = $pdo->query("PRAGMA table_info(affiliates)")->fetchAll(PDO::FETCH_ASSOC);
+    $ahave = array_column($acols, 'name');
+    if (!in_array('is_live',         $ahave)) $pdo->exec("ALTER TABLE affiliates ADD COLUMN is_live INTEGER DEFAULT 0");
+    if (!in_array('live_title',      $ahave)) $pdo->exec("ALTER TABLE affiliates ADD COLUMN live_title TEXT");
+    if (!in_array('live_link',       $ahave)) $pdo->exec("ALTER TABLE affiliates ADD COLUMN live_link TEXT");
+    if (!in_array('live_started_at', $ahave)) $pdo->exec("ALTER TABLE affiliates ADD COLUMN live_started_at TEXT");
+    if (!in_array('live_type',       $ahave)) $pdo->exec("ALTER TABLE affiliates ADD COLUMN live_type TEXT DEFAULT 'link'");
+    if (!in_array('live_session_id', $ahave)) $pdo->exec("ALTER TABLE affiliates ADD COLUMN live_session_id TEXT");
 }
 
 /** Devuelve la ruta del directorio de chunks de una sesión. */
@@ -35,10 +51,11 @@ function liveCamDir(string $sessionId): string
 }
 
 /** Borra sesiones y archivos de hace más de 2 horas. */
-function cleanupOldCamSessions(PDO $pdo, int $sellerId): void
+function cleanupOldCamSessions(PDO $pdo, int $sellerId, bool $isAffiliate = false): void
 {
+    $col = $isAffiliate ? 'affiliate_id' : 'seller_id';
     $stmt = $pdo->prepare(
-        "SELECT id FROM live_cam_sessions WHERE seller_id=? AND started_at < datetime('now','-2 hours')"
+        "SELECT id FROM live_cam_sessions WHERE $col=? AND started_at < datetime('now','-2 hours')"
     );
     $stmt->execute([$sellerId]);
     foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $sid) {
@@ -49,6 +66,6 @@ function cleanupOldCamSessions(PDO $pdo, int $sellerId): void
         }
     }
     $pdo->prepare(
-        "DELETE FROM live_cam_sessions WHERE seller_id=? AND started_at < datetime('now','-2 hours')"
+        "DELETE FROM live_cam_sessions WHERE $col=? AND started_at < datetime('now','-2 hours')"
     )->execute([$sellerId]);
 }

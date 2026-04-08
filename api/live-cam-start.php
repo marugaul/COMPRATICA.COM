@@ -18,14 +18,19 @@ try {
         exit;
     }
 
-    $uid = (int)($_SESSION['uid'] ?? 0);
+    $uid    = (int)($_SESSION['uid']     ?? 0);
+    $affId  = (int)($_SESSION['aff_id'] ?? 0);
+    $isAffiliate = $affId > 0;
+    $sellerId    = $isAffiliate ? $affId : $uid;
     logError('live-cam.log', 'START request', [
         'uid'          => $uid,
+        'aff_id'       => $affId,
+        'is_affiliate' => $isAffiliate,
         'session_id'   => session_id(),
         'session_keys' => array_keys($_SESSION),
     ]);
 
-    if (!$uid) {
+    if (!$sellerId) {
         logError('live-cam.log', 'START blocked: not logged in');
         echo json_encode(['error' => 'not_logged_in', 'msg' => 'Sesión no encontrada. Recarga la página.']);
         exit;
@@ -34,13 +39,12 @@ try {
     $pdo = db();
     logError('live-cam.log', 'DB connected OK');
 
-    // Asegurar columnas y tablas (safe: usa CREATE IF NOT EXISTS / ALTER si falta)
     initLiveCamTables($pdo);
-    cleanupOldCamSessions($pdo, $uid);
+    cleanupOldCamSessions($pdo, $sellerId, $isAffiliate);
 
     $title     = trim($_POST['title'] ?? 'En Vivo con Cámara');
     $sessionId = bin2hex(random_bytes(16));
-    logError('live-cam.log', 'Creating session', ['session_id' => $sessionId, 'title' => $title, 'uid' => $uid]);
+    logError('live-cam.log', 'Creating session', ['session_id' => $sessionId, 'title' => $title, 'seller_id' => $sellerId, 'affiliate' => $isAffiliate]);
 
     // Asegurar directorio de storage
     $baseDir = __DIR__ . '/../storage/live-chunks';
@@ -57,19 +61,25 @@ try {
         exit;
     }
 
-    // Registrar sesión
-    $pdo->prepare("INSERT INTO live_cam_sessions (id, seller_id) VALUES (?,?)")
-        ->execute([$sessionId, $uid]);
+    // Registrar sesión (seller_id=0 para afiliados, affiliate_id para afiliados)
+    if ($isAffiliate) {
+        $pdo->prepare("INSERT INTO live_cam_sessions (id, seller_id, affiliate_id) VALUES (?,0,?)")
+            ->execute([$sessionId, $sellerId]);
+    } else {
+        $pdo->prepare("INSERT INTO live_cam_sessions (id, seller_id) VALUES (?,?)")
+            ->execute([$sessionId, $sellerId]);
+    }
     logError('live-cam.log', 'Session inserted in DB');
 
-    // Activar live con tipo cámara
+    // Activar live con tipo cámara en la tabla correcta
+    $table = $isAffiliate ? 'affiliates' : 'users';
     $stmt = $pdo->prepare("
-        UPDATE users
+        UPDATE $table
         SET is_live=1, live_type='camera', live_session_id=?, live_title=?,
             live_link=NULL, live_started_at=datetime('now')
         WHERE id=?
     ");
-    $stmt->execute([$sessionId, $title ?: 'En Vivo con Cámara', $uid]);
+    $stmt->execute([$sessionId, $title ?: 'En Vivo con Cámara', $sellerId]);
     logError('live-cam.log', 'User updated', ['rows_affected' => $stmt->rowCount()]);
 
     echo json_encode(['ok' => true, 'session_id' => $sessionId]);
