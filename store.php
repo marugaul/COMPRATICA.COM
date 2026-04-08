@@ -115,6 +115,7 @@ logStore('CSRF_SET', ['csrf' => substr($csrf, 0, 16) . '...']);
 // CONEXIÓN A BASE DE DATOS
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/live_embed.php';
 
 logStore('CONFIG_LOADED');
 
@@ -133,7 +134,12 @@ if (!$sale_id || $sale_id <= 0) {
 }
 
 $stmt = $pdo->prepare("
-    SELECT s.*, a.name AS affiliate_name, a.phone AS affiliate_phone
+    SELECT s.*, a.name AS affiliate_name, a.phone AS affiliate_phone,
+           COALESCE(a.is_live,0)        AS aff_is_live,
+           a.live_title                 AS aff_live_title,
+           a.live_link                  AS aff_live_link,
+           COALESCE(a.live_type,'link') AS aff_live_type,
+           a.live_session_id            AS aff_live_session_id
     FROM sales s
     JOIN affiliates a ON a.id = s.affiliate_id
     WHERE s.id = ? AND s.is_active = 1
@@ -1360,6 +1366,147 @@ foreach ($_SESSION['cart'] as $it) {
       <span class="countdown-text">…</span>
     </div>
   </div>
+
+  <?php if (!empty($sale['aff_is_live'])): ?>
+  <?php
+    $liveType  = $sale['aff_live_type'] ?? 'link';
+    $liveTitle = h($sale['aff_live_title'] ?: 'EN VIVO');
+    $liveLink  = $sale['aff_live_link'] ?? '';
+    $liveSid   = $sale['aff_live_session_id'] ?? '';
+    $embed     = $liveLink ? parseLiveUrl($liveLink) : [];
+  ?>
+  <style>
+  @keyframes store-live-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+  .store-live-wrap {
+    margin-top: 1.4rem;
+    background: rgba(0,0,0,.35);
+    border: 1.5px solid rgba(239,68,68,.7);
+    border-radius: 14px;
+    padding: 12px 14px;
+    max-width: 380px;
+    width: 100%;
+    backdrop-filter: blur(6px);
+  }
+  .store-live-header {
+    display: flex; align-items: center; gap: 10px;
+    justify-content: space-between; margin-bottom: 10px;
+  }
+  .store-live-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #ef4444; color: white; border-radius: 20px;
+    padding: 3px 11px; font-size: .8rem; font-weight: 700;
+    letter-spacing: .03em;
+  }
+  .store-live-badge .dot {
+    width: 7px; height: 7px; background: white; border-radius: 50%;
+    animation: store-live-pulse 1.2s infinite;
+  }
+  .store-live-title { color: rgba(255,255,255,.9); font-size: .88rem; font-weight: 600; }
+  .store-live-toggle {
+    background: none; border: none; color: rgba(255,255,255,.5);
+    cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 6px;
+    transition: color .2s;
+  }
+  .store-live-toggle:hover { color: white; }
+  .store-live-player { border-radius: 10px; overflow: hidden; background: #000; aspect-ratio: 16/9; }
+  .store-live-player iframe, .store-live-player video { width:100%; height:100%; display:block; border:0; }
+  .store-live-link-btn {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,.1); border: 1.5px solid rgba(255,255,255,.2);
+    border-radius: 10px; padding: 12px 16px; text-decoration: none;
+    color: white; font-weight: 600; font-size: .92rem; transition: background .2s;
+  }
+  .store-live-link-btn:hover { background: rgba(255,255,255,.18); }
+  .store-live-link-btn i { font-size: 1.4rem; }
+  </style>
+
+  <div class="store-live-wrap" id="storeLiveWrap">
+    <div class="store-live-header">
+      <span class="store-live-badge"><span class="dot"></span> EN VIVO</span>
+      <span class="store-live-title"><?= $liveTitle ?></span>
+      <button class="store-live-toggle" onclick="document.getElementById('storeLiveBody').style.display=document.getElementById('storeLiveBody').style.display==='none'?'':'none'; this.innerHTML=this.innerHTML.includes('chevron-down')?'<i class=\'fas fa-chevron-up\'></i>':'<i class=\'fas fa-chevron-down\'></i>';" title="Minimizar/Expandir">
+        <i class="fas fa-chevron-up"></i>
+      </button>
+    </div>
+
+    <div id="storeLiveBody">
+      <?php if ($liveType === 'camera' && $liveSid): ?>
+        <!-- ── Cámara del vendedor ── -->
+        <div class="store-live-player">
+          <video id="storeLiveVideo" autoplay playsinline style="background:#000;"></video>
+        </div>
+        <p style="color:rgba(255,255,255,.5);font-size:.75rem;margin:6px 0 0;text-align:center;">
+          <i class="fas fa-circle" style="color:#ef4444;font-size:.5rem;animation:store-live-pulse 1.2s infinite;"></i>
+          Transmisión en vivo desde la tienda
+        </p>
+        <script>
+        (function(){
+          const SID = <?= json_encode($liveSid) ?>;
+          let nextChunk = 0, sourceBuffer, mediaSource, ended = false;
+          const video = document.getElementById('storeLiveVideo');
+          if (!window.MediaSource) return;
+          mediaSource = new MediaSource();
+          video.src = URL.createObjectURL(mediaSource);
+          mediaSource.addEventListener('sourceopen', () => {
+            sourceBuffer = mediaSource.addSourceBuffer('video/webm;codecs=vp8');
+            poll();
+          });
+          async function poll() {
+            if (ended) return;
+            try {
+              const r = await fetch('/api/live-cam-poll.php?session_id=' + SID);
+              const d = await r.json();
+              if (d.ended && d.chunk_count <= nextChunk) {
+                ended = true;
+                if (mediaSource.readyState === 'open') mediaSource.endOfStream();
+                return;
+              }
+              while (nextChunk < d.chunk_count) {
+                const cr = await fetch('/api/live-cam-serve.php?session_id=' + SID + '&index=' + nextChunk);
+                if (!cr.ok) break;
+                const buf = await cr.arrayBuffer();
+                await new Promise(res => {
+                  if (sourceBuffer.updating) sourceBuffer.addEventListener('updateend', res, {once:true});
+                  else res();
+                });
+                sourceBuffer.appendBuffer(buf);
+                nextChunk++;
+              }
+              if (video.paused && video.readyState >= 2) video.play().catch(()=>{});
+            } catch(e) {}
+            setTimeout(poll, 2000);
+          }
+        })();
+        </script>
+
+      <?php elseif (!empty($embed['embedUrl'])): ?>
+        <!-- ── YouTube / Facebook embed ── -->
+        <div class="store-live-player">
+          <iframe src="<?= h($embed['embedUrl']) ?>"
+                  allow="autoplay; fullscreen; encrypted-media"
+                  allowfullscreen loading="lazy"></iframe>
+        </div>
+
+      <?php elseif ($liveLink): ?>
+        <!-- ── Instagram / TikTok: solo enlace ── -->
+        <a href="<?= h($liveLink) ?>" target="_blank" rel="noopener" class="store-live-link-btn">
+          <i class="<?= h($embed['icon'] ?? 'fas fa-video') ?>" style="color:<?= h($embed['color'] ?? '#ef4444') ?>;"></i>
+          <span>Ver en vivo en <?= h($embed['platform'] ?? 'Live') ?><br>
+            <small style="font-weight:400;opacity:.7;">Abre en nueva pestaña</small>
+          </span>
+          <i class="fas fa-external-link-alt" style="margin-left:auto;opacity:.5;"></i>
+        </a>
+
+      <?php else: ?>
+        <!-- ── Live activo sin link ── -->
+        <p style="color:rgba(255,255,255,.7);font-size:.88rem;margin:0;text-align:center;padding:8px 0;">
+          El vendedor está transmitiendo en vivo ahora.
+        </p>
+      <?php endif; ?>
+    </div>
+  </div>
+  <?php endif; /* aff_is_live */ ?>
+
 </section>
 
 <!-- PRODUCTS -->
