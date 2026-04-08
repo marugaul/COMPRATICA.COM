@@ -796,7 +796,11 @@ const AFF_SESSION_ID = <?= json_encode($liveData['live_session_id'] ?? '') ?>;
 
 async function affPreviewCamera() {
   try {
-    affStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+    // SD quality (480p / 15fps) — suficiente para live de venta de garaje
+    affStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15 } },
+      audio: true
+    });
     const vid  = document.getElementById('aff-cam-preview');
     const wrap = document.getElementById('aff-cam-preview-wrap');
     vid.srcObject = affStream;
@@ -831,7 +835,7 @@ async function affStartCamLive() {
   // Iniciar grabación
   const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
     ? 'video/webm;codecs=vp8' : 'video/webm';
-  affRecorder = new MediaRecorder(affStream, { mimeType });
+  affRecorder = new MediaRecorder(affStream, { mimeType, videoBitsPerSecond: 400000 });
   affRecorder.ondataavailable = async (e) => {
     if (!e.data || !e.data.size) return;
     const chunk = new FormData();
@@ -840,7 +844,7 @@ async function affStartCamLive() {
     chunk.append('chunk', e.data, 'chunk.webm');
     fetch('/api/live-cam-chunk.php', { method:'POST', credentials:'same-origin', body: chunk });
   };
-  affRecorder.start(2000);
+  affRecorder.start(1000); // chunks cada 1s = menos latencia
 
   // ─ Actualizar UI sin recargar ─
   // Asegurar que el video sigue mostrando el stream

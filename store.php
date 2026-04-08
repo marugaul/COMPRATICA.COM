@@ -1434,41 +1434,40 @@ foreach ($_SESSION['cart'] as $it) {
         <!-- ── Cámara del vendedor ── -->
         <div class="store-live-player" id="storeLivePlayerWrap">
           <video id="storeLiveVideo" autoplay playsinline muted
-                 style="background:#000;cursor:pointer;"
+                 style="background:#000;cursor:pointer;width:100%;height:100%;"
                  onclick="this.muted=false;this.play();"></video>
         </div>
-        <p id="storeLiveStatus" style="color:rgba(255,255,255,.5);font-size:.75rem;margin:6px 0 0;text-align:center;">
-          <i class="fas fa-circle" style="color:#ef4444;font-size:.5rem;animation:store-live-pulse 1.2s infinite;"></i>
-          Conectando transmisión… <span style="opacity:.6;">(tocá el video si no hay sonido)</span>
+        <p id="storeLiveStatus" style="color:rgba(255,255,255,.6);font-size:.75rem;margin:6px 0 0;text-align:center;">
+          Conectando… (tocá el video si no hay sonido)
         </p>
         <script>
         (function(){
           const SID   = <?= json_encode($liveSid) ?>;
+          const AFF   = <?= (int)$sale['affiliate_id'] ?>;
           const video = document.getElementById('storeLiveVideo');
           const statusEl = document.getElementById('storeLiveStatus');
-          let nextChunk = 0, sourceBuffer = null, mediaSource = null, ended = false;
+          function setStatus(msg) { if (statusEl) statusEl.innerHTML = msg; }
 
-          function setStatus(msg) {
-            if (statusEl) statusEl.innerHTML = msg;
+          // ── Detectar Safari/iOS: WebM no compatible ──────────────────
+          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+          const isIOS    = /iPad|iPhone|iPod/.test(navigator.userAgent);
+          if (isSafari || isIOS) {
+            document.getElementById('storeLivePlayerWrap').innerHTML =
+              '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:20px;text-align:center;color:#aaa;font-size:.85rem;">' +
+              '<div><i class="fas fa-mobile-alt" style="font-size:2rem;margin-bottom:10px;display:block;"></i>' +
+              'Safari no soporta cámara en vivo.<br>Usá Chrome o abrí en Android para ver la transmisión.</div></div>';
+            setStatus('');
+            // Igual verificar si termina para ocultar el panel
+            setInterval(async()=>{
+              try{const r=await fetch('/api/aff-live-status.php?affiliate_id='+AFF);const d=await r.json();
+              if(!d.is_live){const w=document.getElementById('storeLiveWrap');if(w)w.style.display='none';}}catch(e){}
+            }, 15000);
+            return;
           }
 
-          // Espera a que el sourceBuffer no esté actualizando, luego appendea y espera fin
-          function appendWhenReady(buf) {
-            return new Promise((resolve, reject) => {
-              function doAppend() {
-                try {
-                  sourceBuffer.appendBuffer(buf);
-                  sourceBuffer.addEventListener('updateend', resolve, { once: true });
-                  sourceBuffer.addEventListener('error',     reject,  { once: true });
-                } catch(e) { reject(e); }
-              }
-              if (sourceBuffer.updating) {
-                sourceBuffer.addEventListener('updateend', doAppend, { once: true });
-              } else {
-                doAppend();
-              }
-            });
-          }
+          // ── Approach: Blob acumulativo (más compatible que MediaSource) ──
+          const buffers = [];
+          let nextChunk = 0, blobUrl = null, playing = false, ended = false;
 
           async function poll() {
             if (ended) return;
@@ -1479,51 +1478,67 @@ foreach ($_SESSION['cart'] as $it) {
 
               if (d.ended && d.chunk_count <= nextChunk) {
                 ended = true;
-                if (mediaSource && mediaSource.readyState === 'open') mediaSource.endOfStream();
-                // Ocultar panel — el live terminó
-                const wrap = document.getElementById('storeLiveWrap');
-                if (wrap) wrap.style.display = 'none';
+                document.getElementById('storeLiveWrap').style.display = 'none';
                 return;
               }
 
-              // Descargar y appendear todos los chunks nuevos en orden
+              // Descargar chunks nuevos
               while (nextChunk < d.chunk_count) {
                 const cr = await fetch('/api/live-cam-serve.php?session_id=' + SID + '&index=' + nextChunk);
                 if (!cr.ok) break;
-                const buf = await cr.arrayBuffer();
-                await appendWhenReady(buf);
+                buffers.push(await cr.arrayBuffer());
                 nextChunk++;
               }
 
-              // Intentar play (puede estar bloqueado por autoplay policy)
-              if (video.paused && video.readyState >= 2) {
-                video.play().then(() => {
-                  setStatus('<i class="fas fa-circle" style="color:#ef4444;font-size:.5rem;animation:store-live-pulse 1.2s infinite;"></i> Transmisión en vivo 🔴');
-                }).catch(() => {
-                  setStatus('▶ Tocá el video para ver la transmisión en vivo');
-                });
+              // Reproducir cuando tengamos al menos 2 chunks (init + primer frame)
+              if (!playing && buffers.length >= 2) {
+                playing = true;
+                const blob = new Blob(buffers.map(b => new Uint8Array(b)), { type: 'video/webm' });
+                blobUrl = URL.createObjectURL(blob);
+                video.src = blobUrl;
+                video.addEventListener('loadedmetadata', () => {
+                  // Saltar al final para sensación de "en vivo"
+                  if (video.duration && isFinite(video.duration) && video.duration > 3)
+                    video.currentTime = video.duration - 2;
+                  video.play().then(() => {
+                    setStatus('<i class="fas fa-circle" style="color:#ef4444;font-size:.5rem;animation:store-live-pulse 1.2s infinite;"></i> EN VIVO 🔴 — tocá para activar sonido');
+                  }).catch(() => {
+                    setStatus('▶ Tocá el video para ver la transmisión');
+                  });
+                }, { once: true });
               }
-            } catch(e) {
-              // error silencioso — reintenta
-            }
-            setTimeout(poll, 2000);
+
+              // Cuando el video llega al final, agregar nuevos chunks y continuar
+              if (playing && video.ended && buffers.length > nextChunk - 1) {
+                const pos = video.currentTime;
+                if (blobUrl) URL.revokeObjectURL(blobUrl);
+                const blob = new Blob(buffers.map(b => new Uint8Array(b)), { type: 'video/webm' });
+                blobUrl = URL.createObjectURL(blob);
+                video.src = blobUrl;
+                video.addEventListener('loadedmetadata', () => {
+                  video.currentTime = Math.max(pos, video.duration - 2);
+                  video.play().catch(() => {});
+                }, { once: true });
+              }
+            } catch(e) {}
+            setTimeout(poll, 1500);
           }
 
-          if (!window.MediaSource || !MediaSource.isTypeSupported('video/webm;codecs=vp8')) {
-            setStatus('⚠ Tu navegador no soporta streaming de cámara en vivo.');
-            return;
-          }
+          poll();
 
-          mediaSource = new MediaSource();
-          video.src   = URL.createObjectURL(mediaSource);
-          mediaSource.addEventListener('sourceopen', () => {
+          // Fallback: verificar cada 15s si el live terminó (por si la sesión
+          // se cerró sin que el poll de chunks lo detecte)
+          setInterval(async () => {
             try {
-              sourceBuffer = mediaSource.addSourceBuffer('video/webm;codecs=vp8');
-              poll();
-            } catch(e) {
-              setStatus('⚠ Error al iniciar el reproductor: ' + e.message);
-            }
-          });
+              const r = await fetch('/api/aff-live-status.php?affiliate_id=' + AFF);
+              const d = await r.json();
+              if (!d.is_live) {
+                ended = true;
+                const w = document.getElementById('storeLiveWrap');
+                if (w) w.style.display = 'none';
+              }
+            } catch(e) {}
+          }, 15000);
         })();
         </script>
 
