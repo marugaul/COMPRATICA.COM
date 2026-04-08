@@ -274,14 +274,14 @@ foreach ($allSales as $sale) {
 
   $estado = 'Finalizada';
   if ($nowTs >= $st && $nowTs <= $en) {
-    $estado = 'En vivo';
+    $estado = 'Activa';
   } elseif ($nowTs < $st) {
     $estado = 'Próxima';
   }
 
   // Aplicar filtro de estado
   if ($filtroEstado === 'todas' ||
-      ($filtroEstado === 'vivo' && $estado === 'En vivo') ||
+      ($filtroEstado === 'vivo' && $estado === 'Activa') ||
       ($filtroEstado === 'proximas' && $estado === 'Próxima')) {
     $sales[] = $sale;
   }
@@ -1876,7 +1876,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
           </a>
           <a href="?buscar=<?= urlencode($busqueda) ?>&estado=vivo&orden=<?= urlencode($ordenamiento) ?>&categoria=<?= urlencode($filtroCategoria) ?>"
              class="filter-pill <?= $filtroEstado === 'vivo' ? 'active' : '' ?>">
-            🔴 En Vivo
+            🟢 Activas
           </a>
           <a href="?buscar=<?= urlencode($busqueda) ?>&estado=proximas&orden=<?= urlencode($ordenamiento) ?>&categoria=<?= urlencode($filtroCategoria) ?>"
              class="filter-pill <?= $filtroEstado === 'proximas' ? 'active' : '' ?>">
@@ -1947,7 +1947,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       $state = 'Próxima';
       $color = '#2563eb';
       if ($nowTs >= $st && $nowTs <= $en) {
-        $state = 'En vivo';
+        $state = 'Activa';
         $color = '#27ae60';
       } elseif ($nowTs > $en) {
         $state = 'Finalizada';
@@ -1955,7 +1955,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
       }
 
       $secondary = null; $secClass = '';
-      if ($state === 'En vivo' && same_date($en, $nowTs)) {
+      if ($state === 'Activa' && same_date($en, $nowTs)) {
         $secondary = 'Último día'; $secClass = 'chip chip-red';
       } elseif (same_date($st, $nowTs)) {
         $secondary = 'Hoy';        $secClass = 'chip chip-orange';
@@ -2131,7 +2131,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
             <span class="date-value"><?php echo date('d/m/Y H:i:s', $en); ?></span>
           </div>
           
-          <?php if ($state === 'En vivo'): ?>
+          <?php if ($state === 'Activa'): ?>
             <div class="countdown-box live">
               <i class="fas fa-hourglass-half"></i>
               <strong>Termina en:</strong>
@@ -2146,7 +2146,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
           <?php endif; ?>
 
           <!-- ETAPA 2: Progress Bar -->
-          <?php if ($state === 'En vivo'):
+          <?php if ($state === 'Activa'):
             $totalDuration = $en - $st;
             $elapsed = $nowTs - $st;
             $percentage = ($elapsed / $totalDuration) * 100;
@@ -2162,7 +2162,7 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
         </div>
 
         <div class="actions">
-          <?php if ($state === 'En vivo'): ?>
+          <?php if ($state === 'Activa'): ?>
             <a class="btn-primary" href="<?php echo clean_url_tienda((int)$s['id'], $s['title'] ?? ''); ?>">
               <i class="fas fa-shopping-bag"></i> Entrar a la Venta
             </a>
