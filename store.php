@@ -1367,6 +1367,24 @@ foreach ($_SESSION['cart'] as $it) {
     </div>
   </div>
 
+  <?php
+    // Validar que el live sigue activo antes de renderizar el panel
+    if (!empty($sale['aff_is_live'])) {
+        $liveType  = $sale['aff_live_type'] ?? 'link';
+        $liveSid   = $sale['aff_live_session_id'] ?? '';
+        if ($liveType === 'camera' && $liveSid) {
+            $camCheck = $pdo->prepare("SELECT status FROM live_cam_sessions WHERE id=? LIMIT 1");
+            $camCheck->execute([$liveSid]);
+            $camRow = $camCheck->fetch(PDO::FETCH_ASSOC);
+            if (!$camRow || $camRow['status'] !== 'active') {
+                // Sesión de cámara terminada — apagar el live en la BD
+                $pdo->prepare("UPDATE affiliates SET is_live=0, live_session_id=NULL WHERE id=?")
+                    ->execute([$sale['affiliate_id']]);
+                $sale['aff_is_live'] = 0;
+            }
+        }
+    }
+  ?>
   <?php if (!empty($sale['aff_is_live'])): ?>
   <?php
     $liveType  = $sale['aff_live_type'] ?? 'link';
@@ -1457,17 +1475,43 @@ foreach ($_SESSION['cart'] as $it) {
               '<div><i class="fas fa-mobile-alt" style="font-size:2rem;margin-bottom:10px;display:block;"></i>' +
               'Safari no soporta cámara en vivo.<br>Usá Chrome o abrí en Android para ver la transmisión.</div></div>';
             setStatus('');
-            // Igual verificar si termina para ocultar el panel
+            // Verificar cada 5s si termina para ocultar el panel
             setInterval(async()=>{
               try{const r=await fetch('/api/aff-live-status.php?affiliate_id='+AFF);const d=await r.json();
               if(!d.is_live){const w=document.getElementById('storeLiveWrap');if(w)w.style.display='none';}}catch(e){}
-            }, 15000);
+            }, 5000);
             return;
           }
 
-          // ── Approach: Blob acumulativo (más compatible que MediaSource) ──
-          const buffers = [];
-          let nextChunk = 0, blobUrl = null, playing = false, ended = false;
+          // ── Sliding window: init chunk + últimos MAX_WIN chunks ──────────
+          // Mantiene el lag mínimo (~2-3s): solo se descarga y reproduce
+          // el segmento reciente, no toda la transmisión desde el principio.
+          const MAX_WIN  = 7;   // init + 7 chunks recientes ≈ 3.5s a 500ms/chunk
+          let initBuf    = null; // primer chunk siempre presente (header WebM)
+          const recent   = [];   // ventana deslizante
+          let nextChunk  = 0, blobUrl = null, playing = false, ended = false;
+
+          function buildBlob() {
+            const parts = initBuf ? [initBuf, ...recent] : [...recent];
+            return new Blob(parts.map(b => new Uint8Array(b)), { type: 'video/webm' });
+          }
+
+          function playBlob() {
+            if (blobUrl) URL.revokeObjectURL(blobUrl);
+            const blob = buildBlob();
+            blobUrl = URL.createObjectURL(blob);
+            video.src = blobUrl;
+            video.addEventListener('loadedmetadata', () => {
+              // Saltar al borde del live (casi el final del blob)
+              if (video.duration && isFinite(video.duration) && video.duration > 0.5)
+                video.currentTime = Math.max(0, video.duration - 0.5);
+              video.play().then(() => {
+                setStatus('<i class="fas fa-circle" style="color:#ef4444;font-size:.5rem;animation:store-live-pulse 1.2s infinite;"></i> EN VIVO 🔴 — tocá para activar sonido');
+              }).catch(() => {
+                setStatus('▶ Tocá el video para ver la transmisión');
+              });
+            }, { once: true });
+          }
 
           async function poll() {
             if (ended) return;
@@ -1476,69 +1520,58 @@ foreach ($_SESSION['cart'] as $it) {
               if (!r.ok) { setTimeout(poll, 3000); return; }
               const d = await r.json();
 
-              if (d.ended && d.chunk_count <= nextChunk) {
+              if (d.ended) {
                 ended = true;
                 document.getElementById('storeLiveWrap').style.display = 'none';
+                if (blobUrl) URL.revokeObjectURL(blobUrl);
                 return;
               }
 
               // Descargar chunks nuevos
+              let gotNew = false;
               while (nextChunk < d.chunk_count) {
                 const cr = await fetch('/api/live-cam-serve.php?session_id=' + SID + '&index=' + nextChunk);
                 if (!cr.ok) break;
-                buffers.push(await cr.arrayBuffer());
+                const buf = await cr.arrayBuffer();
+                if (nextChunk === 0) {
+                  initBuf = buf;          // header siempre guardado
+                } else {
+                  recent.push(buf);
+                  if (recent.length > MAX_WIN) recent.shift(); // ventana deslizante
+                }
                 nextChunk++;
+                gotNew = true;
               }
 
-              // Reproducir cuando tengamos al menos 2 chunks (init + primer frame)
-              if (!playing && buffers.length >= 2) {
+              // Primera reproducción (necesita init + al menos 1 chunk de datos)
+              if (!playing && initBuf && recent.length >= 1) {
                 playing = true;
-                const blob = new Blob(buffers.map(b => new Uint8Array(b)), { type: 'video/webm' });
-                blobUrl = URL.createObjectURL(blob);
-                video.src = blobUrl;
-                video.addEventListener('loadedmetadata', () => {
-                  // Saltar al final para sensación de "en vivo"
-                  if (video.duration && isFinite(video.duration) && video.duration > 3)
-                    video.currentTime = video.duration - 2;
-                  video.play().then(() => {
-                    setStatus('<i class="fas fa-circle" style="color:#ef4444;font-size:.5rem;animation:store-live-pulse 1.2s infinite;"></i> EN VIVO 🔴 — tocá para activar sonido');
-                  }).catch(() => {
-                    setStatus('▶ Tocá el video para ver la transmisión');
-                  });
-                }, { once: true });
+                playBlob();
               }
 
-              // Cuando el video llega al final, agregar nuevos chunks y continuar
-              if (playing && video.ended && buffers.length > nextChunk - 1) {
-                const pos = video.currentTime;
-                if (blobUrl) URL.revokeObjectURL(blobUrl);
-                const blob = new Blob(buffers.map(b => new Uint8Array(b)), { type: 'video/webm' });
-                blobUrl = URL.createObjectURL(blob);
-                video.src = blobUrl;
-                video.addEventListener('loadedmetadata', () => {
-                  video.currentTime = Math.max(pos, video.duration - 2);
-                  video.play().catch(() => {});
-                }, { once: true });
+              // Actualizar el blob con los chunks recientes cuando el video para
+              if (playing && gotNew && (video.ended || video.paused)) {
+                playBlob();
               }
             } catch(e) {}
-            setTimeout(poll, 1500);
+            setTimeout(poll, 800);
           }
 
           poll();
 
-          // Fallback: verificar cada 15s si el live terminó (por si la sesión
-          // se cerró sin que el poll de chunks lo detecte)
+          // Fallback: verificar cada 5s si el live terminó
           setInterval(async () => {
             try {
               const r = await fetch('/api/aff-live-status.php?affiliate_id=' + AFF);
               const d = await r.json();
               if (!d.is_live) {
                 ended = true;
+                if (blobUrl) URL.revokeObjectURL(blobUrl);
                 const w = document.getElementById('storeLiveWrap');
                 if (w) w.style.display = 'none';
               }
             } catch(e) {}
-          }, 15000);
+          }, 5000);
         })();
         </script>
 
@@ -1550,7 +1583,7 @@ foreach ($_SESSION['cart'] as $it) {
                   allowfullscreen loading="lazy"></iframe>
         </div>
         <script>
-        // Verificar cada 15s si el live sigue activo (modo link)
+        // Verificar cada 5s si el live sigue activo (modo link)
         (function(){
           const AFF_ID = <?= (int)$sale['affiliate_id'] ?>;
           setInterval(async () => {
@@ -1562,7 +1595,7 @@ foreach ($_SESSION['cart'] as $it) {
                 if (w) w.style.display = 'none';
               }
             } catch(e) {}
-          }, 15000);
+          }, 5000);
         })();
         </script>
 
