@@ -143,14 +143,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pm = $pdo->query("SELECT * FROM affiliate_payment_methods WHERE affiliate_id={$affiliate_id} LIMIT 1")->fetch(PDO::FETCH_ASSOC) ?: [];
     $has_sinpe  = !empty($pm['active_sinpe'])  && !empty($pm['sinpe_phone']);
     $has_paypal = !empty($pm['active_paypal']) && !empty($pm['paypal_email']) && filter_var($pm['paypal_email'], FILTER_VALIDATE_EMAIL);
+    $has_card   = !empty($pm['active_card']);
 
-    if ($method === 'sinpe' && !$has_sinpe)   $msg = 'El afiliado no tiene SINPE habilitado.';
+    if ($method === 'sinpe'  && !$has_sinpe)  $msg = 'El afiliado no tiene SINPE habilitado.';
     if ($method === 'paypal' && !$has_paypal) $msg = 'El afiliado no tiene PayPal habilitado.';
+    if ($method === 'card'   && !$has_card)   $msg = 'El afiliado no tiene pago con tarjeta habilitado.';
   }
 
   // Totales
   if (!$msg) {
     $tot = totals_from_product($p, $qty, $shipping);
+  }
+
+  // ------------------ TARJETA (SwiftPay) ------------------
+  // Reutiliza crearOrdenSwiftPay() cargando el mismo contexto de sesión.
+  // reference_table='orders' → swiftpay-charge.php llama crearOrdenSwiftPay() sin cambios.
+  if (!$msg && $method === 'card') {
+    $step = 'card';
+    $_SESSION['swiftpay_checkout'] = [
+      'user_email'    => $buyer_email,
+      'user_phone'    => $buyer_phone,
+      'user_name'     => '',
+      'affiliate_id'  => $affiliate_id,
+      'sale_id'       => $sale_id,
+      'grand_total'   => $tot['total_crc'],
+      'currency'      => 'CRC',
+      'exchange_rate' => $tot['exrate'],
+      'cart_id'       => 0, // no hay carrito que limpiar
+      'items'         => [[
+        'product_id' => $product_id,
+        'name'       => $p['name'] ?? 'Producto',
+        'quantity'   => $qty,
+        'unit_price' => $qty > 0 ? round($tot['subtotal_crc'] / $qty, 2) : $tot['subtotal_crc'],
+        'tax_rate'   => 0,
+      ]],
+    ];
   }
 
   // ------------------ PAYPAL (afiliado) ------------------
@@ -331,6 +358,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <button class="btn primary" type="submit">Enviar comprobante</button>
         </form>
         <p class="note">Recibirás confirmación por correo. Tu pedido quedará <strong>Pendiente</strong> hasta validar el pago.</p>
+      </div>
+
+    <?php elseif ($step === 'card'): ?>
+      <div class="card">
+        <h3 style="margin:0 0 4px;">Pago con Tarjeta</h3>
+        <p style="margin:0 0 16px;color:#555;font-size:.9rem;">
+          <?= htmlspecialchars($p['name'] ?? 'Producto') ?> &times; <?= (int)$qty ?>
+          &nbsp;—&nbsp; <strong>₡<?= number_format($tot['total_crc'], 0, ',', '.') ?></strong>
+        </p>
+        <?php
+          $sp_amount          = number_format($tot['total_crc'], 2, '.', '');
+          $sp_currency        = 'CRC';
+          $sp_description     = ($p['name'] ?? 'Producto') . ' x' . $qty . ' — Venta de Garaje';
+          $sp_reference_id    = $affiliate_id; // usado solo como referencia; orden la crea crearOrdenSwiftPay()
+          $sp_reference_table = 'orders';      // reutiliza el helper existente sin código extra
+          $sp_extra_fields    = [];
+          $sp_success_url     = '/gracias.php';
+          $sp_cancel_url      = 'javascript:history.back()';
+          include __DIR__ . '/views/swiftpay-button.php';
+        ?>
       </div>
 
     <?php elseif ($step === 'done'): ?>
