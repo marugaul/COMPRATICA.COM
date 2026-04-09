@@ -172,7 +172,7 @@ if (!defined('STRIPE_SECRET_KEY')) define('STRIPE_SECRET_KEY', '');
 // JWT: token proporcionado por SwiftPay para cada ambiente
 // ══════════════════════════════════════════════════════════════════════
 
-if (!defined('SWIFTPAY_SANDBOX')) define('SWIFTPAY_SANDBOX', true); // ← cambiar a false para producción
+if (!defined('SWIFTPAY_SANDBOX')) define('SWIFTPAY_SANDBOX', false); // producción activa
 
 // ── Sandbox (QA) — misma URL base, rutas /api/card/qa/ ────────────────
 if (!defined('SWIFTPAY_URL_SANDBOX')) define('SWIFTPAY_URL_SANDBOX', 'https://swiftportals.com');
@@ -180,7 +180,7 @@ if (!defined('SWIFTPAY_JWT_SANDBOX')) define('SWIFTPAY_JWT_SANDBOX', 'eyJhbGciOi
 
 // ── Producción (Live) — misma URL base, rutas /api/card/ ──────────────
 if (!defined('SWIFTPAY_URL_LIVE')) define('SWIFTPAY_URL_LIVE', 'https://swiftportals.com');
-if (!defined('SWIFTPAY_JWT_LIVE')) define('SWIFTPAY_JWT_LIVE', 'REEMPLAZAR_CON_JWT_PRODUCCION');
+if (!defined('SWIFTPAY_JWT_LIVE')) define('SWIFTPAY_JWT_LIVE', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudF9pZCI6NDgsImlhdCI6MTc3NTc2NzI4NH0.JboUI9XuULmMGSemgl4ZvabRZCcaKoDMD2Iv-MzV4gY');
 
 // =========================
 // Sightengine API (Moderación de Imágenes)

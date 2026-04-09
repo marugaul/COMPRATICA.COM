@@ -19,6 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
             ->execute([$liveTitle ?: 'EN VIVO', $liveLink ?: null, $aff_id]);
         $liveMsg = ['ok', '🔴 ¡Estás EN VIVO! Tu venta aparece primero en el listado.'];
     } else {
+        // Terminar también la sesión de cámara si existe
+        $curLive = $pdo->prepare("SELECT live_session_id, live_type FROM affiliates WHERE id=? LIMIT 1");
+        $curLive->execute([$aff_id]);
+        $curRow = $curLive->fetch(PDO::FETCH_ASSOC);
+        if (($curRow['live_type'] ?? '') === 'camera' && !empty($curRow['live_session_id'])) {
+            $pdo->prepare("UPDATE live_cam_sessions SET status='ended', ended_at=datetime('now') WHERE id=?")
+                ->execute([$curRow['live_session_id']]);
+        }
         $pdo->prepare("UPDATE affiliates SET is_live=0, live_title=NULL, live_link=NULL, live_started_at=NULL, live_type='link', live_session_id=NULL WHERE id=?")
             ->execute([$aff_id]);
         $liveMsg = ['info', '⚫ Transmisión finalizada.'];
@@ -835,7 +843,7 @@ async function affStartCamLive() {
   // Iniciar grabación
   const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
     ? 'video/webm;codecs=vp8' : 'video/webm';
-  affRecorder = new MediaRecorder(affStream, { mimeType, videoBitsPerSecond: 400000 });
+  affRecorder = new MediaRecorder(affStream, { mimeType, videoBitsPerSecond: 350000 });
   affRecorder.ondataavailable = async (e) => {
     if (!e.data || !e.data.size) return;
     const chunk = new FormData();
@@ -844,7 +852,7 @@ async function affStartCamLive() {
     chunk.append('chunk', e.data, 'chunk.webm');
     fetch('/api/live-cam-chunk.php', { method:'POST', credentials:'same-origin', body: chunk });
   };
-  affRecorder.start(1000); // chunks cada 1s = menos latencia
+  affRecorder.start(500); // chunks cada 500ms = lag mínimo
 
   // ─ Actualizar UI sin recargar ─
   // Asegurar que el video sigue mostrando el stream
