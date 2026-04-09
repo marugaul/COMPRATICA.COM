@@ -995,21 +995,45 @@ function renderPuesto(array $seller, int $idx, array $productsBySeller, array $p
         $hasCard   = !empty($seller['global_accepts_card']);
         if ($hasSinpe || $hasPaypal || $hasCard):
         ?>
-        <div style="padding:8px 16px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span style="font-size:.72rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-right:2px;">Pago:</span>
+        <div style="padding:8px 16px 12px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+            <span style="font-size:.68rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-right:2px;">Pago:</span>
             <?php if ($hasSinpe): ?>
-            <span style="display:inline-flex;align-items:center;gap:4px;background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:20px;font-size:.72rem;font-weight:700;">
-                <i class="fas fa-mobile-alt"></i> SINPE
+            <span title="SINPE Móvil" style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#007a3d,#00a651);color:#fff;padding:3px 9px 3px 7px;border-radius:20px;font-size:.7rem;font-weight:700;box-shadow:0 1px 4px rgba(0,122,61,.25);">
+                <svg width="11" height="13" viewBox="0 0 11 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y=".5" width="9" height="12" rx="1.5" stroke="white" stroke-width="1.2"/>
+                  <rect x="3.5" y="9.5" width="4" height="1" rx=".5" fill="white"/>
+                  <rect x="3.5" y="2" width="4" height=".8" rx=".4" fill="white"/>
+                </svg>
+                SINPE
             </span>
             <?php endif; ?>
             <?php if ($hasPaypal): ?>
-            <span style="display:inline-flex;align-items:center;gap:4px;background:#dbeafe;color:#1e40af;padding:3px 8px;border-radius:20px;font-size:.72rem;font-weight:700;">
-                <i class="fab fa-paypal"></i> PayPal
+            <span title="PayPal" style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#003087,#0070ba);color:#fff;padding:3px 9px 3px 7px;border-radius:20px;font-size:.7rem;font-weight:700;box-shadow:0 1px 4px rgba(0,48,135,.25);">
+                <svg width="10" height="13" viewBox="0 0 10 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8.2 1.5C7.7.8 6.8.5 5.6.5H2.2C2 .5 1.8.6 1.7.9L.5 8.6c0 .2.1.3.3.3h1.8l-.1.8c0 .1.1.3.2.3h1.6c.2 0 .3-.1.3-.3l.5-3h1.1c1.7 0 3-1 3.3-2.8.2-1 0-1.7-.3-2.4z" fill="white" fill-opacity=".9"/>
+                  <path d="M8.2 1.5C8 2 7.6 2.5 7 2.9 6.5 3.3 5.8 3.5 5 3.5H3.6l-.7 4.4h1.8c.2 0 .3-.1.3-.3l.5-3.1h.7c1.4 0 2.5-.8 2.7-2.3.1-.7 0-1.2-.2-1.7z" fill="white"/>
+                </svg>
+                PayPal
             </span>
             <?php endif; ?>
             <?php if ($hasCard): ?>
-            <span style="display:inline-flex;align-items:center;gap:4px;background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:20px;font-size:.72rem;font-weight:700;">
-                <i class="fas fa-credit-card"></i> Tarjeta
+            <span title="Pago con Tarjeta — Visa, Mastercard, Amex" style="display:inline-flex;align-items:center;gap:3px;background:#f8fafc;border:1.5px solid #e2e8f0;padding:3px 7px;border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                <!-- Visa -->
+                <svg height="13" viewBox="0 0 38 13" xmlns="http://www.w3.org/2000/svg" style="display:block">
+                  <rect width="38" height="13" rx="2" fill="#1a1f71"/>
+                  <text x="19" y="10" font-family="Arial Black,sans-serif" font-size="8.5" font-weight="900" fill="white" text-anchor="middle" letter-spacing="1">VISA</text>
+                </svg>
+                <!-- Mastercard -->
+                <svg height="13" width="20" viewBox="0 0 20 13" xmlns="http://www.w3.org/2000/svg" style="display:block">
+                  <circle cx="7.5" cy="6.5" r="6.5" fill="#eb001b"/>
+                  <circle cx="12.5" cy="6.5" r="6.5" fill="#f79e1b"/>
+                  <path d="M10 1.8a6.5 6.5 0 0 1 0 9.4A6.5 6.5 0 0 1 10 1.8z" fill="#ff5f00"/>
+                </svg>
+                <!-- Amex -->
+                <svg height="13" viewBox="0 0 34 13" xmlns="http://www.w3.org/2000/svg" style="display:block">
+                  <rect width="34" height="13" rx="2" fill="#2557d6"/>
+                  <text x="17" y="10" font-family="Arial Black,sans-serif" font-size="7.5" font-weight="900" fill="white" text-anchor="middle" letter-spacing=".5">AMEX</text>
+                </svg>
             </span>
             <?php endif; ?>
         </div>
