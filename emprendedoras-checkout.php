@@ -21,20 +21,40 @@ if (empty($cartItems)) {
     exit;
 }
 
+// Pre-cargar configuración global de pago de los vendedores desde la BD
+$pdo = db();
+$sellerIds = array_unique(array_map(fn($i) => (int)$i['seller_id'], $cartItems));
+$sellerPayment = [];
+if ($sellerIds) {
+    $in = implode(',', $sellerIds);
+    $rows = $pdo->query("SELECT id, global_accepts_sinpe, global_sinpe_phone,
+                                global_accepts_paypal, global_paypal_email,
+                                global_accepts_card
+                         FROM users WHERE id IN ($in)")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $r) $sellerPayment[(int)$r['id']] = $r;
+}
+
 $groups = [];
 foreach ($cartItems as $item) {
     $sid = (int)$item['seller_id'];
     if (!isset($groups[$sid])) {
+        $sp = $sellerPayment[$sid] ?? [];
+        // Métodos de pago: global del vendedor tiene prioridad sobre sesión del carrito
+        $acceptsSinpe  = !empty($sp['global_accepts_sinpe'])  || !empty($item['accepts_sinpe']);
+        $acceptsPaypal = !empty($sp['global_accepts_paypal']) || !empty($item['accepts_paypal']);
+        $acceptsCard   = !empty($sp['global_accepts_card'])   || !empty($item['accepts_card']);
+        $sinpePhone    = !empty($sp['global_sinpe_phone'])  ? $sp['global_sinpe_phone']  : ($item['sinpe_phone']   ?? '');
+        $paypalEmail   = !empty($sp['global_paypal_email']) ? $sp['global_paypal_email'] : ($item['paypal_email']  ?? '');
         $groups[$sid] = [
             'seller_id'     => $sid,
             'seller_name'   => $item['seller_name'],
             'seller_email'  => $item['seller_email'],
             'seller_type'   => $item['seller_type'] ?? 'emprendedora',
-            'sinpe_phone'   => $item['sinpe_phone'],
-            'paypal_email'  => $item['paypal_email'],
-            'accepts_sinpe' => $item['accepts_sinpe'],
-            'accepts_paypal'=> $item['accepts_paypal'],
-            'accepts_card'  => $item['accepts_card'] ?? 0,
+            'sinpe_phone'   => $sinpePhone,
+            'paypal_email'  => $paypalEmail,
+            'accepts_sinpe' => $acceptsSinpe ? 1 : 0,
+            'accepts_paypal'=> $acceptsPaypal ? 1 : 0,
+            'accepts_card'  => $acceptsCard   ? 1 : 0,
             'items'         => [],
             'subtotal'      => 0,
         ];

@@ -46,10 +46,15 @@ if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo  = db();
         $stmt = $pdo->prepare("
             SELECT p.id, p.name, p.price, p.stock, p.image_1,
-                   p.accepts_sinpe, p.accepts_paypal, p.accepts_card, p.sinpe_phone, p.paypal_email,
                    p.user_id AS seller_id,
                    u.name AS seller_name, u.email AS seller_email,
-                   COALESCE(u.seller_type, 'emprendedora') AS seller_type
+                   COALESCE(u.seller_type, 'emprendedora') AS seller_type,
+                   -- Métodos de pago: global del vendedor tiene prioridad sobre el producto
+                   CASE WHEN COALESCE(u.global_accepts_sinpe,0)=1 OR COALESCE(p.accepts_sinpe,0)=1 THEN 1 ELSE 0 END AS accepts_sinpe,
+                   CASE WHEN COALESCE(u.global_accepts_paypal,0)=1 OR COALESCE(p.accepts_paypal,0)=1 THEN 1 ELSE 0 END AS accepts_paypal,
+                   CASE WHEN COALESCE(u.global_accepts_card,0)=1 OR COALESCE(p.accepts_card,0)=1 THEN 1 ELSE 0 END AS accepts_card,
+                   COALESCE(NULLIF(u.global_sinpe_phone,''), p.sinpe_phone)  AS sinpe_phone,
+                   COALESCE(NULLIF(u.global_paypal_email,''), p.paypal_email) AS paypal_email
             FROM entrepreneur_products p
             LEFT JOIN users u ON u.id = p.user_id
             WHERE p.id = ? AND p.is_active = 1
