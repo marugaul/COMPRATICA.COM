@@ -93,22 +93,22 @@ function migrate_guest_cart_to_user(PDO $pdo, int $uid, string $guest_sid): void
             logDebug("MIGRATE_OK", ['cart_id' => $guestCartId, 'uid' => $uid, 'guest_sid' => $guest_sid, 'items' => $itemCount, 'mode' => 'assign']);
         } else {
             // Ya tiene carrito: fusionar items del carrito invitado al carrito del usuario
-            $items = $pdo->prepare("SELECT product_id, variant_id, qty, unit_price, tax_rate FROM cart_items WHERE cart_id = ?");
+            $items = $pdo->prepare("SELECT product_id, sale_id, variant_id, qty, unit_price, tax_rate FROM cart_items WHERE cart_id = ?");
             $items->execute([$guestCartId]);
             $guestItems = $items->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($guestItems as $item) {
-                // Si ya existe el producto en el carrito del usuario, sumar cantidades
-                $exists = $pdo->prepare("SELECT id, qty FROM cart_items WHERE cart_id = ? AND product_id = ? AND (variant_id = ? OR (variant_id IS NULL AND ? IS NULL)) LIMIT 1");
-                $exists->execute([$userCartId, $item['product_id'], $item['variant_id'], $item['variant_id']]);
+                // Si ya existe el producto en el carrito del usuario (mismo product_id + sale_id), sumar cantidades
+                $exists = $pdo->prepare("SELECT id, qty FROM cart_items WHERE cart_id = ? AND product_id = ? AND COALESCE(sale_id,0) = COALESCE(?,0) AND (variant_id = ? OR (variant_id IS NULL AND ? IS NULL)) LIMIT 1");
+                $exists->execute([$userCartId, $item['product_id'], $item['sale_id'], $item['variant_id'], $item['variant_id']]);
                 $existing = $exists->fetch(PDO::FETCH_ASSOC);
 
                 if ($existing) {
                     $pdo->prepare("UPDATE cart_items SET qty = qty + ? WHERE id = ?")
                         ->execute([$item['qty'], $existing['id']]);
                 } else {
-                    $pdo->prepare("INSERT INTO cart_items (cart_id, product_id, variant_id, qty, unit_price, tax_rate) VALUES (?, ?, ?, ?, ?, ?)")
-                        ->execute([$userCartId, $item['product_id'], $item['variant_id'], $item['qty'], $item['unit_price'], $item['tax_rate'] ?? 0]);
+                    $pdo->prepare("INSERT INTO cart_items (cart_id, product_id, sale_id, variant_id, qty, unit_price, tax_rate) VALUES (?, ?, ?, ?, ?, ?, ?)")
+                        ->execute([$userCartId, $item['product_id'], $item['sale_id'], $item['variant_id'], $item['qty'], $item['unit_price'], $item['tax_rate'] ?? 0]);
                 }
             }
 
