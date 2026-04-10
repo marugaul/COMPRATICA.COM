@@ -212,7 +212,7 @@ $orderBy = match($ordenamiento) {
   default => 's.start_at ASC'
 };
 
-// Consulta con contador de productos ACTIVOS + estado live del afiliado
+// Consulta con contador de productos ACTIVOS + estado live del afiliado + métodos de pago
 $stmt = $pdo->prepare("
   SELECT s.*,
          a.name AS affiliate_name,
@@ -221,9 +221,13 @@ $stmt = $pdo->prepare("
          a.live_link                    AS aff_live_link,
          COALESCE(a.live_type,'link')   AS aff_live_type,
          a.live_session_id              AS aff_live_session_id,
-         (SELECT COUNT(*) FROM products p WHERE p.sale_id = s.id AND p.active = 1) AS product_count
+         (SELECT COUNT(*) FROM products p WHERE p.sale_id = s.id AND p.active = 1) AS product_count,
+         COALESCE(pm.active_sinpe,  0) AS pm_sinpe,
+         COALESCE(pm.active_paypal, 0) AS pm_paypal,
+         COALESCE(pm.active_card,   0) AS pm_card
   FROM sales s
   JOIN affiliates a ON a.id = s.affiliate_id
+  LEFT JOIN affiliate_payment_methods pm ON pm.affiliate_id = a.id
   WHERE $whereClause
   ORDER BY COALESCE(a.is_live,0) DESC, $orderBy
 ");
@@ -2028,6 +2032,32 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
         <div class="card-location">
           <i class="fas fa-map-marker-alt"></i>
           <span><?php echo htmlspecialchars($s['location']); ?></span>
+        </div>
+        <?php endif; ?>
+
+        <!-- Métodos de pago aceptados -->
+        <?php if (!empty($s['pm_sinpe']) || !empty($s['pm_paypal']) || !empty($s['pm_card'])): ?>
+        <div style="padding:4px 16px 8px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+          <span style="font-size:.68rem;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-right:2px;">Pago:</span>
+          <?php if (!empty($s['pm_sinpe'])): ?>
+          <span title="SINPE Móvil" style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#007a3d,#00a651);color:#fff;padding:3px 9px 3px 7px;border-radius:20px;font-size:.7rem;font-weight:700;box-shadow:0 1px 4px rgba(0,122,61,.25);">
+            <svg width="11" height="13" viewBox="0 0 11 13" fill="none"><rect x="1" y=".5" width="9" height="12" rx="1.5" stroke="white" stroke-width="1.2"/><rect x="3.5" y="9.5" width="4" height="1" rx=".5" fill="white"/><rect x="3.5" y="2" width="4" height=".8" rx=".4" fill="white"/></svg>
+            SINPE
+          </span>
+          <?php endif; ?>
+          <?php if (!empty($s['pm_paypal'])): ?>
+          <span title="PayPal" style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#003087,#0070ba);color:#fff;padding:3px 9px 3px 7px;border-radius:20px;font-size:.7rem;font-weight:700;box-shadow:0 1px 4px rgba(0,48,135,.25);">
+            <svg width="10" height="13" viewBox="0 0 10 13" fill="none"><path d="M8.2 1.5C7.7.8 6.8.5 5.6.5H2.2C2 .5 1.8.6 1.7.9L.5 8.6c-.1.3.1.5.3.5h1.9l.5-3c.1-.3.3-.5.6-.5h1.2c2.2 0 3.8-1 4.2-3C9.5 1.9 9 1.5 8.2 1.5z" fill="white" fill-opacity=".9"/><path d="M8.2 1.5C8 2 7.6 2.5 7 2.9c-.7.4-1.5.6-2.5.6H3.3L2.8 6.5h1.8c1.8 0 3.2-.8 3.6-2.5.2-.8.1-1.4-.2-1.9.1.1.1.3.2.4z" fill="white"/></svg>
+            PayPal
+          </span>
+          <?php endif; ?>
+          <?php if (!empty($s['pm_card'])): ?>
+          <span title="Pago con Tarjeta — Visa, Mastercard, Amex" style="display:inline-flex;align-items:center;gap:3px;background:#f8fafc;border:1.5px solid #e2e8f0;padding:3px 7px;border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+            <svg height="13" viewBox="0 0 38 13"><rect width="38" height="13" rx="2" fill="#1a1f71"/><text x="19" y="10" font-family="Arial Black,sans-serif" font-size="8.5" font-weight="900" fill="white" text-anchor="middle" letter-spacing="1">VISA</text></svg>
+            <svg height="13" width="20" viewBox="0 0 20 13"><circle cx="7.5" cy="6.5" r="6.5" fill="#eb001b"/><circle cx="12.5" cy="6.5" r="6.5" fill="#f79e1b"/><path d="M10 1.8a6.5 6.5 0 0 1 0 9.4A6.5 6.5 0 0 1 10 1.8z" fill="#ff5f00"/></svg>
+            <svg height="13" viewBox="0 0 34 13"><rect width="34" height="13" rx="2" fill="#2557d6"/><text x="17" y="10" font-family="Arial Black,sans-serif" font-size="7.5" font-weight="900" fill="white" text-anchor="middle" letter-spacing=".5">AMEX</text></svg>
+          </span>
+          <?php endif; ?>
         </div>
         <?php endif; ?>
 
