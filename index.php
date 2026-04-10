@@ -97,6 +97,8 @@ if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) {
 }
 $cantidadProductos = 0;
 foreach ($_SESSION['cart'] as $it) { $cantidadProductos += (int)($it['qty'] ?? 0); }
+// También contar emprendedoras
+foreach ($_SESSION['emp_cart'] ?? [] as $it) { $cantidadProductos += (int)($it['qty'] ?? 0); }
 
 // Verificar si el usuario está logueado
 $isLoggedIn = isset($_SESSION['uid']) && $_SESSION['uid'] > 0;
@@ -258,27 +260,42 @@ logDebug("RENDERING_PAGE");
   <div id="cart-popover">
     <div class="cart-popover-header">
       <i class="fas fa-shopping-cart"></i> Tu Carrito
+      <span id="cart-total-badge" style="margin-left:auto;font-size:.78rem;font-weight:600;color:#64748b;"></span>
     </div>
-    
+
     <div class="cart-popover-body">
-      <div id="cart-empty" style="display:none">
+      <div id="cart-empty">
         <p>Tu carrito está vacío</p>
       </div>
-      <div id="cart-items"></div>
-    </div>
-    
-    <div class="cart-popover-footer">
-      <div class="cart-popover-total">
-        <span>Total:</span>
-        <span id="cart-total">₡0</span>
+
+      <!-- ── Sección Venta de Garaje ── -->
+      <div id="section-garaje" style="display:none">
+        <div class="cart-section-label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:middle"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Venta de Garaje
+        </div>
+        <div id="cart-items-garaje"></div>
+        <div class="cart-section-footer">
+          <span id="total-garaje" class="cart-section-total">₡0</span>
+          <a id="checkoutBtnGaraje" href="cart" class="cart-section-pay">
+            <i class="fas fa-credit-card"></i> Pagar
+          </a>
+        </div>
       </div>
-      <div class="cart-popover-actions">
-        <a href="cart" class="cart-popover-btn secondary">
-          Ver carrito
-        </a>
-        <a href="checkout" id="checkoutBtn" class="cart-popover-btn primary">
-          Pagar
-        </a>
+
+      <!-- ── Sección Emprendedoras ── -->
+      <div id="section-emp" style="display:none">
+        <div class="cart-section-label" style="margin-top:10px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:middle"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          Emprendedoras
+        </div>
+        <div id="cart-items-emp"></div>
+        <div class="cart-section-footer">
+          <span id="total-emp" class="cart-section-total">₡0</span>
+          <a href="emprendedoras-checkout.php" class="cart-section-pay">
+            <i class="fas fa-credit-card"></i> Pagar
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -757,116 +774,107 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ============= CARRITO =============
-const API = '/api/cart.php';
-
-function groupCartItems(groups) {
-  const productMap = new Map();
-  
-  groups.forEach(group => {
-    group.items.forEach(item => {
-      const key = `${item.product_id}_${item.unit_price}`;
-      
-      if (productMap.has(key)) {
-        const existing = productMap.get(key);
-        existing.qty += item.qty;
-        existing.line_total += item.line_total;
-      } else {
-        productMap.set(key, {
-          ...item,
-          sale_id: group.sale_id,
-          sale_title: group.sale_title,
-          currency: group.currency
-        });
-      }
-    });
-  });
-  
-  return Array.from(productMap.values());
-}
+// ============= CARRITO DUAL (Venta de Garaje + Emprendedoras) =============
+const API     = '/api/cart.php';
+const EMP_API = '/api/emp-cart.php';
 
 function fmtPrice(n, currency = 'CRC') {
-  currency = currency.toUpperCase();
-  if (currency === 'USD') {
-    return '$' + n.toFixed(2);
-  }
+  currency = (currency || 'CRC').toUpperCase();
+  if (currency === 'USD') return '$' + (+n).toFixed(2);
   return '₡' + Math.round(n).toLocaleString('es-CR');
 }
 
-function renderCart(data) {
-  const cartItemsContainer = document.getElementById('cart-items');
-  const cartTotal = document.getElementById('cart-total');
-  const cartEmpty = document.getElementById('cart-empty');
-  const cartBadge = document.getElementById('cartBadge');
-  const checkoutBtn = document.getElementById('checkoutBtn');
-  
-  if (!data || !data.ok || !data.groups || data.groups.length === 0) {
-    cartBadge.textContent = '0';
-    cartBadge.style.display = 'none';
-    cartEmpty.style.display = 'block';
-    cartItemsContainer.innerHTML = '';
-    cartTotal.textContent = '₡0';
-    if (checkoutBtn) {
-      checkoutBtn.href = 'cart.php';
-      checkoutBtn.textContent = 'Pagar';
-    }
-    return;
-  }
-  
-  const groupedItems = groupCartItems(data.groups);
-  
-  let totalCount = 0;
-  let totalAmount = 0;
-  let mainCurrency = 'CRC';
-  
-  groupedItems.forEach(item => {
-    totalCount += item.qty;
-    totalAmount += item.line_total;
-    mainCurrency = item.currency || 'CRC';
-  });
-  
-  cartBadge.textContent = totalCount;
-  cartBadge.style.display = totalCount > 0 ? 'inline-block' : 'none';
-  cartEmpty.style.display = totalCount === 0 ? 'block' : 'none';
-  
-  if (checkoutBtn) {
-    if (data.groups.length === 1) {
-      checkoutBtn.href = `checkout.php?sale_id=${data.groups[0].sale_id}`;
-      checkoutBtn.innerHTML = '<i class="fas fa-credit-card"></i> Pagar';
-    } else {
-      checkoutBtn.href = 'cart.php';
-      checkoutBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Ver carrito';
-    }
-  }
-  
-  cartItemsContainer.innerHTML = groupedItems.map(item => `
-    <div class="cart-popover-item" data-pid="${item.product_id}" data-sale-id="${item.sale_id}">
-      <img 
-        src="${item.product_image_url || '/assets/placeholder.jpg'}" 
-        alt="${item.product_name}"
-        class="cart-popover-item-img"
-      >
-      <div class="cart-popover-item-info">
-        <div class="cart-popover-item-name">${item.product_name}</div>
-        <div class="cart-popover-item-price">
-          ${fmtPrice(item.unit_price, item.currency)} × ${item.qty}
-        </div>
-        <div class="cart-popover-item-total">
-          ${fmtPrice(item.line_total, item.currency)}
-        </div>
-      </div>
-      <button 
-        class="cart-popover-item-remove" 
-        data-pid="${item.product_id}"
-        data-sale-id="${item.sale_id}"
-        title="Eliminar"
-      >
-        ×
-      </button>
+function itemHtml(item, type) {
+  const img   = item.product_image_url || item.image || '/assets/placeholder.jpg';
+  const name  = item.product_name      || item.name  || 'Producto';
+  const price = item.unit_price        ?? item.price ?? 0;
+  const total = item.line_total        ?? (price * item.qty);
+  const pid   = item.product_id;
+  const sid   = item.sale_id || 0;
+  return `<div class="cart-popover-item" data-pid="${pid}" data-sale-id="${sid}" data-type="${type}">
+    <img src="${img}" alt="${name}" class="cart-popover-item-img">
+    <div class="cart-popover-item-info">
+      <div class="cart-popover-item-name">${name}</div>
+      <div class="cart-popover-item-price">${fmtPrice(price, item.currency)} × ${item.qty}</div>
+      <div class="cart-popover-item-total">${fmtPrice(total, item.currency)}</div>
     </div>
-  `).join('');
-  
-  cartTotal.textContent = fmtPrice(totalAmount, mainCurrency);
+    <button class="cart-popover-item-remove" data-pid="${pid}" data-sale-id="${sid}" data-type="${type}" title="Eliminar">×</button>
+  </div>`;
+}
+
+function renderDualCart(garajeData, empData) {
+  const badge       = document.getElementById('cartBadge');
+  const totalBadge  = document.getElementById('cart-total-badge');
+  const empty       = document.getElementById('cart-empty');
+  const secGaraje   = document.getElementById('section-garaje');
+  const secEmp      = document.getElementById('section-emp');
+  const itemsGaraje = document.getElementById('cart-items-garaje');
+  const itemsEmp    = document.getElementById('cart-items-emp');
+  const totalGaraje = document.getElementById('total-garaje');
+  const totalEmp    = document.getElementById('total-emp');
+  const btnGaraje   = document.getElementById('checkoutBtnGaraje');
+
+  // ── Garaje ──
+  const garajeGroups = garajeData?.ok && garajeData?.groups?.length ? garajeData.groups : [];
+  const garajeItems  = [];
+  garajeGroups.forEach(g => g.items.forEach(it => garajeItems.push({...it, sale_id: g.sale_id, currency: g.currency})));
+  const garajeCount = garajeItems.reduce((s, i) => s + i.qty, 0);
+  const garajeTotal = garajeItems.reduce((s, i) => s + (i.line_total ?? i.unit_price * i.qty), 0);
+  const garCurrency = garajeGroups[0]?.currency || 'CRC';
+
+  // ── Emprendedoras ──
+  const empItems    = empData?.ok && empData?.items?.length ? empData.items : [];
+  const empCount    = empItems.reduce((s, i) => s + i.qty, 0);
+  const empTotal    = empItems.reduce((s, i) => s + (i.price * i.qty), 0);
+
+  const totalCount  = garajeCount + empCount;
+
+  // Badge
+  badge.textContent    = totalCount;
+  badge.style.display  = totalCount > 0 ? 'inline-block' : 'none';
+  totalBadge.textContent = totalCount > 0 ? `${totalCount} ítem${totalCount !== 1 ? 's' : ''}` : '';
+
+  // Vacío
+  empty.style.display = totalCount === 0 ? 'block' : 'none';
+
+  // ── Sección Garaje ──
+  if (garajeCount > 0) {
+    secGaraje.style.display = '';
+    itemsGaraje.innerHTML = garajeItems.map(i => itemHtml(i, 'garaje')).join('');
+    totalGaraje.textContent = fmtPrice(garajeTotal, garCurrency);
+    if (btnGaraje) {
+      btnGaraje.href = garajeGroups.length === 1
+        ? `checkout.php?sale_id=${garajeGroups[0].sale_id}`
+        : 'cart.php';
+    }
+  } else {
+    secGaraje.style.display = 'none';
+  }
+
+  // ── Sección Emprendedoras ──
+  if (empCount > 0) {
+    secEmp.style.display = '';
+    itemsEmp.innerHTML = empItems.map(i => itemHtml(i, 'emp')).join('');
+    totalEmp.textContent = fmtPrice(empTotal, 'CRC');
+  } else {
+    secEmp.style.display = 'none';
+  }
+}
+
+async function loadCart() {
+  try {
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), 5000);
+    const [gr, er] = await Promise.all([
+      fetch(API + '?action=get',     { credentials:'include', cache:'no-store', signal: ctrl.signal }),
+      fetch(EMP_API + '?action=get', { credentials:'include', cache:'no-store', signal: ctrl.signal }),
+    ]);
+    clearTimeout(tid);
+    const [gd, ed] = await Promise.all([gr.json(), er.json()]);
+    renderDualCart(gd, ed);
+  } catch(e) {
+    renderDualCart(null, null);
+  }
 }
 
 async function loadCart() {
@@ -914,32 +922,37 @@ if (cartBtn && cartPopover) {
   });
 }
 
-// Eliminar item del carrito
+// Eliminar item del carrito (garaje o emprendedoras)
 document.addEventListener('click', async (e) => {
   const removeBtn = e.target.closest('.cart-popover-item-remove');
   if (!removeBtn) return;
-  
-  const pid = parseInt(removeBtn.dataset.pid);
-  const saleId = parseInt(removeBtn.dataset.saleId);
-  
+
+  const pid    = parseInt(removeBtn.dataset.pid);
+  const saleId = parseInt(removeBtn.dataset.saleId || '0');
+  const type   = removeBtn.dataset.type; // 'garaje' | 'emp'
+
   try {
-    const token = (document.cookie.match(/(?:^|;\s*)vg_csrf=([^;]+)/) || [])[1] || '';
-    const response = await fetch(API + '?action=remove', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': token
-      },
-      body: JSON.stringify({ product_id: pid, sale_id: saleId }),
-      credentials: 'include'
-    });
-    
-    const data = await response.json();
-    if (data.ok) {
-      loadCart();
+    if (type === 'emp') {
+      // Eliminar del carrito de emprendedoras
+      await fetch(EMP_API + '?action=remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: pid }),
+        credentials: 'include',
+      });
+    } else {
+      // Eliminar del carrito de venta de garaje
+      const token = (document.cookie.match(/(?:^|;\s*)vg_csrf=([^;]+)/) || [])[1] || '';
+      await fetch(API + '?action=remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
+        body: JSON.stringify({ product_id: pid, sale_id: saleId }),
+        credentials: 'include',
+      });
     }
-  } catch (error) {
-    console.error('Error:', error);
+    loadCart();
+  } catch(err) {
+    console.error('Error al eliminar:', err);
   }
 });
 
