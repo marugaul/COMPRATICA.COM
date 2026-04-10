@@ -104,7 +104,11 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
           placeholder="•••• •••• •••• ••••"
           maxlength="19"
           inputmode="numeric"
-          autocomplete="cc-number"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          title=""
           required>
         <span class="sp-detected-brand" id="<?= $sp_widget_id ?>_detected"></span>
       </div>
@@ -121,7 +125,8 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
           placeholder="MM/AA"
           maxlength="5"
           inputmode="numeric"
-          autocomplete="cc-exp"
+          autocomplete="off"
+          title=""
           required>
       </div>
       <div class="sp-field-group">
@@ -131,12 +136,13 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
         </label>
         <input
           id="<?= $sp_widget_id ?>_cvv"
-          type="text"
+          type="password"
           class="sp-input"
           placeholder="•••"
           maxlength="4"
           inputmode="numeric"
-          autocomplete="cc-csc"
+          autocomplete="off"
+          title=""
           required>
       </div>
     </div>
@@ -444,17 +450,22 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
   });
 
   inp.cvv.addEventListener('input', function () {
+    // type="password" already masks; just sanitize and store raw
     this.value = this.value.replace(/\D/g, '').slice(0, 4);
     _rawCvv = this.value;
   });
 
-  inp.cvv.addEventListener('blur', function () {
-    if (_rawCvv.length > 0) this.value = '•'.repeat(_rawCvv.length);
-  });
-
-  inp.cvv.addEventListener('focus', function () {
-    if (_rawCvv) this.value = _rawCvv;
-  });
+  // ── Limpiar campos sensibles (PCI) ────────────────────────────
+  function clearFields() {
+    inp.card.value = ''; _rawCard = '';
+    inp.expiry.value = '';
+    inp.cvv.value  = ''; _rawCvv  = '';
+    inp.card.classList.remove('sp-ok', 'sp-error');
+    inp.expiry.classList.remove('sp-ok', 'sp-error');
+    inp.cvv.classList.remove('sp-ok', 'sp-error');
+    detected.textContent = '';
+    updateBrandUI(null);
+  }
 
   // ── Helpers UI ────────────────────────────────────────────────
   function showMsg(text, type) {
@@ -558,11 +569,8 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
 
       // ── Aprobado ───────────────────────────────────────────────
       if (data.ok) {
+        clearFields(); // limpiar antes de redirigir (PCI)
         showMsg('✅ Pago aprobado. Redirigiendo…', 'success');
-        // Limpiar campos por seguridad (PCI)
-        inp.card.value = ''; _rawCard = '';
-        inp.expiry.value = '';
-        inp.cvv.value  = ''; _rawCvv  = '';
 
         const dest = data.redirect_url || CONFIG.successUrl;
         setTimeout(() => {
@@ -589,10 +597,12 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
         return;
       }
 
-      // ── Error ──────────────────────────────────────────────────
+      // ── Error / declinado ─────────────────────────────────────
+      clearFields(); // limpiar siempre al ser declinado (PCI)
       showMsg(data.error || 'El pago fue rechazado. Verificá tus datos.', 'error');
 
     } catch (err) {
+      clearFields();
       showMsg('Error de conexión. Revisá tu internet e intentá de nuevo.', 'error');
     } finally {
       setLoading(false);
