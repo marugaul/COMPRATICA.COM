@@ -877,28 +877,6 @@ async function loadCart() {
   }
 }
 
-async function loadCart() {
-  try {
-    // Timeout de 5 segundos para móviles lentos
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(API + '?action=get', {
-      credentials: 'include',
-      cache: 'no-store',
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    const data = await response.json();
-    renderCart(data);
-  } catch (error) {
-    // Si falla o timeout, mostrar carrito vacío sin bloquear
-    console.error('Error al cargar carrito:', error);
-    renderCart({ items: [], total: 0 });
-  }
-}
-
 // Toggle popover carrito
 const cartBtn = document.getElementById('cartButton');
 const cartPopover = document.getElementById('cart-popover');
