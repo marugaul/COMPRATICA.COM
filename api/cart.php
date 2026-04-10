@@ -114,8 +114,8 @@ function smart_sync_cart($cart_id) {
     
     // 1. Obtener items de la BD
     $sql = "
-        SELECT 
-            ci.sale_id,
+        SELECT
+            COALESCE(ci.sale_id, p.sale_id) AS sale_id,
             ci.product_id,
             ci.qty,
             ci.unit_price,
@@ -126,9 +126,9 @@ function smart_sync_cart($cart_id) {
             s.affiliate_id
         FROM cart_items ci
         JOIN products p ON p.id = ci.product_id
-        LEFT JOIN sales s ON s.id = ci.sale_id
+        LEFT JOIN sales s ON s.id = COALESCE(ci.sale_id, p.sale_id)
         WHERE ci.cart_id = ?
-        ORDER BY ci.sale_id, p.name
+        ORDER BY COALESCE(ci.sale_id, p.sale_id), p.name
     ";
     
     $st = $pdo->prepare($sql);

@@ -94,14 +94,15 @@ function get_cart_id_from_session() {
 function load_cart_from_db($cart_id) {
     global $pdo;
     $sql = "
-        SELECT 
-            ci.sale_id, ci.product_id, ci.qty, ci.unit_price,
+        SELECT
+            COALESCE(ci.sale_id, p.sale_id) AS sale_id,
+            ci.product_id, ci.qty, ci.unit_price,
             p.name AS product_name, p.image AS product_image, p.description, p.currency,
             s.id AS sale_real_id, s.title AS sale_title, s.affiliate_id,
             a.name AS affiliate_name, a.email AS affiliate_email, a.phone AS affiliate_phone
         FROM cart_items ci
         JOIN products p ON p.id = ci.product_id
-        LEFT JOIN sales s   ON s.id = ci.sale_id
+        LEFT JOIN sales s   ON s.id = COALESCE(ci.sale_id, p.sale_id)
         LEFT JOIN affiliates a ON a.id = s.affiliate_id
         WHERE ci.cart_id = ?
         ORDER BY s.id, p.name
@@ -152,6 +153,8 @@ $cart_id = get_cart_id_from_session();
 $groups = [];
 if ($cart_id > 0) {
     $groups = load_cart_from_db($cart_id);
+    // Remove orphaned groups (no valid sale) before rendering to avoid blank page
+    $groups = array_values(array_filter($groups, fn($g) => (int)$g['sale_id'] > 0));
     $_SESSION['cart']['groups'] = $groups;
 }
 
@@ -741,7 +744,6 @@ if (!headers_sent()) header('Content-Type: text/html; charset=UTF-8'); ini_set('
                 <?php 
                 $grandTotal = 0;
                 foreach ($groups as $g):
-                    if ((int)$g['sale_id'] <= 0) continue; // skip orphaned items with no valid sale
                     $grandTotal += $g['total'];
                 ?>
                     <div class="cart-group">
