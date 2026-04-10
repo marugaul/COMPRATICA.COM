@@ -136,7 +136,7 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
         </label>
         <input
           id="<?= $sp_widget_id ?>_cvv"
-          type="password"
+          type="text"
           class="sp-input"
           placeholder="•••"
           maxlength="4"
@@ -440,8 +440,14 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
     if (_rawCard.length >= 6) this.value = maskCardDisplay(_rawCard);
   });
 
+  // Al hacer foco: limpiar para re-ingreso (nunca exponer dígitos crudos)
   inp.card.addEventListener('focus', function () {
-    if (_rawCard) this.value = _rawCard.replace(/(.{4})/g, '$1 ').trim();
+    if (_rawCard) {
+      this.value = '';
+      _rawCard = '';
+      detected.textContent = '';
+      updateBrandUI(null);
+    }
   });
 
   inp.expiry.addEventListener('input', function () {
@@ -449,10 +455,52 @@ $sp_widget_id   = 'spw_' . substr(md5(uniqid('', true)), 0, 8);
     this.value = v.length > 2 ? v.slice(0, 2) + '/' + v.slice(2) : v;
   });
 
+  // ── CVV: máscara pura con JS (nunca expone dígitos, sin ojo del navegador) ──
+  let _cvvExpected = ''; // lo que tenemos en pantalla
+
+  inp.cvv.addEventListener('focus', function () {
+    this.value = _cvvExpected = '•'.repeat(_rawCvv.length);
+  });
+
+  inp.cvv.addEventListener('keydown', function (e) {
+    const maxLen = (detectedBrand && detectedBrand.cvvLen === 4) ? 4 : 3;
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      _rawCvv = _rawCvv.slice(0, -1);
+      this.value = _cvvExpected = '•'.repeat(_rawCvv.length);
+    } else if (e.key === 'Delete') {
+      e.preventDefault();
+      _rawCvv = ''; this.value = _cvvExpected = '';
+    } else if (/^\d$/.test(e.key) && _rawCvv.length < maxLen) {
+      e.preventDefault();
+      _rawCvv += e.key;
+      this.value = _cvvExpected = '•'.repeat(_rawCvv.length);
+    } else if (!['Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter'].includes(e.key)) {
+      e.preventDefault();
+    }
+  });
+
+  // Fallback para teclados móviles (no disparan keydown con el carácter)
   inp.cvv.addEventListener('input', function () {
-    // type="password" already masks; just sanitize and store raw
-    this.value = this.value.replace(/\D/g, '').slice(0, 4);
-    _rawCvv = this.value;
+    if (this.value === _cvvExpected) return; // keydown ya lo manejó
+    const maxLen = (detectedBrand && detectedBrand.cvvLen === 4) ? 4 : 3;
+    const delta  = this.value.length - _cvvExpected.length;
+    if (delta > 0) {
+      const newDigits = this.value.replace(/•/g, '').replace(/\D/g, '');
+      _rawCvv = (_rawCvv + newDigits).slice(0, maxLen);
+    } else if (delta < 0) {
+      _rawCvv = _rawCvv.slice(0, Math.max(0, _rawCvv.length + delta));
+    }
+    this.value = _cvvExpected = '•'.repeat(_rawCvv.length);
+  });
+
+  inp.cvv.addEventListener('paste', function (e) {
+    e.preventDefault();
+    const digits = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+    const maxLen = (detectedBrand && detectedBrand.cvvLen === 4) ? 4 : 3;
+    _rawCvv = digits.slice(0, maxLen);
+    this.value = _cvvExpected = '•'.repeat(_rawCvv.length);
+  });
   });
 
   // ── Limpiar campos sensibles (PCI) ────────────────────────────
