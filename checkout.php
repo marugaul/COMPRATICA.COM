@@ -175,6 +175,7 @@ $sqlItems = "
     JOIN products p ON p.id = ci.product_id
     WHERE ci.cart_id = ?
       AND (p.sale_id = ? OR ci.sale_id = ?)
+    GROUP BY ci.product_id
     ORDER BY p.name
 ";
 $st = $pdo->prepare($sqlItems);
