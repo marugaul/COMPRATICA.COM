@@ -704,7 +704,15 @@ if (!headers_sent()) header('Content-Type: text/html; charset=UTF-8'); ini_set('
 </head>
 <body>
     <header class="header">
-        <a href="index" class="btn btn-outline">
+        <?php
+        $validGroups = array_values(array_filter($groups, fn($g) => (int)$g['sale_id'] > 0));
+        if (count($validGroups) === 1) {
+            $backUrl = clean_url_tienda((int)$validGroups[0]['sale_id'], $validGroups[0]['sale_title'] ?? '');
+        } else {
+            $backUrl = 'venta-garaje';
+        }
+        ?>
+        <a href="<?= htmlspecialchars($backUrl); ?>" class="btn btn-outline">
             <i class="fas fa-arrow-left"></i> Volver
         </a>
         <div class="logo">
