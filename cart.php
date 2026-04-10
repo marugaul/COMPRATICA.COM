@@ -161,7 +161,7 @@ if (!empty($groups)) {
     $aff_ids = array_unique(array_column($groups, 'affiliate_id'));
     if (!empty($aff_ids)) {
         $in = implode(',', array_map('intval', $aff_ids));
-        $pm_st = $pdo->query("SELECT affiliate_id, sinpe_phone, paypal_email, active_sinpe, active_paypal FROM affiliate_payment_methods WHERE affiliate_id IN ($in)");
+        $pm_st = $pdo->query("SELECT affiliate_id, sinpe_phone, paypal_email, active_sinpe, active_paypal, active_card FROM affiliate_payment_methods WHERE affiliate_id IN ($in)");
         foreach ($pm_st->fetchAll(PDO::FETCH_ASSOC) as $pm_row) {
             $payment_methods_map[(int)$pm_row['affiliate_id']] = $pm_row;
         }
@@ -732,7 +732,8 @@ if (!headers_sent()) header('Content-Type: text/html; charset=UTF-8'); ini_set('
             <div class="cart-container">
                 <?php 
                 $grandTotal = 0;
-                foreach ($groups as $g): 
+                foreach ($groups as $g):
+                    if ((int)$g['sale_id'] <= 0) continue; // skip orphaned items with no valid sale
                     $grandTotal += $g['total'];
                 ?>
                     <div class="cart-group">
@@ -812,17 +813,31 @@ if (!headers_sent()) header('Content-Type: text/html; charset=UTF-8'); ini_set('
                         
                         <?php
                         $pm_g = $payment_methods_map[(int)$g['affiliate_id']] ?? [];
-                        $g_has_sinpe = !empty($pm_g['active_sinpe']) && !empty($pm_g['sinpe_phone']);
+                        $g_has_sinpe  = !empty($pm_g['active_sinpe'])  && !empty($pm_g['sinpe_phone']);
                         $g_has_paypal = !empty($pm_g['active_paypal']) && !empty($pm_g['paypal_email']);
-                        if ($g_has_sinpe || $g_has_paypal):
+                        $g_has_card   = !empty($pm_g['active_card']);
+                        if ($g_has_sinpe || $g_has_paypal || $g_has_card):
                         ?>
-                        <div style="padding: 0.85rem 1.5rem; background: #f0f9ff; border-top: 1px solid #bde0ff; font-size: 0.9rem; color: #1a3c5e;">
-                            <strong><i class="fas fa-credit-card"></i> Métodos de pago aceptados:</strong>
+                        <div style="padding:8px 24px 10px;background:#f0f9ff;border-top:1px solid #bde0ff;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                            <span style="font-size:.75rem;color:#4b6a8a;font-weight:700;margin-right:2px;"><i class="fas fa-credit-card"></i> Métodos de pago aceptados:</span>
                             <?php if ($g_has_sinpe): ?>
-                                &nbsp;📱 <strong>SINPE Móvil:</strong> <?= h($pm_g['sinpe_phone']); ?>
+                            <span title="SINPE Móvil" style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#007a3d,#00a651);color:#fff;padding:3px 9px 3px 7px;border-radius:20px;font-size:.7rem;font-weight:700;box-shadow:0 1px 4px rgba(0,122,61,.25);">
+                              <svg width="11" height="13" viewBox="0 0 11 13" fill="none"><rect x="1" y=".5" width="9" height="12" rx="1.5" stroke="white" stroke-width="1.2"/><rect x="3.5" y="9.5" width="4" height="1" rx=".5" fill="white"/><rect x="3.5" y="2" width="4" height=".8" rx=".4" fill="white"/></svg>
+                              SINPE: <?= h($pm_g['sinpe_phone']); ?>
+                            </span>
                             <?php endif; ?>
                             <?php if ($g_has_paypal): ?>
-                                &nbsp;💳 <strong>PayPal</strong>
+                            <span title="PayPal" style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#003087,#0070ba);color:#fff;padding:3px 9px 3px 7px;border-radius:20px;font-size:.7rem;font-weight:700;box-shadow:0 1px 4px rgba(0,48,135,.25);">
+                              <svg width="10" height="13" viewBox="0 0 10 13" fill="none"><path d="M8.2 1.5C7.7.8 6.8.5 5.6.5H2.2C2 .5 1.8.6 1.7.9L.5 8.6c-.1.3.1.5.3.5h1.9l.5-3c.1-.3.3-.5.6-.5h1.2c2.2 0 3.8-1 4.2-3C9.5 1.9 9 1.5 8.2 1.5z" fill="white" fill-opacity=".9"/><path d="M8.2 1.5C8 2 7.6 2.5 7 2.9c-.7.4-1.5.6-2.5.6H3.3L2.8 6.5h1.8c1.8 0 3.2-.8 3.6-2.5.2-.8.1-1.4-.2-1.9.1.1.1.3.2.4z" fill="white"/></svg>
+                              PayPal
+                            </span>
+                            <?php endif; ?>
+                            <?php if ($g_has_card): ?>
+                            <span title="Pago con Tarjeta — Visa, Mastercard, Amex" style="display:inline-flex;align-items:center;gap:3px;background:#f8fafc;border:1.5px solid #e2e8f0;padding:3px 7px;border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+                              <svg height="13" viewBox="0 0 38 13"><rect width="38" height="13" rx="2" fill="#1a1f71"/><text x="19" y="10" font-family="Arial Black,sans-serif" font-size="8.5" font-weight="900" fill="white" text-anchor="middle" letter-spacing="1">VISA</text></svg>
+                              <svg height="13" width="20" viewBox="0 0 20 13"><circle cx="7.5" cy="6.5" r="6.5" fill="#eb001b"/><circle cx="12.5" cy="6.5" r="6.5" fill="#f79e1b"/><path d="M10 1.8a6.5 6.5 0 0 1 0 9.4A6.5 6.5 0 0 1 10 1.8z" fill="#ff5f00"/></svg>
+                              <svg height="13" viewBox="0 0 34 13"><rect width="34" height="13" rx="2" fill="#2557d6"/><text x="17" y="10" font-family="Arial Black,sans-serif" font-size="7.5" font-weight="900" fill="white" text-anchor="middle" letter-spacing=".5">AMEX</text></svg>
+                            </span>
                             <?php endif; ?>
                         </div>
                         <?php endif; ?>
