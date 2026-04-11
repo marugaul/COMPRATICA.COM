@@ -281,7 +281,12 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
       },
       {
         q: '¿Cuáles son los planes disponibles?',
-        a: 'Tenemos planes <strong>Gratuito, Básico y Premium</strong>. Cada plan varía en cantidad de productos, comisión y funciones. Visitá la página de planes para ver todos los detalles. 📋',
+        a: 'Tenemos cuatro opciones: <strong>Gratuito, Básico, Premium</strong> y el nuevo plan <strong>Comisión</strong> (sin cuota mensual, pagás solo un % acordado de tus ventas). Cada plan varía en productos, funciones y costo. Visitá la página de planes para ver todos los detalles. 📋',
+        link: '/emprendedores-planes', linkLabel: '📋 Ver planes y precios'
+      },
+      {
+        q: '¿En qué consiste el plan por Comisión?',
+        a: 'Con el plan <strong>Comisión</strong> no pagás cuota mensual ni anual. En cambio, acordás con nosotros un porcentaje personalizado sobre tus ventas. Es ideal si preferís no comprometerte con un pago fijo. Escribinos para definir la tasa que aplica a tu negocio. 🤝',
         link: '/emprendedores-planes', linkLabel: '📋 Ver planes y precios'
       },
       {
@@ -291,11 +296,11 @@ $support_whatsapp_msg = urlencode('Hola, necesito ayuda con CompraTica.');
       },
       {
         q: '¿Cómo recibo los pagos?',
-        a: 'Los clientes te pagan directamente por <strong>SINPE Móvil, PayPal o tarjeta</strong>. Cuando el cliente sube el comprobante, te llegará una notificación para confirmar el pedido. 💰'
+        a: 'Los clientes te pagan directamente por <strong>SINPE Móvil, PayPal o tarjeta</strong> (Visa, Mastercard, Amex). Cuando el cliente sube el comprobante, te llegará una notificación para confirmar el pedido. 💰'
       },
       {
         q: '¿Qué comisión cobra CompraTica?',
-        a: 'Depende de tu plan. El plan gratuito tiene una comisión del <strong>10%</strong>, el Básico <strong>7%</strong> y el Premium <strong>5%</strong>. La comisión se aplica solo a ventas realizadas. 📊',
+        a: 'Depende de tu plan. El plan gratuito tiene una comisión del <strong>10%</strong>, el Básico <strong>7%</strong> y el Premium <strong>5%</strong>. Con el plan <strong>Comisión</strong> la tasa se acuerda de forma personalizada. 📊',
         link: '/emprendedores-planes', linkLabel: '📋 Ver todos los planes'
       },
     ],
