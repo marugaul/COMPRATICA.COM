@@ -570,9 +570,9 @@ body {
                     <label>Confirmar contraseña *</label>
                     <input type="password" name="password2" placeholder="Repite tu contraseña" required>
                 </div>
-                <div class="form-group" style="display:flex;align-items:flex-start;gap:0.5rem;">
-                    <input type="checkbox" id="accept_terms_reg" name="accept_terms" value="1" required style="margin-top:3px;flex-shrink:0;">
-                    <label for="accept_terms_reg" style="cursor:pointer;font-size:0.875rem;">
+                <div class="form-group" style="display:flex;align-items:flex-start;gap:0.5rem;width:100%;">
+                    <input type="checkbox" id="accept_terms_reg" name="accept_terms" value="1" required style="margin-top:3px;flex-shrink:0;width:16px;height:16px;">
+                    <label for="accept_terms_reg" style="cursor:pointer;font-size:0.875rem;flex:1;min-width:0;line-height:1.5;">
                         Acepto los <a href="/terminos-condiciones.php?type=emprendedor" target="_blank" style="color:#2563eb">Términos y Condiciones</a> para emprendedores de CompraTica.
                     </label>
                 </div>
