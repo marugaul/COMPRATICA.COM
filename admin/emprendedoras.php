@@ -287,6 +287,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msgType = 'error';
         }
     }
+
+    // ── Crear plan ────────────────────────────────────────────────────────────
+    if ($act === 'plan_create') {
+        $planName    = trim($_POST['plan_name']    ?? '');
+        $planDesc    = trim($_POST['plan_desc']    ?? '');
+        $planMonthly = (float)($_POST['plan_monthly'] ?? 0);
+        $planAnnual  = (float)($_POST['plan_annual']  ?? 0);
+        $planMaxProd = (int)($_POST['plan_max_prod']  ?? 0);
+        $planActive  = (int)($_POST['plan_active']    ?? 1);
+        $featuresRaw = trim($_POST['plan_features']   ?? '');
+        // Parsear features: una por línea → JSON array
+        $featuresArr = array_values(array_filter(array_map('trim', explode("\n", $featuresRaw))));
+        $featuresJson = json_encode($featuresArr, JSON_UNESCAPED_UNICODE);
+
+        if (!$planName) {
+            $msg = 'El nombre del plan es obligatorio.'; $msgType = 'error';
+        } else {
+            try {
+                $pdo->prepare("
+                    INSERT INTO entrepreneur_plans
+                        (name, description, price_monthly, price_annual, max_products, commission_rate, features, is_active, display_order)
+                    VALUES (?, ?, ?, ?, ?, 0, ?, ?, (SELECT COALESCE(MAX(display_order),0)+1 FROM entrepreneur_plans))
+                ")->execute([$planName, $planDesc, $planMonthly, $planAnnual, $planMaxProd, $featuresJson, $planActive]);
+                $msg = 'Plan "' . h($planName) . '" creado correctamente.';
+            } catch (Throwable $e) {
+                $msg = 'Error al crear plan: ' . $e->getMessage(); $msgType = 'error';
+            }
+        }
+    }
+
+    // ── Actualizar plan ───────────────────────────────────────────────────────
+    if ($act === 'plan_update') {
+        $planId      = (int)($_POST['plan_id']       ?? 0);
+        $planName    = trim($_POST['plan_name']       ?? '');
+        $planDesc    = trim($_POST['plan_desc']       ?? '');
+        $planMonthly = (float)($_POST['plan_monthly'] ?? 0);
+        $planAnnual  = (float)($_POST['plan_annual']  ?? 0);
+        $planMaxProd = (int)($_POST['plan_max_prod']  ?? 0);
+        $planActive  = (int)($_POST['plan_active']    ?? 1);
+        $featuresRaw = trim($_POST['plan_features']   ?? '');
+        $featuresArr = array_values(array_filter(array_map('trim', explode("\n", $featuresRaw))));
+        $featuresJson = json_encode($featuresArr, JSON_UNESCAPED_UNICODE);
+
+        if (!$planId || !$planName) {
+            $msg = 'Datos inválidos.'; $msgType = 'error';
+        } else {
+            try {
+                $pdo->prepare("
+                    UPDATE entrepreneur_plans
+                    SET name=?, description=?, price_monthly=?, price_annual=?, max_products=?,
+                        features=?, is_active=?
+                    WHERE id=?
+                ")->execute([$planName, $planDesc, $planMonthly, $planAnnual, $planMaxProd, $featuresJson, $planActive, $planId]);
+                $msg = 'Plan "' . h($planName) . '" actualizado correctamente.';
+            } catch (Throwable $e) {
+                $msg = 'Error al actualizar plan: ' . $e->getMessage(); $msgType = 'error';
+            }
+        }
+    }
+
+    // ── Eliminar plan ─────────────────────────────────────────────────────────
+    if ($act === 'plan_delete') {
+        $planId = (int)($_POST['plan_id'] ?? 0);
+        if (!$planId) {
+            $msg = 'ID de plan inválido.'; $msgType = 'error';
+        } else {
+            // Verificar si tiene suscripciones activas
+            $activeSubs = (int)$pdo->prepare("SELECT COUNT(*) FROM entrepreneur_subscriptions WHERE plan_id=? AND status='active'")->execute([$planId]) ? $pdo->query("SELECT COUNT(*) FROM entrepreneur_subscriptions WHERE plan_id=$planId AND status='active'")->fetchColumn() : 0;
+            if ($activeSubs > 0) {
+                $msg = "No se puede eliminar: tiene $activeSubs suscripción(es) activa(s). Desactivá el plan en su lugar.";
+                $msgType = 'error';
+            } else {
+                try {
+                    $pdo->prepare("DELETE FROM entrepreneur_plans WHERE id=?")->execute([$planId]);
+                    $msg = 'Plan eliminado.'; $msgType = 'warning';
+                } catch (Throwable $e) {
+                    $msg = 'Error al eliminar plan: ' . $e->getMessage(); $msgType = 'error';
+                }
+            }
+        }
+    }
 }
 
 // ── Obtener suscripciones ─────────────────────────────────────────────────────
@@ -327,6 +408,9 @@ if (!empty($pending)) {
         }
     } catch (Throwable $e) {}
 }
+
+// ── Obtener planes ─────────────────────────────────────────────────────────────
+$plans = $pdo->query("SELECT * FROM entrepreneur_plans ORDER BY display_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 1rem;background:rgba(255,255,255,0.1);color:white;text-decoration:none;border-radius:6px;font-size:0.875rem;font-weight:500;border:1px solid rgba(255,255,255,0.2);";
 ?>
@@ -402,6 +486,29 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
         .btn-save-pass { background: #10b981; color: white; padding: 8px 18px; border: none; border-radius: 8px; font-size: .85rem; font-weight: 600; cursor: pointer; }
         .btn-save-pass:hover { background: #059669; }
         .btn-cancel-edit { background: #e5e7eb; color: #374151; padding: 8px 14px; border: none; border-radius: 8px; font-size: .85rem; cursor: pointer; }
+        /* ── Planes ── */
+        .btn-plan-new  { background: linear-gradient(135deg,#667eea,#764ba2); color:white; padding:9px 20px; border:none; border-radius:9px; font-size:.88rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+        .btn-plan-edit { background:#6366f1; color:white; }
+        .btn-plan-edit:hover { background:#4f46e5; }
+        .btn-plan-del  { background:#ef4444; color:white; }
+        .btn-plan-del:hover  { background:#dc2626; }
+        .plan-edit-row { display:none; background:#f8f7ff; }
+        .plan-edit-row td { padding:18px 20px; }
+        .plan-form-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px 16px; }
+        .plan-form-grid label { display:block; font-size:.8rem; font-weight:600; color:#4c1d95; margin-bottom:4px; }
+        .plan-form-grid input[type=text],.plan-form-grid input[type=number],.plan-form-grid textarea,.plan-form-grid select {
+            width:100%; padding:8px 10px; border:1.5px solid #c4b5fd; border-radius:8px; font-size:.88rem; font-family:inherit;
+        }
+        .plan-form-grid textarea { resize:vertical; min-height:70px; }
+        .plan-form-wide { grid-column:1/-1; }
+        .plan-form-actions { grid-column:1/-1; display:flex; gap:8px; margin-top:4px; }
+        .btn-plan-save { background:#10b981; color:white; padding:9px 20px; border:none; border-radius:8px; font-size:.85rem; font-weight:700; cursor:pointer; }
+        .btn-plan-save:hover { background:#059669; }
+        .badge-plan-on  { background:#d1fae5; color:#065f46; }
+        .badge-plan-off { background:#f3f4f6; color:#6b7280; }
+        /* Create form */
+        #new-plan-row { display:none; background:#f0fdf4; }
+        #new-plan-row td { padding:18px 20px; }
     </style>
 </head>
 <body>
@@ -573,12 +680,187 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
         <?php endif; ?>
     </div>
 </div>
+    <!-- ── GESTIÓN DE PLANES ──────────────────────────────────────────────────── -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-layer-group" style="color:#667eea;"></i> Gestión de Planes</h3>
+            <button class="btn-plan-new" onclick="toggleNewPlan()">
+                <i class="fas fa-plus"></i> Nuevo Plan
+            </button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Mensual (₡)</th>
+                    <th>Anual (₡)</th>
+                    <th>Max. Productos</th>
+                    <th>Estado</th>
+                    <th>Beneficios</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Fila Nuevo Plan -->
+                <tr id="new-plan-row">
+                    <td colspan="8">
+                        <form method="post">
+                            <input type="hidden" name="action" value="plan_create">
+                            <div class="plan-form-grid">
+                                <div>
+                                    <label><i class="fas fa-tag"></i> Nombre *</label>
+                                    <input type="text" name="plan_name" placeholder="Ej: Plan Pro" required>
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-align-left"></i> Descripción</label>
+                                    <input type="text" name="plan_desc" placeholder="Descripción breve">
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-calendar-day"></i> Mensual (₡)</label>
+                                    <input type="number" name="plan_monthly" value="0" min="0" step="100">
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-calendar-alt"></i> Anual (₡)</label>
+                                    <input type="number" name="plan_annual" value="0" min="0" step="1000">
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-box"></i> Máx. Productos (0=ilimitado)</label>
+                                    <input type="number" name="plan_max_prod" value="5" min="0">
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-toggle-on"></i> Estado</label>
+                                    <select name="plan_active">
+                                        <option value="1">Activo</option>
+                                        <option value="0">Inactivo</option>
+                                    </select>
+                                </div>
+                                <div class="plan-form-wide">
+                                    <label><i class="fas fa-list-ul"></i> Beneficios (una por línea)</label>
+                                    <textarea name="plan_features" placeholder="Hasta 5 productos&#10;Soporte básico&#10;Sin comisiones"></textarea>
+                                </div>
+                                <div class="plan-form-actions">
+                                    <button type="submit" class="btn-plan-save"><i class="fas fa-save"></i> Crear Plan</button>
+                                    <button type="button" class="btn-cancel-edit" onclick="toggleNewPlan()">Cancelar</button>
+                                </div>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+
+                <?php foreach ($plans as $plan):
+                    $featList = json_decode($plan['features'] ?? '[]', true) ?: [];
+                    $featText = implode("\n", $featList);
+                    $maxLabel = (int)$plan['max_products'] === 0 ? 'Ilimitados' : number_format((int)$plan['max_products']);
+                ?>
+                <tr>
+                    <td><?= (int)$plan['id'] ?></td>
+                    <td>
+                        <strong><?= h($plan['name']) ?></strong>
+                        <?php if ($plan['description']): ?>
+                            <div style="font-size:.78rem;color:#9ca3af;margin-top:2px;"><?= h($plan['description']) ?></div>
+                        <?php endif; ?>
+                    </td>
+                    <td>₡<?= number_format((float)$plan['price_monthly'], 0) ?></td>
+                    <td>₡<?= number_format((float)$plan['price_annual'], 0) ?></td>
+                    <td><?= $maxLabel ?></td>
+                    <td>
+                        <span class="badge <?= $plan['is_active'] ? 'badge-plan-on' : 'badge-plan-off' ?>">
+                            <?= $plan['is_active'] ? '● Activo' : '○ Inactivo' ?>
+                        </span>
+                    </td>
+                    <td style="font-size:.8rem;color:#6b7280;max-width:180px;">
+                        <?= h(implode(' · ', array_slice($featList, 0, 3))) ?>
+                        <?php if (count($featList) > 3): ?><em>+<?= count($featList)-3 ?> más</em><?php endif; ?>
+                    </td>
+                    <td style="white-space:nowrap;">
+                        <button class="btn btn-plan-edit" onclick="togglePlanEdit(<?= (int)$plan['id'] ?>)">
+                            <i class="fas fa-pencil-alt"></i> Editar
+                        </button>
+                        <form method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar el plan <?= h(addslashes($plan['name'])) ?>? Esta acción no se puede deshacer.');">
+                            <input type="hidden" name="action" value="plan_delete">
+                            <input type="hidden" name="plan_id" value="<?= (int)$plan['id'] ?>">
+                            <button type="submit" class="btn btn-plan-del"><i class="fas fa-trash"></i> Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                <!-- Fila edición inline -->
+                <tr class="plan-edit-row" id="plan-edit-row-<?= (int)$plan['id'] ?>">
+                    <td colspan="8">
+                        <form method="post">
+                            <input type="hidden" name="action" value="plan_update">
+                            <input type="hidden" name="plan_id" value="<?= (int)$plan['id'] ?>">
+                            <div class="plan-form-grid">
+                                <div>
+                                    <label><i class="fas fa-tag"></i> Nombre *</label>
+                                    <input type="text" name="plan_name" value="<?= h($plan['name']) ?>" required>
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-align-left"></i> Descripción</label>
+                                    <input type="text" name="plan_desc" value="<?= h($plan['description'] ?? '') ?>">
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-calendar-day"></i> Mensual (₡)</label>
+                                    <input type="number" name="plan_monthly" value="<?= (float)$plan['price_monthly'] ?>" min="0" step="100">
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-calendar-alt"></i> Anual (₡)</label>
+                                    <input type="number" name="plan_annual" value="<?= (float)$plan['price_annual'] ?>" min="0" step="1000">
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-box"></i> Máx. Productos (0=ilimitado)</label>
+                                    <input type="number" name="plan_max_prod" value="<?= (int)$plan['max_products'] ?>" min="0">
+                                </div>
+                                <div>
+                                    <label><i class="fas fa-toggle-on"></i> Estado</label>
+                                    <select name="plan_active">
+                                        <option value="1" <?= $plan['is_active'] ? 'selected' : '' ?>>Activo</option>
+                                        <option value="0" <?= !$plan['is_active'] ? 'selected' : '' ?>>Inactivo</option>
+                                    </select>
+                                </div>
+                                <div class="plan-form-wide">
+                                    <label><i class="fas fa-list-ul"></i> Beneficios (una por línea)</label>
+                                    <textarea name="plan_features"><?= h($featText) ?></textarea>
+                                </div>
+                                <div class="plan-form-actions">
+                                    <button type="submit" class="btn-plan-save"><i class="fas fa-save"></i> Guardar Cambios</button>
+                                    <button type="button" class="btn-cancel-edit" onclick="togglePlanEdit(<?= (int)$plan['id'] ?>)">Cancelar</button>
+                                </div>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <!-- ── FIN GESTIÓN DE PLANES ──────────────────────────────────────────────── -->
+
+</div>
 <script>
 function toggleEdit(id) {
     var row = document.getElementById('edit-row-' + id);
     row.style.display = (row.style.display === 'table-row') ? 'none' : 'table-row';
     if (row.style.display === 'table-row') {
         row.querySelector('input[type=password]').focus();
+    }
+}
+function toggleNewPlan() {
+    var row = document.getElementById('new-plan-row');
+    row.style.display = (row.style.display === 'table-row') ? 'none' : 'table-row';
+    if (row.style.display === 'table-row') {
+        row.querySelector('input[type=text]').focus();
+    }
+}
+function togglePlanEdit(id) {
+    // Cerrar cualquier otro abierto
+    document.querySelectorAll('.plan-edit-row').forEach(function(r) {
+        if (r.id !== 'plan-edit-row-' + id) r.style.display = 'none';
+    });
+    var row = document.getElementById('plan-edit-row-' + id);
+    row.style.display = (row.style.display === 'table-row') ? 'none' : 'table-row';
+    if (row.style.display === 'table-row') {
+        row.querySelector('input[type=text]').focus();
     }
 }
 </script>
