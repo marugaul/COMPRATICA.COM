@@ -3,9 +3,24 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/affiliate_auth.php';
 require_once __DIR__ . '/../includes/live_cam.php';
+require_once __DIR__ . '/../includes/aff_chat_helpers.php';
 aff_require_login();
 $pdo = db();
 $aff_id = (int)$_SESSION['aff_id'];
+initAffChatTables($pdo);
+
+// ── Manejar toggle CHAT por espacio ──────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle_chat') {
+    $saleId  = (int)($_POST['sale_id']  ?? 0);
+    $chatOn  = (int)($_POST['chat_on']  ?? 0);
+    if ($saleId) {
+        $pdo->prepare("UPDATE sales SET chat_active=? WHERE id=? AND affiliate_id=?")
+            ->execute([$chatOn ? 1 : 0, $saleId, $aff_id]);
+    }
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['ok' => true, 'chat_active' => $chatOn ? 1 : 0]);
+    exit;
+}
 
 // ── Manejar toggle EN VIVO ────────────────────────────────────────────────
 $liveMsg = '';
@@ -63,6 +78,14 @@ try {
 $storeUrl = $affiliateSaleId
     ? (defined('SITE_URL') ? SITE_URL : 'https://compratica.com') . '/store.php?sale_id=' . (int)$affiliateSaleId
     : (defined('SITE_URL') ? SITE_URL : 'https://compratica.com') . '/venta-garaje';
+
+// Cargar todos los espacios con estado de chat
+$allSales = [];
+try {
+    $salesChatStmt = $pdo->prepare("SELECT id, title, COALESCE(chat_active,0) AS chat_active FROM sales WHERE affiliate_id=? AND is_active=1 ORDER BY id ASC");
+    $salesChatStmt->execute([$aff_id]);
+    $allSales = $salesChatStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $_e) {}
 
 // Costo de crear un espacio
 $sale_fee_crc = 3000; // default
@@ -351,6 +374,12 @@ if (function_exists('mb_internal_encoding')) {
     <a class="nav-btn" href="inventory.php" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
       <i class="fas fa-file-invoice"></i>
       <span>Inventario</span>
+    </a>
+    <a class="nav-btn" href="#" onclick="affToggleChatSection(event)"
+       id="nav-chat-btn"
+       style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background: rgba(255,255,255,0.1); color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='rgba(255,255,255,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+      <i class="fas fa-comments"></i>
+      <span>Chat</span>
     </a>
     <a class="nav-btn" href="#" onclick="affToggleLiveSection(event)"
        id="nav-live-btn"
@@ -771,9 +800,142 @@ if (function_exists('mb_internal_encoding')) {
   </div>
   <!-- ── FIN EN VIVO ─────────────────────────────────────────────────────── -->
 
+  <!-- ── SECCIÓN CHAT CON CLIENTES ──────────────────────────────────────── -->
+  <style>
+  .aff-chat-section { background:white; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.07); padding:28px; margin-top:2rem; border:2px solid #e2e8f0; transition:border-color .3s; }
+  .aff-chat-space-card { border:1.5px solid #e5e7eb; border-radius:10px; margin-bottom:16px; overflow:hidden; }
+  .aff-chat-space-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:#f9fafb; cursor:pointer; gap:12px; flex-wrap:wrap; }
+  .aff-chat-space-head h4 { margin:0; font-size:.97rem; color:#1f2937; }
+  .aff-chat-toggle { display:flex; align-items:center; gap:10px; }
+  .aff-chat-switch { position:relative; display:inline-block; width:46px; height:26px; }
+  .aff-chat-switch input { opacity:0; width:0; height:0; }
+  .aff-chat-slider { position:absolute; cursor:pointer; inset:0; background:#d1d5db; border-radius:26px; transition:.3s; }
+  .aff-chat-slider:before { content:''; position:absolute; width:20px; height:20px; left:3px; bottom:3px; background:white; border-radius:50%; transition:.3s; }
+  .aff-chat-switch input:checked + .aff-chat-slider { background:#10b981; }
+  .aff-chat-switch input:checked + .aff-chat-slider:before { transform:translateX(20px); }
+  .aff-chat-panel { padding:16px 18px; display:none; }
+  .aff-chat-panel.open { display:block; }
+  .aff-chat-grid { display:grid; grid-template-columns:1fr 300px; gap:16px; }
+  @media(max-width:700px){ .aff-chat-grid { grid-template-columns:1fr; } }
+  .aff-chat-log { background:#f8f9ff; border-radius:10px; padding:12px; height:280px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; border:1px solid #e5e7eb; }
+  .achat-msg { max-width:92%; }
+  .achat-msg.from-client { align-self:flex-start; }
+  .achat-msg.from-affiliate { align-self:flex-end; }
+  .achat-bubble { padding:9px 13px; border-radius:12px; font-size:.87rem; word-break:break-word; line-height:1.45; }
+  .achat-msg.from-client .achat-bubble { background:white; color:#1f2937; box-shadow:0 1px 4px rgba(0,0,0,.08); border-bottom-left-radius:4px; }
+  .achat-msg.from-affiliate .achat-bubble { background:#10b981; color:white; border-bottom-right-radius:4px; }
+  .achat-msg.private .achat-bubble { background:#f0fdf4; color:#166534; border:1px dashed #86efac; }
+  .achat-meta { font-size:.71rem; color:#9ca3af; margin-top:3px; padding:0 4px; }
+  .achat-meta.right { text-align:right; }
+  .achat-actions { display:flex; gap:5px; margin-top:4px; flex-wrap:wrap; }
+  .achat-actions button { font-size:.71rem; padding:3px 8px; border-radius:6px; border:none; cursor:pointer; font-weight:600; }
+  .aff-chat-reply-area { background:#f9fafb; border-radius:10px; padding:14px; border:1px solid #e5e7eb; }
+  .aff-chat-reply-area h4 { margin:0 0 8px; font-size:.88rem; color:#374151; }
+  .aff-chat-reply-mode { font-size:.8rem; color:#059669; font-weight:600; margin-bottom:7px; min-height:18px; }
+  .aff-chat-reply-inp { width:100%; box-sizing:border-box; border:2px solid #e5e7eb; border-radius:9px; padding:9px 11px; font-size:.88rem; resize:none; font-family:inherit; min-height:72px; }
+  .aff-chat-reply-inp:focus { border-color:#10b981; outline:none; }
+  .aff-chat-reply-btns { display:flex; gap:7px; margin-top:8px; flex-wrap:wrap; }
+  .aff-chat-reply-btns button { padding:8px 15px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:.85rem; }
+  .aff-chat-bans-wrap { margin-top:12px; }
+  .aff-chat-bans-wrap h5 { font-size:.8rem; color:#6b7280; margin:0 0 6px; }
+  .aff-ban-chip { display:inline-flex; align-items:center; gap:5px; background:#fef2f2; border:1px solid #fecaca; color:#991b1b; border-radius:20px; padding:2px 9px; font-size:.76rem; margin:2px; }
+  .aff-ban-chip button { background:none; border:none; cursor:pointer; color:#dc2626; padding:0; font-size:.85rem; }
+  </style>
+
+  <div id="chat-section" style="display:none;">
+    <div class="aff-chat-section">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+        <h2 style="margin:0; font-size:1.3rem; color:#1f2937;">
+          <i class="fas fa-comments" style="color:#10b981;"></i> Chat con Clientes
+        </h2>
+        <span style="color:#6b7280; font-size:.85rem;">Activá el chat por cada espacio de venta</span>
+      </div>
+
+      <?php if (empty($allSales)): ?>
+        <div style="text-align:center; color:#9ca3af; padding:30px;">
+          <i class="fas fa-store" style="font-size:2rem; display:block; margin-bottom:8px; color:#d1d5db;"></i>
+          No tenés espacios activos. <a href="sales.php" style="color:#10b981;">Crear un espacio</a>.
+        </div>
+      <?php else: ?>
+        <?php foreach ($allSales as $sp): ?>
+        <div class="aff-chat-space-card" id="chat-space-<?= (int)$sp['id'] ?>">
+          <div class="aff-chat-space-head" onclick="affChatTogglePanel(<?= (int)$sp['id'] ?>)">
+            <h4>
+              <i class="fas fa-store" style="color:#6b7280; margin-right:6px;"></i>
+              <?= htmlspecialchars($sp['title'] ?: 'Espacio #' . $sp['id']) ?>
+            </h4>
+            <div class="aff-chat-toggle" onclick="event.stopPropagation()">
+              <span style="font-size:.82rem; color:#6b7280;">Chat</span>
+              <label class="aff-chat-switch">
+                <input type="checkbox" <?= $sp['chat_active'] ? 'checked' : '' ?>
+                       onchange="affChatToggleActive(<?= (int)$sp['id'] ?>, this.checked)">
+                <span class="aff-chat-slider"></span>
+              </label>
+              <i class="fas fa-chevron-down" id="chat-chevron-<?= (int)$sp['id'] ?>" style="color:#9ca3af; font-size:.8rem; transition:transform .2s;"></i>
+            </div>
+          </div>
+          <div class="aff-chat-panel <?= $sp['chat_active'] ? 'open' : '' ?>" id="chat-panel-<?= (int)$sp['id'] ?>">
+            <div class="aff-chat-grid">
+              <div>
+                <div class="aff-chat-log" id="chat-log-<?= (int)$sp['id'] ?>">
+                  <div style="text-align:center; color:#9ca3af; font-size:.84rem; padding:16px;" id="chat-empty-<?= (int)$sp['id'] ?>">
+                    <i class="fas fa-comment-slash" style="font-size:1.6rem; display:block; margin-bottom:6px; color:#d1d5db;"></i>
+                    Esperando preguntas de tus clientes...
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="aff-chat-reply-area">
+                  <h4><i class="fas fa-paper-plane" style="color:#10b981;"></i> Enviar mensaje</h4>
+                  <div class="aff-chat-reply-mode" id="chat-reply-mode-<?= (int)$sp['id'] ?>">Mensaje a todos los clientes</div>
+                  <textarea class="aff-chat-reply-inp" id="chat-inp-<?= (int)$sp['id'] ?>"
+                            maxlength="500" placeholder="Escribí tu mensaje..." rows="3"></textarea>
+                  <div class="aff-chat-reply-btns">
+                    <button id="chat-btn-bcast-<?= (int)$sp['id'] ?>"
+                            onclick="affChatSend(<?= (int)$sp['id'] ?>,1,null)"
+                            style="background:linear-gradient(135deg,#10b981,#059669); color:white;">
+                      <i class="fas fa-bullhorn"></i> A todos
+                    </button>
+                    <button id="chat-btn-pub-<?= (int)$sp['id'] ?>" style="display:none; background:#2563eb; color:white;"
+                            onclick="affChatSendReply(<?= (int)$sp['id'] ?>,1)">
+                      <i class="fas fa-globe"></i> En público
+                    </button>
+                    <button id="chat-btn-priv-<?= (int)$sp['id'] ?>" style="display:none; background:#059669; color:white;"
+                            onclick="affChatSendReply(<?= (int)$sp['id'] ?>,0)">
+                      <i class="fas fa-lock"></i> Privado
+                    </button>
+                    <button id="chat-btn-cancel-<?= (int)$sp['id'] ?>" style="display:none; background:#f3f4f6; color:#374151;"
+                            onclick="affChatCancelReply(<?= (int)$sp['id'] ?>)">
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+                <div class="aff-chat-bans-wrap" id="chat-bans-wrap-<?= (int)$sp['id'] ?>" style="display:none;">
+                  <h5><i class="fas fa-ban"></i> Usuarios baneados</h5>
+                  <div id="chat-bans-<?= (int)$sp['id'] ?>"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </div>
+  </div>
+  <!-- ── FIN CHAT ─────────────────────────────────────────────────────────── -->
+
 </div>
 
 <script>
+// ── Toggle sección Chat ──────────────────────────────────────────────────
+function affToggleChatSection(e) {
+  e && e.preventDefault();
+  const sec = document.getElementById('chat-section');
+  const visible = sec.style.display !== 'none';
+  sec.style.display = visible ? 'none' : '';
+  if (!visible) sec.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
 // ── Toggle sección En Vivo ───────────────────────────────────────────────
 function affToggleLiveSection(e) {
   e && e.preventDefault();
@@ -907,6 +1069,187 @@ async function affStopCamLive() {
   await fetch('/api/live-cam-stop.php', { method:'POST', credentials:'same-origin', body: fd });
   location.reload();
 }
+
+// ── Chat con Clientes ─────────────────────────────────────────────────────
+(function(){
+  // Mapa por sale_id: { lastId, replyToUid, bansMap, pollTimer, active }
+  const chatState = {};
+
+  function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+  // Inicializar estado para cada espacio
+  document.querySelectorAll('[id^="chat-space-"]').forEach(card => {
+    const sid = parseInt(card.id.replace('chat-space-',''));
+    chatState[sid] = { lastId:0, replyToUid:null, bansMap:{}, pollTimer:null };
+    const panel = document.getElementById('chat-panel-' + sid);
+    if (panel && panel.classList.contains('open')) startChatPoll(sid);
+  });
+
+  window.affChatTogglePanel = function(sid) {
+    const panel  = document.getElementById('chat-panel-' + sid);
+    const chev   = document.getElementById('chat-chevron-' + sid);
+    if (!panel) return;
+    const open = panel.classList.toggle('open');
+    if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
+    if (open) startChatPoll(sid);
+    else      stopChatPoll(sid);
+  };
+
+  window.affChatToggleActive = function(sid, on) {
+    const body = new URLSearchParams({ action:'toggle_chat', sale_id:sid, chat_on: on ? 1 : 0 });
+    fetch(location.pathname, { method:'POST', credentials:'same-origin', body })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) return;
+      const panel = document.getElementById('chat-panel-' + sid);
+      if (!panel) return;
+      if (on) {
+        panel.classList.add('open');
+        document.getElementById('chat-chevron-' + sid).style.transform = 'rotate(180deg)';
+        startChatPoll(sid);
+      } else {
+        panel.classList.remove('open');
+        document.getElementById('chat-chevron-' + sid).style.transform = '';
+        stopChatPoll(sid);
+      }
+    })
+    .catch(()=>{});
+  };
+
+  function startChatPoll(sid) {
+    if (chatState[sid].pollTimer) return;
+    poll(sid);
+    chatState[sid].pollTimer = setInterval(() => poll(sid), 3000);
+  }
+  function stopChatPoll(sid) {
+    clearInterval(chatState[sid].pollTimer);
+    chatState[sid].pollTimer = null;
+  }
+
+  function poll(sid) {
+    const st = chatState[sid];
+    fetch('/api/aff-chat-poll.php?sale_id=' + sid + '&last_id=' + st.lastId, {credentials:'same-origin'})
+    .then(r => r.json())
+    .then(data => {
+      if (data.messages && data.messages.length) {
+        const empty = document.getElementById('chat-empty-' + sid);
+        if (empty) empty.style.display = 'none';
+        data.messages.forEach(m => appendMsg(sid, m));
+        st.lastId = data.messages[data.messages.length-1].id;
+      }
+      if (data.bans) {
+        st.bansMap = {};
+        Object.entries(data.bans).forEach(([uid,name]) => { st.bansMap[uid] = name; });
+        renderBans(sid);
+      }
+    })
+    .catch(()=>{});
+  }
+
+  function appendMsg(sid, m) {
+    const log = document.getElementById('chat-log-' + sid);
+    if (!log) return;
+    const st = chatState[sid];
+    const isAff     = (m.sender_type === 'affiliate');
+    const isPrivate = (m.is_public == 0);
+    const wrap = document.createElement('div');
+    wrap.className = 'achat-msg ' + (isAff ? 'from-affiliate' : 'from-client') + (isPrivate ? ' private' : '');
+    wrap.dataset.uid  = m.sender_uid;
+    wrap.dataset.name = m.sender_name;
+
+    let actHtml = '';
+    if (!isAff && m.sender_uid) {
+      actHtml = `<div class="achat-actions">
+        <button class="btn-reply-pub" onclick="affChatPrepReply(${sid},${m.sender_uid},'${escJs(m.sender_name)}',false)">
+          <i class="fas fa-globe"></i> Resp. público</button>
+        <button class="btn-reply-priv" onclick="affChatPrepReply(${sid},${m.sender_uid},'${escJs(m.sender_name)}',true)">
+          <i class="fas fa-lock"></i> Resp. privado</button>
+        ${st.bansMap[m.sender_uid]
+          ? `<button class="btn-unban" onclick="affChatBan(${sid},${m.sender_uid},'unban')"><i class="fas fa-unlock"></i> Desbanear</button>`
+          : `<button class="btn-ban"   onclick="affChatBan(${sid},${m.sender_uid},'ban')"><i class="fas fa-ban"></i> Banear</button>`
+        }
+      </div>`;
+    }
+
+    wrap.innerHTML =
+      (isPrivate ? '<div style="font-size:.69rem;color:#059669;font-weight:600;margin-bottom:2px;"><i class="fas fa-lock"></i> Privado</div>' : '') +
+      (!isAff ? `<div class="achat-meta">${escHtml(m.sender_name)}</div>` : '') +
+      `<div class="achat-bubble">${escHtml(m.message)}</div>` +
+      `<div class="achat-meta${isAff?' right':''}">${m.time||''}</div>` +
+      actHtml;
+
+    log.appendChild(wrap);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  window.affChatPrepReply = function(sid, uid, name, priv) {
+    const st = chatState[sid];
+    st.replyToUid = uid;
+    const mode = document.getElementById('chat-reply-mode-' + sid);
+    if (mode) mode.innerHTML = priv
+      ? `<i class="fas fa-lock"></i> Respuesta privada a <strong>${escHtml(name)}</strong>`
+      : `<i class="fas fa-globe"></i> Respuesta pública a <strong>${escHtml(name)}</strong>`;
+    document.getElementById('chat-btn-bcast-'  + sid).style.display = 'none';
+    document.getElementById('chat-btn-pub-'    + sid).style.display = priv ? 'none' : 'inline-flex';
+    document.getElementById('chat-btn-priv-'   + sid).style.display = priv ? 'inline-flex' : 'none';
+    document.getElementById('chat-btn-cancel-' + sid).style.display = 'inline-flex';
+    document.getElementById('chat-inp-' + sid).focus();
+  };
+
+  window.affChatCancelReply = function(sid) {
+    chatState[sid].replyToUid = null;
+    const mode = document.getElementById('chat-reply-mode-' + sid);
+    if (mode) mode.textContent = 'Mensaje a todos los clientes';
+    document.getElementById('chat-btn-bcast-'  + sid).style.display = 'inline-flex';
+    document.getElementById('chat-btn-pub-'    + sid).style.display = 'none';
+    document.getElementById('chat-btn-priv-'   + sid).style.display = 'none';
+    document.getElementById('chat-btn-cancel-' + sid).style.display = 'none';
+  };
+
+  window.affChatSend = function(sid, isPublic, privateTo) {
+    const inp = document.getElementById('chat-inp-' + sid);
+    const txt = inp ? inp.value.trim() : '';
+    if (!txt) return;
+    const body = new URLSearchParams({ sale_id:sid, message:txt, is_public:isPublic });
+    if (privateTo) body.set('private_to', privateTo);
+    fetch('/api/aff-chat-send.php', { method:'POST', credentials:'same-origin', body })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) { inp.value = ''; affChatCancelReply(sid); poll(sid); }
+      else alert(d.msg || 'Error al enviar');
+    })
+    .catch(()=> alert('Error de conexión'));
+  };
+
+  window.affChatSendReply = function(sid, isPublic) {
+    const uid = chatState[sid].replyToUid;
+    affChatSend(sid, isPublic, isPublic ? null : uid);
+  };
+
+  window.affChatBan = function(sid, uid, action) {
+    const body = new URLSearchParams({ sale_id:sid, banned_user_id:uid, action });
+    fetch('/api/aff-chat-ban.php', { method:'POST', credentials:'same-origin', body })
+    .then(r => r.json())
+    .then(d => { if (d.ok) poll(sid); })
+    .catch(()=>{});
+  };
+
+  function renderBans(sid) {
+    const st   = chatState[sid];
+    const wrap = document.getElementById('chat-bans-wrap-' + sid);
+    const cont = document.getElementById('chat-bans-' + sid);
+    if (!wrap || !cont) return;
+    const uids = Object.keys(st.bansMap);
+    if (!uids.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    cont.innerHTML = uids.map(uid =>
+      `<span class="aff-ban-chip">${escHtml(st.bansMap[uid])}
+       <button onclick="affChatBan(${sid},${uid},'unban')" title="Desbanear"><i class="fas fa-times"></i></button>
+       </span>`
+    ).join('');
+  }
+})();
 </script>
 </body>
 </html>
