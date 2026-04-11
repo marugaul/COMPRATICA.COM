@@ -840,9 +840,18 @@ async function affStartCamLive() {
   affSessionId  = json.session_id;
   affChunkIndex = 0;
 
-  // Iniciar grabación
+  // Iniciar grabación — verificar soporte WebM antes de continuar (iOS no lo tiene)
   const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
-    ? 'video/webm;codecs=vp8' : 'video/webm';
+    ? 'video/webm;codecs=vp8'
+    : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '';
+  if (!mimeType) {
+    // Cancelar la sesión que ya se abrió
+    fetch('/api/live-cam-end.php', { method:'POST', credentials:'same-origin',
+      body: new URLSearchParams({ session_id: affSessionId }) }).catch(()=>{});
+    affSessionId = '';
+    alert('Tu dispositivo no admite la transmisión en vivo (video/webm no soportado en iOS).\nUsá un dispositivo Android o una computadora.');
+    return;
+  }
   affRecorder = new MediaRecorder(affStream, { mimeType, videoBitsPerSecond: 350000 });
   affRecorder.ondataavailable = async (e) => {
     if (!e.data || !e.data.size) return;
