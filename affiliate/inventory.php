@@ -54,12 +54,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Obtener productos de los espacios seleccionados
+    $stock_filter = $_POST['stock_filter'] ?? 'all';
+    $stock_where = '';
+    if ($stock_filter === 'available') {
+      $stock_where = ' AND p.stock > 0';
+    } elseif ($stock_filter === 'sold') {
+      $stock_where = ' AND p.stock <= 0';
+    }
     $placeholders = implode(',', array_fill(0, count($selected_sales), '?'));
     $query = "
       SELECT p.*, s.title AS sale_title
       FROM products p
       JOIN sales s ON s.id = p.sale_id
       WHERE p.sale_id IN ($placeholders) AND p.affiliate_id = ?
+      {$stock_where}
       ORDER BY s.id, p.id
     ";
     $params = array_merge($selected_sales, [$aff_id]);
@@ -290,6 +298,10 @@ function generatePrintableHTML($products, $aff_data, $aff_pm = [], $aff_sh = [],
       margin-top: 20px;
       font-size: 11px;
     }
+    .thumb-cell { width: 56px; text-align: center; }
+    .thumb-cell img { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; display: block; margin: 0 auto; }
+    .thumb-cell .no-img { width: 48px; height: 48px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin: 0 auto; }
+    .buy-link { color: #002b7f; font-weight: bold; font-size: 10px; }
     th {
       background: #002b7f;
       color: white;
@@ -388,11 +400,13 @@ function generatePrintableHTML($products, $aff_data, $aff_pm = [], $aff_sh = [],
   <table>
     <thead>
       <tr>
-        <th style="width: 25%">Espacio</th>
-        <th style="width: 30%">Producto</th>
-        <th style="width: 15%">Precio</th>
-        <th style="width: 10%">Stock</th>
-        <th style="width: 20%">Estado</th>
+        <th class="thumb-cell">Foto</th>
+        <th style="width:20%">Espacio</th>
+        <th style="width:25%">Producto</th>
+        <th style="width:12%">Precio</th>
+        <th style="width:7%">Stock</th>
+        <th style="width:14%">Estado</th>
+        <th style="width:10%">Comprar</th>
       </tr>
     </thead>
     <tbody>';
@@ -400,15 +414,26 @@ function generatePrintableHTML($products, $aff_data, $aff_pm = [], $aff_sh = [],
   foreach ($products as $p) {
     $price = ($p['currency'] === 'USD' ? '$' : '₡') . number_format((float)$p['price'], $p['currency'] === 'USD' ? 2 : 0);
     $stock = (int)$p['stock'];
-    $status = $stock > 0 ? '<span class="status-available">✓ Disponible (' . $stock . ' unidades)</span>' : '<span class="status-sold">✗ Sin stock</span>';
+    $status = $stock > 0 ? '<span class="status-available">✓ Disponible (' . $stock . ' unid.)</span>' : '<span class="status-sold">✗ Sin stock</span>';
     $product_url = $app_url . '/store.php?sale_id=' . (int)$p['sale_id'] . '#product-' . (int)$p['id'];
 
+    // Imagen miniatura
+    $img_file = trim($p['image'] ?? '');
+    if ($img_file !== '') {
+      $img_src = $app_url . '/uploads/' . htmlspecialchars($img_file);
+      $thumb = '<img src="' . $img_src . '" alt="" onerror="this.style.display=\'none\'">';
+    } else {
+      $thumb = '<div class="no-img">📦</div>';
+    }
+
     echo '<tr>
+      <td class="thumb-cell">' . $thumb . '</td>
       <td><strong>' . htmlspecialchars($p['sale_title']) . '</strong></td>
       <td>' . htmlspecialchars($p['name']) . '</td>
-      <td style="text-align: center"><strong>' . $price . '</strong></td>
-      <td style="text-align: center">' . $stock . '</td>
-      <td style="text-align: center">' . $status . '</td>
+      <td style="text-align:center"><strong>' . $price . '</strong></td>
+      <td style="text-align:center">' . $stock . '</td>
+      <td style="text-align:center">' . $status . '</td>
+      <td style="text-align:center"><a class="buy-link" href="' . htmlspecialchars($product_url) . '" target="_blank">🛒 Ver</a></td>
     </tr>';
   }
 
@@ -954,6 +979,28 @@ function sendEmailWithAttachment($to, $subject, $body, $attachment_path) {
 
       <div class="card">
         <h3><i class="fas fa-cog"></i> Opciones de Generación</h3>
+
+        <!-- Filtro de estado de stock -->
+        <div class="form-group">
+          <label style="margin-bottom:.75rem"><i class="fas fa-filter"></i> Mostrar productos</label>
+          <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:.5rem">
+            <label style="display:flex;align-items:center;gap:.45rem;cursor:pointer;font-weight:500;font-size:.9375rem">
+              <input type="radio" name="stock_filter" value="all" checked
+                     style="width:17px;height:17px;accent-color:#3498db;cursor:pointer">
+              <span>Todos</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:.45rem;cursor:pointer;font-weight:500;font-size:.9375rem">
+              <input type="radio" name="stock_filter" value="available"
+                     style="width:17px;height:17px;accent-color:#27ae60;cursor:pointer">
+              <span style="color:#27ae60">Solo disponibles</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:.45rem;cursor:pointer;font-weight:500;font-size:.9375rem">
+              <input type="radio" name="stock_filter" value="sold"
+                     style="width:17px;height:17px;accent-color:#e74c3c;cursor:pointer">
+              <span style="color:#e74c3c">Solo vendidos / sin stock</span>
+            </label>
+          </div>
+        </div>
 
         <div class="form-group">
           <label for="email">
