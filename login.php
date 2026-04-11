@@ -388,7 +388,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $error = 'Ya existe una cuenta con este email';
                     } else {
                         $hash = password_hash($password, PASSWORD_BCRYPT);
-                        $ins = $pdo->prepare("INSERT INTO users (name, email, phone, password_hash, created_at) VALUES (?, ?, ?, ?, NOW())");
+                        $ins = $pdo->prepare("INSERT INTO users (name, email, phone, password_hash, created_at) VALUES (?, ?, ?, ?, datetime('now'))");
                         $ins->execute([$name, $email, $phone, $hash]);
                         $newUid = (int)$pdo->lastInsertId();
 

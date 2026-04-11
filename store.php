@@ -116,10 +116,12 @@ logStore('CSRF_SET', ['csrf' => substr($csrf, 0, 16) . '...']);
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/live_embed.php';
+require_once __DIR__ . '/includes/aff_chat_helpers.php';
 
 logStore('CONFIG_LOADED');
 
 $pdo = db();
+initAffChatTables($pdo);
 logStore('PDO_CONNECTED');
 
 // VALIDACIÓN Y CARGA DE DATOS
@@ -135,11 +137,12 @@ if (!$sale_id || $sale_id <= 0) {
 
 $stmt = $pdo->prepare("
     SELECT s.*, a.name AS affiliate_name, a.phone AS affiliate_phone,
-           COALESCE(a.is_live,0)        AS aff_is_live,
-           a.live_title                 AS aff_live_title,
-           a.live_link                  AS aff_live_link,
-           COALESCE(a.live_type,'link') AS aff_live_type,
-           a.live_session_id            AS aff_live_session_id
+           COALESCE(a.is_live,0)          AS aff_is_live,
+           a.live_title                   AS aff_live_title,
+           a.live_link                    AS aff_live_link,
+           COALESCE(a.live_type,'link')   AS aff_live_type,
+           a.live_session_id              AS aff_live_session_id,
+           COALESCE(s.chat_active,0)      AS chat_active
     FROM sales s
     JOIN affiliates a ON a.id = s.affiliate_id
     WHERE s.id = ? AND s.is_active = 1
@@ -1635,6 +1638,135 @@ foreach ($_SESSION['cart'] as $it) {
     </div>
   </div>
   <?php endif; /* aff_is_live */ ?>
+
+  <?php if (!empty($sale['chat_active'])): ?>
+  <!-- ── CHAT DEL ESPACIO (cliente) ─────────────────────────────────────── -->
+  <div id="store-chat-wrap" style="margin-top:1.4rem; max-width:420px; width:100%;">
+    <style>
+    #store-chat-wrap .sc-box { background:rgba(0,0,0,.28); border:1.5px solid rgba(16,185,129,.5); border-radius:14px; padding:12px 14px; backdrop-filter:blur(6px); }
+    #store-chat-wrap .sc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px; }
+    #store-chat-wrap .sc-badge { display:inline-flex; align-items:center; gap:6px; background:#10b981; color:white; border-radius:20px; padding:3px 11px; font-size:.8rem; font-weight:700; }
+    #store-chat-wrap .sc-badge .dot { width:7px; height:7px; background:white; border-radius:50%; animation:store-live-pulse 1.2s infinite; }
+    #store-chat-wrap .sc-toggle { background:none; border:none; color:rgba(255,255,255,.5); cursor:pointer; font-size:1rem; padding:2px 6px; border-radius:6px; transition:color .2s; }
+    #store-chat-wrap .sc-toggle:hover { color:white; }
+    #store-chat-log { background:rgba(0,0,0,.2); border-radius:10px; padding:10px; height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+    .scc-msg { max-width:88%; }
+    .scc-msg.from-client { align-self:flex-start; }
+    .scc-msg.from-affiliate { align-self:flex-end; }
+    .scc-bubble { padding:8px 11px; border-radius:11px; font-size:.85rem; word-break:break-word; line-height:1.4; }
+    .scc-msg.from-client .scc-bubble { background:rgba(255,255,255,.15); color:white; border-bottom-left-radius:3px; }
+    .scc-msg.from-affiliate .scc-bubble { background:#10b981; color:white; border-bottom-right-radius:3px; }
+    .scc-meta { font-size:.7rem; color:rgba(255,255,255,.45); margin-top:2px; padding:0 3px; }
+    .scc-meta.right { text-align:right; }
+    #store-chat-inp-wrap { display:flex; gap:7px; }
+    #store-chat-inp { flex:1; background:rgba(255,255,255,.12); border:1.5px solid rgba(255,255,255,.2); border-radius:9px; padding:9px 12px; font-size:.87rem; color:white; font-family:inherit; }
+    #store-chat-inp::placeholder { color:rgba(255,255,255,.45); }
+    #store-chat-inp:focus { outline:none; border-color:#10b981; }
+    #store-chat-send { background:#10b981; border:none; color:white; border-radius:9px; padding:9px 14px; cursor:pointer; font-size:.88rem; font-weight:700; transition:opacity .2s; }
+    #store-chat-send:hover { opacity:.85; }
+    #store-chat-login-note { color:rgba(255,255,255,.55); font-size:.82rem; text-align:center; padding:8px 0; }
+    #store-chat-login-note a { color:#6ee7b7; }
+    #store-chat-toggle-btn { background:none; border:none; color:rgba(255,255,255,.6); cursor:pointer; font-size:.82rem; width:100%; text-align:right; padding:2px 0 8px; }
+    </style>
+    <div class="sc-box">
+      <div class="sc-header">
+        <span class="sc-badge">
+          <span class="dot"></span>
+          Chat en Vivo
+        </span>
+        <button class="sc-toggle" onclick="document.getElementById('store-chat-body').style.display = document.getElementById('store-chat-body').style.display==='none' ? '' : 'none'">
+          <i class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+      <div id="store-chat-body">
+        <div id="store-chat-log">
+          <div id="store-chat-empty" style="text-align:center; color:rgba(255,255,255,.4); font-size:.82rem; padding:14px;">
+            <i class="fas fa-comment-slash" style="display:block; font-size:1.4rem; margin-bottom:6px; opacity:.5;"></i>
+            Sé el primero en preguntar...
+          </div>
+        </div>
+        <?php if ($isLoggedIn): ?>
+        <div id="store-chat-inp-wrap">
+          <input type="text" id="store-chat-inp" maxlength="500" placeholder="Escribe tu pregunta...">
+          <button id="store-chat-send" onclick="storeChatSend()">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+        <?php else: ?>
+        <p id="store-chat-login-note">
+          <a href="/login.php?redirect=<?= urlencode($_SERVER['REQUEST_URI'] ?? '') ?>">Iniciá sesión</a>
+          para participar en el chat.
+        </p>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+  <script>
+  (function(){
+    const SALE_ID = <?= (int)$sale_id ?>;
+    let lastId = 0;
+    const log   = document.getElementById('store-chat-log');
+    const empty = document.getElementById('store-chat-empty');
+    const inp   = document.getElementById('store-chat-inp');
+
+    function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function poll() {
+      fetch('/api/aff-chat-poll.php?sale_id=' + SALE_ID + '&last_id=' + lastId, {credentials:'same-origin'})
+      .then(r => r.json())
+      .then(data => {
+        if (data.messages && data.messages.length) {
+          if (empty) empty.style.display = 'none';
+          data.messages.forEach(appendMsg);
+          lastId = data.messages[data.messages.length-1].id;
+        }
+        if (data.is_banned) {
+          if (inp) { inp.disabled = true; inp.placeholder = 'Fuiste bloqueado en este espacio.'; }
+          const btn = document.getElementById('store-chat-send');
+          if (btn) btn.disabled = true;
+        }
+      })
+      .catch(()=>{});
+      setTimeout(poll, 3000);
+    }
+
+    function appendMsg(m) {
+      if (!log) return;
+      const isAff = (m.sender_type === 'affiliate');
+      const wrap  = document.createElement('div');
+      wrap.className = 'scc-msg ' + (isAff ? 'from-affiliate' : 'from-client');
+      wrap.innerHTML =
+        (!isAff ? `<div class="scc-meta">${escHtml(m.sender_name)}</div>` : '') +
+        `<div class="scc-bubble">${escHtml(m.message)}</div>` +
+        `<div class="scc-meta${isAff?' right':''}">${m.time||''}</div>`;
+      log.appendChild(wrap);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    window.storeChatSend = function() {
+      if (!inp) return;
+      const txt = inp.value.trim();
+      if (!txt) return;
+      const body = new URLSearchParams({ sale_id: SALE_ID, message: txt });
+      inp.value = '';
+      fetch('/api/aff-chat-send.php', { method:'POST', credentials:'same-origin', body })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) poll();
+        else { inp.value = txt; alert(d.msg || 'Error al enviar'); }
+      })
+      .catch(()=>{ inp.value = txt; });
+    };
+
+    if (inp) {
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); storeChatSend(); } });
+    }
+
+    poll();
+  })();
+  </script>
+  <!-- ── FIN CHAT CLIENTE ──────────────────────────────────────────────────── -->
+  <?php endif; /* chat_active */ ?>
 
 </section>
 
