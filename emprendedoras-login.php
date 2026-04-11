@@ -120,7 +120,7 @@ function handleGoogleOAuth($code, $clientId, $clientSecret, $redirectUri, $pdo) 
     if (!$user) {
         $name = $userData['name'] ?? explode('@', $userData['email'])[0];
         $randomPass = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
-        $ins = $pdo->prepare("INSERT INTO users (name, email, password_hash, oauth_provider, oauth_id, created_at) VALUES (?, ?, ?, 'google', ?, NOW())");
+        $ins = $pdo->prepare("INSERT INTO users (name, email, password_hash, oauth_provider, oauth_id, created_at) VALUES (?, ?, ?, 'google', ?, datetime('now'))");
         $ins->execute([$name, $userData['email'], $randomPass, $userData['id']]);
         $userId = (int)$pdo->lastInsertId();
     } else {
@@ -154,7 +154,7 @@ function handleFacebookOAuth($code, $appId, $appSecret, $redirectUri, $pdo) {
     if (!$user) {
         $name = $userData['name'] ?? 'Usuario Facebook';
         $randomPass = password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
-        $ins = $pdo->prepare("INSERT INTO users (name, email, password_hash, oauth_provider, oauth_id, created_at) VALUES (?, ?, ?, 'facebook', ?, NOW())");
+        $ins = $pdo->prepare("INSERT INTO users (name, email, password_hash, oauth_provider, oauth_id, created_at) VALUES (?, ?, ?, 'facebook', ?, datetime('now'))");
         $ins->execute([$name, $email, $randomPass, $userData['id']]);
         $userId = (int)$pdo->lastInsertId();
     } else {
@@ -263,7 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $error = 'Ya existe una cuenta con este email';
                     } else {
                         $hash = password_hash($password, PASSWORD_BCRYPT);
-                        $ins  = $pdo->prepare("INSERT INTO users (name, email, phone, password_hash, created_at) VALUES (?, ?, ?, ?, NOW())");
+                        $ins  = $pdo->prepare("INSERT INTO users (name, email, phone, password_hash, created_at) VALUES (?, ?, ?, ?, datetime('now'))");
                         $ins->execute([$name, $email, $phone, $hash]);
                         $newUid = (int)$pdo->lastInsertId();
 
