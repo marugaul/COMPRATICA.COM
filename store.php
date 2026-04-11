@@ -1466,14 +1466,16 @@ foreach ($_SESSION['cart'] as $it) {
           const statusEl = document.getElementById('storeLiveStatus');
           function setStatus(msg) { if (statusEl) statusEl.innerHTML = msg; }
 
-          // ── Detectar Safari/iOS: WebM no compatible ──────────────────
-          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-          const isIOS    = /iPad|iPhone|iPod/.test(navigator.userAgent);
-          if (isSafari || isIOS) {
+          // ── Detectar iOS o falta de soporte WebM ─────────────────────
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+          const noWebM = typeof MediaSource === 'undefined' ||
+                         !MediaSource.isTypeSupported('video/webm; codecs="vp8,vorbis"');
+          if (isIOS || noWebM) {
             document.getElementById('storeLivePlayerWrap').innerHTML =
               '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:20px;text-align:center;color:#aaa;font-size:.85rem;">' +
               '<div><i class="fas fa-mobile-alt" style="font-size:2rem;margin-bottom:10px;display:block;"></i>' +
-              'Safari no soporta cámara en vivo.<br>Usá Chrome o abrí en Android para ver la transmisión.</div></div>';
+              'La transmisión en vivo no es compatible con iOS/iPadOS.<br>Abrí la tienda desde Chrome o Firefox en Android o computadora.</div></div>';
             setStatus('');
             // Verificar cada 5s si termina para ocultar el panel
             setInterval(async()=>{

@@ -8,6 +8,11 @@ function db() {
         $init = !file_exists($dbFile);
         $pdo = new PDO('sqlite:' . $dbFile);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        // Improve concurrency and reduce transient I/O errors
+        $pdo->exec("PRAGMA journal_mode = WAL");
+        $pdo->exec("PRAGMA synchronous = NORMAL");
+        $pdo->exec("PRAGMA busy_timeout = 5000");
+        $pdo->exec("PRAGMA cache_size = -4096");
         if ($init) {
             $pdo->exec("
                 CREATE TABLE products (
