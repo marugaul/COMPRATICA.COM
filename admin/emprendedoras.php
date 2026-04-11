@@ -15,6 +15,15 @@ require_once __DIR__ . '/../includes/mailer.php';
 require_login();
 $pdo = db();
 
+// ── Migraciones en caliente ───────────────────────────────────────────────────
+foreach ([
+    "ALTER TABLE entrepreneur_plans ADD COLUMN plan_type TEXT NOT NULL DEFAULT 'fixed'",
+    "ALTER TABLE entrepreneur_subscriptions ADD COLUMN custom_commission_rate REAL DEFAULT NULL",
+    "ALTER TABLE entrepreneur_subscriptions ADD COLUMN commission_notes TEXT DEFAULT NULL",
+] as $_sql) {
+    try { $pdo->exec($_sql); } catch (Throwable $_e) { /* columna ya existe */ }
+}
+
 if (!function_exists('h')) {
     function h($v) { return htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8'); }
 }
@@ -292,12 +301,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($act === 'plan_create') {
         $planName    = trim($_POST['plan_name']    ?? '');
         $planDesc    = trim($_POST['plan_desc']    ?? '');
-        $planMonthly = (float)($_POST['plan_monthly'] ?? 0);
-        $planAnnual  = (float)($_POST['plan_annual']  ?? 0);
-        $planMaxProd = (int)($_POST['plan_max_prod']  ?? 0);
-        $planActive  = (int)($_POST['plan_active']    ?? 1);
-        $featuresRaw = trim($_POST['plan_features']   ?? '');
-        // Parsear features: una por línea → JSON array
+        $planType    = ($_POST['plan_type'] ?? 'fixed') === 'commission' ? 'commission' : 'fixed';
+        $planMonthly = $planType === 'fixed'      ? (float)($_POST['plan_monthly']    ?? 0) : 0;
+        $planAnnual  = $planType === 'fixed'      ? (float)($_POST['plan_annual']     ?? 0) : 0;
+        $planCommRate= $planType === 'commission' ? (float)($_POST['plan_commission_rate'] ?? 0) : 0;
+        $planMaxProd = (int)($_POST['plan_max_prod'] ?? 0);
+        $planActive  = (int)($_POST['plan_active']   ?? 1);
+        $featuresRaw = trim($_POST['plan_features']  ?? '');
         $featuresArr = array_values(array_filter(array_map('trim', explode("\n", $featuresRaw))));
         $featuresJson = json_encode($featuresArr, JSON_UNESCAPED_UNICODE);
 
@@ -307,9 +317,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $pdo->prepare("
                     INSERT INTO entrepreneur_plans
-                        (name, description, price_monthly, price_annual, max_products, commission_rate, features, is_active, display_order)
-                    VALUES (?, ?, ?, ?, ?, 0, ?, ?, (SELECT COALESCE(MAX(display_order),0)+1 FROM entrepreneur_plans))
-                ")->execute([$planName, $planDesc, $planMonthly, $planAnnual, $planMaxProd, $featuresJson, $planActive]);
+                        (name, description, plan_type, price_monthly, price_annual, max_products, commission_rate, features, is_active, display_order)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(display_order),0)+1 FROM entrepreneur_plans))
+                ")->execute([$planName, $planDesc, $planType, $planMonthly, $planAnnual, $planMaxProd, $planCommRate, $featuresJson, $planActive]);
                 $msg = 'Plan "' . h($planName) . '" creado correctamente.';
             } catch (Throwable $e) {
                 $msg = 'Error al crear plan: ' . $e->getMessage(); $msgType = 'error';
@@ -319,14 +329,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ── Actualizar plan ───────────────────────────────────────────────────────
     if ($act === 'plan_update') {
-        $planId      = (int)($_POST['plan_id']       ?? 0);
-        $planName    = trim($_POST['plan_name']       ?? '');
-        $planDesc    = trim($_POST['plan_desc']       ?? '');
-        $planMonthly = (float)($_POST['plan_monthly'] ?? 0);
-        $planAnnual  = (float)($_POST['plan_annual']  ?? 0);
-        $planMaxProd = (int)($_POST['plan_max_prod']  ?? 0);
-        $planActive  = (int)($_POST['plan_active']    ?? 1);
-        $featuresRaw = trim($_POST['plan_features']   ?? '');
+        $planId      = (int)($_POST['plan_id']    ?? 0);
+        $planName    = trim($_POST['plan_name']   ?? '');
+        $planDesc    = trim($_POST['plan_desc']   ?? '');
+        $planType    = ($_POST['plan_type'] ?? 'fixed') === 'commission' ? 'commission' : 'fixed';
+        $planMonthly = $planType === 'fixed'      ? (float)($_POST['plan_monthly']    ?? 0) : 0;
+        $planAnnual  = $planType === 'fixed'      ? (float)($_POST['plan_annual']     ?? 0) : 0;
+        $planCommRate= $planType === 'commission' ? (float)($_POST['plan_commission_rate'] ?? 0) : 0;
+        $planMaxProd = (int)($_POST['plan_max_prod'] ?? 0);
+        $planActive  = (int)($_POST['plan_active']   ?? 1);
+        $featuresRaw = trim($_POST['plan_features']  ?? '');
         $featuresArr = array_values(array_filter(array_map('trim', explode("\n", $featuresRaw))));
         $featuresJson = json_encode($featuresArr, JSON_UNESCAPED_UNICODE);
 
@@ -336,13 +348,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $pdo->prepare("
                     UPDATE entrepreneur_plans
-                    SET name=?, description=?, price_monthly=?, price_annual=?, max_products=?,
-                        features=?, is_active=?
+                    SET name=?, description=?, plan_type=?, price_monthly=?, price_annual=?,
+                        max_products=?, commission_rate=?, features=?, is_active=?
                     WHERE id=?
-                ")->execute([$planName, $planDesc, $planMonthly, $planAnnual, $planMaxProd, $featuresJson, $planActive, $planId]);
+                ")->execute([$planName, $planDesc, $planType, $planMonthly, $planAnnual, $planMaxProd, $planCommRate, $featuresJson, $planActive, $planId]);
                 $msg = 'Plan "' . h($planName) . '" actualizado correctamente.';
             } catch (Throwable $e) {
                 $msg = 'Error al actualizar plan: ' . $e->getMessage(); $msgType = 'error';
+            }
+        }
+    }
+
+    // ── Actualizar comisión personalizada de una suscripción ─────────────────
+    if ($act === 'set_commission') {
+        $subId      = (int)($_POST['sub_id']        ?? 0);
+        $customRate = trim($_POST['custom_rate']     ?? '');
+        $notes      = trim($_POST['commission_notes'] ?? '');
+        if (!$subId) {
+            $msg = 'ID de suscripción inválido.'; $msgType = 'error';
+        } else {
+            $rateVal = ($customRate === '' || $customRate === null) ? null : (float)$customRate;
+            try {
+                $pdo->prepare("
+                    UPDATE entrepreneur_subscriptions
+                    SET custom_commission_rate=?, commission_notes=?, updated_at=datetime('now')
+                    WHERE id=?
+                ")->execute([$rateVal, $notes ?: null, $subId]);
+                $msg = 'Comisión actualizada correctamente.';
+            } catch (Throwable $e) {
+                $msg = 'Error: ' . $e->getMessage(); $msgType = 'error';
             }
         }
     }
@@ -381,7 +415,9 @@ $pending = $pdo->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 $all = $pdo->query("
-    SELECT s.*, p.name AS plan_name, u.name AS user_name, u.email AS user_email
+    SELECT s.*, p.name AS plan_name, COALESCE(p.plan_type,'fixed') AS plan_type,
+           p.commission_rate AS plan_commission_rate,
+           u.name AS user_name, u.email AS user_email
     FROM entrepreneur_subscriptions s
     JOIN entrepreneur_plans p ON p.id = s.plan_id
     JOIN users u ON u.id = s.user_id
@@ -509,6 +545,16 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
         /* Create form */
         #new-plan-row { display:none; background:#f0fdf4; }
         #new-plan-row td { padding:18px 20px; }
+        /* Commission plan */
+        .badge-commission { background:#fef3c7; color:#92400e; }
+        .badge-fixed      { background:#dbeafe; color:#1e40af; }
+        .commission-field { display:none; }
+        .fixed-field      { display:block; }
+        .commission-note  { font-size:.78rem; color:#92400e; background:#fef9c3; border:1px solid #fde68a; border-radius:6px; padding:8px 10px; margin-top:6px; }
+        .btn-commission { background:#f59e0b; color:white; }
+        .btn-commission:hover { background:#d97706; }
+        .comm-edit-row { display:none; background:#fffbeb; }
+        .comm-edit-row td { padding:14px 18px; }
     </style>
 </head>
 <body>
@@ -618,16 +664,27 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                         <th>Estado</th>
                         <th>Inicio</th>
                         <th>Vence</th>
+                        <th>Comisión</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                <?php foreach ($all as $row): ?>
+                <?php foreach ($all as $row):
+                    $isCommission = ($row['plan_type'] ?? 'fixed') === 'commission';
+                    $effectiveRate = $row['custom_commission_rate'] !== null
+                        ? (float)$row['custom_commission_rate']
+                        : (float)($row['plan_commission_rate'] ?? 0);
+                ?>
                     <tr>
                         <td><?php echo $row['id']; ?></td>
                         <td><?php echo h($row['user_name']); ?></td>
                         <td><?php echo h($row['user_email']); ?></td>
-                        <td><?php echo h($row['plan_name']); ?></td>
+                        <td>
+                            <?php echo h($row['plan_name']); ?>
+                            <?php if ($isCommission): ?>
+                                <span class="badge badge-commission" style="margin-left:4px;font-size:.72rem;">% Comisión</span>
+                            <?php endif; ?>
+                        </td>
                         <td><?php echo ucfirst(h($row['payment_method'] ?? 'N/A')); ?></td>
                         <td>
                             <?php
@@ -638,7 +695,26 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                             ?>
                         </td>
                         <td><?php echo $row['start_date'] ? date('d/m/Y', strtotime($row['start_date'])) : '—'; ?></td>
-                        <td><?php echo $row['end_date'] ? date('d/m/Y', strtotime($row['end_date'])) : '—'; ?></td>
+                        <td><?php echo ($isCommission) ? '<span style="color:#9ca3af;font-size:.8rem;">Sin venc.</span>' : ($row['end_date'] ? date('d/m/Y', strtotime($row['end_date'])) : '—'); ?></td>
+                        <td>
+                            <?php if ($isCommission): ?>
+                                <strong style="color:<?= $row['custom_commission_rate'] !== null ? '#92400e' : '#6b7280' ?>;">
+                                    <?= number_format($effectiveRate, 2) ?>%
+                                </strong>
+                                <?php if ($row['custom_commission_rate'] !== null): ?>
+                                    <span style="font-size:.72rem;color:#6b7280;"> (personalizada)</span>
+                                <?php else: ?>
+                                    <span style="font-size:.72rem;color:#9ca3af;"> (del plan)</span>
+                                <?php endif; ?>
+                                <?php if ($row['commission_notes']): ?>
+                                    <div style="font-size:.75rem;color:#92400e;margin-top:2px;" title="<?= h($row['commission_notes']) ?>">
+                                        <i class="fas fa-sticky-note"></i> <?= h(mb_substr($row['commission_notes'],0,40)) ?><?= mb_strlen($row['commission_notes'])>40?'…':'' ?>
+                                    </div>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <span style="color:#d1d5db;">—</span>
+                            <?php endif; ?>
+                        </td>
                         <td style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                             <?php if ($row['status'] === 'active'): ?>
                                 <form method="post" onsubmit="return confirm('¿Desactivar esta suscripción?');" style="display:inline;">
@@ -649,7 +725,7 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                                     </button>
                                 </form>
                             <?php elseif (in_array($row['status'], ['cancelled', 'expired'])): ?>
-                                <form method="post" onsubmit="return confirm('¿Reactivar esta suscripción por 1 mes?');" style="display:inline;">
+                                <form method="post" onsubmit="return confirm('¿Reactivar esta suscripción?');" style="display:inline;">
                                     <input type="hidden" name="sub_id" value="<?php echo $row['id']; ?>">
                                     <input type="hidden" name="action" value="activate">
                                     <button type="submit" class="btn btn-activate">
@@ -657,13 +733,55 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                                     </button>
                                 </form>
                             <?php endif; ?>
+                            <?php if ($isCommission): ?>
+                                <button type="button" class="btn btn-commission" onclick="toggleCommEdit(<?php echo $row['id']; ?>)">
+                                    <i class="fas fa-percent"></i> Comisión
+                                </button>
+                            <?php endif; ?>
                             <button type="button" class="btn btn-edit" onclick="toggleEdit(<?php echo $row['id']; ?>)">
                                 <i class="fas fa-key"></i> Editar
                             </button>
                         </td>
                     </tr>
+                    <!-- Fila edición comisión personalizada -->
+                    <?php if ($isCommission): ?>
+                    <tr class="comm-edit-row" id="comm-edit-row-<?php echo $row['id']; ?>">
+                        <td colspan="10">
+                            <form method="post" style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+                                <input type="hidden" name="action" value="set_commission">
+                                <input type="hidden" name="sub_id" value="<?php echo (int)$row['id']; ?>">
+                                <div>
+                                    <label style="display:block;font-size:.8rem;font-weight:600;color:#92400e;margin-bottom:4px;">
+                                        <i class="fas fa-percent"></i> Comisión personalizada para <?php echo h($row['user_name']); ?> (%)
+                                    </label>
+                                    <input type="number" name="custom_rate" step="0.01" min="0" max="100"
+                                           value="<?php echo $row['custom_commission_rate'] !== null ? h($row['custom_commission_rate']) : ''; ?>"
+                                           placeholder="Ej: 8.5 (dejar vacío = usar tasa del plan)"
+                                           style="width:260px;padding:8px 10px;border:1.5px solid #fcd34d;border-radius:8px;font-size:.9rem;">
+                                    <div style="font-size:.75rem;color:#6b7280;margin-top:3px;">
+                                        Tasa del plan: <strong><?= number_format((float)$row['plan_commission_rate'],2) ?>%</strong>
+                                        — Dejar en blanco para usar la tasa del plan.
+                                    </div>
+                                </div>
+                                <div style="flex:1;min-width:200px;">
+                                    <label style="display:block;font-size:.8rem;font-weight:600;color:#92400e;margin-bottom:4px;">
+                                        <i class="fas fa-sticky-note"></i> Notas del acuerdo
+                                    </label>
+                                    <textarea name="commission_notes" rows="2"
+                                              style="width:100%;padding:8px 10px;border:1.5px solid #fcd34d;border-radius:8px;font-size:.88rem;resize:vertical;"
+                                              placeholder="Ej: Acordado el 10/04/2026. Revisión en 3 meses."><?php echo h($row['commission_notes'] ?? ''); ?></textarea>
+                                </div>
+                                <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:2px;">
+                                    <button type="submit" class="btn-plan-save"><i class="fas fa-save"></i> Guardar</button>
+                                    <button type="button" class="btn-cancel-edit" onclick="toggleCommEdit(<?php echo $row['id']; ?>)">Cancelar</button>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                    <!-- Fila edición contraseña -->
                     <tr class="edit-row" id="edit-row-<?php echo $row['id']; ?>">
-                        <td colspan="9">
+                        <td colspan="10">
                             <form method="post" class="edit-form" onsubmit="return confirm('¿Cambiar la contraseña de <?php echo h(addslashes($row['user_name'])); ?>?');">
                                 <input type="hidden" name="action" value="change_password">
                                 <input type="hidden" name="user_id" value="<?php echo (int)$row['user_id']; ?>">
@@ -693,8 +811,10 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                 <tr>
                     <th>#</th>
                     <th>Nombre</th>
+                    <th>Tipo</th>
                     <th>Mensual (₡)</th>
                     <th>Anual (₡)</th>
+                    <th>Comisión %</th>
                     <th>Max. Productos</th>
                     <th>Estado</th>
                     <th>Beneficios</th>
@@ -717,12 +837,24 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                                     <input type="text" name="plan_desc" placeholder="Descripción breve">
                                 </div>
                                 <div>
+                                    <label><i class="fas fa-layer-group"></i> Tipo de plan</label>
+                                    <select name="plan_type" onchange="togglePlanTypeFields(this,'new')">
+                                        <option value="fixed">Cuota fija (mensual/anual)</option>
+                                        <option value="commission">Por comisión (%)</option>
+                                    </select>
+                                </div>
+                                <div id="new-fixed-monthly">
                                     <label><i class="fas fa-calendar-day"></i> Mensual (₡)</label>
                                     <input type="number" name="plan_monthly" value="0" min="0" step="100">
                                 </div>
-                                <div>
+                                <div id="new-fixed-annual">
                                     <label><i class="fas fa-calendar-alt"></i> Anual (₡)</label>
                                     <input type="number" name="plan_annual" value="0" min="0" step="1000">
+                                </div>
+                                <div id="new-commission-rate" style="display:none;">
+                                    <label><i class="fas fa-percent"></i> Tasa de comisión base (%)</label>
+                                    <input type="number" name="plan_commission_rate" value="10" min="0" max="100" step="0.01">
+                                    <div class="commission-note">Esta es la tasa base. Podés personalizar por emprendedor desde la tabla de suscripciones.</div>
                                 </div>
                                 <div>
                                     <label><i class="fas fa-box"></i> Máx. Productos (0=ilimitado)</label>
@@ -749,20 +881,29 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                 </tr>
 
                 <?php foreach ($plans as $plan):
-                    $featList = json_decode($plan['features'] ?? '[]', true) ?: [];
-                    $featText = implode("\n", $featList);
-                    $maxLabel = (int)$plan['max_products'] === 0 ? 'Ilimitados' : number_format((int)$plan['max_products']);
+                    $featList  = json_decode($plan['features'] ?? '[]', true) ?: [];
+                    $featText  = implode("\n", $featList);
+                    $maxLabel  = (int)$plan['max_products'] === 0 ? 'Ilimitados' : number_format((int)$plan['max_products']);
+                    $pType     = $plan['plan_type'] ?? 'fixed';
+                    $isCommPlan= $pType === 'commission';
+                    $pid       = (int)$plan['id'];
                 ?>
                 <tr>
-                    <td><?= (int)$plan['id'] ?></td>
+                    <td><?= $pid ?></td>
                     <td>
                         <strong><?= h($plan['name']) ?></strong>
                         <?php if ($plan['description']): ?>
                             <div style="font-size:.78rem;color:#9ca3af;margin-top:2px;"><?= h($plan['description']) ?></div>
                         <?php endif; ?>
                     </td>
-                    <td>₡<?= number_format((float)$plan['price_monthly'], 0) ?></td>
-                    <td>₡<?= number_format((float)$plan['price_annual'], 0) ?></td>
+                    <td>
+                        <span class="badge <?= $isCommPlan ? 'badge-commission' : 'badge-fixed' ?>">
+                            <?= $isCommPlan ? '% Comisión' : 'Cuota fija' ?>
+                        </span>
+                    </td>
+                    <td><?= $isCommPlan ? '<span style="color:#d1d5db;">—</span>' : '₡' . number_format((float)$plan['price_monthly'], 0) ?></td>
+                    <td><?= $isCommPlan ? '<span style="color:#d1d5db;">—</span>' : '₡' . number_format((float)$plan['price_annual'], 0) ?></td>
+                    <td><?= $isCommPlan ? '<strong>' . number_format((float)$plan['commission_rate'], 2) . '%</strong>' : '<span style="color:#d1d5db;">—</span>' ?></td>
                     <td><?= $maxLabel ?></td>
                     <td>
                         <span class="badge <?= $plan['is_active'] ? 'badge-plan-on' : 'badge-plan-off' ?>">
@@ -774,22 +915,22 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                         <?php if (count($featList) > 3): ?><em>+<?= count($featList)-3 ?> más</em><?php endif; ?>
                     </td>
                     <td style="white-space:nowrap;">
-                        <button class="btn btn-plan-edit" onclick="togglePlanEdit(<?= (int)$plan['id'] ?>)">
+                        <button class="btn btn-plan-edit" onclick="togglePlanEdit(<?= $pid ?>)">
                             <i class="fas fa-pencil-alt"></i> Editar
                         </button>
                         <form method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar el plan <?= h(addslashes($plan['name'])) ?>? Esta acción no se puede deshacer.');">
                             <input type="hidden" name="action" value="plan_delete">
-                            <input type="hidden" name="plan_id" value="<?= (int)$plan['id'] ?>">
+                            <input type="hidden" name="plan_id" value="<?= $pid ?>">
                             <button type="submit" class="btn btn-plan-del"><i class="fas fa-trash"></i> Eliminar</button>
                         </form>
                     </td>
                 </tr>
                 <!-- Fila edición inline -->
-                <tr class="plan-edit-row" id="plan-edit-row-<?= (int)$plan['id'] ?>">
-                    <td colspan="8">
+                <tr class="plan-edit-row" id="plan-edit-row-<?= $pid ?>">
+                    <td colspan="10">
                         <form method="post">
                             <input type="hidden" name="action" value="plan_update">
-                            <input type="hidden" name="plan_id" value="<?= (int)$plan['id'] ?>">
+                            <input type="hidden" name="plan_id" value="<?= $pid ?>">
                             <div class="plan-form-grid">
                                 <div>
                                     <label><i class="fas fa-tag"></i> Nombre *</label>
@@ -800,12 +941,24 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                                     <input type="text" name="plan_desc" value="<?= h($plan['description'] ?? '') ?>">
                                 </div>
                                 <div>
+                                    <label><i class="fas fa-layer-group"></i> Tipo de plan</label>
+                                    <select name="plan_type" onchange="togglePlanTypeFields(this,'edit-<?= $pid ?>')">
+                                        <option value="fixed" <?= !$isCommPlan ? 'selected' : '' ?>>Cuota fija (mensual/anual)</option>
+                                        <option value="commission" <?= $isCommPlan ? 'selected' : '' ?>>Por comisión (%)</option>
+                                    </select>
+                                </div>
+                                <div id="edit-<?= $pid ?>-fixed-monthly" <?= $isCommPlan ? 'style="display:none"' : '' ?>>
                                     <label><i class="fas fa-calendar-day"></i> Mensual (₡)</label>
                                     <input type="number" name="plan_monthly" value="<?= (float)$plan['price_monthly'] ?>" min="0" step="100">
                                 </div>
-                                <div>
+                                <div id="edit-<?= $pid ?>-fixed-annual" <?= $isCommPlan ? 'style="display:none"' : '' ?>>
                                     <label><i class="fas fa-calendar-alt"></i> Anual (₡)</label>
                                     <input type="number" name="plan_annual" value="<?= (float)$plan['price_annual'] ?>" min="0" step="1000">
+                                </div>
+                                <div id="edit-<?= $pid ?>-commission-rate" <?= !$isCommPlan ? 'style="display:none"' : '' ?>>
+                                    <label><i class="fas fa-percent"></i> Tasa de comisión base (%)</label>
+                                    <input type="number" name="plan_commission_rate" value="<?= (float)$plan['commission_rate'] ?>" min="0" max="100" step="0.01">
+                                    <div class="commission-note">Tasa base. Cada emprendedor puede tener una tasa personalizada.</div>
                                 </div>
                                 <div>
                                     <label><i class="fas fa-box"></i> Máx. Productos (0=ilimitado)</label>
@@ -824,7 +977,7 @@ $navStyle = "display:inline-flex;align-items:center;gap:0.5rem;padding:0.625rem 
                                 </div>
                                 <div class="plan-form-actions">
                                     <button type="submit" class="btn-plan-save"><i class="fas fa-save"></i> Guardar Cambios</button>
-                                    <button type="button" class="btn-cancel-edit" onclick="togglePlanEdit(<?= (int)$plan['id'] ?>)">Cancelar</button>
+                                    <button type="button" class="btn-cancel-edit" onclick="togglePlanEdit(<?= $pid ?>)">Cancelar</button>
                                 </div>
                             </div>
                         </form>
@@ -851,6 +1004,22 @@ function toggleNewPlan() {
     if (row.style.display === 'table-row') {
         row.querySelector('input[type=text]').focus();
     }
+}
+function toggleCommEdit(id) {
+    document.querySelectorAll('.comm-edit-row').forEach(function(r) {
+        if (r.id !== 'comm-edit-row-' + id) r.style.display = 'none';
+    });
+    var row = document.getElementById('comm-edit-row-' + id);
+    row.style.display = (row.style.display === 'table-row') ? 'none' : 'table-row';
+}
+function togglePlanTypeFields(sel, prefix) {
+    var isComm = sel.value === 'commission';
+    ['fixed-monthly','fixed-annual'].forEach(function(s) {
+        var el = document.getElementById(prefix + '-' + s);
+        if (el) el.style.display = isComm ? 'none' : 'block';
+    });
+    var commEl = document.getElementById(prefix + '-commission-rate');
+    if (commEl) commEl.style.display = isComm ? 'block' : 'none';
 }
 function togglePlanEdit(id) {
     // Cerrar cualquier otro abierto
