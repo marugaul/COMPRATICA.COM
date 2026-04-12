@@ -56,6 +56,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/bot_protection.php';
 
 /**
  * Migra el carrito invitado al usuario recién autenticado.
@@ -374,14 +375,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $password = $_POST['password'] ?? '';
             $password2 = $_POST['password2'] ?? '';
 
-            if ($name && $email && $password) {
-                if ($password !== $password2) {
+            // ── Phone required for email registration ──
+            if ($name && $email && $password && $phone === '') {
+                $error = 'El teléfono es obligatorio para registrarse con correo.';
+            } elseif ($name && $email && $password) {
+                // ── Bot protection ──
+                $botResult = bot_check_registration(
+                    $email, $name,
+                    $_POST['_hp'] ?? '',
+                    $_POST['_ft'] ?? '',
+                    $phone
+                );
+                if ($botResult === '__BOT__') {
+                    // Fake success — don't create account, just redirect
+                    header('Location: ' . $redirect);
+                    exit;
+                } elseif ($botResult !== '') {
+                    $error = $botResult;
+                }
+                if (!$error && $password !== $password2) {
                     $error = 'Las contraseñas no coinciden';
-                } elseif (strlen($password) < 6) {
+                } elseif (!$error && strlen($password) < 6) {
                     $error = 'La contraseña debe tener al menos 6 caracteres';
-                } elseif ((string)($_POST['accept_terms'] ?? '') !== '1') {
+                } elseif (!$error && (string)($_POST['accept_terms'] ?? '') !== '1') {
                     $error = 'Debés aceptar los Términos y Condiciones para continuar';
-                } else {
+                } elseif (!$error) {
                     $check = $pdo->prepare("SELECT id FROM users WHERE email = ?");
                     $check->execute([$email]);
                     if ($check->fetch()) {
@@ -420,8 +438,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         exit;
                     }
                 }
-            } else {
-                $error = 'Completa todos los campos obligatorios';
             }
         }
     } catch (Exception $e) {
@@ -433,7 +449,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
-$APP_NAME = defined('APP_NAME') ? APP_NAME : 'Compratica';
+$APP_NAME   = defined('APP_NAME') ? APP_NAME : 'Compratica';
+$reg_token  = bot_form_token(); // anti-bot timing token for the register form
 
 $googleLoginUrl = $GOOGLE_CLIENT_ID ? 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
     'client_id' => $GOOGLE_CLIENT_ID,
@@ -562,6 +579,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:linear-gradient(1
       
       <form method="post">
         <input type="hidden" name="action" value="register">
+        <?php bot_form_hidden_fields($reg_token); ?>
         <div class="form-group">
           <label>Nombre *</label>
           <input type="text" name="name" required>
@@ -571,8 +589,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:linear-gradient(1
           <input type="email" name="email" required>
         </div>
         <div class="form-group">
-          <label>Teléfono</label>
-          <input type="tel" name="phone">
+          <label>Teléfono * <small style="color:#888;font-weight:400">(ej. 88001234)</small></label>
+          <input type="tel" name="phone" placeholder="88001234" required>
         </div>
         <div class="form-group">
           <label>Contraseña *</label>
