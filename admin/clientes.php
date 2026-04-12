@@ -10,6 +10,10 @@ require_once __DIR__ . '/../includes/db.php';
 require_login();
 $pdo = db();
 
+// ── SQL base reutilizable ────────────────────────────────────────────────────
+// Muestra TODOS los usuarios (users). Detecta si también son emprendedor
+// (via entrepreneurs.user_id) o afiliado (via affiliates.email = users.email).
+
 // ── Exportar CSV ────────────────────────────────────────────────────────────
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     $rows = $pdo->query("
@@ -18,10 +22,12 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
                CASE WHEN u.password_hash != '' AND u.password_hash IS NOT NULL THEN 1 ELSE 0 END AS has_pass,
                u.is_active, u.created_at,
                (SELECT MAX(last_activity) FROM user_sessions WHERE user_id = u.id AND revoked = 0) AS last_login,
-               (SELECT COUNT(*) FROM orders WHERE buyer_email = u.email) AS total_orders
+               (SELECT COUNT(*) FROM orders WHERE buyer_email = u.email) AS total_orders,
+               CASE WHEN ep.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_entrepreneur,
+               CASE WHEN af.email IS NOT NULL THEN 1 ELSE 0 END    AS is_affiliate
         FROM users u
-        LEFT JOIN entrepreneurs e ON e.user_id = u.id
-        WHERE e.user_id IS NULL
+        LEFT JOIN entrepreneurs ep ON ep.user_id = u.id
+        LEFT JOIN affiliates    af ON lower(af.email) = lower(u.email)
         ORDER BY u.created_at DESC
     ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -29,14 +35,18 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     header('Content-Disposition: attachment; filename="clientes_' . date('Ymd_His') . '.csv"');
     echo "\xEF\xBB\xBF"; // BOM UTF-8
     $out = fopen('php://output', 'w');
-    fputcsv($out, ['ID', 'Nombre', 'Email', 'Teléfono', 'Autenticación', 'Estado', 'Pedidos', 'Registro', 'Último acceso']);
+    fputcsv($out, ['ID', 'Nombre', 'Email', 'Teléfono', 'Autenticación', 'Roles', 'Estado', 'Pedidos', 'Registro', 'Último acceso']);
     foreach ($rows as $r) {
         $auth = [];
         if ($r['oauth_provider']) $auth[] = ucfirst($r['oauth_provider']);
         if ($r['has_pass'])       $auth[] = 'Email/Contraseña';
+        $roles = ['Cliente'];
+        if ($r['is_entrepreneur']) $roles[] = 'Emprendedor/a';
+        if ($r['is_affiliate'])    $roles[] = 'Afiliado/a';
         fputcsv($out, [
             $r['id'], $r['name'], $r['email'], $r['phone'] ?? '',
             implode(' + ', $auth),
+            implode(' + ', $roles),
             $r['is_active'] ? 'Activo' : 'Inactivo',
             $r['total_orders'],
             $r['created_at'],
@@ -51,10 +61,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 $search    = trim($_GET['q']    ?? '');
 $auth_f    = $_GET['auth']      ?? 'all';   // all | google | facebook | email
 $status_f  = $_GET['status']   ?? 'all';   // all | active | inactive
+$role_f    = $_GET['role']      ?? 'all';   // all | customer_only | entrepreneur | affiliate
 $from_date = $_GET['from']      ?? '';
 $to_date   = $_GET['to']        ?? '';
 
-$where  = ["e.user_id IS NULL"];
+$where  = ["1=1"];
 $params = [];
 
 if ($search !== '') {
@@ -66,6 +77,9 @@ if ($auth_f === 'facebook') { $where[] = "u.oauth_provider = 'facebook'"; }
 if ($auth_f === 'email')    { $where[] = "(u.oauth_provider IS NULL OR u.oauth_provider = '') AND u.password_hash != '' AND u.password_hash IS NOT NULL"; }
 if ($status_f === 'active')   { $where[] = "u.is_active = 1"; }
 if ($status_f === 'inactive') { $where[] = "u.is_active = 0"; }
+if ($role_f === 'customer_only') { $where[] = "ep.user_id IS NULL AND af.email IS NULL"; }
+if ($role_f === 'entrepreneur')  { $where[] = "ep.user_id IS NOT NULL"; }
+if ($role_f === 'affiliate')     { $where[] = "af.email IS NOT NULL"; }
 if ($from_date !== '') { $where[] = "date(u.created_at) >= ?"; $params[] = $from_date; }
 if ($to_date   !== '') { $where[] = "date(u.created_at) <= ?"; $params[] = $to_date; }
 
@@ -75,9 +89,12 @@ $sql = "
            CASE WHEN u.password_hash != '' AND u.password_hash IS NOT NULL THEN 1 ELSE 0 END AS has_pass,
            u.is_active, u.created_at,
            (SELECT MAX(last_activity) FROM user_sessions WHERE user_id = u.id AND revoked = 0) AS last_login,
-           (SELECT COUNT(*) FROM orders WHERE buyer_email = u.email) AS total_orders
+           (SELECT COUNT(*) FROM orders WHERE buyer_email = u.email) AS total_orders,
+           CASE WHEN ep.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_entrepreneur,
+           CASE WHEN af.email IS NOT NULL THEN 1 ELSE 0 END    AS is_affiliate
     FROM users u
-    LEFT JOIN entrepreneurs e ON e.user_id = u.id
+    LEFT JOIN entrepreneurs ep ON ep.user_id = u.id
+    LEFT JOIN affiliates    af ON lower(af.email) = lower(u.email)
     WHERE " . implode(' AND ', $where) . "
     ORDER BY u.created_at DESC
 ";
@@ -95,10 +112,12 @@ $stats = $pdo->query("
         SUM(CASE WHEN (u.oauth_provider IS NULL OR u.oauth_provider = '')
                   AND u.password_hash != '' AND u.password_hash IS NOT NULL
                   THEN 1 ELSE 0 END)                                         AS solo_email,
-        SUM(CASE WHEN strftime('%Y-%m', u.created_at) = strftime('%Y-%m','now') THEN 1 ELSE 0 END) AS este_mes
+        SUM(CASE WHEN strftime('%Y-%m', u.created_at) = strftime('%Y-%m','now') THEN 1 ELSE 0 END) AS este_mes,
+        SUM(CASE WHEN ep.user_id IS NOT NULL THEN 1 ELSE 0 END)             AS emprendedores,
+        SUM(CASE WHEN af.email IS NOT NULL THEN 1 ELSE 0 END)               AS afiliados
     FROM users u
-    LEFT JOIN entrepreneurs e ON e.user_id = u.id
-    WHERE e.user_id IS NULL
+    LEFT JOIN entrepreneurs ep ON ep.user_id = u.id
+    LEFT JOIN affiliates    af ON lower(af.email) = lower(u.email)
 ")->fetch(PDO::FETCH_ASSOC);
 
 // Helper — auth badges HTML
@@ -238,6 +257,14 @@ function fmtDate(?string $d): string {
       <div class="num" style="color:#15803d"><?= (int)$stats['solo_email'] ?></div>
       <div class="lbl"><i class="fas fa-envelope" style="font-size:.75rem"></i> Solo correo</div>
     </div>
+    <div class="stat">
+      <div class="num" style="color:#7c3aed"><?= (int)$stats['emprendedores'] ?></div>
+      <div class="lbl"><i class="fas fa-store-alt" style="font-size:.75rem"></i> También emprendedor/a</div>
+    </div>
+    <div class="stat">
+      <div class="num" style="color:#0891b2"><?= (int)$stats['afiliados'] ?></div>
+      <div class="lbl"><i class="fas fa-user-tie" style="font-size:.75rem"></i> También afiliado/a</div>
+    </div>
   </div>
 
   <!-- Filters -->
@@ -265,6 +292,15 @@ function fmtDate(?string $d): string {
         </select>
       </div>
       <div class="f-group">
+        <label>Rol</label>
+        <select name="role">
+          <option value="all"           <?= ($role_f??'all')==='all'           ?'selected':'' ?>>Todos</option>
+          <option value="customer_only" <?= ($role_f??'all')==='customer_only' ?'selected':'' ?>>Solo clientes</option>
+          <option value="entrepreneur"  <?= ($role_f??'all')==='entrepreneur'  ?'selected':'' ?>>También emprendedor/a</option>
+          <option value="affiliate"     <?= ($role_f??'all')==='affiliate'     ?'selected':'' ?>>También afiliado/a</option>
+        </select>
+      </div>
+      <div class="f-group">
         <label>Desde</label>
         <input type="date" name="from" value="<?= htmlspecialchars($from_date) ?>">
       </div>
@@ -275,7 +311,7 @@ function fmtDate(?string $d): string {
       <div class="f-group" style="justify-content:flex-end">
         <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filtrar</button>
       </div>
-      <?php if ($search || $auth_f !== 'all' || $status_f !== 'all' || $from_date || $to_date): ?>
+      <?php if ($search || $auth_f !== 'all' || $status_f !== 'all' || ($role_f??'all') !== 'all' || $from_date || $to_date): ?>
         <div class="f-group" style="justify-content:flex-end">
           <a href="clientes.php" class="btn" style="background:var(--g100);color:var(--g800)"><i class="fas fa-times"></i> Limpiar</a>
         </div>
@@ -287,7 +323,7 @@ function fmtDate(?string $d): string {
   <div class="card">
     <div class="card-header">
       <h2><i class="fas fa-list"></i> <?= count($customers) ?> cliente<?= count($customers) !== 1 ? 's' : '' ?> encontrado<?= count($customers) !== 1 ? 's' : '' ?></h2>
-      <a href="clientes.php?export=csv&<?= http_build_query(['q'=>$search,'auth'=>$auth_f,'status'=>$status_f,'from'=>$from_date,'to'=>$to_date]) ?>"
+      <a href="clientes.php?export=csv&<?= http_build_query(['q'=>$search,'auth'=>$auth_f,'status'=>$status_f,'role'=>$role_f,'from'=>$from_date,'to'=>$to_date]) ?>"
          class="btn btn-success btn-sm">
         <i class="fas fa-file-csv"></i> Exportar CSV
       </a>
@@ -307,6 +343,7 @@ function fmtDate(?string $d): string {
             <th>Email</th>
             <th>Teléfono</th>
             <th>Autenticación</th>
+            <th>Roles</th>
             <th>Estado</th>
             <th>Pedidos</th>
             <th>Registro</th>
@@ -316,11 +353,23 @@ function fmtDate(?string $d): string {
         <tbody>
           <?php foreach ($customers as $c): ?>
           <?php
-            $initials = mb_strtoupper(mb_substr(trim($c['name']), 0, 2));
-            $orders   = (int)$c['total_orders'];
+            $initials   = mb_strtoupper(mb_substr(trim($c['name']), 0, 2));
+            $orders     = (int)$c['total_orders'];
             $authBadges = authBadges((string)($c['oauth_provider'] ?? ''), (int)$c['has_pass']);
+
+            // Role badges
+            $roleBadges = '<span style="display:inline-flex;align-items:center;gap:3px;background:#f0f9ff;border:1px solid #bae6fd;color:#075985;border-radius:20px;padding:2px 9px;font-size:.75rem;font-weight:600;"><i class="fas fa-shopping-cart" style="font-size:.65rem"></i> Cliente</span>';
+            if ($c['is_entrepreneur']) {
+                $roleBadges .= ' <span style="display:inline-flex;align-items:center;gap:3px;background:#f5f3ff;border:1px solid #c4b5fd;color:#5b21b6;border-radius:20px;padding:2px 9px;font-size:.75rem;font-weight:600;"><i class="fas fa-store-alt" style="font-size:.65rem"></i> Emprendedor/a</span>';
+            }
+            if ($c['is_affiliate']) {
+                $roleBadges .= ' <span style="display:inline-flex;align-items:center;gap:3px;background:#ecfeff;border:1px solid #a5f3fc;color:#0e7490;border-radius:20px;padding:2px 9px;font-size:.75rem;font-weight:600;"><i class="fas fa-user-tie" style="font-size:.65rem"></i> Afiliado/a</span>';
+            }
+
+            // Highlight row if multi-role
+            $rowStyle = ($c['is_entrepreneur'] || $c['is_affiliate']) ? 'background:#fffbeb;' : '';
           ?>
-          <tr>
+          <tr style="<?= $rowStyle ?>">
             <td style="color:#9ca3af;font-size:.8rem"><?= (int)$c['id'] ?></td>
             <td>
               <div style="display:flex;align-items:center;gap:.6rem">
@@ -331,6 +380,7 @@ function fmtDate(?string $d): string {
             <td style="color:#4b5563"><?= htmlspecialchars($c['email']) ?></td>
             <td style="color:#6b7280"><?= htmlspecialchars($c['phone'] ?? '—') ?></td>
             <td><?= $authBadges ?></td>
+            <td><?= $roleBadges ?></td>
             <td>
               <?php if ($c['is_active']): ?>
                 <span class="badge-active"><i class="fas fa-circle" style="font-size:.5rem;vertical-align:middle"></i> Activo</span>
