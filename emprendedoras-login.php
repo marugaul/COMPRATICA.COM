@@ -44,6 +44,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/bot_protection.php';
 
 // OAuth Config
 $GOOGLE_CLIENT_ID     = defined('GOOGLE_CLIENT_ID')     ? GOOGLE_CLIENT_ID     : '';
@@ -249,14 +250,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $phone     = trim($_POST['phone'] ?? '');
             $password  = $_POST['password'] ?? '';
             $password2 = $_POST['password2'] ?? '';
-            if ($name && $email && $password) {
-                if ($password !== $password2) {
+            // ── Phone required for email registration ──
+            if ($name && $email && $password && $phone === '') {
+                $error = 'El teléfono es obligatorio para registrarte como emprendedor/a.';
+            } elseif ($name && $email && $password) {
+                // ── Bot protection ──
+                $botResult = bot_check_registration(
+                    $email, $name,
+                    $_POST['_hp'] ?? '',
+                    $_POST['_ft'] ?? '',
+                    $phone
+                );
+                if ($botResult === '__BOT__') {
+                    header('Location: emprendedores-dashboard.php');
+                    exit;
+                } elseif ($botResult !== '') {
+                    $error = $botResult;
+                }
+                if (!$error && $password !== $password2) {
                     $error = 'Las contraseñas no coinciden';
-                } elseif (strlen($password) < 6) {
+                } elseif (!$error && strlen($password) < 6) {
                     $error = 'La contraseña debe tener al menos 6 caracteres';
-                } elseif ((string)($_POST['accept_terms'] ?? '') !== '1') {
+                } elseif (!$error && (string)($_POST['accept_terms'] ?? '') !== '1') {
                     $error = 'Debés aceptar los Términos y Condiciones para continuar';
-                } else {
+                } elseif (!$error) {
                     $check = $pdo->prepare("SELECT id FROM users WHERE email = ?");
                     $check->execute([$email]);
                     if ($check->fetch()) {
@@ -291,14 +308,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         exit;
                     }
                 }
-            } else {
-                $error = 'Completa todos los campos obligatorios';
             }
         }
     } catch (Exception $e) {
         $error = 'Error: ' . $e->getMessage();
     }
 }
+
+$reg_token = bot_form_token(); // anti-bot timing token
 
 $googleLoginUrl = $GOOGLE_CLIENT_ID ? 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
     'client_id'     => $GOOGLE_CLIENT_ID,
@@ -550,6 +567,7 @@ body {
 
             <form method="post">
                 <input type="hidden" name="action" value="register">
+                <?php bot_form_hidden_fields($reg_token); ?>
                 <div class="form-group">
                     <label>Nombre completo *</label>
                     <input type="text" name="name" placeholder="Tu nombre" required>
@@ -559,8 +577,8 @@ body {
                     <input type="email" name="email" placeholder="tu@email.com" required>
                 </div>
                 <div class="form-group">
-                    <label>Teléfono (opcional)</label>
-                    <input type="tel" name="phone" placeholder="+506 8888-8888">
+                    <label>Teléfono * <small style="color:#888;font-weight:400">(ej. 88001234)</small></label>
+                    <input type="tel" name="phone" placeholder="88001234" required>
                 </div>
                 <div class="form-group">
                     <label>Contraseña *</label>
