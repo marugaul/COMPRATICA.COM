@@ -168,7 +168,7 @@ try {
     if (!in_array('store_color2',       $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_color2 TEXT DEFAULT '#764ba2'");
     if (!in_array('store_banner_style', $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_style TEXT DEFAULT 'stripes'");
     if (!in_array('store_logo',         $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_logo TEXT");
-    if (!in_array('seller_type',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedora'");
+    if (!in_array('seller_type',        $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN seller_type TEXT DEFAULT 'emprendedor'");
     if (!in_array('store_avatar',       $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_avatar TEXT");
     if (!in_array('store_name',         $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_name TEXT");
     if (!in_array('store_banner_text',  $colsU)) $pdo->exec("ALTER TABLE users ADD COLUMN store_banner_text TEXT");
@@ -367,7 +367,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 }
 
 // ── Cargar configuración de diseño actual del usuario ─────────────────────────
-$storeDesign = ['store_color1'=>'#667eea','store_color2'=>'#764ba2','store_banner_style'=>'stripes','store_logo'=>'','seller_type'=>'emprendedora','store_name'=>''];
+$storeDesign = ['store_color1'=>'#667eea','store_color2'=>'#764ba2','store_banner_style'=>'stripes','store_logo'=>'','seller_type'=>'emprendedor','store_name'=>''];
 try {
     $sd = $pdo->prepare("SELECT store_color1, store_color2, store_banner_style, store_logo, seller_type, store_name FROM users WHERE id=?");
     $sd->execute([$userId]);
@@ -1022,14 +1022,14 @@ $currentStep = $onboardingSteps[$currentStepIdx];
     <div class="dashboard-container">
         <div class="dashboard-header">
             <h1>👋 Hola, <?php echo htmlspecialchars($userName); ?></h1>
-            <p>Bienvenid<?= ($storeDesign['seller_type'] ?? 'emprendedora') === 'emprendedor' ? 'o' : 'a' ?> a tu dashboard de <?= ($storeDesign['seller_type'] ?? 'emprendedora') === 'emprendedor' ? 'emprendedor' : 'emprendedora' ?></p>
+            <p>Bienvenid<?= ($storeDesign['seller_type'] ?? 'emprendedor') === 'emprendedor' ? 'o' : 'a' ?> a tu dashboard de emprendedor/a</p>
             <div class="plan-badge">
                 <?php
-                $sellerType  = ($storeDesign['seller_type'] ?? 'emprendedora');
+                $sellerType  = ($storeDesign['seller_type'] ?? 'emprendedor');
                 $planDisplay = htmlspecialchars($subscription['plan_name']);
-                if ($sellerType === 'emprendedor') {
-                    $planDisplay = str_ireplace('emprendedora', 'Emprendedor', $planDisplay);
-                }
+                // Normalizar: siempre mostrar "Emprendedor" en lugar de "Emprendedora"
+                $planDisplay = str_ireplace('Emprendedora', 'Emprendedor', $planDisplay);
+                $planDisplay = str_ireplace('emprendedora', 'Emprendedor', $planDisplay);
                 ?>
                 <i class="fas fa-crown"></i> <?= $planDisplay ?>
                 <?php if ($isPending): ?>
