@@ -1742,20 +1742,6 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                             <input type="hidden" name="av_body_shape" id="in-body_shape" value="<?= htmlspecialchars($currentAvatar['body_shape']??'average') ?>">
                         </div>
 
-                        <!-- BARBA (hombres) -->
-                        <div class="av-group" id="facial-hair-group" style="<?= in_array($currentAvatar['type']??'woman', ['man','boy'])?'':'display:none' ?>">
-                            <div class="av-group-title"><i class="fas fa-male"></i> Barba / bigote</div>
-                            <div class="av-chips" id="chips-facialHair">
-                                <?php foreach (AV_FACIAL_HAIR as $v => $l): ?>
-                                <div class="av-chip <?= ($currentAvatar['facialHair']??'')===$v?'sel':'' ?>"
-                                     data-group="facialHair" data-val="<?= $v ?>" onclick="avSelect(this,'facialHair')">
-                                    <?= $l ?>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                            <input type="hidden" name="av_facialHair" id="in-facialHair" value="<?= htmlspecialchars($currentAvatar['facialHair']??'') ?>">
-                        </div>
-
                         </div><!-- /av-classic-controls -->
 
                         <!-- ── CONTROLES FANTASÍA 🐉 ──────────────────── -->
@@ -3119,7 +3105,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                 clothesColor:document.getElementById('in-outfit').value,
                 accessory:   'none',
                 body_shape:  body,
-                facialHair:  document.getElementById('in-facialHair')?.value || '',
+                facialHair:  '',
                 clothes:     'shirtCrewNeck',
                 mouth:       'smile',
             };
