@@ -1750,10 +1750,10 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                         <!-- TIPO (se comparte) -->
                         <div class="av-group">
                             <div class="av-group-title"><i class="fas fa-user"></i> Tipo de personaje</div>
-                            <div class="av-chips">
+                            <div class="av-chips" id="chips-adv-type">
                                 <?php foreach (['woman'=>'👩 Mujer','man'=>'👨 Hombre','girl'=>'👧 Niña','boy'=>'👦 Niño'] as $v=>$l): ?>
                                 <div class="av-chip <?= ($currentAvatar['type']??'woman')===$v ? ($v==='man'||$v==='boy'?'sel-blue':'sel-pink') : '' ?>"
-                                     data-group="type" data-val="<?= $v ?>" onclick="avSelect(this,'type')">
+                                     data-group="type" data-val="<?= $v ?>" onclick="avSelectAdvType(this)">
                                     <?= $l ?>
                                 </div>
                                 <?php endforeach; ?>
@@ -3015,6 +3015,42 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                 c.classList.toggle('sel-blue', c.dataset.val === d && (type==='man'||type==='boy'));
                 c.classList.remove('sel');
             });
+        }
+
+        // Aplica defaults de aventura según tipo (cabello, ojos, boca del modo Fantasía)
+        function avApplyAdvTypeDefaults(type) {
+            const defs = {
+                woman: { hair: 'long01',  eyes: 'variant09', mouth: 'variant01' },
+                man:   { hair: 'short01', eyes: 'variant02', mouth: 'variant03' },
+                girl:  { hair: 'long02',  eyes: 'variant09', mouth: 'variant02' },
+                boy:   { hair: 'short04', eyes: 'variant07', mouth: 'variant04' },
+            };
+            const d = defs[type];
+            if (!d) return;
+            document.getElementById('in-adv-hair').value  = d.hair;
+            document.getElementById('in-adv-eyes').value  = d.eyes;
+            document.getElementById('in-adv-mouth').value = d.mouth;
+            document.querySelectorAll('#chips-adv-hair .av-chip').forEach(c =>
+                c.classList.toggle('sel', c.dataset.val === d.hair));
+            document.querySelectorAll('#chips-adv-eyes .av-chip').forEach(c =>
+                c.classList.toggle('sel', c.dataset.val === d.eyes));
+            document.querySelectorAll('#chips-adv-mouth .av-chip').forEach(c =>
+                c.classList.toggle('sel', c.dataset.val === d.mouth));
+        }
+
+        // Selección de tipo en modo Fantasía: sincroniza ambos paneles + aplica defaults adv
+        function avSelectAdvType(el) {
+            const val = el.dataset.val;
+            const isBlue = (val === 'man' || val === 'boy');
+            // Deselect chips en AMBOS contenedores de tipo
+            document.querySelectorAll('#chips-type .av-chip, #chips-adv-type .av-chip').forEach(c =>
+                c.classList.remove('sel','sel-pink','sel-blue'));
+            // Seleccionar el chip correcto en ambos contenedores
+            document.querySelectorAll('#chips-type .av-chip[data-val="' + val + '"], #chips-adv-type .av-chip[data-val="' + val + '"]').forEach(c =>
+                c.classList.add(isBlue ? 'sel-blue' : 'sel-pink'));
+            document.getElementById('in-type').value = val;
+            avApplyAdvTypeDefaults(val);
+            avRefreshPreview();
         }
 
         function avSkin(el) {
