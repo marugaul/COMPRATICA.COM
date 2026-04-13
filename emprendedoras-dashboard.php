@@ -1779,7 +1779,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                             <div class="av-chips" id="chips-adv-hair">
                                 <?php foreach (AV_ADV_HAIR as $v=>$l): ?>
                                 <div class="av-chip <?= ($currentAvatar['hair']??'long01')===$v?'sel':'' ?>"
-                                     data-group="adv_hair" data-val="<?= $v ?>" onclick="avSelect(this,'adv_hair')">
+                                     data-group="adv-hair" data-val="<?= $v ?>" onclick="avSelect(this,'adv-hair')">
                                     <?= $l ?>
                                 </div>
                                 <?php endforeach; ?>
@@ -1809,7 +1809,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                             <div class="av-chips" id="chips-adv-eyes">
                                 <?php foreach (AV_ADV_EYES as $v=>$l): ?>
                                 <div class="av-chip <?= ($currentAvatar['adv_eyes']??'variant09')===$v?'sel':'' ?>"
-                                     data-group="adv_eyes" data-val="<?= $v ?>" onclick="avSelect(this,'adv_eyes')">
+                                     data-group="adv-eyes" data-val="<?= $v ?>" onclick="avSelect(this,'adv-eyes')">
                                     <?= $l ?>
                                 </div>
                                 <?php endforeach; ?>
@@ -1823,7 +1823,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                             <div class="av-chips" id="chips-adv-mouth">
                                 <?php foreach (AV_ADV_MOUTH as $v=>$l): ?>
                                 <div class="av-chip <?= ($currentAvatar['adv_mouth']??'variant01')===$v?'sel':'' ?>"
-                                     data-group="adv_mouth" data-val="<?= $v ?>" onclick="avSelect(this,'adv_mouth')">
+                                     data-group="adv-mouth" data-val="<?= $v ?>" onclick="avSelect(this,'adv-mouth')">
                                     <?= $l ?>
                                 </div>
                                 <?php endforeach; ?>
