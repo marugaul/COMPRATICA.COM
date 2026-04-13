@@ -1728,20 +1728,6 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                             <input type="hidden" name="av_outfit" id="in-outfit" value="<?= htmlspecialchars($currentAvatar['clothesColor']??'#667eea') ?>">
                         </div>
 
-                        <!-- ACCESORIOS -->
-                        <div class="av-group">
-                            <div class="av-group-title"><i class="fas fa-hat-wizard"></i> Accesorio</div>
-                            <div class="av-chips" id="chips-accessory">
-                                <?php foreach (AV_ACCESSORIES as $v=>$l): ?>
-                                <div class="av-chip <?= ($currentAvatar['accessory']??'none')===$v?'sel':'' ?>"
-                                     data-group="accessory" data-val="<?= htmlspecialchars($v) ?>" onclick="avSelect(this,'accessory')">
-                                    <?= $l ?>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                            <input type="hidden" name="av_accessory" id="in-accessory" value="<?= htmlspecialchars($currentAvatar['accessory']??'none') ?>">
-                        </div>
-
                         <!-- CONTORNO DEL CUERPO -->
                         <div class="av-group">
                             <div class="av-group-title"><i class="fas fa-male"></i> Contorno del cuerpo</div>
@@ -3034,11 +3020,6 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                 c.classList.toggle('sel', c.dataset.val === d.eye_style);
             });
             document.getElementById('in-eye_style').value = d.eye_style;
-            // Accesorio
-            document.querySelectorAll('#chips-accessory .av-chip').forEach(c => {
-                c.classList.toggle('sel', c.dataset.val === d.accessory);
-            });
-            document.getElementById('in-accessory').value = d.accessory;
             // Rubor (opcional, puede no existir)
             const blush = document.getElementById('av-blush');
             if (blush) blush.checked = (type === 'woman' || type === 'girl');
@@ -3136,7 +3117,7 @@ $currentStep = $onboardingSteps[$currentStepIdx];
                 hairColor:   document.getElementById('in-hair_color').value,
                 eyes:        document.getElementById('in-eye_style').value,
                 clothesColor:document.getElementById('in-outfit').value,
-                accessory:   document.getElementById('in-accessory').value,
+                accessory:   'none',
                 body_shape:  body,
                 facialHair:  document.getElementById('in-facialHair')?.value || '',
                 clothes:     'shirtCrewNeck',
