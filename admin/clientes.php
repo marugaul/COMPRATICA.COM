@@ -327,6 +327,11 @@ function fmtDate(?string $d): string {
          class="btn btn-success btn-sm">
         <i class="fas fa-file-csv"></i> Exportar CSV
       </a>
+      <a href="cleanup_bots.php"
+         class="btn btn-sm" style="background:#dc2626;color:white;"
+         title="Eliminar registros con teléfono +1 (bots)">
+        <i class="fas fa-robot"></i> Limpiar bots +1
+      </a>
     </div>
     <div class="table-wrap">
       <?php if (empty($customers)): ?>
