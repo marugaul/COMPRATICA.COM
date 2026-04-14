@@ -528,6 +528,25 @@ logDebug("RENDERING_PAGE");
         <p class="category-description">Mercadito tico: comprá directo a quienes venden. Apoyá el talento costarricense.</p>
       </div>
     </a>
+
+    <!-- PLANES Y PRECIOS -->
+    <a href="planes" class="category-card category-planes">
+      <div class="category-content">
+        <div class="category-icon">
+          <i class="fas fa-tags"></i>
+        </div>
+        <h3 class="category-title">Planes y Precios</h3>
+        <p class="category-description">Vendé en CompraTica: emprendedor, garaje, servicios, empleos o bienes raíces. Planes desde gratis.</p>
+      </div>
+      <div class="planes-badge-strip">
+        <span>GRATIS</span>
+        <span>desde $0,50</span>
+        <span>₡9.900 / mes</span>
+        <span>GRATIS</span>
+        <span>desde $0,50</span>
+        <span>₡9.900 / mes</span>
+      </div>
+    </a>
   </div>
 </section>
 
