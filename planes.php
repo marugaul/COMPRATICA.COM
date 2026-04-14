@@ -258,81 +258,81 @@ function fmt_crc(float $v): string {
       </div>
     </div>
     <div class="plan-cards-row">
+    <?php
+    // Leer planes desde la BD
+    $emp_plans = $pdo->query(
+        "SELECT * FROM entrepreneur_plans WHERE is_active=1 ORDER BY display_order ASC"
+    )->fetchAll(PDO::FETCH_ASSOC);
 
-      <div class="plan-card">
-        <span class="plan-badge badge-free">GRATIS</span>
-        <div class="plan-name">Plan Gratuito</div>
-        <div class="plan-desc">Para empezar a vender sin compromiso</div>
+    foreach ($emp_plans as $idx => $ep):
+        $is_commission = ((float)$ep['commission_rate'] > 0);
+        $is_free       = (!$is_commission && (float)$ep['price_monthly'] == 0);
+        $is_featured   = ((int)$ep['display_order'] === 2);   // 2do plan = recomendado
+        $commission    = (float)$ep['commission_rate'];
+        $monthly       = (float)$ep['price_monthly'];
+        $annual        = (float)$ep['price_annual'];
+        $max_prod      = (int)$ep['max_products'];
+        $feats         = json_decode($ep['features'] ?? '[]', true) ?: [];
+
+        // Badge
+        if ($is_free)        $badge_class = 'badge-free';
+        elseif ($is_commission) $badge_class = 'badge-flex';
+        elseif ($is_featured)   $badge_class = 'badge-popular';
+        else                    $badge_class = 'badge-premium';
+
+        if ($is_free)           $badge_text = 'GRATIS';
+        elseif ($is_commission) $badge_text = 'FLEXIBLE';
+        elseif ($is_featured)   $badge_text = 'RECOMENDADO';
+        else                    $badge_text = 'PREMIUM';
+    ?>
+      <div class="plan-card <?= $is_featured ? 'featured' : '' ?>">
+        <span class="plan-badge <?= $badge_class ?>"><?= htmlspecialchars($badge_text) ?></span>
+        <div class="plan-name"><?= htmlspecialchars($ep['name']) ?></div>
+        <div class="plan-desc"><?= htmlspecialchars($ep['description'] ?? '') ?></div>
         <div class="plan-price-block">
-          <span class="plan-price-main price-free">₡0</span>
-          <span class="plan-price-period">/ mes</span>
+          <?php if ($is_commission): ?>
+            <span class="plan-price-main price-free">₡0</span>
+            <span class="plan-price-period">cuota mensual</span>
+            <div class="plan-price-annual"><i class="fas fa-percent"></i> <?= number_format($commission, 2, ',', '.') ?>% comisión al vender</div>
+          <?php elseif ($is_free): ?>
+            <span class="plan-price-main price-free">₡0</span>
+            <span class="plan-price-period">/ mes</span>
+          <?php else: ?>
+            <span class="plan-price-main"><?= fmt_crc($monthly) ?></span>
+            <span class="plan-price-period">/ mes</span>
+            <?php if ($annual > 0): ?>
+              <div class="plan-price-annual"><i class="fas fa-tag"></i> <?= fmt_crc($annual) ?> / año — ahorrás 2 meses</div>
+            <?php endif; ?>
+          <?php endif; ?>
         </div>
         <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Hasta 5 productos publicados</li>
-          <li><i class="fas fa-check-circle"></i> Perfil de emprendedor en catálogo</li>
-          <li><i class="fas fa-check-circle"></i> Pagos vía SINPE, PayPal y tarjeta</li>
-          <li><i class="fas fa-check-circle"></i> Soporte básico por correo</li>
+          <?php if ($max_prod > 0): ?>
+            <li><i class="fas fa-check-circle"></i> Hasta <?= $max_prod ?> productos publicados</li>
+          <?php else: ?>
+            <li><i class="fas fa-check-circle"></i> Productos ilimitados</li>
+          <?php endif; ?>
+          <?php foreach ($feats as $f): ?>
+            <?php if (!str_starts_with($f, 'Hasta ')): // ya mostramos max_products arriba ?>
+              <li><i class="fas fa-check-circle"></i> <?= htmlspecialchars($f) ?></li>
+            <?php endif; ?>
+          <?php endforeach; ?>
+          <?php if ($is_commission): ?>
+            <li><i class="fas fa-check-circle"></i> Pagos vía SINPE, PayPal y tarjeta</li>
+            <li><i class="fas fa-check-circle"></i> Ideal si vendés ocasionalmente</li>
+          <?php elseif (!$is_free): ?>
+            <li><i class="fas fa-check-circle"></i> Pagos vía SINPE, PayPal y tarjeta</li>
+          <?php endif; ?>
         </ul>
-        <a href="emprendedoras-planes.php" class="plan-cta">Comenzar gratis</a>
+        <?php if ($is_commission): ?>
+          <a href="https://wa.me/<?= $wa_phone ?>" class="plan-cta">Consultar por WhatsApp</a>
+          <p class="plan-note">Habilitación bajo solicitud</p>
+        <?php elseif ($is_free): ?>
+          <a href="emprendedoras-planes.php" class="plan-cta">Comenzar gratis</a>
+        <?php else: ?>
+          <a href="emprendedoras-planes.php" class="plan-cta">Elegir <?= htmlspecialchars($ep['name']) ?></a>
+        <?php endif; ?>
       </div>
-
-      <div class="plan-card featured">
-        <span class="plan-badge badge-popular">RECOMENDADO</span>
-        <div class="plan-name">Plan Emprendedor/a</div>
-        <div class="plan-desc">Para quienes quieren crecer en serio</div>
-        <div class="plan-price-block">
-          <span class="plan-price-main">₡9.900</span>
-          <span class="plan-price-period">/ mes</span>
-          <div class="plan-price-annual"><i class="fas fa-tag"></i> ₡99.000 / año — ahorrás 2 meses</div>
-        </div>
-        <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Hasta 50 productos publicados</li>
-          <li><i class="fas fa-check-circle"></i> Estadísticas avanzadas de ventas</li>
-          <li><i class="fas fa-check-circle"></i> Sin comisiones por venta</li>
-          <li><i class="fas fa-check-circle"></i> Soporte prioritario</li>
-          <li><i class="fas fa-check-circle"></i> Pagos vía SINPE, PayPal y tarjeta</li>
-        </ul>
-        <a href="emprendedoras-planes.php" class="plan-cta">Elegir este plan</a>
-      </div>
-
-      <div class="plan-card">
-        <span class="plan-badge badge-premium">PREMIUM</span>
-        <div class="plan-name">Plan Premium</div>
-        <div class="plan-desc">Para negocios en pleno crecimiento</div>
-        <div class="plan-price-block">
-          <span class="plan-price-main">₡19.900</span>
-          <span class="plan-price-period">/ mes</span>
-          <div class="plan-price-annual"><i class="fas fa-tag"></i> ₡199.000 / año — ahorrás 2 meses</div>
-        </div>
-        <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Productos ilimitados</li>
-          <li><i class="fas fa-check-circle"></i> Estadísticas avanzadas</li>
-          <li><i class="fas fa-check-circle"></i> Soporte VIP (24 h)</li>
-          <li><i class="fas fa-check-circle"></i> Sin comisiones por venta</li>
-          <li><i class="fas fa-check-circle"></i> Destacado en catálogo principal</li>
-        </ul>
-        <a href="emprendedoras-planes.php" class="plan-cta">Elegir Premium</a>
-      </div>
-
-      <div class="plan-card">
-        <span class="plan-badge badge-flex">FLEXIBLE</span>
-        <div class="plan-name">Plan por Comisión</div>
-        <div class="plan-desc">Sin cuota mensual, solo pagás cuando vendés</div>
-        <div class="plan-price-block">
-          <span class="plan-price-main price-free">₡0</span>
-          <span class="plan-price-period">cuota mensual</span>
-        </div>
-        <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Sin pago mensual fijo</li>
-          <li><i class="fas fa-check-circle"></i> 10% comisión solo cuando vendés</li>
-          <li><i class="fas fa-check-circle"></i> Productos ilimitados</li>
-          <li><i class="fas fa-check-circle"></i> Pagos vía SINPE, PayPal y tarjeta</li>
-          <li><i class="fas fa-check-circle"></i> Ideal si vendés ocasionalmente</li>
-        </ul>
-        <a href="https://wa.me/<?= $wa_phone ?>" class="plan-cta">Consultar por WhatsApp</a>
-        <p class="plan-note">Habilitación bajo solicitud</p>
-      </div>
-
+    <?php endforeach; ?>
     </div>
   </div>
 
