@@ -25,11 +25,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reactivate'])) {
     $chk = $pdo->prepare("SELECT id FROM sales WHERE id=? AND affiliate_id=?");
     $chk->execute([$sale_id, $aff_id]);
     if (!$chk->fetchColumn()) throw new RuntimeException('Espacio no encontrado.');
-    // Crear nuevo fee de activación
-    $fee_crc = (float)get_setting('SALE_FEE_CRC', 2000);
-    $ex      = (float)(function_exists('get_exchange_rate') ? get_exchange_rate() : 1);
-    if ($ex <= 0) $ex = 1;
-    $amount_usd = $fee_crc / $ex;
+    // Crear nuevo fee de activación — privado usa PRIVATE_SPACE_PRICE_USD
+    $ex = (float)(function_exists('get_exchange_rate') ? get_exchange_rate() : 540);
+    if ($ex <= 0) $ex = 540;
+    $sale_priv = $pdo->prepare("SELECT is_private FROM sales WHERE id=? LIMIT 1");
+    $sale_priv->execute([$sale_id]);
+    $sale_is_private = (bool)($sale_priv->fetchColumn() ?: false);
+    if ($sale_is_private) {
+      $private_usd = (float)(get_setting('PRIVATE_SPACE_PRICE_USD', 20) ?: 20);
+      $fee_crc     = round($private_usd * $ex);
+      $amount_usd  = $private_usd;
+    } else {
+      $fee_crc    = (float)get_setting('SALE_FEE_CRC', 2000);
+      $amount_usd = $fee_crc / $ex;
+    }
     $pdo->prepare("INSERT INTO sale_fees
       (affiliate_id, sale_id, amount_crc, amount_usd, exrate_used, status, created_at, updated_at)
       VALUES (:aff, :sale, :crc, :usd, :ex, 'Pendiente', :now, :now)")
@@ -101,11 +110,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create'])) {
       ':now'     => $now
     ]);
     $sale_id = (int)$pdo->lastInsertId();
-    // Crear fee de activación (parametrizable)
-    $fee_crc = (float)get_setting('SALE_FEE_CRC', 2000);
-    $ex      = (float)(function_exists('get_exchange_rate') ? get_exchange_rate() : 1);
-    if ($ex <= 0) $ex = 1;
-    $amount_usd = $fee_crc / $ex;
+    // Crear fee de activación — privado usa PRIVATE_SPACE_PRICE_USD
+    $ex = (float)(function_exists('get_exchange_rate') ? get_exchange_rate() : 540);
+    if ($ex <= 0) $ex = 540;
+    if ($isPrivate) {
+      $private_usd = (float)(get_setting('PRIVATE_SPACE_PRICE_USD', 20) ?: 20);
+      $fee_crc     = round($private_usd * $ex);
+      $amount_usd  = $private_usd;
+    } else {
+      $fee_crc    = (float)get_setting('SALE_FEE_CRC', 2000);
+      $amount_usd = $fee_crc / $ex;
+    }
     $pdo->prepare("INSERT INTO sale_fees
       (affiliate_id, sale_id, amount_crc, amount_usd, exrate_used, status, created_at, updated_at)
       VALUES
@@ -116,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create'])) {
           ':crc' => $fee_crc,
           ':usd' => $amount_usd,
           ':ex'  => $ex,
-          ':now' => now_cr() // también en CR
+          ':now' => now_cr()
         ]);
     $fee_id = (int)$pdo->lastInsertId();
     // Redirigir a pago del fee (evita "Fee no encontrado")
@@ -540,20 +555,20 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
   <div class="card">
     <h3><i class="fas fa-plus-circle"></i> Crear Nuevo Espacio</h3>
     <?php
-      $fee_crc_display = 3000;
-      try {
-        $v = $pdo->query("SELECT sale_fee_crc FROM settings LIMIT 1")->fetchColumn();
-        if ($v !== false && $v !== null) $fee_crc_display = (float)$v;
-      } catch (Throwable $e) {}
+      $fee_crc_display = (float)get_setting('SALE_FEE_CRC', 2000);
+      $private_usd_display = (float)(get_setting('PRIVATE_SPACE_PRICE_USD', 20) ?: 20);
+      $ex_display = (float)(function_exists('get_exchange_rate') ? get_exchange_rate() : 540);
+      if ($ex_display <= 0) $ex_display = 540;
+      $private_crc_display = round($private_usd_display * $ex_display);
     ?>
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:0.9rem 1.1rem;margin-bottom:1.25rem;">
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:0.9rem 1.1rem;margin-bottom:1.25rem;" id="fee-info-box">
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
         <i class="fas fa-tag" style="color:#059669;font-size:1rem;"></i>
-        <span style="font-size:0.95rem;color:#065f46;font-weight:600;">
+        <span style="font-size:0.95rem;color:#065f46;font-weight:600;" id="fee-cost-label">
           Costo de activación: ₡<?= number_format($fee_crc_display, 0, '.', ',') ?> por espacio
         </span>
       </div>
-      <div style="font-size:0.83rem;color:#374151;margin-bottom:0.35rem;">
+      <div style="font-size:0.83rem;color:#374151;margin-bottom:0.35rem;" id="fee-cost-desc">
         Se cobra al crear o re-activar un espacio. Puedes pagar con:
       </div>
       <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
@@ -666,8 +681,30 @@ $sales = $rows->fetchAll(PDO::FETCH_ASSOC);
       const accessCodeContainer = document.getElementById('access_code_container');
       const accessCodeInput = document.getElementById('access_code');
 
+      // Costos (desde PHP)
+      const FEE_CRC_NORMAL  = <?= (int)$fee_crc_display ?>;
+      const FEE_USD_PRIVATE = <?= number_format($private_usd_display, 2, '.', '') ?>;
+      const FEE_CRC_PRIVATE = <?= (int)$private_crc_display ?>;
+
+      function updateFeeLabel(isPrivate) {
+        const label = document.getElementById('fee-cost-label');
+        const desc  = document.getElementById('fee-cost-desc');
+        if (!label) return;
+        if (isPrivate) {
+          label.innerHTML = '<i class="fas fa-lock" style="margin-right:.3rem;"></i> Costo Espacio Privado: <strong>$' +
+            FEE_USD_PRIVATE.toFixed(2).replace('.', ',') + '</strong> / mes' +
+            ' <small style="font-weight:400;color:#374151;">(aprox. ₡' +
+            FEE_CRC_PRIVATE.toLocaleString('es-CR') + ')</small>';
+          desc.textContent = 'El espacio privado tiene un costo diferenciado. Puedes pagar con:';
+        } else {
+          label.textContent = 'Costo de activación: ₡' + FEE_CRC_NORMAL.toLocaleString('es-CR') + ' por espacio';
+          desc.textContent  = 'Se cobra al crear o re-activar un espacio. Puedes pagar con:';
+        }
+      }
+
       // Mostrar/ocultar campo de código según checkbox
       isPrivateCheckbox.addEventListener('change', function() {
+        updateFeeLabel(this.checked);
         if (this.checked) {
           accessCodeContainer.style.display = 'block';
           accessCodeInput.required = true;
