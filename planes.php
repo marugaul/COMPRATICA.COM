@@ -296,17 +296,20 @@ function fmt_crc(float $v): string {
         <div class="plan-desc"><?= htmlspecialchars($ep['description'] ?? '') ?></div>
         <div class="plan-price-block">
           <?php if ($is_commission): ?>
-            <span class="plan-price-main price-free">₡0</span>
+            <span class="plan-price-main price-free">$0</span>
             <span class="plan-price-period">cuota mensual</span>
             <div class="plan-price-annual"><i class="fas fa-percent"></i> <?= number_format($commission, 2, ',', '.') ?>% comisión al vender</div>
           <?php elseif ($is_free): ?>
-            <span class="plan-price-main price-free">₡0</span>
+            <span class="plan-price-main price-free">$0</span>
             <span class="plan-price-period">/ mes</span>
           <?php else: ?>
-            <span class="plan-price-main"><?= fmt_crc($monthly) ?></span>
+            <?php $usd_m = $exchange_rate > 0 ? $monthly / $exchange_rate : 0;
+                  $usd_a = $exchange_rate > 0 ? $annual  / $exchange_rate : 0; ?>
+            <span class="plan-price-main"><?= fmt_usd($usd_m) ?></span>
             <span class="plan-price-period">/ mes</span>
+            <div class="plan-price-annual">aprox. <?= fmt_crc($monthly) ?> / mes</div>
             <?php if ($annual > 0): ?>
-              <div class="plan-price-annual"><i class="fas fa-tag"></i> <?= fmt_crc($annual) ?> / año — ahorrás 2 meses</div>
+              <div class="plan-price-annual"><i class="fas fa-tag"></i> <?= fmt_usd($usd_a) ?> / año — aprox. <?= fmt_crc($annual) ?> — ahorrás 2 meses</div>
             <?php endif; ?>
           <?php endif; ?>
         </div>
@@ -356,10 +359,11 @@ function fmt_crc(float $v): string {
         <span class="plan-badge badge-free">REGISTRO GRATIS</span>
         <div class="plan-name">Espacio de Venta</div>
         <div class="plan-desc">Abrí tu tienda de garaje en minutos</div>
+        <?php $sale_fee_usd = $exchange_rate > 0 ? $sale_fee_crc / $exchange_rate : 0; ?>
         <div class="plan-price-block">
-          <span class="plan-price-main price-free">₡0</span>
+          <span class="plan-price-main price-free">$0</span>
           <span class="plan-price-period">para registrarte</span>
-          <div class="plan-price-annual"><i class="fas fa-store"></i> Espacio activo: <?= fmt_crc($sale_fee_crc) ?> <span style="font-weight:400;color:#6b7280;">/ mes</span></div>
+          <div class="plan-price-annual"><i class="fas fa-store"></i> Espacio activo: <?= fmt_usd($sale_fee_usd) ?> / mes <span style="font-weight:400;color:#6b7280;">— aprox. <?= fmt_crc($sale_fee_crc) ?></span></div>
         </div>
         <ul class="plan-features">
           <li><i class="fas fa-check-circle"></i> Tienda personal con URL propia</li>
