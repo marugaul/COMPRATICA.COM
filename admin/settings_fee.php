@@ -1,33 +1,65 @@
 <?php
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/settings.php';
 $pdo = db();
 $msg = '';
 
-function get_sale_fee_crc(PDO $pdo, $default = 2000) {
-  try {
-    $v = $pdo->query("SELECT sale_fee_crc FROM settings LIMIT 1")->fetchColumn();
-    return ($v !== false && $v !== null) ? (int)$v : (int)$default;
-  } catch (Throwable $e) { return (int)$default; }
-}
-
-if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['save_settings'])) {
-  $fee = max(0, (int)($_POST['SALE_FEE_CRC'] ?? 2000));
-  $pdo->prepare("UPDATE settings SET sale_fee_crc=?")->execute([$fee]);
-  $private_usd = max(0, (float)($_POST['PRIVATE_SPACE_PRICE_USD'] ?? 20));
-  set_setting('PRIVATE_SPACE_PRICE_USD', $private_usd);
-  $msg = 'Ajustes guardados correctamente.';
-}
-
-$fee_val         = get_sale_fee_crc($pdo);
-$private_fee_usd = (float)(get_setting('PRIVATE_SPACE_PRICE_USD', 20) ?: 20);
-
 if (!function_exists('h')) {
-    function h($v) {
-        return htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8');
-    }
+    function h($v) { return htmlspecialchars((string)($v ?? ''), ENT_QUOTES, 'UTF-8'); }
 }
+
+// ── Helpers de lectura/escritura sin depender de settings.php ─────────────────
+function sfee_get(PDO $pdo, string $key, $default) {
+    try {
+        // esquema KV (key TEXT, val TEXT)
+        $st = $pdo->prepare("SELECT val FROM settings WHERE key=? LIMIT 1");
+        $st->execute([$key]);
+        $v = $st->fetchColumn();
+        if ($v !== false && $v !== null && $v !== '') return is_numeric($v) ? 0+$v : $v;
+    } catch (Throwable $e) {}
+    try {
+        // esquema columna directa (e.g. sale_fee_crc)
+        $col = preg_replace('/[^a-z0-9_]/', '_', strtolower($key));
+        $v = $pdo->query("SELECT $col FROM settings WHERE id=1 LIMIT 1")->fetchColumn();
+        if ($v !== false && $v !== null) return is_numeric($v) ? 0+$v : $v;
+    } catch (Throwable $e) {}
+    return $default;
+}
+
+function sfee_set(PDO $pdo, string $key, $val): void {
+    // 1) intentar KV con INSERT OR REPLACE (SQLite)
+    try {
+        $pdo->prepare("INSERT OR REPLACE INTO settings(key,val) VALUES(?,?)")
+            ->execute([$key, $val]);
+        return;
+    } catch (Throwable $e) {}
+    // 2) intentar UPDATE en columna directa si existe
+    try {
+        $col = preg_replace('/[^a-z0-9_]/', '_', strtolower($key));
+        $pdo->prepare("UPDATE settings SET $col=? WHERE id=1")->execute([$val]);
+    } catch (Throwable $e) {}
+}
+
+// ── Guardar ───────────────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
+    $fee_crc     = max(0, (int)($_POST['SALE_FEE_CRC'] ?? 2000));
+    $private_usd = max(0, (float)($_POST['PRIVATE_SPACE_PRICE_USD'] ?? 20));
+    // sale_fee_crc puede estar como columna directa O como KV
+    try { $pdo->prepare("UPDATE settings SET sale_fee_crc=? WHERE id=1")->execute([$fee_crc]); }
+    catch (Throwable $e) { sfee_set($pdo, 'SALE_FEE_CRC', $fee_crc); }
+    sfee_set($pdo, 'PRIVATE_SPACE_PRICE_USD', $private_usd);
+    $msg = 'Ajustes guardados correctamente.';
+}
+
+// ── Leer valores actuales ─────────────────────────────────────────────────────
+$fee_val         = (int)sfee_get($pdo, 'SALE_FEE_CRC',           2000);
+// también intentar columna directa para compatibilidad
+try {
+    $v = $pdo->query("SELECT sale_fee_crc FROM settings WHERE id=1 LIMIT 1")->fetchColumn();
+    if ($v !== false && $v !== null) $fee_val = (int)$v;
+} catch (Throwable $e) {}
+
+$private_fee_usd = (float)(sfee_get($pdo, 'PRIVATE_SPACE_PRICE_USD', 20) ?: 20);
 ?>
 <!doctype html>
 <html lang="es">
