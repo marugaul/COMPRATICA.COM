@@ -23,7 +23,11 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
 $pdo           = db();
 $exchange_rate = (float)(get_setting('exchange_rate', 540) ?: 540);
 $sale_fee_crc       = (int)(get_setting('SALE_FEE_CRC', 2000) ?: 2000);
-$private_space_usd  = (float)(get_setting('PRIVATE_SPACE_PRICE_USD', 20) ?: 20);
+$private_space_usd  = 20.0;
+try {
+    $v = $pdo->query("SELECT private_space_price_usd FROM settings WHERE id=1 LIMIT 1")->fetchColumn();
+    if ($v !== false && $v !== null && (float)$v > 0) $private_space_usd = (float)$v;
+} catch (Throwable $e) {}
 $wa_phone      = '50683010305';  // chat-support.php
 
 // ── Servicios Profesionales ───────────────────────────────────────────────────
