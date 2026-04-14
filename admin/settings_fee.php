@@ -44,22 +44,31 @@ function sfee_set(PDO $pdo, string $key, $val): void {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
     $fee_crc     = max(0, (int)($_POST['SALE_FEE_CRC'] ?? 2000));
     $private_usd = max(0, (float)($_POST['PRIVATE_SPACE_PRICE_USD'] ?? 20));
-    // sale_fee_crc puede estar como columna directa O como KV
     try { $pdo->prepare("UPDATE settings SET sale_fee_crc=? WHERE id=1")->execute([$fee_crc]); }
-    catch (Throwable $e) { sfee_set($pdo, 'SALE_FEE_CRC', $fee_crc); }
-    sfee_set($pdo, 'PRIVATE_SPACE_PRICE_USD', $private_usd);
+    catch (Throwable $e) {}
+    try { $pdo->prepare("UPDATE settings SET private_space_price_usd=? WHERE id=1")->execute([$private_usd]); }
+    catch (Throwable $e) {
+        // columna aún no existe, crearla y guardar
+        try {
+            $pdo->exec("ALTER TABLE settings ADD COLUMN private_space_price_usd REAL DEFAULT 20.0");
+            $pdo->prepare("UPDATE settings SET private_space_price_usd=? WHERE id=1")->execute([$private_usd]);
+        } catch (Throwable $e2) {}
+    }
     $msg = 'Ajustes guardados correctamente.';
 }
 
 // ── Leer valores actuales ─────────────────────────────────────────────────────
-$fee_val         = (int)sfee_get($pdo, 'SALE_FEE_CRC',           2000);
-// también intentar columna directa para compatibilidad
+$fee_val = 2000;
 try {
     $v = $pdo->query("SELECT sale_fee_crc FROM settings WHERE id=1 LIMIT 1")->fetchColumn();
     if ($v !== false && $v !== null) $fee_val = (int)$v;
 } catch (Throwable $e) {}
 
-$private_fee_usd = (float)(sfee_get($pdo, 'PRIVATE_SPACE_PRICE_USD', 20) ?: 20);
+$private_fee_usd = 20.0;
+try {
+    $v = $pdo->query("SELECT private_space_price_usd FROM settings WHERE id=1 LIMIT 1")->fetchColumn();
+    if ($v !== false && $v !== null && (float)$v > 0) $private_fee_usd = (float)$v;
+} catch (Throwable $e) {}
 ?>
 <!doctype html>
 <html lang="es">

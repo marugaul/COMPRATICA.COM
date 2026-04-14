@@ -32,11 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reactivate'])) {
     $sale_priv->execute([$sale_id]);
     $sale_is_private = (bool)($sale_priv->fetchColumn() ?: false);
     if ($sale_is_private) {
-      $private_usd = (float)(get_setting('PRIVATE_SPACE_PRICE_USD', 20) ?: 20);
-      $fee_crc     = round($private_usd * $ex);
-      $amount_usd  = $private_usd;
+      $private_usd = 20.0;
+      try { $v = $pdo->query("SELECT private_space_price_usd FROM settings WHERE id=1 LIMIT 1")->fetchColumn(); if ($v !== false && $v !== null && (float)$v > 0) $private_usd = (float)$v; } catch (Throwable $e) {}
+      $fee_crc    = round($private_usd * $ex);
+      $amount_usd = $private_usd;
     } else {
-      $fee_crc    = (float)get_setting('SALE_FEE_CRC', 2000);
+      $fee_crc    = (float)(get_setting('SALE_FEE_CRC', 2000) ?: 2000);
+      try { $v = $pdo->query("SELECT sale_fee_crc FROM settings WHERE id=1 LIMIT 1")->fetchColumn(); if ($v !== false && $v !== null) $fee_crc = (float)$v; } catch (Throwable $e) {}
       $amount_usd = $fee_crc / $ex;
     }
     $pdo->prepare("INSERT INTO sale_fees
@@ -114,11 +116,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create'])) {
     $ex = (float)(function_exists('get_exchange_rate') ? get_exchange_rate() : 540);
     if ($ex <= 0) $ex = 540;
     if ($isPrivate) {
-      $private_usd = (float)(get_setting('PRIVATE_SPACE_PRICE_USD', 20) ?: 20);
+      $private_usd = 20.0;
+      try { $v = $pdo->query("SELECT private_space_price_usd FROM settings WHERE id=1 LIMIT 1")->fetchColumn(); if ($v !== false && $v !== null && (float)$v > 0) $private_usd = (float)$v; } catch (Throwable $e) {}
       $fee_crc     = round($private_usd * $ex);
       $amount_usd  = $private_usd;
     } else {
-      $fee_crc    = (float)get_setting('SALE_FEE_CRC', 2000);
+      $fee_crc    = (float)(get_setting('SALE_FEE_CRC', 2000) ?: 2000);
+      try { $v = $pdo->query("SELECT sale_fee_crc FROM settings WHERE id=1 LIMIT 1")->fetchColumn(); if ($v !== false && $v !== null) $fee_crc = (float)$v; } catch (Throwable $e) {}
       $amount_usd = $fee_crc / $ex;
     }
     $pdo->prepare("INSERT INTO sale_fees
