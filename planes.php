@@ -22,7 +22,8 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
 // ── Leer configuración del admin ─────────────────────────────────────────────
 $pdo           = db();
 $exchange_rate = (float)(get_setting('exchange_rate', 540) ?: 540);
-$sale_fee_crc  = (int)(get_setting('SALE_FEE_CRC', 2000) ?: 2000);
+$sale_fee_crc       = (int)(get_setting('SALE_FEE_CRC', 2000) ?: 2000);
+$private_space_usd  = (float)(get_setting('PRIVATE_SPACE_PRICE_USD', 20) ?: 20);
 $wa_phone      = '50683010305';  // chat-support.php
 
 // ── Servicios Profesionales ───────────────────────────────────────────────────
@@ -373,8 +374,9 @@ function fmt_crc(float $v): string {
         <div class="plan-name">Espacio Privado</div>
         <div class="plan-desc">Vendé solo a grupos o comunidades que vos invitás</div>
         <div class="plan-price-block">
-          <span class="plan-price-main"><?= fmt_crc($sale_fee_crc) ?></span>
+          <span class="plan-price-main"><?= fmt_usd($private_space_usd) ?></span>
           <span class="plan-price-period">/ mes</span>
+          <div class="plan-price-annual">aprox. <?= fmt_crc($private_space_usd * $exchange_rate) ?></div>
         </div>
         <ul class="plan-features">
           <li><i class="fas fa-check-circle"></i> Acceso solo por invitación</li>

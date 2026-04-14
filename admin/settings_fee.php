@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/settings.php';
 $pdo = db();
 $msg = '';
 
@@ -14,10 +15,13 @@ function get_sale_fee_crc(PDO $pdo, $default = 2000) {
 if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['save_settings'])) {
   $fee = max(0, (int)($_POST['SALE_FEE_CRC'] ?? 2000));
   $pdo->prepare("UPDATE settings SET sale_fee_crc=?")->execute([$fee]);
+  $private_usd = max(0, (float)($_POST['PRIVATE_SPACE_PRICE_USD'] ?? 20));
+  set_setting('PRIVATE_SPACE_PRICE_USD', $private_usd);
   $msg = 'Ajustes guardados correctamente.';
 }
 
-$fee_val = get_sale_fee_crc($pdo);
+$fee_val         = get_sale_fee_crc($pdo);
+$private_fee_usd = (float)(get_setting('PRIVATE_SPACE_PRICE_USD', 20) ?: 20);
 
 if (!function_exists('h')) {
     function h($v) {
@@ -262,6 +266,21 @@ if (!function_exists('h')) {
           Este es el monto en colones costarricenses (CRC) que se cobrará a cada afiliado por mantener un espacio de venta activo. Este costo se aplicará de manera recurrente según la política de cobro establecida.
         </div>
       </div>
+      <hr style="border:none;border-top:1px solid var(--gray-200);margin:1.5rem 0;">
+
+      <div class="form-group">
+        <label>
+          <i class="fas fa-lock"></i> Precio Espacio Privado (USD)
+        </label>
+        <input class="input" type="number" name="PRIVATE_SPACE_PRICE_USD"
+               value="<?= number_format($private_fee_usd, 2, '.', '') ?>"
+               min="0" step="0.01">
+        <div class="form-description">
+          Precio mensual en dólares (USD) para el Espacio Privado de Venta de Garaje.
+          Se muestra en la página pública de Planes y Precios con el equivalente en colones.
+        </div>
+      </div>
+
       <button class="btn primary" name="save_settings" value="1">
         <i class="fas fa-save"></i>
         Guardar Configuración
