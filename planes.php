@@ -307,9 +307,10 @@ function fmt_crc(float $v): string {
                   $usd_a = $exchange_rate > 0 ? $annual  / $exchange_rate : 0; ?>
             <span class="plan-price-main"><?= fmt_usd($usd_m) ?></span>
             <span class="plan-price-period">/ mes</span>
-            <div class="plan-price-annual">aprox. <?= fmt_crc($monthly) ?> / mes</div>
             <?php if ($annual > 0): ?>
-              <div class="plan-price-annual"><i class="fas fa-tag"></i> <?= fmt_usd($usd_a) ?> / año — aprox. <?= fmt_crc($annual) ?> — ahorrás 2 meses</div>
+              <div class="plan-price-annual">aprox. <?= fmt_crc($monthly) ?>/mes &nbsp;·&nbsp; <i class="fas fa-tag"></i> <?= fmt_usd($usd_a) ?>/año — ahorrás 2 meses</div>
+            <?php else: ?>
+              <div class="plan-price-annual">aprox. <?= fmt_crc($monthly) ?> / mes</div>
             <?php endif; ?>
           <?php endif; ?>
         </div>
