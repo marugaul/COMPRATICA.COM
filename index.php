@@ -538,14 +538,6 @@ logDebug("RENDERING_PAGE");
         <h3 class="category-title">Planes y Precios</h3>
         <p class="category-description">Vendé en CompraTica: emprendedor, garaje, servicios, empleos o bienes raíces. Planes desde gratis.</p>
       </div>
-      <div class="planes-badge-strip">
-        <span>GRATIS</span>
-        <span>desde $0,50</span>
-        <span>₡9.900 / mes</span>
-        <span>GRATIS</span>
-        <span>desde $0,50</span>
-        <span>₡9.900 / mes</span>
-      </div>
     </a>
   </div>
 </section>
