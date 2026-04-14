@@ -12,10 +12,71 @@ session_start();
 
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/settings.php';
 
 $cantidadProductos = 0;
 if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
     foreach ($_SESSION['cart'] as $it) $cantidadProductos += (int)($it['qty'] ?? 0);
+}
+
+// ── Leer configuración del admin ─────────────────────────────────────────────
+$pdo           = db();
+$exchange_rate = (float)(get_setting('exchange_rate', 540) ?: 540);
+$sale_fee_crc  = (int)(get_setting('SALE_FEE_CRC', 2000) ?: 2000);
+$wa_phone      = '50683010305';  // chat-support.php
+
+// ── Servicios Profesionales ───────────────────────────────────────────────────
+$service_plans = [];
+try {
+    $service_plans = $pdo->query(
+        "SELECT * FROM service_pricing WHERE is_active=1 ORDER BY display_order ASC"
+    )->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {}
+if (empty($service_plans)) {
+    $service_plans = [
+        ['duration_days'=>7,  'price_usd'=>0,    'price_crc'=>0,   'max_photos'=>2, 'is_featured'=>0],
+        ['duration_days'=>30, 'price_usd'=>0.75, 'price_crc'=>405, 'max_photos'=>4, 'is_featured'=>1],
+        ['duration_days'=>60, 'price_usd'=>1.25, 'price_crc'=>675, 'max_photos'=>6, 'is_featured'=>1],
+    ];
+}
+
+// ── Empleos ───────────────────────────────────────────────────────────────────
+$job_plans = [];
+try {
+    $job_plans = $pdo->query(
+        "SELECT * FROM job_pricing WHERE is_active=1 ORDER BY display_order ASC"
+    )->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {}
+if (empty($job_plans)) {
+    $job_plans = [
+        ['duration_days'=>14, 'price_usd'=>0,    'price_crc'=>0,   'max_photos'=>2, 'is_featured'=>0],
+        ['duration_days'=>30, 'price_usd'=>0.50, 'price_crc'=>270, 'max_photos'=>3, 'is_featured'=>1],
+        ['duration_days'=>60, 'price_usd'=>0.80, 'price_crc'=>432, 'max_photos'=>4, 'is_featured'=>1],
+    ];
+}
+
+// ── Bienes Raíces ─────────────────────────────────────────────────────────────
+$bienes_plans = [];
+try {
+    $bienes_plans = $pdo->query(
+        "SELECT * FROM listing_pricing WHERE is_active=1 ORDER BY display_order ASC"
+    )->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {}
+if (empty($bienes_plans)) {
+    $bienes_plans = [
+        ['duration_days'=>7,  'price_usd'=>0, 'price_crc'=>0,    'is_featured'=>0],
+        ['duration_days'=>30, 'price_usd'=>1, 'price_crc'=>540,  'is_featured'=>1],
+        ['duration_days'=>90, 'price_usd'=>2, 'price_crc'=>1080, 'is_featured'=>1],
+    ];
+}
+
+// Helper: formato precio en dólares estilo costarricense ($1,25)
+function fmt_usd(float $v): string {
+    return '$' . number_format($v, 2, ',', '.');
+}
+// Helper: formato colones (₡3.000)
+function fmt_crc(float $v): string {
+    return '₡' . number_format($v, 0, ',', '.');
 }
 ?>
 <!DOCTYPE html>
@@ -268,7 +329,7 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
           <li><i class="fas fa-check-circle"></i> Pagos vía SINPE, PayPal y tarjeta</li>
           <li><i class="fas fa-check-circle"></i> Ideal si vendés ocasionalmente</li>
         </ul>
-        <a href="https://wa.me/50688888888" class="plan-cta">Consultar por WhatsApp</a>
+        <a href="https://wa.me/<?= $wa_phone ?>" class="plan-cta">Consultar por WhatsApp</a>
         <p class="plan-note">Habilitación bajo solicitud</p>
       </div>
 
@@ -281,18 +342,19 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
       <div class="plan-section-icon"><i class="fas fa-tags"></i></div>
       <div>
         <h2>Venta de Garaje</h2>
-        <p>Vendé artículos de segunda mano con tu tienda personal — sin costo mensual</p>
+        <p>Vendé artículos de segunda mano con tu tienda personal</p>
       </div>
     </div>
     <div class="plan-cards-row">
 
-      <div class="plan-card featured" style="max-width:400px;">
-        <span class="plan-badge badge-free">SIEMPRE GRATIS</span>
-        <div class="plan-name">Cuenta Gratuita</div>
+      <div class="plan-card featured">
+        <span class="plan-badge badge-free">REGISTRO GRATIS</span>
+        <div class="plan-name">Espacio de Venta</div>
         <div class="plan-desc">Abrí tu tienda de garaje en minutos</div>
         <div class="plan-price-block">
           <span class="plan-price-main price-free">₡0</span>
-          <span class="plan-price-period">siempre</span>
+          <span class="plan-price-period">para registrarte</span>
+          <div class="plan-price-annual"><i class="fas fa-store"></i> Espacio activo: <?= fmt_crc($sale_fee_crc) ?> <span style="font-weight:400;color:#6b7280;">/ mes</span></div>
         </div>
         <ul class="plan-features">
           <li><i class="fas fa-check-circle"></i> Tienda personal con URL propia</li>
@@ -320,60 +382,44 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
       </div>
     </div>
     <div class="plan-cards-row">
-
-      <div class="plan-card">
-        <span class="plan-badge badge-free">GRATIS</span>
-        <div class="plan-name">Prueba Gratis</div>
-        <div class="plan-desc">Probá la plataforma sin costo</div>
+    <?php foreach ($service_plans as $idx => $sp):
+        $is_free    = ((float)$sp['price_usd'] == 0 && (float)$sp['price_crc'] == 0);
+        $is_last    = ($idx === count($service_plans) - 1);
+        $featured   = !empty($sp['is_featured']);
+        $days       = (int)$sp['duration_days'];
+        $photos     = (int)($sp['max_photos'] ?? 3);
+        $usd        = (float)$sp['price_usd'];
+        $crc        = (float)$sp['price_crc'];
+        // Si no hay CRC guardado, calcularlo con exchange_rate
+        if ($crc == 0 && $usd > 0) $crc = round($usd * $exchange_rate);
+    ?>
+      <div class="plan-card <?= $featured ? 'featured' : '' ?>">
+        <?php if ($is_free): ?>
+          <span class="plan-badge badge-free">GRATIS</span>
+        <?php elseif ($is_last): ?>
+          <span class="plan-badge badge-value">MEJOR VALOR</span>
+        <?php else: ?>
+          <span class="plan-badge badge-popular">POPULAR</span>
+        <?php endif; ?>
+        <div class="plan-name"><?= $is_free ? 'Prueba Gratis' : 'Plan ' . $days . ' días' ?></div>
+        <div class="plan-desc"><?= $is_free ? 'Probá la plataforma sin costo' : ($is_last ? 'Máxima exposición, mejor precio' : 'Visibilidad completa por un mes') ?></div>
         <div class="plan-price-block">
-          <span class="plan-price-main price-free">$0</span>
-          <span class="plan-price-period">/ 7 días</span>
+          <span class="plan-price-main <?= $is_free ? 'price-free' : '' ?>"><?= $is_free ? '$0' : fmt_usd($usd) ?></span>
+          <span class="plan-price-period">/ <?= $days ?> días</span>
+          <?php if (!$is_free && $crc > 0): ?>
+            <div class="plan-price-annual">aprox. <?= fmt_crc($crc) ?><?= $is_last ? ' — ahorrás 20%' : '' ?></div>
+          <?php endif; ?>
         </div>
         <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Publicación activa 7 días</li>
-          <li><i class="fas fa-check-circle"></i> Hasta 2 fotos del servicio</li>
+          <li><i class="fas fa-check-circle"></i> Publicación activa <?= $days ?> días</li>
+          <li><i class="fas fa-check-circle"></i> Hasta <?= $photos ?> fotos del servicio</li>
           <li><i class="fas fa-check-circle"></i> Visible en buscador</li>
+          <?php if (!$is_free): ?><li><i class="fas fa-check-circle"></i> SINPE, PayPal o tarjeta</li><?php endif; ?>
+          <?php if ($is_last): ?><li><i class="fas fa-check-circle"></i> Mejor relación costo-duración</li><?php endif; ?>
         </ul>
-        <a href="servicios" class="plan-cta">Publicar servicio</a>
+        <a href="servicios" class="plan-cta"><?= $is_free ? 'Publicar servicio' : 'Elegir ' . $days . ' días' ?></a>
       </div>
-
-      <div class="plan-card featured">
-        <span class="plan-badge badge-popular">POPULAR</span>
-        <div class="plan-name">Plan 30 días</div>
-        <div class="plan-desc">Un mes completo de exposición</div>
-        <div class="plan-price-block">
-          <span class="plan-price-main">$0,75</span>
-          <span class="plan-price-period">/ publicación</span>
-          <div class="plan-price-annual">aprox. ₡405</div>
-        </div>
-        <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Publicación activa 30 días</li>
-          <li><i class="fas fa-check-circle"></i> Hasta 4 fotos del servicio</li>
-          <li><i class="fas fa-check-circle"></i> Visible en buscador</li>
-          <li><i class="fas fa-check-circle"></i> SINPE, PayPal o tarjeta</li>
-        </ul>
-        <a href="servicios" class="plan-cta">Elegir 30 días</a>
-      </div>
-
-      <div class="plan-card">
-        <span class="plan-badge badge-value">MEJOR VALOR</span>
-        <div class="plan-name">Plan 60 días</div>
-        <div class="plan-desc">El doble de exposición, ahorrás un 20%</div>
-        <div class="plan-price-block">
-          <span class="plan-price-main">$1,25</span>
-          <span class="plan-price-period">/ publicación</span>
-          <div class="plan-price-annual">aprox. ₡675 — ahorrás 20%</div>
-        </div>
-        <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Publicación activa 60 días</li>
-          <li><i class="fas fa-check-circle"></i> Hasta 6 fotos del servicio</li>
-          <li><i class="fas fa-check-circle"></i> Visible en buscador</li>
-          <li><i class="fas fa-check-circle"></i> SINPE, PayPal o tarjeta</li>
-          <li><i class="fas fa-check-circle"></i> Mejor relación costo-duración</li>
-        </ul>
-        <a href="servicios" class="plan-cta">Elegir 60 días</a>
-      </div>
-
+    <?php endforeach; ?>
     </div>
   </div>
 
@@ -387,62 +433,43 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
       </div>
     </div>
     <div class="plan-cards-row">
-
-      <div class="plan-card">
-        <span class="plan-badge badge-free">GRATIS</span>
-        <div class="plan-name">Prueba Gratis</div>
-        <div class="plan-desc">14 días sin costo para probar</div>
+    <?php foreach ($job_plans as $idx => $jp):
+        $is_free  = ((float)$jp['price_usd'] == 0 && (float)$jp['price_crc'] == 0);
+        $is_last  = ($idx === count($job_plans) - 1);
+        $featured = !empty($jp['is_featured']);
+        $days     = (int)$jp['duration_days'];
+        $photos   = (int)($jp['max_photos'] ?? 2);
+        $usd      = (float)$jp['price_usd'];
+        $crc      = (float)$jp['price_crc'];
+        if ($crc == 0 && $usd > 0) $crc = round($usd * $exchange_rate);
+    ?>
+      <div class="plan-card <?= $featured ? 'featured' : '' ?>">
+        <?php if ($is_free): ?>
+          <span class="plan-badge badge-free">GRATIS</span>
+        <?php elseif ($is_last): ?>
+          <span class="plan-badge badge-value">MEJOR VALOR</span>
+        <?php else: ?>
+          <span class="plan-badge badge-popular">POPULAR</span>
+        <?php endif; ?>
+        <div class="plan-name"><?= $is_free ? 'Prueba Gratis' : 'Plan ' . $days . ' días' ?></div>
+        <div class="plan-desc"><?= $is_free ? $days . ' días sin costo para probar' : ($is_last ? 'Más tiempo para encontrar al indicado' : 'Un mes completo de visibilidad') ?></div>
         <div class="plan-price-block">
-          <span class="plan-price-main price-free">$0</span>
-          <span class="plan-price-period">/ 14 días</span>
+          <span class="plan-price-main <?= $is_free ? 'price-free' : '' ?>"><?= $is_free ? '$0' : fmt_usd($usd) ?></span>
+          <span class="plan-price-period">/ <?= $days ?> días</span>
+          <?php if (!$is_free && $crc > 0): ?>
+            <div class="plan-price-annual">aprox. <?= fmt_crc($crc) ?><?= $is_last ? ' — ahorrás 20%' : '' ?></div>
+          <?php endif; ?>
         </div>
         <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Publicación activa 14 días</li>
-          <li><i class="fas fa-check-circle"></i> Hasta 2 fotos o imágenes</li>
+          <li><i class="fas fa-check-circle"></i> Publicación activa <?= $days ?> días</li>
+          <li><i class="fas fa-check-circle"></i> Hasta <?= $photos ?> fotos o imágenes</li>
           <li><i class="fas fa-check-circle"></i> Visible en bolsa de empleos</li>
           <li><i class="fas fa-check-circle"></i> Postulaciones por correo</li>
+          <?php if (!$is_free): ?><li><i class="fas fa-check-circle"></i> SINPE, PayPal o tarjeta</li><?php endif; ?>
         </ul>
-        <a href="empleos" class="plan-cta">Publicar empleo</a>
+        <a href="empleos" class="plan-cta"><?= $is_free ? 'Publicar empleo' : 'Elegir ' . $days . ' días' ?></a>
       </div>
-
-      <div class="plan-card featured">
-        <span class="plan-badge badge-popular">POPULAR</span>
-        <div class="plan-name">Plan 30 días</div>
-        <div class="plan-desc">Un mes completo de visibilidad</div>
-        <div class="plan-price-block">
-          <span class="plan-price-main">$0,50</span>
-          <span class="plan-price-period">/ publicación</span>
-          <div class="plan-price-annual">aprox. ₡270</div>
-        </div>
-        <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Publicación activa 30 días</li>
-          <li><i class="fas fa-check-circle"></i> Hasta 3 fotos o imágenes</li>
-          <li><i class="fas fa-check-circle"></i> Visible en bolsa de empleos</li>
-          <li><i class="fas fa-check-circle"></i> Postulaciones por correo</li>
-          <li><i class="fas fa-check-circle"></i> SINPE, PayPal o tarjeta</li>
-        </ul>
-        <a href="empleos" class="plan-cta">Elegir 30 días</a>
-      </div>
-
-      <div class="plan-card">
-        <span class="plan-badge badge-value">MEJOR VALOR</span>
-        <div class="plan-name">Plan 60 días</div>
-        <div class="plan-desc">Más tiempo para encontrar al indicado</div>
-        <div class="plan-price-block">
-          <span class="plan-price-main">$0,80</span>
-          <span class="plan-price-period">/ publicación</span>
-          <div class="plan-price-annual">aprox. ₡432 — ahorrás 20%</div>
-        </div>
-        <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Publicación activa 60 días</li>
-          <li><i class="fas fa-check-circle"></i> Hasta 4 fotos o imágenes</li>
-          <li><i class="fas fa-check-circle"></i> Visible en bolsa de empleos</li>
-          <li><i class="fas fa-check-circle"></i> Postulaciones por correo</li>
-          <li><i class="fas fa-check-circle"></i> SINPE, PayPal o tarjeta</li>
-        </ul>
-        <a href="empleos" class="plan-cta">Elegir 60 días</a>
-      </div>
-
+    <?php endforeach; ?>
     </div>
   </div>
 
@@ -456,62 +483,44 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
       </div>
     </div>
     <div class="plan-cards-row">
-
-      <div class="plan-card">
-        <span class="plan-badge badge-free">GRATIS</span>
-        <div class="plan-name">Prueba Gratis</div>
-        <div class="plan-desc">Probá sin comprometerte</div>
+    <?php foreach ($bienes_plans as $idx => $bp):
+        $is_free  = ((float)$bp['price_usd'] == 0 && (float)$bp['price_crc'] == 0);
+        $is_last  = ($idx === count($bienes_plans) - 1);
+        $featured = !empty($bp['is_featured']);
+        $days     = (int)$bp['duration_days'];
+        $usd      = (float)$bp['price_usd'];
+        $crc      = (float)$bp['price_crc'];
+        if ($crc == 0 && $usd > 0) $crc = round($usd * $exchange_rate);
+        $months   = $days >= 60 ? round($days / 30) : 0;
+    ?>
+      <div class="plan-card <?= $featured ? 'featured' : '' ?>">
+        <?php if ($is_free): ?>
+          <span class="plan-badge badge-free">GRATIS</span>
+        <?php elseif ($is_last): ?>
+          <span class="plan-badge badge-value">MEJOR VALOR</span>
+        <?php else: ?>
+          <span class="plan-badge badge-popular">POPULAR</span>
+        <?php endif; ?>
+        <div class="plan-name"><?= $is_free ? 'Prueba Gratis' : 'Plan ' . $days . ' días' ?></div>
+        <div class="plan-desc"><?= $is_free ? 'Probá sin comprometerte' : ($months >= 3 ? $months . ' meses de exposición, ahorrás un 33%' : 'Un mes de máxima visibilidad') ?></div>
         <div class="plan-price-block">
-          <span class="plan-price-main price-free">$0</span>
-          <span class="plan-price-period">/ 7 días</span>
+          <span class="plan-price-main <?= $is_free ? 'price-free' : '' ?>"><?= $is_free ? '$0' : fmt_usd($usd) ?></span>
+          <span class="plan-price-period">/ <?= $days ?> días</span>
+          <?php if (!$is_free && $crc > 0): ?>
+            <div class="plan-price-annual">aprox. <?= fmt_crc($crc) ?><?= $is_last ? ' — ahorrás 33%' : '' ?></div>
+          <?php endif; ?>
         </div>
         <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Publicación activa 7 días</li>
-          <li><i class="fas fa-check-circle"></i> Fotos del inmueble incluidas</li>
-          <li><i class="fas fa-check-circle"></i> Visible en catálogo</li>
-          <li><i class="fas fa-check-circle"></i> Contacto directo con interesados</li>
-        </ul>
-        <a href="bienes-raices" class="plan-cta">Publicar propiedad</a>
-      </div>
-
-      <div class="plan-card featured">
-        <span class="plan-badge badge-popular">POPULAR</span>
-        <div class="plan-name">Plan 30 días</div>
-        <div class="plan-desc">Un mes de máxima visibilidad</div>
-        <div class="plan-price-block">
-          <span class="plan-price-main">$1,00</span>
-          <span class="plan-price-period">/ publicación</span>
-          <div class="plan-price-annual">aprox. ₡540</div>
-        </div>
-        <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Publicación activa 30 días</li>
+          <li><i class="fas fa-check-circle"></i> Publicación activa <?= $days ?> días</li>
           <li><i class="fas fa-check-circle"></i> Galería de fotos del inmueble</li>
           <li><i class="fas fa-check-circle"></i> Mapa de ubicación integrado</li>
           <li><i class="fas fa-check-circle"></i> Visible en catálogo</li>
-          <li><i class="fas fa-check-circle"></i> SINPE, PayPal o tarjeta</li>
+          <?php if (!$is_free): ?><li><i class="fas fa-check-circle"></i> SINPE, PayPal o tarjeta</li><?php endif; ?>
+          <?php if ($months >= 3): ?><li><i class="fas fa-check-circle"></i> Máxima exposición — <?= $months ?> meses</li><?php endif; ?>
         </ul>
-        <a href="bienes-raices" class="plan-cta">Elegir 30 días</a>
+        <a href="bienes-raices" class="plan-cta"><?= $is_free ? 'Publicar propiedad' : 'Elegir ' . $days . ' días' ?></a>
       </div>
-
-      <div class="plan-card">
-        <span class="plan-badge badge-value">MEJOR VALOR</span>
-        <div class="plan-name">Plan 90 días</div>
-        <div class="plan-desc">3 meses de exposición, ahorrás un 33%</div>
-        <div class="plan-price-block">
-          <span class="plan-price-main">$2,00</span>
-          <span class="plan-price-period">/ publicación</span>
-          <div class="plan-price-annual">aprox. ₡1.080 — ahorrás 33%</div>
-        </div>
-        <ul class="plan-features">
-          <li><i class="fas fa-check-circle"></i> Publicación activa 90 días</li>
-          <li><i class="fas fa-check-circle"></i> Galería de fotos del inmueble</li>
-          <li><i class="fas fa-check-circle"></i> Mapa de ubicación integrado</li>
-          <li><i class="fas fa-check-circle"></i> Máxima exposición — 3 meses</li>
-          <li><i class="fas fa-check-circle"></i> SINPE, PayPal o tarjeta</li>
-        </ul>
-        <a href="bienes-raices" class="plan-cta">Elegir 90 días</a>
-      </div>
-
+    <?php endforeach; ?>
     </div>
   </div>
 
@@ -526,7 +535,7 @@ if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
       <span style="color:#2e77bc;">American Express</span>
     </div>
     <p style="margin-top:.75rem;font-size:.8rem;">
-      ¿Tenés dudas? <a href="https://wa.me/50688888888" style="color:#16a34a;font-weight:600;">Escribinos por WhatsApp</a>
+      ¿Tenés dudas? <a href="https://wa.me/<?= $wa_phone ?>" style="color:#16a34a;font-weight:600;">Escribinos por WhatsApp</a>
     </p>
   </div>
 
