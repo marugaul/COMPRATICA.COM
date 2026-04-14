@@ -455,6 +455,10 @@ logDebug("RENDERING_PAGE");
         <i class="fas fa-store"></i>
         Únete como Emprendedor/a
       </a>
+      <a href="#planes" class="btn-hero btn-hero-planes">
+        <i class="fas fa-tags"></i>
+        Ver Planes y Precios
+      </a>
     </div>
   </div>
 </section>
@@ -552,6 +556,121 @@ logDebug("RENDERING_PAGE");
       <div class="stat-number">100%</div>
       <div class="stat-label">Orgullo Nacional <span class="stat-flag emoji">🇨🇷</span></div>
     </div>
+  </div>
+</section>
+
+<!-- PLANES Y PRECIOS -->
+<section class="planes-section" id="planes">
+  <div class="section-header">
+    <h2 class="section-title">¿Querés vender en CompraTica?</h2>
+    <p class="section-subtitle">Elegí la modalidad que mejor se adapta a tu negocio. Todos los planes incluyen pagos seguros por SINPE, PayPal y tarjeta.</p>
+  </div>
+  <div class="planes-grid">
+
+    <!-- Emprendedores -->
+    <a href="emprendedoras-planes.php" class="plan-preview-card plan-card-emprendedor">
+      <div class="plan-preview-icon"><i class="fas fa-store"></i></div>
+      <div class="plan-preview-body">
+        <h3>Emprendedores</h3>
+        <p>Publicá tu tienda con productos y servicios. Desde gratis hasta planes sin comisiones.</p>
+        <div class="plan-preview-desde">
+          <span class="plan-preview-gratis">GRATIS</span>
+          <span class="plan-preview-sep">o desde</span>
+          <span class="plan-preview-price">₡9.900 / mes</span>
+        </div>
+        <ul class="plan-preview-items">
+          <li><i class="fas fa-check"></i> Hasta productos ilimitados</li>
+          <li><i class="fas fa-check"></i> Estadísticas de ventas</li>
+          <li><i class="fas fa-check"></i> Plan por comisión disponible</li>
+        </ul>
+      </div>
+      <div class="plan-preview-cta">Ver planes <i class="fas fa-arrow-right"></i></div>
+    </a>
+
+    <!-- Venta de Garaje -->
+    <a href="affiliate/register.php" class="plan-preview-card plan-card-garaje">
+      <div class="plan-preview-icon"><i class="fas fa-tags"></i></div>
+      <div class="plan-preview-body">
+        <h3>Venta de Garaje</h3>
+        <p>Abrí tu tienda de segunda mano en minutos. Sin cuota mensual, solo pagás cuando vendés.</p>
+        <div class="plan-preview-desde">
+          <span class="plan-preview-gratis">SIEMPRE GRATIS</span>
+        </div>
+        <ul class="plan-preview-items">
+          <li><i class="fas fa-check"></i> Tienda con URL propia</li>
+          <li><i class="fas fa-check"></i> Artículos ilimitados</li>
+          <li><i class="fas fa-check"></i> 10% comisión por venta</li>
+        </ul>
+      </div>
+      <div class="plan-preview-cta">Crear mi tienda <i class="fas fa-arrow-right"></i></div>
+    </a>
+
+    <!-- Servicios -->
+    <a href="servicios" class="plan-preview-card plan-card-servicios">
+      <div class="plan-preview-icon"><i class="fas fa-briefcase"></i></div>
+      <div class="plan-preview-body">
+        <h3>Servicios Profesionales</h3>
+        <p>Publicá tu servicio profesional y conectá con clientes de todo Costa Rica.</p>
+        <div class="plan-preview-desde">
+          <span class="plan-preview-gratis">7 días gratis</span>
+          <span class="plan-preview-sep">luego desde</span>
+          <span class="plan-preview-price">USD $0,75</span>
+        </div>
+        <ul class="plan-preview-items">
+          <li><i class="fas fa-check"></i> 30 días desde $0,75</li>
+          <li><i class="fas fa-check"></i> 60 días desde $1,25</li>
+          <li><i class="fas fa-check"></i> Fotos del servicio incluidas</li>
+        </ul>
+      </div>
+      <div class="plan-preview-cta">Publicar servicio <i class="fas fa-arrow-right"></i></div>
+    </a>
+
+    <!-- Empleos -->
+    <a href="empleos" class="plan-preview-card plan-card-empleos">
+      <div class="plan-preview-icon"><i class="fas fa-user-tie"></i></div>
+      <div class="plan-preview-body">
+        <h3>Empleos</h3>
+        <p>Publicá tu oferta laboral y encontrá al candidato ideal para tu empresa.</p>
+        <div class="plan-preview-desde">
+          <span class="plan-preview-gratis">14 días gratis</span>
+          <span class="plan-preview-sep">luego desde</span>
+          <span class="plan-preview-price">USD $0,50</span>
+        </div>
+        <ul class="plan-preview-items">
+          <li><i class="fas fa-check"></i> 30 días desde $0,50</li>
+          <li><i class="fas fa-check"></i> 60 días desde $0,80</li>
+          <li><i class="fas fa-check"></i> Postulaciones por correo</li>
+        </ul>
+      </div>
+      <div class="plan-preview-cta">Publicar empleo <i class="fas fa-arrow-right"></i></div>
+    </a>
+
+    <!-- Bienes Raíces -->
+    <a href="bienes-raices" class="plan-preview-card plan-card-bienes">
+      <div class="plan-preview-icon"><i class="fas fa-home"></i></div>
+      <div class="plan-preview-body">
+        <h3>Bienes Raíces</h3>
+        <p>Publicá tu propiedad en venta o alquiler y llegá a compradores en todo CR.</p>
+        <div class="plan-preview-desde">
+          <span class="plan-preview-gratis">7 días gratis</span>
+          <span class="plan-preview-sep">luego desde</span>
+          <span class="plan-preview-price">USD $1,00</span>
+        </div>
+        <ul class="plan-preview-items">
+          <li><i class="fas fa-check"></i> 30 días desde $1,00</li>
+          <li><i class="fas fa-check"></i> 90 días desde $2,00</li>
+          <li><i class="fas fa-check"></i> Mapa de ubicación incluido</li>
+        </ul>
+      </div>
+      <div class="plan-preview-cta">Publicar propiedad <i class="fas fa-arrow-right"></i></div>
+    </a>
+
+  </div>
+  <div style="text-align:center;margin-top:2rem;">
+    <p style="color:#6b7280;font-size:.9rem;">
+      <i class="fas fa-shield-alt" style="color:#667eea;margin-right:6px;"></i>
+      Todos los planes aceptan <strong>SINPE Móvil, PayPal, Visa, Mastercard y American Express</strong>
+    </p>
   </div>
 </section>
 
