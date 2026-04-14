@@ -368,6 +368,26 @@ function fmt_crc(float $v): string {
         <a href="affiliate/register.php" class="plan-cta">Crear mi tienda</a>
       </div>
 
+      <div class="plan-card">
+        <span class="plan-badge badge-flex">EXCLUSIVO</span>
+        <div class="plan-name">Espacio Privado</div>
+        <div class="plan-desc">Vendé solo a grupos o comunidades que vos invitás</div>
+        <div class="plan-price-block">
+          <span class="plan-price-main"><?= fmt_crc($sale_fee_crc) ?></span>
+          <span class="plan-price-period">/ mes</span>
+        </div>
+        <ul class="plan-features">
+          <li><i class="fas fa-check-circle"></i> Acceso solo por invitación</li>
+          <li><i class="fas fa-check-circle"></i> Control total de quién puede comprar</li>
+          <li><i class="fas fa-check-circle"></i> Ideal para empresas, grupos o comunidades</li>
+          <li><i class="fas fa-check-circle"></i> URL privada y personalizada</li>
+          <li><i class="fas fa-check-circle"></i> Todas las funciones del espacio estándar</li>
+          <li><i class="fas fa-check-circle"></i> Soporte dedicado de configuración</li>
+        </ul>
+        <a href="https://wa.me/<?= $wa_phone ?>" class="plan-cta">Consultar disponibilidad</a>
+        <p class="plan-note">Habilitación bajo solicitud</p>
+      </div>
+
     </div>
   </div>
 

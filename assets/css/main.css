@@ -488,13 +488,13 @@
     }
 
     .category-planes {
-      background-image: url('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&q=80');
+      background-image: url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80');
       background-size: cover;
-      background-position: center top;
+      background-position: center;
     }
 
     .category-planes::before {
-      background: linear-gradient(160deg, rgba(15, 23, 42, 0.72) 0%, rgba(30, 58, 138, 0.60) 50%, rgba(88, 28, 135, 0.55) 100%);
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.65) 0%, rgba(37, 99, 235, 0.50) 55%, rgba(88, 28, 135, 0.45) 100%);
     }
 
     /* ESTADÍSTICAS */
