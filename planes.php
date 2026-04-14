@@ -366,7 +366,6 @@ function fmt_crc(float $v): string {
           <li><i class="fas fa-check-circle"></i> Link directo por artículo</li>
         </ul>
         <a href="affiliate/register.php" class="plan-cta">Crear mi tienda</a>
-        <p class="plan-note">10% de comisión sobre cada venta procesada por CompraTica</p>
       </div>
 
     </div>
