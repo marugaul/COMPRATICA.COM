@@ -4,6 +4,24 @@ require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/affiliate_auth.php';
 require_once __DIR__ . '/../includes/live_cam.php';
 require_once __DIR__ . '/../includes/aff_chat_helpers.php';
+
+// Debug: loguear estado de sesión para diagnóstico de problemas de login
+$__affDbgLog = __DIR__ . '/../logs/affiliate_login_debug.log';
+@file_put_contents($__affDbgLog,
+    '[' . date('Y-m-d H:i:s') . '] DASHBOARD_SESSION_CHECK | ' .
+    json_encode([
+        'sid'         => session_id(),
+        'aff_id'      => $_SESSION['aff_id']    ?? null,
+        'aff_email'   => $_SESSION['aff_email']  ?? null,
+        'uid'         => $_SESSION['uid']        ?? null,
+        'session_keys'=> array_keys($_SESSION),
+        'save_path'   => session_save_path(),
+        'cookie_sent' => $_COOKIE['PHPSESSID']   ?? null,
+    ]) . PHP_EOL,
+    FILE_APPEND
+);
+unset($__affDbgLog);
+
 aff_require_login();
 $pdo = db();
 $aff_id = (int)$_SESSION['aff_id'];
