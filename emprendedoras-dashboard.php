@@ -3194,8 +3194,8 @@ $currentStep = $onboardingSteps[$currentStepIdx];
         // ── Fin avatar builder ─────────────────────────────────────────────
 
         function deleteProduct(productId) {
-            if (confirm('¿Estás segura de que quieres eliminar este producto?')) {
-                window.location.href = 'emprendedores-producto-eliminar.php?id=' + productId;
+            if (confirm('¿Querés eliminar este producto? Esta acción no se puede deshacer.')) {
+                window.location.href = '/emprendedores-producto-eliminar?id=' + productId;
             }
         }
 

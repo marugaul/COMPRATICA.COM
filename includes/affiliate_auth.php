@@ -87,20 +87,18 @@ function get_or_create_oauth_affiliate(string $email, string $name, string $prov
 }
 
 /**
- * Iniciar sesión como afiliado (solo sets aff_id/aff_name/aff_email — NO user_id).
+ * Iniciar sesión como afiliado.
+ * Escribe aff_id/aff_name/aff_email en la sesión existente SIN regenerar el ID
+ * ni destruir el archivo de sesión.  Esto evita que el inicio de sesión de afiliado
+ * cierre la sesión del sitio principal (uid/user_id) cuando ambas comparten PHPSESSID.
  */
 function login_affiliate(array $aff): void {
     if (session_status() === PHP_SESSION_NONE) session_start();
-    session_regenerate_id(true);
 
     $_SESSION['aff_id']    = (int)$aff['id'];
     $_SESSION['aff_name']  = (string)$aff['name'];
     $_SESSION['aff_email'] = (string)$aff['email'];
-
-    // Limpiar variables de otros sistemas para evitar confusión de sesión
-    unset($_SESSION['user_id'], $_SESSION['uid'], $_SESSION['agent_id'], $_SESSION['employer_id']);
-
-    session_write_close();
+    // Nota: se conservan uid/user_id para que el usuario siga logueado en el sitio principal
 }
 
 /**
