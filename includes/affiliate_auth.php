@@ -3,6 +3,17 @@
  * Autenticación de Afiliados (Venta de Garaje)
  * Sistema SEPARADO de emprendedoras/usuarios — usa tabla affiliates, no users.
  */
+// Configurar ruta de sesión ANTES de session_start
+// (debe coincidir con la lógica de affiliate/login.php para que la sesión persista entre páginas)
+if (session_status() === PHP_SESSION_NONE) {
+    $__affSessPath = __DIR__ . '/../sessions';
+    if (!is_dir($__affSessPath)) @mkdir($__affSessPath, 0755, true);
+    if (is_dir($__affSessPath) && is_writable($__affSessPath)) {
+        ini_set('session.save_path', $__affSessPath);
+    } else {
+        ini_set('session.save_path', '/tmp');
+    }
+}
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once __DIR__ . '/db.php';

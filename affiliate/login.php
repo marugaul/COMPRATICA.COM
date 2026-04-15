@@ -678,13 +678,6 @@ logDebug("RENDERING_LOGIN_FORM", ['has_error_msg' => !empty($msg)]);
       </button>
     </form>
 
-    <!-- Botón para limpiar cache -->
-    <div style="margin-top: 1rem; text-align: center;">
-      <a href="?clear_cache=1" class="link" style="font-size: 0.8rem; color: #6c757d;">
-        <i class="fas fa-sync-alt"></i> Limpiar caché del servidor
-      </a>
-    </div>
-
     <p class="small">
       ¿No tienes cuenta?
       <a href="register.php" class="link">Regístrate aquí</a>
