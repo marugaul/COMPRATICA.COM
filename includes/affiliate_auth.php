@@ -98,7 +98,11 @@ function login_affiliate(array $aff): void {
     $_SESSION['aff_id']    = (int)$aff['id'];
     $_SESSION['aff_name']  = (string)$aff['name'];
     $_SESSION['aff_email'] = (string)$aff['email'];
-    // Nota: se conservan uid/user_id para que el usuario siga logueado en el sitio principal
+    // Conservar uid/user_id para que el usuario siga logueado en el sitio principal.
+    // session_write_close() escribe el archivo en disco ANTES de que PHP envíe la
+    // respuesta HTTP — esto evita la condición de carrera en PHP-FPM donde el cliente
+    // puede llegar al dashboard antes de que el shutdown de PHP haya escrito la sesión.
+    session_write_close();
 }
 
 /**
