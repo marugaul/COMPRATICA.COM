@@ -11,8 +11,10 @@
  */
 
 require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/includes/image-moderation.php';
+
+$pdo = db();
 
 header('Content-Type: application/json');
 
@@ -23,14 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Verificar autenticación
-if (!isset($_SESSION['agent_id'])) {
+// Verificar autenticación — acepta agentes (agent_id) o usuarios regulares (uid/user_id)
+$agentId = (int)($_SESSION['agent_id'] ?? $_SESSION['uid'] ?? $_SESSION['user_id'] ?? 0);
+if ($agentId <= 0) {
     http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'No autenticado']);
     exit;
 }
-
-$agentId = (int)$_SESSION['agent_id'];
 
 // Verificar CSRF si está presente
 if (isset($_POST['csrf_token']) && $_POST['csrf_token'] !== ($_SESSION['csrf_token'] ?? '')) {
