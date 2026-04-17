@@ -19,13 +19,24 @@ echo "  → Serían eliminados (>14 días): $a_borrar\n";
 echo "  → Se conservarían (<14 días):  $recientes\n";
 echo "Publicados por clientes: $clientes\n\n";
 
-// Último log del cron
-$log = '/home/comprati/public_html/logs/cleanup_jobs.log';
+// Ejecutar limpieza si se pasa &run=1
+if (($_GET['run'] ?? '') === '1') {
+    $deleted = $pdo->exec(
+        "DELETE FROM job_listings
+         WHERE import_source IS NOT NULL
+           AND created_at < datetime('now', '-14 days')"
+    );
+    $entry = date('Y-m-d H:i:s') . " | cleanup_jobs MANUAL | eliminados={$deleted}\n";
+    $logDir = __DIR__ . '/../logs';
+    if (!is_dir($logDir)) mkdir($logDir, 0755, true);
+    file_put_contents($logDir . '/cleanup_jobs.log', $entry, FILE_APPEND);
+    echo "\n✅ Limpieza ejecutada: $deleted empleos eliminados.\n";
+}
+
+// Mostrar log local
+$log = __DIR__ . '/../logs/cleanup_jobs.log';
 if (file_exists($log)) {
-    echo "=== Últimas 5 ejecuciones del cron ===\n";
+    echo "\n=== Últimas ejecuciones ===\n";
     $lines = file($log);
-    echo implode('', array_slice($lines, -5));
-} else {
-    echo "⚠️  Log no encontrado en: $log\n";
-    echo "El cron aún no ha corrido o el log está en otra ruta.\n";
+    echo implode('', array_slice($lines, -10));
 }
