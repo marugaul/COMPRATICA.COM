@@ -60,6 +60,7 @@ $stmt = $pdo->prepare("
   LEFT JOIN real_estate_agents a ON a.id = l.agent_id
   WHERE l.id = ? AND l.is_active = 1
     AND (l.payment_status = 'free' OR l.payment_status = 'confirmed')
+    AND (l.end_date IS NULL OR l.end_date >= datetime('now'))
   LIMIT 1
 ");
 $stmt->execute([$listingId]);
