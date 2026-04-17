@@ -182,9 +182,15 @@ function processUpload($tmpName, $name, $type, $size, $error, $uploadDir, $allow
     }
 
     // Detectar MIME real desde el contenido del archivo (no confiar en $_FILES['type'])
-    $finfo    = finfo_open(FILEINFO_MIME_TYPE);
-    $realMime = finfo_file($finfo, $tmpName);
-    finfo_close($finfo);
+    // Fallback a getimagesize() si fileinfo no está disponible
+    if (function_exists('finfo_open')) {
+        $finfo    = finfo_open(FILEINFO_MIME_TYPE);
+        $realMime = finfo_file($finfo, $tmpName);
+        finfo_close($finfo);
+    } else {
+        $tempInfo = @getimagesize($tmpName);
+        $realMime = $tempInfo ? ($tempInfo['mime'] ?? 'application/octet-stream') : 'application/octet-stream';
+    }
 
     if (!in_array($realMime, $allowedTypes)) {
         return ['success' => false, 'error' => "Tipo de archivo no permitido: $name. Use JPG, PNG, GIF o WebP"];
