@@ -4,7 +4,7 @@ declare(strict_types=1);
 // =========================
 // Configuración general
 // =========================
-define('APP_NAME', 'VentaGaraje online');
+define('APP_NAME', 'CompraTica');
 define('BASE_URL', 'https://compratica.com');
 define('SITE_URL', 'https://compratica.com');
 define('SITE_EMAIL', 'info@compratica.com');

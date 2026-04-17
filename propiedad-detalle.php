@@ -752,7 +752,6 @@ $fullLocation = implode(', ', $locationParts);
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
 
-<script src="/assets/js/cart.js"></script>
 <script>
 function changeImage(thumbnail, index) {
   // Cambiar imagen principal
