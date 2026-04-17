@@ -19,13 +19,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Verificar autenticación — acepta agentes (agent_id) o usuarios regulares (uid/user_id)
+// Verificar autenticación — acepta agentes (agent_id), usuarios regulares (uid/user_id) o admin
 $agentId = (int)($_SESSION['agent_id'] ?? $_SESSION['uid'] ?? $_SESSION['user_id'] ?? 0);
-if ($agentId <= 0) {
+$isAdmin = !empty($_SESSION['is_admin']);
+if ($agentId <= 0 && !$isAdmin) {
     http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'No autenticado']);
     exit;
 }
+if ($agentId <= 0) $agentId = 999999; // pseudo-id para admin en nombres de archivo
 
 // Verificar CSRF si está presente
 if (isset($_POST['csrf_token']) && $_POST['csrf_token'] !== ($_SESSION['csrf_token'] ?? '')) {

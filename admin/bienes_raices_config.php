@@ -240,6 +240,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
     }
+
+    if ($action === 'update_listing') {
+        $listing_id = (int)($_POST['listing_id'] ?? 0);
+        if ($listing_id > 0) {
+            try {
+                $title           = trim($_POST['title'] ?? '');
+                $description     = trim($_POST['description'] ?? '');
+                $category_id     = (int)($_POST['category_id'] ?? 0);
+                $price           = (float)($_POST['price'] ?? 0);
+                $currency        = trim($_POST['currency'] ?? 'CRC');
+                $listing_type    = trim($_POST['listing_type'] ?? 'sale');
+                $province        = trim($_POST['province'] ?? '');
+                $canton          = trim($_POST['canton'] ?? '');
+                $district        = trim($_POST['district'] ?? '');
+                $location        = trim($_POST['location'] ?? '');
+                $bedrooms        = (int)($_POST['bedrooms'] ?? 0);
+                $bathrooms       = (int)($_POST['bathrooms'] ?? 0);
+                $area_m2         = (float)($_POST['area_m2'] ?? 0);
+                $parking_spaces  = (int)($_POST['parking_spaces'] ?? 0);
+                $contact_name    = trim($_POST['contact_name'] ?? '');
+                $contact_phone   = trim($_POST['contact_phone'] ?? '');
+                $contact_email   = trim($_POST['contact_email'] ?? '');
+                $contact_whatsapp = trim($_POST['contact_whatsapp'] ?? '');
+                $pricing_plan_id = (int)($_POST['pricing_plan_id'] ?? 0);
+                $payment_status  = trim($_POST['payment_status'] ?? 'confirmed');
+                $is_active       = isset($_POST['is_active']) ? 1 : 0;
+                $is_featured     = isset($_POST['is_featured']) ? 1 : 0;
+
+                // Características
+                $selected_features = $_POST['features'] ?? [];
+                $features_json = json_encode(array_values($selected_features));
+
+                // Imágenes: viene como JSON desde el hidden input
+                $images_raw = trim($_POST['listing_images_json'] ?? '[]');
+                $images_arr = json_decode($images_raw, true);
+                if (!is_array($images_arr)) $images_arr = [];
+                $images_json = json_encode(array_values($images_arr));
+
+                if (empty($title)) {
+                    $msg = "❌ El título es obligatorio";
+                    $msgType = 'error';
+                } else {
+                    $stmt = $pdo->prepare("
+                        UPDATE real_estate_listings SET
+                            title = ?,
+                            description = ?,
+                            category_id = ?,
+                            price = ?,
+                            currency = ?,
+                            listing_type = ?,
+                            province = ?,
+                            canton = ?,
+                            district = ?,
+                            location = ?,
+                            bedrooms = ?,
+                            bathrooms = ?,
+                            area_m2 = ?,
+                            parking_spaces = ?,
+                            contact_name = ?,
+                            contact_phone = ?,
+                            contact_email = ?,
+                            contact_whatsapp = ?,
+                            pricing_plan_id = ?,
+                            payment_status = ?,
+                            is_active = ?,
+                            is_featured = ?,
+                            features = ?,
+                            images = ?,
+                            updated_at = datetime('now')
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([
+                        $title, $description, $category_id, $price, $currency,
+                        $listing_type, $province, $canton, $district, $location,
+                        $bedrooms, $bathrooms, $area_m2, $parking_spaces,
+                        $contact_name, $contact_phone, $contact_email, $contact_whatsapp,
+                        $pricing_plan_id ?: null, $payment_status, $is_active, $is_featured,
+                        $features_json, $images_json,
+                        $listing_id
+                    ]);
+                    $msg = "✅ Publicación #{$listing_id} actualizada correctamente.";
+                    $msgType = 'success';
+                }
+            } catch (Exception $e) {
+                $msg = "❌ Error al actualizar: " . $e->getMessage();
+                $msgType = 'error';
+            }
+        }
+    }
 }
 
 // Cargar todos los planes
@@ -250,6 +339,23 @@ $plans = $pdo->query("
     FROM listing_pricing p
     ORDER BY display_order ASC, id ASC
 ")->fetchAll(PDO::FETCH_ASSOC);
+
+// Categorías de bienes raíces
+$br_categories = [];
+try {
+    $br_categories = $pdo->query("SELECT id, name FROM categories WHERE active=1 AND name LIKE 'BR:%' ORDER BY display_order ASC")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    error_log('[bienes_raices_config] Error cargando categorías: ' . $e->getMessage());
+}
+
+// Características disponibles (igual que en create/edit-listing)
+$available_features = [
+    'Piscina','Jardín','Terraza','Balcón','Aire Acondicionado',
+    'Calentador de Agua','Cocina Equipada','Línea Blanca','Amueblado',
+    'Seguridad 24/7','Portón Eléctrico','Cisterna','Tanque de Agua',
+    'Zona de Lavandería','Cuarto de Servicio','Área de BBQ','Gimnasio',
+    'Sala de Juegos','Oficina/Estudio','Walk-in Closet'
+];
 
 // Cargar publicaciones pendientes de pago
 $pending_listings = $pdo->query("
@@ -884,17 +990,18 @@ $all_listings = $pdo->query("
             </td>
             <td><small><?= date('d/m/Y', strtotime($l['created_at'])) ?></small></td>
             <td>
+              <button class="btn primary" onclick='openListingModal(<?= json_encode($l, JSON_UNESCAPED_UNICODE) ?>)' title="Editar"><i class="fas fa-edit"></i> Editar</button>
               <?php if ($isActive): ?>
                 <form method="post" style="display:inline" onsubmit="return confirm('¿Desactivar esta publicación?')">
                   <input type="hidden" name="action" value="deactivate_listing">
                   <input type="hidden" name="listing_id" value="<?= $l['id'] ?>">
-                  <button class="btn warning" type="submit" title="Desactivar"><i class="fas fa-pause"></i> Desactivar</button>
+                  <button class="btn warning" type="submit" title="Desactivar"><i class="fas fa-pause"></i></button>
                 </form>
               <?php else: ?>
                 <form method="post" style="display:inline" onsubmit="return confirm('¿Activar esta publicación?')">
                   <input type="hidden" name="action" value="activate_listing">
                   <input type="hidden" name="listing_id" value="<?= $l['id'] ?>">
-                  <button class="btn success" type="submit" title="Activar"><i class="fas fa-play"></i> Activar</button>
+                  <button class="btn success" type="submit" title="Activar"><i class="fas fa-play"></i></button>
                 </form>
               <?php endif; ?>
               <a href="/propiedad-detalle?id=<?= $l['id'] ?>" class="btn" target="_blank" title="Ver publicación" style="display:inline-flex;align-items:center;gap:.3rem;margin-left:.3rem"><i class="fas fa-eye"></i></a>
@@ -1005,6 +1112,205 @@ $all_listings = $pdo->query("
         </tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- Modal para editar publicación de bienes raíces -->
+<div class="modal" id="listingModal" style="z-index:1100">
+  <div class="modal-content" style="max-width:960px;width:96%">
+    <span class="modal-close" onclick="closeListingModal()">&times;</span>
+    <h2 style="margin-top:0;color:var(--primary)">
+      <i class="fas fa-home"></i> Editar Publicación <span id="lmTitle" style="font-size:.9em;color:var(--gray-600)"></span>
+    </h2>
+
+    <form method="post" id="listingForm" enctype="multipart/form-data">
+      <input type="hidden" name="action" value="update_listing">
+      <input type="hidden" name="listing_id" id="lmId">
+      <input type="hidden" name="listing_images_json" id="lmImagesJson" value="[]">
+
+      <!-- Sección: Información básica -->
+      <fieldset style="border:1px solid var(--gray-200);border-radius:8px;padding:1rem;margin-bottom:1rem">
+        <legend style="font-weight:600;color:var(--primary);padding:0 .5rem"><i class="fas fa-info-circle"></i> Información Básica</legend>
+        <div class="form-grid">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Título *</label>
+            <input class="input" type="text" name="title" id="lmTitleInput" required>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Descripción *</label>
+            <textarea class="input" name="description" id="lmDesc" rows="4" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Categoría</label>
+            <select class="input" name="category_id" id="lmCategory">
+              <option value="">— Seleccionar —</option>
+              <?php foreach ($br_categories as $cat): ?>
+                <option value="<?= $cat['id'] ?>"><?= h(preg_replace('/^BR:\s*/i', '', $cat['name'])) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tipo de operación</label>
+            <select class="input" name="listing_type" id="lmListingType">
+              <option value="sale">Venta</option>
+              <option value="rent">Alquiler</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Precio *</label>
+            <input class="input" type="number" name="price" id="lmPrice" min="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>Moneda</label>
+            <select class="input" name="currency" id="lmCurrency">
+              <option value="CRC">₡ Colones (CRC)</option>
+              <option value="USD">$ Dólares (USD)</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Sección: Ubicación -->
+      <fieldset style="border:1px solid var(--gray-200);border-radius:8px;padding:1rem;margin-bottom:1rem">
+        <legend style="font-weight:600;color:var(--primary);padding:0 .5rem"><i class="fas fa-map-marker-alt"></i> Ubicación</legend>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Provincia</label>
+            <select class="input" name="province" id="lmProvince">
+              <option value="">— Seleccionar —</option>
+              <?php foreach (['San José','Alajuela','Cartago','Heredia','Guanacaste','Puntarenas','Limón'] as $prov): ?>
+                <option value="<?= h($prov) ?>"><?= h($prov) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Cantón</label>
+            <input class="input" type="text" name="canton" id="lmCanton" placeholder="Ej: San José">
+          </div>
+          <div class="form-group">
+            <label>Distrito</label>
+            <input class="input" type="text" name="district" id="lmDistrict" placeholder="Ej: Escazú">
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Dirección / Referencia</label>
+            <input class="input" type="text" name="location" id="lmLocation" placeholder="Detalles de ubicación">
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Sección: Detalles de propiedad -->
+      <fieldset style="border:1px solid var(--gray-200);border-radius:8px;padding:1rem;margin-bottom:1rem">
+        <legend style="font-weight:600;color:var(--primary);padding:0 .5rem"><i class="fas fa-building"></i> Detalles de la Propiedad</legend>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Habitaciones</label>
+            <input class="input" type="number" name="bedrooms" id="lmBedrooms" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label>Baños</label>
+            <input class="input" type="number" name="bathrooms" id="lmBathrooms" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label>Área (m²)</label>
+            <input class="input" type="number" name="area_m2" id="lmArea" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-group">
+            <label>Parqueos</label>
+            <input class="input" type="number" name="parking_spaces" id="lmParking" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:1rem">
+          <label>Características</label>
+          <div style="display:flex;flex-wrap:wrap;gap:.5rem .75rem;margin-top:.4rem">
+            <?php foreach ($available_features as $feat): $fid = 'lmFeat_' . md5($feat); ?>
+              <label style="display:flex;align-items:center;gap:.35rem;cursor:pointer;font-size:.9rem">
+                <input type="checkbox" name="features[]" value="<?= h($feat) ?>" id="<?= $fid ?>">
+                <?= h($feat) ?>
+              </label>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Sección: Contacto -->
+      <fieldset style="border:1px solid var(--gray-200);border-radius:8px;padding:1rem;margin-bottom:1rem">
+        <legend style="font-weight:600;color:var(--primary);padding:0 .5rem"><i class="fas fa-address-card"></i> Información de Contacto</legend>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nombre contacto</label>
+            <input class="input" type="text" name="contact_name" id="lmContactName">
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input class="input" type="text" name="contact_phone" id="lmContactPhone">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input class="input" type="email" name="contact_email" id="lmContactEmail">
+          </div>
+          <div class="form-group">
+            <label>WhatsApp</label>
+            <input class="input" type="text" name="contact_whatsapp" id="lmContactWa">
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Sección: Imágenes -->
+      <fieldset style="border:1px solid var(--gray-200);border-radius:8px;padding:1rem;margin-bottom:1rem">
+        <legend style="font-weight:600;color:var(--primary);padding:0 .5rem"><i class="fas fa-images"></i> Imágenes</legend>
+        <div id="lmImageGrid" style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem"></div>
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <label class="btn primary" style="cursor:pointer;margin:0">
+            <i class="fas fa-upload"></i> Subir fotos
+            <input type="file" id="lmFileInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="display:none" onchange="lmUploadFiles(this)">
+          </label>
+          <span id="lmUploadStatus" style="font-size:.85rem;color:var(--gray-600)"></span>
+        </div>
+      </fieldset>
+
+      <!-- Sección: Configuración admin -->
+      <fieldset style="border:1px solid var(--gray-200);border-radius:8px;padding:1rem;margin-bottom:1rem">
+        <legend style="font-weight:600;color:var(--primary);padding:0 .5rem"><i class="fas fa-cog"></i> Configuración</legend>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Plan de precios</label>
+            <select class="input" name="pricing_plan_id" id="lmPricingPlan">
+              <option value="">— Sin plan —</option>
+              <?php foreach ($plans as $pl): ?>
+                <option value="<?= $pl['id'] ?>"><?= h($pl['name']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estado de pago</label>
+            <select class="input" name="payment_status" id="lmPaymentStatus">
+              <option value="confirmed">Confirmado</option>
+              <option value="free">Gratuito</option>
+              <option value="pending">Pendiente</option>
+              <option value="pending_review">En revisión</option>
+              <option value="rejected">Rechazado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label" style="margin-top:1.5rem">
+              <input type="checkbox" name="is_active" id="lmIsActive">
+              <strong>Publicación activa</strong>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label" style="margin-top:1.5rem">
+              <input type="checkbox" name="is_featured" id="lmIsFeatured">
+              <strong>Destacada</strong>
+            </label>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button class="btn primary" type="submit"><i class="fas fa-save"></i> Guardar Cambios</button>
+        <button class="btn" type="button" onclick="closeListingModal()"><i class="fas fa-times"></i> Cancelar</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -1156,6 +1462,131 @@ function filterListings() {
     tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 }
+
+/* ── Listing Edit Modal ── */
+let lmImages = []; // current images array
+
+function openListingModal(listing) {
+  lmImages = JSON.parse(listing.images || '[]') || [];
+
+  document.getElementById('lmId').value        = listing.id;
+  document.getElementById('lmTitle').textContent = '#' + listing.id;
+  document.getElementById('lmTitleInput').value = listing.title || '';
+  document.getElementById('lmDesc').value       = listing.description || '';
+  document.getElementById('lmPrice').value      = listing.price || 0;
+  document.getElementById('lmProvince').value   = listing.province || '';
+  document.getElementById('lmCanton').value     = listing.canton || '';
+  document.getElementById('lmDistrict').value   = listing.district || '';
+  document.getElementById('lmLocation').value   = listing.location || '';
+  document.getElementById('lmBedrooms').value   = listing.bedrooms || 0;
+  document.getElementById('lmBathrooms').value  = listing.bathrooms || 0;
+  document.getElementById('lmArea').value       = listing.area_m2 || 0;
+  document.getElementById('lmParking').value    = listing.parking_spaces || 0;
+  document.getElementById('lmContactName').value  = listing.contact_name || '';
+  document.getElementById('lmContactPhone').value = listing.contact_phone || '';
+  document.getElementById('lmContactEmail').value = listing.contact_email || '';
+  document.getElementById('lmContactWa').value    = listing.contact_whatsapp || '';
+  document.getElementById('lmIsActive').checked   = listing.is_active == 1;
+  document.getElementById('lmIsFeatured').checked = listing.is_featured == 1;
+
+  // Selects
+  const catSel = document.getElementById('lmCategory');
+  catSel.value = listing.category_id || '';
+
+  const typeSel = document.getElementById('lmListingType');
+  typeSel.value = listing.listing_type || 'sale';
+
+  const curSel = document.getElementById('lmCurrency');
+  curSel.value = listing.currency || 'CRC';
+
+  const planSel = document.getElementById('lmPricingPlan');
+  planSel.value = listing.pricing_plan_id || '';
+
+  const paySel = document.getElementById('lmPaymentStatus');
+  paySel.value = listing.payment_status || 'confirmed';
+
+  // Características
+  document.querySelectorAll('#listingModal input[name="features[]"]').forEach(cb => {
+    cb.checked = false;
+  });
+  const feats = JSON.parse(listing.features || '[]') || [];
+  feats.forEach(f => {
+    const cb = document.querySelector('#listingModal input[name="features[]"][value="' + CSS.escape(f) + '"]');
+    if (cb) cb.checked = true;
+  });
+
+  lmRenderImages();
+  document.getElementById('lmUploadStatus').textContent = '';
+  document.getElementById('listingModal').classList.add('active');
+}
+
+function closeListingModal() {
+  document.getElementById('listingModal').classList.remove('active');
+}
+
+function lmRenderImages() {
+  document.getElementById('lmImagesJson').value = JSON.stringify(lmImages);
+  const grid = document.getElementById('lmImageGrid');
+  grid.innerHTML = '';
+  if (lmImages.length === 0) {
+    grid.innerHTML = '<p style="color:var(--gray-600);font-size:.9rem">No hay imágenes.</p>';
+    return;
+  }
+  lmImages.forEach((url, idx) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;width:120px;height:90px;flex-shrink:0';
+    wrap.innerHTML = `
+      <img src="${url}" style="width:120px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--gray-300)" onerror="this.src='/assets/no-image.png'">
+      <button type="button" onclick="lmRemoveImage(${idx})"
+        style="position:absolute;top:3px;right:3px;background:rgba(231,76,60,.85);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:.8rem;line-height:1;display:flex;align-items:center;justify-content:center">
+        &times;
+      </button>`;
+    grid.appendChild(wrap);
+  });
+}
+
+function lmRemoveImage(idx) {
+  lmImages.splice(idx, 1);
+  lmRenderImages();
+}
+
+function lmUploadFiles(input) {
+  const status = document.getElementById('lmUploadStatus');
+  const files = Array.from(input.files);
+  if (!files.length) return;
+
+  status.textContent = 'Subiendo ' + files.length + ' imagen(es)...';
+  let pending = files.length;
+
+  files.forEach(file => {
+    const fd = new FormData();
+    fd.append('images[]', file);
+    fd.append('current_images_count', lmImages.length);
+
+    fetch('/real-estate/upload-image.php', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.images) {
+          data.images.forEach(u => lmImages.push(u));
+          lmRenderImages();
+        } else {
+          alert('Error al subir imagen: ' + (data.error || 'desconocido'));
+        }
+      })
+      .catch(() => alert('Error de conexión al subir imagen.'))
+      .finally(() => {
+        pending--;
+        if (pending === 0) status.textContent = 'Listo.';
+      });
+  });
+
+  input.value = ''; // reset so same file can be re-added
+}
+
+// Close listing modal on outside click
+document.getElementById('listingModal').addEventListener('click', function(e) {
+  if (e.target === this) closeListingModal();
+});
 </script>
 
 </body>
