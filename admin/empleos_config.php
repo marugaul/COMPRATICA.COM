@@ -188,8 +188,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             try {
                 $stmt = $pdo->prepare("
                     UPDATE job_listings
-                    SET payment_status = 'rejected',
-                        is_active = 0,
+                    SET is_active = 0,
+                        payment_rejected = 1,
                         updated_at = datetime('now')
                     WHERE id = ?
                 ");
@@ -226,7 +226,7 @@ $pending_listings = $pdo->query("
     FROM job_listings l
     LEFT JOIN job_pricing p ON l.pricing_plan_id = p.id
     LEFT JOIN users u ON l.employer_id = u.id
-    WHERE l.payment_status = 'pending'
+    WHERE l.payment_status = 'pending' AND (l.payment_rejected = 0 OR l.payment_rejected IS NULL)
     ORDER BY l.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
