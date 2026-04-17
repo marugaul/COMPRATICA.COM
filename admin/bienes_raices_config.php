@@ -1564,19 +1564,29 @@ function lmUploadFiles(input) {
     fd.append('current_images_count', lmImages.length);
 
     fetch('/real-estate/upload-image.php', { method: 'POST', body: fd })
-      .then(r => r.json())
+      .then(async r => {
+        const text = await r.text();
+        try {
+          return JSON.parse(text);
+        } catch(e) {
+          throw new Error('HTTP ' + r.status + ' — respuesta no-JSON: ' + text.substring(0, 200));
+        }
+      })
       .then(data => {
         if (data.success && data.images) {
           data.images.forEach(u => lmImages.push(u));
           lmRenderImages();
         } else {
-          alert('Error al subir imagen: ' + (data.error || 'desconocido'));
+          status.textContent = 'Error: ' + (data.error || 'desconocido');
         }
       })
-      .catch(() => alert('Error de conexión al subir imagen.'))
+      .catch(err => {
+        status.textContent = 'Error al subir: ' + err.message;
+        console.error('Upload error:', err);
+      })
       .finally(() => {
         pending--;
-        if (pending === 0) status.textContent = 'Listo.';
+        if (pending === 0 && !status.textContent.startsWith('Error')) status.textContent = 'Listo.';
       });
   });
 
