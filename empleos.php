@@ -2084,6 +2084,11 @@ if (empty($categories)) {
     <div class="jobs-grid">
       <?php foreach ($empleos as $job): ?>
         <div class="job-card" onclick="window.location.href='<?php echo clean_url_publicacion((int)$job['id'], $job['title'] ?? ''); ?>'">
+          <?php if (!empty($job['flyer_image'])): ?>
+            <div style="width:100%;height:180px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow:hidden;margin-bottom:1rem;">
+              <img src="<?php echo htmlspecialchars($job['flyer_image']); ?>" alt="Flyer" style="width:100%;height:100%;object-fit:cover;">
+            </div>
+          <?php endif; ?>
           <?php if ($job['company_logo']): ?>
             <img src="<?php echo htmlspecialchars($job['company_logo']); ?>" alt="Logo" class="job-logo">
           <?php else: ?>

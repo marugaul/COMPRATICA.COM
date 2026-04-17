@@ -413,6 +413,9 @@ function db() {
                 if(empty($haveJ['source_url'])) {
                     $pdo->exec("ALTER TABLE job_listings ADD COLUMN source_url TEXT DEFAULT NULL");
                 }
+                if(empty($haveJ['flyer_image'])) {
+                    $pdo->exec("ALTER TABLE job_listings ADD COLUMN flyer_image TEXT DEFAULT NULL");
+                }
             }
 
             if(!in_array('job_categories', $tables)){

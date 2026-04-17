@@ -494,6 +494,41 @@ $backUrl = $isJob ? '/empleos' : '/ofertas-servicios';
       padding: 2rem;
     }
 
+    .detail-body-layout {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .detail-flyer-sidebar {
+      position: sticky;
+      top: 1rem;
+    }
+
+    .detail-flyer-sidebar img {
+      width: 100%;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+    }
+
+    .detail-flyer-label {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--gray-500);
+      margin-top: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .detail-body-layout {
+        grid-template-columns: 1fr;
+      }
+      .detail-flyer-sidebar {
+        order: -1;
+        position: static;
+      }
+    }
+
     /* Descripción formateada profesionalmente */
     .formatted-description {
       line-height: 1.8;
@@ -1053,6 +1088,11 @@ $backUrl = $isJob ? '/empleos' : '/ofertas-servicios';
     </div>
 
     <div class="detail-body">
+    <?php $hasFlyerSidebar = !empty($publicacion['flyer_image']); ?>
+    <?php if ($hasFlyerSidebar): ?>
+    <div class="detail-body-layout">
+    <div class="detail-main">
+    <?php endif; ?>
       <?php if ($publicacion['description']): ?>
         <div class="detail-section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -1136,6 +1176,15 @@ $backUrl = $isJob ? '/empleos' : '/ofertas-servicios';
           </div>
         </div>
       <?php endif; ?>
+
+    <?php if ($hasFlyerSidebar): ?>
+    </div><!-- .detail-main -->
+    <aside class="detail-flyer-sidebar">
+      <img src="<?php echo htmlspecialchars($publicacion['flyer_image']); ?>" alt="Flyer promocional de <?php echo htmlspecialchars($publicacion['title']); ?>">
+      <p class="detail-flyer-label"><i class="fas fa-image"></i> Flyer Promocional</p>
+    </aside>
+    </div><!-- .detail-body-layout -->
+    <?php endif; ?>
 
       <div class="contact-section">
         <h2>

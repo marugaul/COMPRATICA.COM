@@ -227,6 +227,7 @@ try {
             jl.is_active,
             jl.is_featured,
             jl.image_1,
+            jl.flyer_image,
             'job_listings' as source_table
         FROM job_listings jl
         INNER JOIN users u ON u.id = jl.employer_id
@@ -1772,9 +1773,12 @@ logDebug("RENDERING_PAGE", ['services_count' => count($servicios)]);
             </div>
           <?php endif; ?>
 
-          <?php if ($service['image_1'] ?? null): ?>
+          <?php
+            $cardImg = $service['flyer_image'] ?? ($service['image_1'] ?? null);
+          ?>
+          <?php if ($cardImg): ?>
             <div style="width: 100%; height: 200px; margin-bottom: 1.5rem; border-radius: var(--radius); overflow: hidden;">
-              <img src="<?php echo htmlspecialchars($service['image_1'] ?? ''); ?>" alt="<?php echo htmlspecialchars($service['title'] ?? ''); ?>" style="width: 100%; height: 100%; object-fit: cover;">
+              <img src="<?php echo htmlspecialchars($cardImg); ?>" alt="<?php echo htmlspecialchars($service['title'] ?? ''); ?>" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
           <?php else: ?>
             <div class="category-icon">
