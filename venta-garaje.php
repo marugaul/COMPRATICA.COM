@@ -1844,8 +1844,8 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
 
 <div class="container">
   <div class="page-header">
-    <h1>Espacios de Venta de Garaje</h1>
-    <p class="subtitle">Descubrí ventas de garaje activas y próximas cerca de ti. Tesoros únicos a precios increíbles</p>
+    <h1>Venta de Garaje en Costa Rica — Artículos de Segunda Mano</h1>
+    <p class="subtitle">Descubrí ventas de garaje activas cerca de vos. Ropa, muebles, electrónica y más a precios increíbles</p>
   </div>
 
   <!-- ETAPA 1: FILTROS Y BÚSQUEDA -->
@@ -2216,6 +2216,47 @@ logDebug("RENDERING_PAGE", ['sales_count' => count($sales)]);
     <?php endif; ?>
   </div>
 </div>
+
+<!-- SEO: Bloque de contenido para posicionamiento en Google -->
+<section style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:48px 0 40px;">
+  <div style="max-width:1200px;margin:0 auto;padding:0 2rem;">
+
+    <h2 style="font-size:1.5rem;font-weight:700;color:#1e3a5f;margin-bottom:1rem;">
+      Venta de Garaje en Costa Rica — Comprá y Vendé Artículos de Segunda Mano
+    </h2>
+    <p style="color:#4a5568;line-height:1.8;margin-bottom:1.5rem;max-width:800px;">
+      En CompraTica encontrás <strong>ventas de garaje en Costa Rica</strong> con ropa usada, muebles,
+      electrodomésticos, juguetes, libros, tecnología y mucho más a precios increíbles.
+      Podés comprar con <strong>SINPE Móvil</strong> de forma rápida y segura.
+      ¿Querés vender lo que ya no usás? <a href="/affiliate/login.php" style="color:#2563eb;font-weight:600;">Publicá tu venta de garaje gratis</a>.
+    </p>
+
+    <h3 style="font-size:1.1rem;font-weight:700;color:#1e3a5f;margin-bottom:0.75rem;">
+      ¿Qué podés encontrar en las ventas de garaje?
+    </h3>
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.5rem;">
+      <?php
+      $categoriasSEO = [
+        'Ropa y accesorios','Muebles y decoración','Electrodomésticos',
+        'Tecnología y electrónica','Juguetes y juegos','Libros y música',
+        'Herramientas','Artículos de bebé','Deporte y fitness','Otros artículos'
+      ];
+      foreach ($categoriasSEO as $cat):
+      ?>
+      <span style="display:inline-block;background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:6px 14px;color:#374151;font-size:0.85rem;">
+        <?= htmlspecialchars($cat) ?>
+      </span>
+      <?php endforeach; ?>
+    </div>
+
+    <p style="color:#718096;font-size:0.875rem;line-height:1.7;">
+      Las ventas de garaje en CompraTica pueden ser <strong>públicas o privadas</strong> (con código de acceso).
+      También podés activar el modo <strong>en vivo</strong> para transmitir tus artículos en tiempo real.
+      Pagos por SINPE Móvil y PayPal. 100% costarricense.
+    </p>
+
+  </div>
+</section>
 
 <footer class="site-footer">
   <div class="footer-content">
