@@ -168,15 +168,19 @@ function processUpload($tmpName, $name, $type, $size, $error, $uploadDir, $allow
         return ['success' => false, 'error' => "Error al subir archivo: $name (código: $error)"];
     }
 
-    // Verificar tipo
-    if (!in_array($type, $allowedTypes)) {
-        return ['success' => false, 'error' => "Tipo de archivo no permitido: $name. Use JPG, PNG, GIF o WebP"];
-    }
-
     // Verificar tamaño
     if ($size > $maxFileSize) {
         $maxMB = $maxFileSize / 1024 / 1024;
         return ['success' => false, 'error' => "Archivo muy grande: $name. Máximo {$maxMB}MB"];
+    }
+
+    // Detectar MIME real desde el contenido del archivo (no confiar en $_FILES['type'])
+    $finfo    = finfo_open(FILEINFO_MIME_TYPE);
+    $realMime = finfo_file($finfo, $tmpName);
+    finfo_close($finfo);
+
+    if (!in_array($realMime, $allowedTypes)) {
+        return ['success' => false, 'error' => "Tipo de archivo no permitido: $name. Use JPG, PNG, GIF o WebP"];
     }
 
     // Validar que sea una imagen real
@@ -189,7 +193,6 @@ function processUpload($tmpName, $name, $type, $size, $error, $uploadDir, $allow
     $moderationResult = $moderator->validateImage($tmpName);
 
     if (!$moderationResult['approved']) {
-        // Log del intento de subir contenido inapropiado
         error_log("Imagen rechazada por moderación - Agente: $agentId - Archivo: $name - Razón: {$moderationResult['reason']}");
 
         return [
@@ -198,8 +201,9 @@ function processUpload($tmpName, $name, $type, $size, $error, $uploadDir, $allow
         ];
     }
 
-    // Generar nombre único
-    $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    // Derivar extensión desde el MIME real (nunca del nombre original)
+    $mimeExtMap = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+    $extension  = $mimeExtMap[$realMime] ?? 'jpg';
     $newFilename = uniqid('img_' . $agentId . '_') . '.' . $extension;
     $targetPath = $uploadDir . $newFilename;
 
