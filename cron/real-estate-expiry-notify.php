@@ -12,6 +12,7 @@
 
 define('CRON_CONTEXT', true);
 date_default_timezone_set('America/Costa_Rica');
+$GLOBALS['_year'] = date('Y');
 
 $rootDir = __DIR__ . '/..';
 require_once $rootDir . '/includes/db.php';
@@ -321,5 +322,3 @@ function email_template_expired(string $name, string $title, string $endDate, st
 </html>
 HTML;
 }
-
-$GLOBALS['_year'] = date('Y');
