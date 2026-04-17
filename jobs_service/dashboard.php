@@ -367,8 +367,13 @@ foreach ($listings as $listing) {
 </head>
 <body>
   <div class="header">
-    <h1><i class="fas fa-briefcase"></i> Panel de Empleos y Servicios</h1>
+    <a href="https://compratica.com" style="text-decoration:none;display:flex;align-items:center;gap:0.5rem;">
+      <h1><i class="fas fa-briefcase"></i> Panel de Empleos y Servicios</h1>
+    </a>
     <div class="user-info">
+      <a href="https://compratica.com" class="btn btn-secondary" title="Ir al sitio principal">
+        <i class="fas fa-home"></i> Inicio
+      </a>
       <span><i class="fas fa-user"></i> <?php echo htmlspecialchars($employer_name); ?></span>
       <a href="logout.php" class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i> Salir</a>
     </div>
