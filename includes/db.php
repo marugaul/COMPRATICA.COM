@@ -1015,6 +1015,8 @@ function db() {
                     $pdo->exec("ALTER TABLE listing_pricing ADD COLUMN payment_methods TEXT");
                 if (!in_array('max_photos', $lpCols))
                     $pdo->exec("ALTER TABLE listing_pricing ADD COLUMN max_photos INTEGER DEFAULT 3");
+                if (!in_array('applies_to', $lpCols))
+                    $pdo->exec("ALTER TABLE listing_pricing ADD COLUMN applies_to TEXT DEFAULT 'both'");
             } catch (Throwable $_e) {}
 
             // Insertar T&C iniciales si no existen

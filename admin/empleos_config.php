@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } elseif ($id > 0) {
             try {
                 $stmt = $pdo->prepare("
-                    UPDATE job_pricing
+                    UPDATE listing_pricing
                     SET name = ?,
                         duration_days = ?,
                         price_usd = ?,
@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } else {
             try {
                 $stmt = $pdo->prepare("
-                    INSERT INTO job_pricing
+                    INSERT INTO listing_pricing
                     (name, duration_days, price_usd, price_crc, max_photos, payment_methods, is_active, is_featured, description, display_order, applies_to, created_at, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
                 ");
@@ -149,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $msg = "❌ No se puede eliminar este plan porque hay {$count} publicación(es) activas usando este plan";
                     $msgType = 'error';
                 } else {
-                    $stmt = $pdo->prepare("DELETE FROM job_pricing WHERE id = ?");
+                    $stmt = $pdo->prepare("DELETE FROM listing_pricing WHERE id = ?");
                     $stmt->execute([$id]);
                     $msg = "✅ Plan eliminado correctamente";
                     $msgType = 'success';
@@ -209,7 +209,7 @@ $plans = $pdo->query("
     SELECT
         p.*,
         (SELECT COUNT(*) FROM job_listings WHERE pricing_plan_id = p.id) as listings_count
-    FROM job_pricing p
+    FROM listing_pricing p
     ORDER BY display_order ASC, id ASC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -224,7 +224,7 @@ $pending_listings = $pdo->query("
         u.name as employer_name,
         u.email as employer_email
     FROM job_listings l
-    LEFT JOIN job_pricing p ON l.pricing_plan_id = p.id
+    LEFT JOIN listing_pricing p ON l.pricing_plan_id = p.id
     LEFT JOIN users u ON l.employer_id = u.id
     WHERE l.payment_status = 'pending' AND (l.payment_rejected = 0 OR l.payment_rejected IS NULL)
     ORDER BY l.created_at DESC

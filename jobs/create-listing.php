@@ -30,7 +30,7 @@ $job_categories = array_filter($categories, fn($c) => str_starts_with($c['name']
 $service_categories = array_filter($categories, fn($c) => str_starts_with($c['name'], 'SERV:'));
 
 // Cargar planes de precios
-$planStmt = $pdo->query("SELECT * FROM job_pricing WHERE is_active=1 ORDER BY display_order ASC");
+$planStmt = $pdo->query("SELECT * FROM listing_pricing WHERE is_active=1 ORDER BY display_order ASC");
 $pricing_plans = $planStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Procesar formulario
@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Obtener detalles del plan
-    $planStmt = $pdo->prepare("SELECT * FROM job_pricing WHERE id = ? LIMIT 1");
+    $planStmt = $pdo->prepare("SELECT * FROM listing_pricing WHERE id = ? LIMIT 1");
     $planStmt->execute([$pricing_plan_id]);
     $plan = $planStmt->fetch(PDO::FETCH_ASSOC);
 
