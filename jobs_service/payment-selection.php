@@ -24,12 +24,12 @@ if ($listing_id <= 0) {
   exit;
 }
 
-// Obtener información de la publicación y el plan (solo empleos)
+// Obtener información de la publicación y el plan
 $stmt = $pdo->prepare("
   SELECT l.*, p.name as plan_name, p.price_usd, p.price_crc, p.payment_methods, p.duration_days
   FROM job_listings l
   LEFT JOIN job_pricing p ON l.pricing_plan_id = p.id
-  WHERE l.id = ? AND l.employer_id = ? AND l.listing_type = 'job'
+  WHERE l.id = ? AND l.employer_id = ? AND l.listing_type IN ('job', 'service')
   LIMIT 1
 ");
 $stmt->execute([$listing_id, $employer_id]);
@@ -474,7 +474,7 @@ $has_paypal = in_array('paypal', $payment_methods);
             },
             body: JSON.stringify({
               listing_id: <?= $listing_id ?>,
-              listing_type: 'job',
+              listing_type: '<?= htmlspecialchars($listing['listing_type']) ?>',
               paypal_order_id: data.orderID,
               payer_email: details.payer.email_address,
               amount: <?= $listing['price_usd'] ?>
@@ -522,7 +522,7 @@ $has_paypal = in_array('paypal', $payment_methods);
       const formData = new FormData();
       formData.append('receipt', file);
       formData.append('listing_id', '<?= $listing_id ?>');
-      formData.append('listing_type', 'job');
+      formData.append('listing_type', '<?= htmlspecialchars($listing['listing_type']) ?>');
 
       const uploadArea = document.querySelector('.upload-section');
       uploadArea.innerHTML = '<p style="text-align:center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Subiendo comprobante...</p>';
