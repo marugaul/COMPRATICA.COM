@@ -1,14 +1,7 @@
 <?php
-/**
- * API Endpoint para subir imágenes
- *
- * Características:
- * - Soporta múltiples archivos
- * - Validación de tipo y tamaño
- * - Moderación de contenido (pornografía, violencia, etc.)
- * - Límites por plan de usuario
- * - Genera nombres únicos
- */
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+ob_start();
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
@@ -16,6 +9,7 @@ require_once __DIR__ . '/includes/image-moderation.php';
 
 $pdo = db();
 
+ob_clean(); // discard any stray output from includes
 header('Content-Type: application/json');
 
 // Solo permitir POST
@@ -53,7 +47,7 @@ if ($pricingPlanId > 0) {
         if ($plan && isset($plan['max_photos'])) {
             $maxPhotos = (int)$plan['max_photos'];
         }
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         error_log('[upload-image.php] Error al obtener límite de fotos: ' . $e->getMessage());
     }
 }

@@ -398,6 +398,9 @@ function db() {
                 if(empty($haveJ['payment_date'])) {
                     $pdo->exec("ALTER TABLE job_listings ADD COLUMN payment_date TEXT");
                 }
+                if(empty($haveJ['payment_rejected'])) {
+                    $pdo->exec("ALTER TABLE job_listings ADD COLUMN payment_rejected INTEGER DEFAULT 0");
+                }
 
                 // Crear índices si no existen
                 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_job_listings_pricing_plan ON job_listings(pricing_plan_id)");
@@ -1010,6 +1013,8 @@ function db() {
                 $lpCols = array_column($pdo->query("PRAGMA table_info(listing_pricing)")->fetchAll(PDO::FETCH_ASSOC), 'name');
                 if (!in_array('payment_methods', $lpCols))
                     $pdo->exec("ALTER TABLE listing_pricing ADD COLUMN payment_methods TEXT");
+                if (!in_array('max_photos', $lpCols))
+                    $pdo->exec("ALTER TABLE listing_pricing ADD COLUMN max_photos INTEGER DEFAULT 3");
             } catch (Throwable $_e) {}
 
             // Insertar T&C iniciales si no existen
