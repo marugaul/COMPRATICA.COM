@@ -449,10 +449,17 @@ foreach ($listings as $listing) {
                 <span><i class="fas fa-calendar"></i> <?php echo date('d/m/Y', strtotime($listing['created_at'])); ?></span>
               </div>
             </div>
-            <div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
               <a href="edit-listing.php?id=<?php echo $listing['id']; ?>" class="btn btn-secondary">
                 <i class="fas fa-edit"></i>
                 Editar
+              </a>
+              <a href="delete-listing.php?id=<?php echo $listing['id']; ?>"
+                 class="btn"
+                 style="background:#e74c3c;"
+                 onclick="return confirm('¿Seguro que querés eliminar esta publicación? Esta acción no se puede deshacer.')">
+                <i class="fas fa-trash"></i>
+                Eliminar
               </a>
             </div>
           </div>

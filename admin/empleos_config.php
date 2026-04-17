@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($id > 0) {
             try {
                 // Verificar si hay publicaciones usando este plan
-                $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM real_estate_listings WHERE pricing_plan_id = ?");
+                $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM job_listings WHERE pricing_plan_id = ?");
                 $stmt->execute([$id]);
                 $count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
 
@@ -166,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($listing_id > 0) {
             try {
                 $stmt = $pdo->prepare("
-                    UPDATE real_estate_listings
+                    UPDATE job_listings
                     SET payment_status = 'confirmed',
                         is_active = 1,
                         updated_at = datetime('now')
@@ -187,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($listing_id > 0) {
             try {
                 $stmt = $pdo->prepare("
-                    UPDATE real_estate_listings
+                    UPDATE job_listings
                     SET payment_status = 'rejected',
                         is_active = 0,
                         updated_at = datetime('now')
@@ -208,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 $plans = $pdo->query("
     SELECT
         p.*,
-        (SELECT COUNT(*) FROM real_estate_listings WHERE pricing_plan_id = p.id) as listings_count
+        (SELECT COUNT(*) FROM job_listings WHERE pricing_plan_id = p.id) as listings_count
     FROM job_pricing p
     ORDER BY display_order ASC, id ASC
 ")->fetchAll(PDO::FETCH_ASSOC);
@@ -221,12 +221,11 @@ $pending_listings = $pdo->query("
         p.price_usd,
         p.price_crc,
         p.payment_methods,
-        a.name as agent_name,
-        a.email as agent_email,
-        a.phone as agent_phone
-    FROM real_estate_listings l
+        u.name as employer_name,
+        u.email as employer_email
+    FROM job_listings l
     LEFT JOIN job_pricing p ON l.pricing_plan_id = p.id
-    LEFT JOIN real_estate_agents a ON l.agent_id = a.id
+    LEFT JOIN users u ON l.employer_id = u.id
     WHERE l.payment_status = 'pending'
     ORDER BY l.created_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
@@ -678,13 +677,19 @@ $pending_listings = $pdo->query("
             <td><strong><?= $listing['id'] ?></strong></td>
             <td>
               <strong><?= h($listing['title']) ?></strong>
+              <br>
+              <?php if ($listing['listing_type'] === 'job'): ?>
+                <span class="badge info" style="font-size:0.75rem;">Empleo</span>
+              <?php else: ?>
+                <span class="badge warning" style="font-size:0.75rem;">Servicio</span>
+              <?php endif; ?>
               <br><small style="color: var(--gray-600);"><?= h(substr($listing['description'] ?? '', 0, 50)) ?>...</small>
             </td>
             <td>
-              <strong><?= h($listing['agent_name']) ?></strong>
-              <br><small style="color: var(--gray-600);"><?= h($listing['agent_email']) ?></small>
-              <?php if ($listing['agent_phone']): ?>
-                <br><small style="color: var(--gray-600);"><i class="fas fa-phone"></i> <?= h($listing['agent_phone']) ?></small>
+              <strong><?= h($listing['employer_name'] ?? $listing['contact_name'] ?? '—') ?></strong>
+              <br><small style="color: var(--gray-600);"><?= h($listing['employer_email'] ?? $listing['contact_email'] ?? '') ?></small>
+              <?php if (!empty($listing['contact_phone'])): ?>
+                <br><small style="color: var(--gray-600);"><i class="fas fa-phone"></i> <?= h($listing['contact_phone']) ?></small>
               <?php endif; ?>
             </td>
             <td>
@@ -724,7 +729,7 @@ $pending_listings = $pdo->query("
                   <i class="fas fa-times"></i> Rechazar
                 </button>
               </form>
-              <a href="../propiedad-detalle?id=<?= $listing['id'] ?>" class="btn" target="_blank" title="Ver publicación" style="display: inline-flex; align-items: center; margin-left: 0.5rem;">
+              <a href="../jobs_service/edit-listing.php?id=<?= $listing['id'] ?>" class="btn" target="_blank" title="Ver publicación" style="display: inline-flex; align-items: center; margin-left: 0.5rem;">
                 <i class="fas fa-eye"></i>
               </a>
             </td>
