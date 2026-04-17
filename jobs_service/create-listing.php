@@ -29,9 +29,21 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $job_categories = array_filter($categories, fn($c) => str_starts_with($c['name'], 'EMP:'));
 $service_categories = array_filter($categories, fn($c) => str_starts_with($c['name'], 'SERV:'));
 
-// Cargar planes de precios (todos activos; JS filtrará por tipo)
-$planStmt = $pdo->query("SELECT *, COALESCE(applies_to,'both') AS applies_to FROM listing_pricing WHERE is_active=1 ORDER BY display_order ASC");
-$pricing_plans = $planStmt->fetchAll(PDO::FETCH_ASSOC);
+// Cargar planes de precios — usar SELECT * para compatibilidad si applies_to aún no existe
+$pricing_plans = [];
+try {
+    $pricing_plans = $pdo->query("SELECT * FROM listing_pricing WHERE is_active=1 ORDER BY display_order ASC")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($pricing_plans as &$p) {
+        $p['applies_to'] = (!isset($p['applies_to']) || $p['applies_to'] === null || $p['applies_to'] === '') ? 'both' : $p['applies_to'];
+    }
+    unset($p);
+} catch (Throwable $e) {
+    error_log('[create-listing.php] Error cargando planes: ' . $e->getMessage());
+}
+
+// Capturar tipo previo para sticky form (antes de procesar POST)
+$prev_listing_type = $_POST['listing_type'] ?? 'job';
+if (!in_array($prev_listing_type, ['job', 'service'])) $prev_listing_type = 'job';
 
 // Procesar formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -451,16 +463,16 @@ $provincias = [
       <div class="card">
         <h2 style="margin-bottom: 1rem;">¿Qué querés publicar?</h2>
         <div class="type-selector">
-          <label class="type-option active" data-type="job">
-            <input type="radio" name="listing_type" value="job" checked>
+          <label class="type-option <?php echo $prev_listing_type === 'job' ? 'active' : ''; ?>" data-type="job">
+            <input type="radio" name="listing_type" value="job" <?php echo $prev_listing_type === 'job' ? 'checked' : ''; ?>>
             <div>
               <i class="fas fa-briefcase"></i>
               <h3>Empleo</h3>
               <p class="help-text">Oferta de trabajo</p>
             </div>
           </label>
-          <label class="type-option" data-type="service">
-            <input type="radio" name="listing_type" value="service">
+          <label class="type-option <?php echo $prev_listing_type === 'service' ? 'active' : ''; ?>" data-type="service">
+            <input type="radio" name="listing_type" value="service" <?php echo $prev_listing_type === 'service' ? 'checked' : ''; ?>>
             <div>
               <i class="fas fa-tools"></i>
               <h3>Servicio</h3>
@@ -694,6 +706,9 @@ $provincias = [
               <?php endif; ?>
             </label>
           <?php endforeach; ?>
+          <?php if (empty($pricing_plans)): ?>
+            <p style="color:#e74c3c;font-weight:600"><i class="fas fa-exclamation-triangle"></i> No hay planes disponibles. Contactá al administrador.</p>
+          <?php endif; ?>
         </div>
         <p class="help-text"><i class="fas fa-info-circle"></i> Los planes de pago se activan al confirmar el pago via SINPE Móvil o PayPal. Podés empezar gratis sin compromiso.</p>
       </div>
@@ -774,8 +789,16 @@ $provincias = [
       });
     });
 
-    // Aplicar filtro inicial (job por defecto)
-    filterPlans('job');
+    // Aplicar filtro inicial según tipo seleccionado (respeta sticky form)
+    const initialType = document.querySelector('.type-option.active')?.dataset.type || 'job';
+    filterPlans(initialType);
+    // Mostrar secciones correctas según tipo inicial
+    if (initialType === 'service') {
+      jobSpecific?.classList.add('hidden');
+      serviceSpecific?.classList.remove('hidden');
+      jobCategories?.classList.add('hidden');
+      serviceCategories?.classList.remove('hidden');
+    }
 
     // Selección de planes
     const planOptions = document.querySelectorAll('.plan-option');
