@@ -26,8 +26,8 @@ if ($listing_id <= 0) {
   exit;
 }
 
-// Obtener publicación (solo empleos)
-$stmt = $pdo->prepare("SELECT * FROM job_listings WHERE id = ? AND employer_id = ? AND listing_type = 'job'");
+// Obtener publicación (empleos y servicios)
+$stmt = $pdo->prepare("SELECT * FROM job_listings WHERE id = ? AND employer_id = ? AND listing_type IN ('job', 'service')");
 $stmt->execute([$listing_id, $employer_id]);
 $listing = $stmt->fetch(PDO::FETCH_ASSOC);
 
