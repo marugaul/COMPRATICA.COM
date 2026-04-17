@@ -169,22 +169,11 @@ if (PHP_VERSION_ID < 70300) {
 
 // Obtener empleos activos con filtros
 $pdo = db();
-$empleos = [];
-$filters = [];
-$params = [];
-
-// Construir query con filtros
-$baseQuery = "
-    SELECT
-        jl.*,
-        u.company_name,
-        u.company_logo
-    FROM job_listings jl
-    LEFT JOIN users u ON u.id = jl.employer_id
-    WHERE jl.listing_type = 'job'
-      AND jl.is_active = 1
-      AND (u.status = 'active' OR jl.import_source IS NOT NULL)
-";
+$empleos      = [];
+$filters      = [];
+$params       = [];
+$perPage      = 30;
+$page         = max(1, (int)($_GET['page'] ?? 1));
 
 // Filtro de búsqueda por texto
 $search = trim($_GET['q'] ?? '');
@@ -206,13 +195,10 @@ if ($jobType && in_array($jobType, ['full-time', 'part-time', 'freelance', 'cont
 // Filtro por modalidad (remoto/presencial/híbrida)
 $remote = $_GET['remote'] ?? '';
 if ($remote === 'yes') {
-    // Remoto: puede ser remote_allowed=1 O job_type='remote'
     $filters[] = "(jl.remote_allowed = 1 OR jl.job_type = 'remote')";
 } elseif ($remote === 'no') {
-    // Presencial: puede ser remote_allowed=0 O job_type='onsite'
     $filters[] = "(jl.remote_allowed = 0 OR jl.job_type = 'onsite')";
 } elseif ($remote === 'hybrid') {
-    // Híbrida: solo job_type='hybrid'
     $filters[] = "jl.job_type = 'hybrid'";
 }
 
@@ -237,15 +223,33 @@ if ($company) {
     $params[] = $company;
 }
 
-// Agregar filtros al query
+$baseJoin  = "FROM job_listings jl LEFT JOIN users u ON u.id = jl.employer_id";
+$baseWhere = "WHERE jl.listing_type = 'job' AND jl.is_active = 1 AND (u.status = 'active' OR jl.import_source IS NOT NULL)";
 if (!empty($filters)) {
-    $baseQuery .= " AND " . implode(" AND ", $filters);
+    $baseWhere .= " AND " . implode(" AND ", $filters);
 }
 
-$baseQuery .= " ORDER BY jl.is_featured DESC, jl.created_at DESC";
-
+// Total para paginación
+$totalEmpleos = 0;
 try {
-    $stmt = $pdo->prepare($baseQuery);
+    $stmtCount = $pdo->prepare("SELECT COUNT(*) $baseJoin $baseWhere");
+    $stmtCount->execute($params);
+    $totalEmpleos = (int)$stmtCount->fetchColumn();
+} catch (Exception $e) {
+    error_log("Error counting jobs: " . $e->getMessage());
+}
+$totalPages = max(1, (int)ceil($totalEmpleos / $perPage));
+$page       = min($page, $totalPages);
+$offset     = ($page - 1) * $perPage;
+
+// Query principal paginada
+try {
+    $stmt = $pdo->prepare(
+        "SELECT jl.*, u.company_name, u.company_logo
+         $baseJoin $baseWhere
+         ORDER BY jl.is_featured DESC, jl.created_at DESC
+         LIMIT $perPage OFFSET $offset"
+    );
     $stmt->execute($params);
     $empleos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
@@ -1655,6 +1659,55 @@ if (empty($categories)) {
     .cart-popover-btn.primary:hover {
       background: #0d9668;
     }
+
+    /* Paginación */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin: 2rem 0 3rem;
+    }
+
+    .page-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.5rem;
+      height: 2.5rem;
+      padding: 0 0.75rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      color: var(--gray-700);
+      background: var(--white);
+      border: 2px solid var(--gray-200);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .page-btn:hover:not(.disabled):not(.active) {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .page-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--white);
+    }
+
+    .page-btn.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .page-dots {
+      color: var(--gray-400);
+      padding: 0 0.25rem;
+    }
   </style>
 
   <!-- Schema.org JSON-LD para JobPosting -->
@@ -1907,7 +1960,7 @@ if (empty($categories)) {
 
       <div class="hero-stats">
         <div class="stat-item">
-          <div class="stat-number"><?php echo count($empleos); ?></div>
+          <div class="stat-number"><?php echo number_format($totalEmpleos); ?></div>
           <div class="stat-label">Empleos Disponibles</div>
         </div>
         <div class="stat-item">
@@ -2010,13 +2063,13 @@ if (empty($categories)) {
 
   <div class="section-header">
     <h2 class="section-title">
-      <?php echo count($empleos); ?> Empleos Encontrados
+      <?php echo number_format($totalEmpleos); ?> Empleos Encontrados
     </h2>
     <p class="section-subtitle">
       <?php if ($search || $jobType || $remote || $location || $category): ?>
-        Mostrando resultados filtrados
+        Mostrando resultados filtrados — página <?php echo $page; ?> de <?php echo $totalPages; ?>
       <?php else: ?>
-        Encuentra el trabajo perfecto para ti
+        Página <?php echo $page; ?> de <?php echo $totalPages; ?> — <?php echo $perPage; ?> por página
       <?php endif; ?>
     </p>
   </div>
@@ -2190,6 +2243,48 @@ if (empty($categories)) {
         </div>
       <?php endforeach; ?>
     </div>
+
+    <?php if ($totalPages > 1): ?>
+    <?php
+    $qBase = array_filter($_GET, fn($k) => $k !== 'page', ARRAY_FILTER_USE_KEY);
+    $makeUrl = fn($p) => '/empleos?' . http_build_query(array_merge($qBase, ['page' => $p]));
+    $window  = 2;
+    $start   = max(1, $page - $window);
+    $end     = min($totalPages, $page + $window);
+    ?>
+    <nav class="pagination" aria-label="Paginación de empleos">
+      <?php if ($page > 1): ?>
+        <a href="<?php echo $makeUrl($page - 1); ?>" class="page-btn">&#8249; Anterior</a>
+      <?php else: ?>
+        <span class="page-btn disabled">&#8249; Anterior</span>
+      <?php endif; ?>
+
+      <?php if ($start > 1): ?>
+        <a href="<?php echo $makeUrl(1); ?>" class="page-btn">1</a>
+        <?php if ($start > 2): ?><span class="page-dots">…</span><?php endif; ?>
+      <?php endif; ?>
+
+      <?php for ($i = $start; $i <= $end; $i++): ?>
+        <?php if ($i === $page): ?>
+          <span class="page-btn active"><?php echo $i; ?></span>
+        <?php else: ?>
+          <a href="<?php echo $makeUrl($i); ?>" class="page-btn"><?php echo $i; ?></a>
+        <?php endif; ?>
+      <?php endfor; ?>
+
+      <?php if ($end < $totalPages): ?>
+        <?php if ($end < $totalPages - 1): ?><span class="page-dots">…</span><?php endif; ?>
+        <a href="<?php echo $makeUrl($totalPages); ?>" class="page-btn"><?php echo $totalPages; ?></a>
+      <?php endif; ?>
+
+      <?php if ($page < $totalPages): ?>
+        <a href="<?php echo $makeUrl($page + 1); ?>" class="page-btn">Siguiente &#8250;</a>
+      <?php else: ?>
+        <span class="page-btn disabled">Siguiente &#8250;</span>
+      <?php endif; ?>
+    </nav>
+    <?php endif; ?>
+
   <?php endif; ?>
 </div>
 
@@ -2500,9 +2595,16 @@ document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('filters-form');
   if (!form) return;
 
+  const pageInput = document.createElement('input');
+  pageInput.type = 'hidden';
+  pageInput.name = 'page';
+  pageInput.value = '1';
+  form.appendChild(pageInput);
+
   const selects = form.querySelectorAll('select');
   selects.forEach(select => {
     select.addEventListener('change', () => {
+      pageInput.value = '1';
       form.submit();
     });
   });
