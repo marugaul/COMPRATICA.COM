@@ -40,7 +40,7 @@ $pdo = db();
 $listingId = (int)($_GET['id'] ?? 0);
 
 if ($listingId <= 0) {
-  header('Location: bienes-raices.php');
+  header('Location: /bienes-raices');
   exit;
 }
 
@@ -66,7 +66,7 @@ $stmt->execute([$listingId]);
 $listing = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$listing) {
-  header('Location: bienes-raices.php?error=not_found');
+  header('Location: /bienes-raices?error=not_found');
   exit;
 }
 
@@ -514,7 +514,7 @@ $fullLocation = implode(', ', $locationParts);
 <?php include __DIR__ . '/includes/header.php'; ?>
 
 <div class="container">
-  <a href="bienes-raices.php" class="back-link">
+  <a href="/bienes-raices" class="back-link">
     <i class="fas fa-arrow-left"></i> Volver a listado de propiedades
   </a>
 
