@@ -917,8 +917,65 @@ logDebug("RENDERING_PAGE", ['listings_count' => count($listings)]);
   </div>
 </div>
 
-<?php include __DIR__ . '/includes/footer.php'; ?>
+<!-- SEO: Bloque de contenido para posicionamiento en Google -->
+<section style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:48px 0 40px;">
+  <div style="max-width:1200px;margin:0 auto;padding:0 2rem;">
 
-<script src="/assets/js/cart.js"></script>
+    <h2 style="font-size:1.5rem;font-weight:700;color:#1e3a5f;margin-bottom:1rem;">
+      Bienes Raíces en Costa Rica — Comprá, Vendé o Alquilá tu Propiedad
+    </h2>
+    <p style="color:#4a5568;line-height:1.8;margin-bottom:1.5rem;max-width:800px;">
+      CompraTica es el marketplace costarricense donde encontrás <strong>casas en venta en Costa Rica</strong>,
+      apartamentos en alquiler, lotes, terrenos, locales comerciales, bodegas y fincas en todo el país.
+      Publicá tu propiedad gratis o explorá cientos de opciones en San José, Alajuela, Heredia,
+      Cartago, Guanacaste, Puntarenas y Limón.
+    </p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:2rem;">
+      <?php
+      $provinciasSEO = ['San José','Alajuela','Heredia','Cartago','Guanacaste','Puntarenas','Limón'];
+      foreach ($provinciasSEO as $prov):
+        $url = '/bienes-raices?provincia=' . urlencode($prov);
+      ?>
+      <a href="<?= $url ?>" style="display:block;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;color:#2563eb;font-weight:600;text-decoration:none;font-size:0.9rem;">
+        <i class="fas fa-map-marker-alt" style="margin-right:6px;color:#ce1126;"></i>Propiedades en <?= htmlspecialchars($prov) ?>
+      </a>
+      <?php endforeach; ?>
+    </div>
+
+    <h3 style="font-size:1.1rem;font-weight:700;color:#1e3a5f;margin-bottom:0.75rem;">
+      Tipos de propiedades disponibles
+    </h3>
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.5rem;">
+      <?php
+      $tiposSEO = [
+        'Casas en venta'           => '?tipo=venta&categoria=BR%3A+Casas+en+Venta',
+        'Casas en alquiler'        => '?tipo=alquiler&categoria=BR%3A+Casas+en+Alquiler',
+        'Apartamentos en venta'    => '?tipo=venta&categoria=BR%3A+Apartamentos+en+Venta',
+        'Apartamentos en alquiler' => '?tipo=alquiler&categoria=BR%3A+Apartamentos+en+Alquiler',
+        'Terrenos en venta'        => '?tipo=venta&categoria=BR%3A+Terrenos+en+Venta',
+        'Lotes en venta'           => '?tipo=venta&categoria=BR%3A+Lotes+en+Venta',
+        'Locales comerciales'      => '?categoria=BR%3A+Locales+Comerciales+en+Venta',
+        'Fincas en venta'          => '?tipo=venta&categoria=BR%3A+Fincas+en+Venta',
+        'Bodegas'                  => '?categoria=BR%3A+Bodegas+en+Venta',
+      ];
+      foreach ($tiposSEO as $label => $params):
+      ?>
+      <a href="/bienes-raices<?= $params ?>" style="display:inline-block;background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:6px 14px;color:#374151;font-size:0.85rem;text-decoration:none;">
+        <?= htmlspecialchars($label) ?>
+      </a>
+      <?php endforeach; ?>
+    </div>
+
+    <p style="color:#718096;font-size:0.875rem;line-height:1.7;">
+      ¿Querés publicar tu propiedad? <a href="/real-estate/login.php" style="color:#2563eb;font-weight:600;">Creá tu cuenta de agente inmobiliario</a>
+      y publicá casas, apartamentos, terrenos o locales comerciales en Costa Rica.
+      Los planes incluyen desde publicación gratuita hasta opciones destacadas con mayor visibilidad.
+    </p>
+
+  </div>
+</section>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>
