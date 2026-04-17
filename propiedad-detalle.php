@@ -141,30 +141,29 @@ $fullLocation = implode(', ', $locationParts);
   <meta name="twitter:description" content="<?= htmlspecialchars(substr($listing['description'], 0, 200)) ?>">
   <meta name="twitter:image" content="<?= !empty($images[0]) ? htmlspecialchars($images[0]) : 'https://compratica.com/assets/img/og-bienes-raices.jpg' ?>">
 
-  <!-- JSON-LD RealEstateListing -->
+  <!-- JSON-LD Propiedad -->
   <script type="application/ld+json">
   <?php
   $schemaImages = array_values(array_filter($images));
-  $schemaAddress = array_filter([
-    'district'  => $listing['district']  ?? '',
-    'canton'    => $listing['canton']    ?? '',
-    'province'  => $listing['province']  ?? '',
-  ]);
+  $schemaPrice  = (float)$listing['price'];
+  $schemaCur    = $listing['currency'] ?? 'CRC';
+  // Tipo de inmueble → subtipo de schema.org Residence/Place
+  $propTypeMap = [
+    'BR: Casas en Venta'    => 'SingleFamilyResidence',
+    'BR: Casas en Alquiler' => 'SingleFamilyResidence',
+    'BR: Apartamentos en Venta'    => 'Apartment',
+    'BR: Apartamentos en Alquiler' => 'Apartment',
+    'BR: Terrenos en Venta' => 'LandForm',
+    'BR: Lotes en Venta'    => 'LandForm',
+  ];
+  $schemaType = $propTypeMap[$listing['category_name'] ?? ''] ?? 'Accommodation';
   $schema = [
     '@context' => 'https://schema.org',
-    '@type'    => 'RealEstateListing',
+    '@type'    => $schemaType,
     'name'     => $listing['title'],
     'description' => $listing['description'] ?? '',
     'url'      => $cleanUrl,
-    'datePosted'   => $listing['start_date'] ?? '',
-    'validThrough' => $listing['end_date']   ?? '',
     'image'    => !empty($schemaImages) ? $schemaImages : ['https://compratica.com/assets/img/og-bienes-raices.jpg'],
-    'offers'   => [
-      '@type'         => 'Offer',
-      'price'         => (float)$listing['price'],
-      'priceCurrency' => $listing['currency'] ?? 'CRC',
-      'availability'  => 'https://schema.org/InStock',
-    ],
     'address'  => [
       '@type'           => 'PostalAddress',
       'streetAddress'   => $listing['location'] ?? '',
@@ -172,13 +171,21 @@ $fullLocation = implode(', ', $locationParts);
       'addressRegion'   => $listing['province']  ?? '',
       'addressCountry'  => 'CR',
     ],
+    'offers'   => [
+      '@type'         => 'Offer',
+      'price'         => $schemaPrice,
+      'priceCurrency' => $schemaCur,
+      'availability'  => 'https://schema.org/InStock',
+      'url'           => $cleanUrl,
+      'validThrough'  => $listing['end_date'] ?? '',
+    ],
   ];
   if (!empty($listing['area_m2'])) {
     $schema['floorSize'] = ['@type' => 'QuantitativeValue', 'value' => (float)$listing['area_m2'], 'unitCode' => 'MTK'];
   }
-  if (!empty($listing['bedrooms']))       $schema['numberOfRooms']           = (int)$listing['bedrooms'];
-  if (!empty($listing['bathrooms']))      $schema['numberOfBathroomsTotal']  = (int)$listing['bathrooms'];
-  if (!empty($listing['parking_spaces'])) $schema['numberOfParkingSpaces']   = (int)$listing['parking_spaces'];
+  if (!empty($listing['bedrooms']))       $schema['numberOfRooms']          = (int)$listing['bedrooms'];
+  if (!empty($listing['bathrooms']))      $schema['numberOfBathroomsTotal'] = (int)$listing['bathrooms'];
+  if (!empty($listing['parking_spaces'])) $schema['numberOfParkingSpaces']  = (int)$listing['parking_spaces'];
   if (!empty($listing['agent_name'])) {
     $schema['seller'] = ['@type' => 'RealEstateAgent', 'name' => $listing['agent_name']];
   }
