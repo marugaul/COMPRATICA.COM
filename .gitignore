@@ -1,5 +1,7 @@
 # Archivos sensibles y de datos
 data.sqlite
+data.sqlite-shm
+data.sqlite-wal
 compratica.db
 *.db
 *.log
