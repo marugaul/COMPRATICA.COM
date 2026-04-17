@@ -141,6 +141,51 @@ $fullLocation = implode(', ', $locationParts);
   <meta name="twitter:description" content="<?= htmlspecialchars(substr($listing['description'], 0, 200)) ?>">
   <meta name="twitter:image" content="<?= !empty($images[0]) ? htmlspecialchars($images[0]) : 'https://compratica.com/assets/img/og-bienes-raices.jpg' ?>">
 
+  <!-- JSON-LD RealEstateListing -->
+  <script type="application/ld+json">
+  <?php
+  $schemaImages = array_values(array_filter($images));
+  $schemaAddress = array_filter([
+    'district'  => $listing['district']  ?? '',
+    'canton'    => $listing['canton']    ?? '',
+    'province'  => $listing['province']  ?? '',
+  ]);
+  $schema = [
+    '@context' => 'https://schema.org',
+    '@type'    => 'RealEstateListing',
+    'name'     => $listing['title'],
+    'description' => $listing['description'] ?? '',
+    'url'      => $cleanUrl,
+    'datePosted'   => $listing['start_date'] ?? '',
+    'validThrough' => $listing['end_date']   ?? '',
+    'image'    => !empty($schemaImages) ? $schemaImages : ['https://compratica.com/assets/img/og-bienes-raices.jpg'],
+    'offers'   => [
+      '@type'         => 'Offer',
+      'price'         => (float)$listing['price'],
+      'priceCurrency' => $listing['currency'] ?? 'CRC',
+      'availability'  => 'https://schema.org/InStock',
+    ],
+    'address'  => [
+      '@type'           => 'PostalAddress',
+      'streetAddress'   => $listing['location'] ?? '',
+      'addressLocality' => $listing['canton']    ?? '',
+      'addressRegion'   => $listing['province']  ?? '',
+      'addressCountry'  => 'CR',
+    ],
+  ];
+  if (!empty($listing['area_m2'])) {
+    $schema['floorSize'] = ['@type' => 'QuantitativeValue', 'value' => (float)$listing['area_m2'], 'unitCode' => 'MTK'];
+  }
+  if (!empty($listing['bedrooms']))       $schema['numberOfRooms']           = (int)$listing['bedrooms'];
+  if (!empty($listing['bathrooms']))      $schema['numberOfBathroomsTotal']  = (int)$listing['bathrooms'];
+  if (!empty($listing['parking_spaces'])) $schema['numberOfParkingSpaces']   = (int)$listing['parking_spaces'];
+  if (!empty($listing['agent_name'])) {
+    $schema['seller'] = ['@type' => 'RealEstateAgent', 'name' => $listing['agent_name']];
+  }
+  echo json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+  ?>
+  </script>
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/fontawesome-css/all.min.css">
   <link rel="stylesheet" href="/assets/css/main.css">
