@@ -45,10 +45,15 @@ if ($file['size'] > 5 * 1024 * 1024) {
     exit;
 }
 
-$finfo = finfo_open(FILEINFO_MIME_TYPE);
-$mime  = finfo_file($finfo, $file['tmp_name']);
-finfo_close($finfo);
 $allowed = ['image/jpeg', 'image/png', 'image/webp'];
+if (function_exists('finfo_open')) {
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+} else {
+    $tempInfo = @getimagesize($file['tmp_name']);
+    $mime = $tempInfo ? ($tempInfo['mime'] ?? 'application/octet-stream') : 'application/octet-stream';
+}
 if (!in_array($mime, $allowed)) {
     echo json_encode(['ok' => false, 'error' => 'Solo se permiten imágenes JPG, PNG o WEBP.']);
     exit;
