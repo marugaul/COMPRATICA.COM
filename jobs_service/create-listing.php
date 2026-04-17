@@ -29,8 +29,8 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $job_categories = array_filter($categories, fn($c) => str_starts_with($c['name'], 'EMP:'));
 $service_categories = array_filter($categories, fn($c) => str_starts_with($c['name'], 'SERV:'));
 
-// Cargar planes de precios
-$planStmt = $pdo->query("SELECT * FROM job_pricing WHERE is_active=1 ORDER BY display_order ASC");
+// Cargar planes de precios (todos activos; JS filtrará por tipo)
+$planStmt = $pdo->query("SELECT *, COALESCE(applies_to,'both') AS applies_to FROM job_pricing WHERE is_active=1 ORDER BY display_order ASC");
 $pricing_plans = $planStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Procesar formulario
@@ -673,7 +673,7 @@ $provincias = [
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
           <?php foreach ($pricing_plans as $plan): ?>
             <?php $isFree = ((float)$plan['price_usd'] == 0 && (float)$plan['price_crc'] == 0); ?>
-            <label class="plan-option <?php echo $isFree ? 'selected' : ''; ?>" style="border: 2px solid var(--gray-300); border-radius: 8px; padding: 1.5rem; cursor: pointer; transition: all 0.25s; text-align: center;">
+            <label class="plan-option <?php echo $isFree ? 'selected' : ''; ?>" data-applies-to="<?php echo htmlspecialchars($plan['applies_to']); ?>" style="border: 2px solid var(--gray-300); border-radius: 8px; padding: 1.5rem; cursor: pointer; transition: all 0.25s; text-align: center;">
               <input type="radio" name="pricing_plan_id" value="<?php echo $plan['id']; ?>" <?php echo $isFree ? 'checked' : ''; ?> style="display: none;">
               <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">
                 <?php echo $isFree ? '✓ GRATIS' : '★ DESTACADO'; ?>
@@ -743,6 +743,39 @@ $provincias = [
         }
       });
     });
+
+    // Filtrar planes según tipo de publicación
+    function filterPlans(type) {
+      const planOptions = document.querySelectorAll('.plan-option');
+      let firstVisible = null;
+      planOptions.forEach(opt => {
+        const at = opt.dataset.appliesTo || 'both';
+        const visible = (at === type || at === 'both');
+        opt.style.display = visible ? '' : 'none';
+        if (visible && !firstVisible) firstVisible = opt;
+        // Deseleccionar planes ocultos
+        if (!visible && opt.classList.contains('selected')) {
+          opt.classList.remove('selected');
+          opt.querySelector('input[type="radio"]').checked = false;
+        }
+      });
+      // Si nada queda seleccionado, seleccionar primero visible
+      const anySelected = [...planOptions].some(o => o.classList.contains('selected') && o.style.display !== 'none');
+      if (!anySelected && firstVisible) {
+        firstVisible.classList.add('selected');
+        firstVisible.querySelector('input[type="radio"]').checked = true;
+      }
+    }
+
+    // Actualizar también en cambio de tipo
+    typeOptions.forEach(option => {
+      option.addEventListener('click', function() {
+        filterPlans(this.dataset.type);
+      });
+    });
+
+    // Aplicar filtro inicial (job por defecto)
+    filterPlans('job');
 
     // Selección de planes
     const planOptions = document.querySelectorAll('.plan-option');
