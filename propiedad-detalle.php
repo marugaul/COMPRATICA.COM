@@ -147,47 +147,46 @@ $fullLocation = implode(', ', $locationParts);
   $schemaImages = array_values(array_filter($images));
   $schemaPrice  = (float)$listing['price'];
   $schemaCur    = $listing['currency'] ?? 'CRC';
-  // Tipo de inmueble → subtipo de schema.org Residence/Place
-  $propTypeMap = [
-    'BR: Casas en Venta'    => 'SingleFamilyResidence',
-    'BR: Casas en Alquiler' => 'SingleFamilyResidence',
-    'BR: Apartamentos en Venta'    => 'Apartment',
-    'BR: Apartamentos en Alquiler' => 'Apartment',
-    'BR: Terrenos en Venta' => 'LandForm',
-    'BR: Lotes en Venta'    => 'LandForm',
-  ];
-  $schemaType = $propTypeMap[$listing['category_name'] ?? ''] ?? 'Accommodation';
+  // Categoría como string limpio para mostrar en schema
+  $catDisplay = str_replace('BR: ', '', $listing['category_name'] ?? 'Bienes Raíces');
+  $endDateIso = !empty($listing['end_date'])
+    ? date('Y-m-d', strtotime($listing['end_date']))
+    : '';
   $schema = [
-    '@context' => 'https://schema.org',
-    '@type'    => $schemaType,
-    'name'     => $listing['title'],
+    '@context'    => 'https://schema.org',
+    '@type'       => 'Product',
+    'name'        => $listing['title'],
     'description' => $listing['description'] ?? '',
-    'url'      => $cleanUrl,
-    'image'    => !empty($schemaImages) ? $schemaImages : ['https://compratica.com/assets/img/og-bienes-raices.jpg'],
-    'address'  => [
-      '@type'           => 'PostalAddress',
-      'streetAddress'   => $listing['location'] ?? '',
-      'addressLocality' => $listing['canton']    ?? '',
-      'addressRegion'   => $listing['province']  ?? '',
-      'addressCountry'  => 'CR',
-    ],
-    'offers'   => [
+    'url'         => $cleanUrl,
+    'image'       => !empty($schemaImages) ? $schemaImages : ['https://compratica.com/assets/img/og-bienes-raices.jpg'],
+    'category'    => $catDisplay . ' — Costa Rica',
+    'brand'       => ['@type' => 'Brand', 'name' => 'CompraTica Bienes Raíces'],
+    'offers'      => [
       '@type'         => 'Offer',
       'price'         => $schemaPrice,
       'priceCurrency' => $schemaCur,
       'availability'  => 'https://schema.org/InStock',
       'url'           => $cleanUrl,
-      'validThrough'  => $listing['end_date'] ?? '',
+      'validThrough'  => $endDateIso,
+      'seller'        => ['@type' => 'Organization', 'name' => 'CompraTica'],
     ],
   ];
   if (!empty($listing['area_m2'])) {
-    $schema['floorSize'] = ['@type' => 'QuantitativeValue', 'value' => (float)$listing['area_m2'], 'unitCode' => 'MTK'];
+    $schema['additionalProperty'][] = [
+      '@type' => 'PropertyValue', 'name' => 'Área', 'value' => (float)$listing['area_m2'], 'unitCode' => 'MTK',
+    ];
   }
-  if (!empty($listing['bedrooms']))       $schema['numberOfRooms']          = (int)$listing['bedrooms'];
-  if (!empty($listing['bathrooms']))      $schema['numberOfBathroomsTotal'] = (int)$listing['bathrooms'];
-  if (!empty($listing['parking_spaces'])) $schema['numberOfParkingSpaces']  = (int)$listing['parking_spaces'];
+  if (!empty($listing['bedrooms'])) {
+    $schema['additionalProperty'][] = ['@type' => 'PropertyValue', 'name' => 'Habitaciones', 'value' => (int)$listing['bedrooms']];
+  }
+  if (!empty($listing['bathrooms'])) {
+    $schema['additionalProperty'][] = ['@type' => 'PropertyValue', 'name' => 'Baños', 'value' => (int)$listing['bathrooms']];
+  }
+  if (!empty($listing['province'])) {
+    $schema['additionalProperty'][] = ['@type' => 'PropertyValue', 'name' => 'Provincia', 'value' => $listing['province']];
+  }
   if (!empty($listing['agent_name'])) {
-    $schema['seller'] = ['@type' => 'RealEstateAgent', 'name' => $listing['agent_name']];
+    $schema['offers']['seller'] = ['@type' => 'RealEstateAgent', 'name' => $listing['agent_name']];
   }
   echo json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
   ?>
