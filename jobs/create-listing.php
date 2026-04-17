@@ -30,8 +30,12 @@ $job_categories = array_filter($categories, fn($c) => str_starts_with($c['name']
 $service_categories = array_filter($categories, fn($c) => str_starts_with($c['name'], 'SERV:'));
 
 // Cargar planes de precios
-$planStmt = $pdo->query("SELECT * FROM listing_pricing WHERE is_active=1 ORDER BY display_order ASC");
-$pricing_plans = $planStmt->fetchAll(PDO::FETCH_ASSOC);
+$pricing_plans = [];
+try {
+    $pricing_plans = $pdo->query("SELECT * FROM listing_pricing WHERE is_active=1 ORDER BY display_order ASC")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    error_log('[jobs/create-listing.php] Error cargando planes: ' . $e->getMessage());
+}
 
 // Procesar formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
