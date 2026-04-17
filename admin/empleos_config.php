@@ -36,6 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $is_active = isset($_POST['is_active']) ? 1 : 0;
         $is_featured = isset($_POST['is_featured']) ? 1 : 0;
         $description = trim($_POST['description'] ?? '');
+        $applies_to  = $_POST['applies_to'] ?? 'both';
+        if (!in_array($applies_to, ['job', 'service', 'both'])) $applies_to = 'both';
 
         // Convertir array de métodos de pago a string separado por comas
         $payment_methods_str = is_array($payment_methods) ? implode(',', $payment_methods) : '';
@@ -56,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         is_active = ?,
                         is_featured = ?,
                         description = ?,
+                        applies_to = ?,
                         updated_at = datetime('now')
                     WHERE id = ?
                 ");
@@ -69,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $is_active,
                     $is_featured,
                     $description,
+                    $applies_to,
                     $id
                 ]);
                 $msg = "✅ Plan actualizado correctamente";
@@ -91,6 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $is_featured = isset($_POST['is_featured']) ? 1 : 0;
         $description = trim($_POST['description'] ?? '');
         $display_order = (int)($_POST['display_order'] ?? 999);
+        $applies_to_c = $_POST['applies_to'] ?? 'both';
+        if (!in_array($applies_to_c, ['job', 'service', 'both'])) $applies_to_c = 'both';
 
         // Convertir array de métodos de pago a string
         $payment_methods_str = is_array($payment_methods) ? implode(',', $payment_methods) : '';
@@ -105,8 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             try {
                 $stmt = $pdo->prepare("
                     INSERT INTO job_pricing
-                    (name, duration_days, price_usd, price_crc, max_photos, payment_methods, is_active, is_featured, description, display_order, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+                    (name, duration_days, price_usd, price_crc, max_photos, payment_methods, is_active, is_featured, description, display_order, applies_to, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
                 ");
                 $stmt->execute([
                     $name,
@@ -118,7 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $is_active,
                     $is_featured,
                     $description,
-                    $display_order
+                    $display_order,
+                    $applies_to_c
                 ]);
                 $msg = "✅ Plan creado correctamente";
                 $msgType = 'success';
@@ -759,6 +766,7 @@ $pending_listings = $pdo->query("
           <tr>
             <th>ID</th>
             <th>Nombre</th>
+            <th>Aplica a</th>
             <th>Duración (días)</th>
             <th>Precio USD</th>
             <th>Precio CRC</th>
@@ -781,6 +789,14 @@ $pending_listings = $pdo->query("
               <?php if($plan['description']): ?>
                 <br><small style="color: var(--gray-600);"><?= h($plan['description']) ?></small>
               <?php endif; ?>
+            </td>
+            <td>
+              <?php
+              $at = $plan['applies_to'] ?? 'both';
+              if ($at === 'job')     echo '<span class="badge info"><i class="fas fa-briefcase"></i> Empleo</span>';
+              elseif ($at === 'service') echo '<span class="badge warning"><i class="fas fa-tools"></i> Servicio</span>';
+              else echo '<span class="badge success"><i class="fas fa-layer-group"></i> Ambos</span>';
+              ?>
             </td>
             <td><?= $plan['duration_days'] ?> días</td>
             <td>$<?= number_format($plan['price_usd'], 2) ?></td>
@@ -900,6 +916,16 @@ $pending_listings = $pdo->query("
         </div>
 
         <div class="form-group">
+          <label>Aplica a</label>
+          <select class="input" name="applies_to" id="planAppliesto">
+            <option value="both">Ambos (Empleos y Servicios)</option>
+            <option value="job">Solo Empleos</option>
+            <option value="service">Solo Servicios</option>
+          </select>
+          <small style="color: var(--gray-600); margin-top: 0.25rem;">Define para qué tipo de publicación está disponible este plan</small>
+        </div>
+
+        <div class="form-group">
           <label class="checkbox-label">
             <input type="checkbox" name="is_active" id="planIsActive" checked>
             <strong>Plan Activo</strong>
@@ -938,6 +964,7 @@ function openModal(mode) {
     document.getElementById('planId').value = '';
     title.textContent = 'Crear Nuevo Plan';
     document.getElementById('planIsActive').checked = true;
+    document.getElementById('planAppliesto').value = 'both';
   }
 
   modal.classList.add('active');
@@ -961,6 +988,7 @@ function editPlan(plan) {
   document.getElementById('planDescription').value = plan.description || '';
   document.getElementById('planIsActive').checked = plan.is_active == 1;
   document.getElementById('planIsFeatured').checked = plan.is_featured == 1;
+  document.getElementById('planAppliesto').value = plan.applies_to || 'both';
 
   // Marcar métodos de pago
   const methods = (plan.payment_methods || '').split(',');
