@@ -49,9 +49,20 @@ try {
   $max_size = 5 * 1024 * 1024; // 5MB
 
   // Validar tipo de archivo
-  $finfo = finfo_open(FILEINFO_MIME_TYPE);
-  $mime = finfo_file($finfo, $file['tmp_name']);
-  finfo_close($finfo);
+  if (function_exists('finfo_open')) {
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+  } else {
+    $imgInfo = @getimagesize($file['tmp_name']);
+    if ($imgInfo) {
+      $mime = $imgInfo['mime'];
+    } else {
+      // Podría ser PDF — verificar por extensión como fallback
+      $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+      $mime = ($ext === 'pdf') ? 'application/pdf' : 'application/octet-stream';
+    }
+  }
 
   if (!in_array($mime, $allowed_types)) {
     throw new Exception('Tipo de archivo no permitido. Solo JPG, PNG, WEBP o PDF');
