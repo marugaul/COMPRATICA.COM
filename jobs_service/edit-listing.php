@@ -96,6 +96,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       'id' => $listing_id
     ];
 
+    // Flyer image — only update if a value was submitted (empty string = remove, path = set, absent = keep)
+    if (array_key_exists('flyer_image', $_POST)) {
+      $flyer_image = trim($_POST['flyer_image']);
+      if ($flyer_image && !preg_match('#^/uploads/flyers/[\w\-\.]+$#', $flyer_image)) {
+        $flyer_image = ''; // reject invalid paths
+      }
+      $data['flyer_image'] = $flyer_image ?: null;
+    }
+
     // Campos específicos de empleo
     if ($listing_type === 'job') {
       $data['job_type'] = $_POST['job_type'] ?? null;
@@ -118,6 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Actualizar en la base de datos
+    $flyerSet = array_key_exists('flyer_image', $data) ? ', flyer_image = :flyer_image' : '';
     $sql = "UPDATE job_listings SET
       listing_type = :listing_type,
       title = :title,
@@ -143,7 +153,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       contact_whatsapp = :contact_whatsapp,
       application_url = :application_url,
       is_active = :is_active,
-      end_date = :end_date,
+      end_date = :end_date
+      $flyerSet,
       updated_at = datetime('now')
     WHERE id = :id";
 
@@ -658,6 +669,25 @@ $provincias = [
         </div>
       </div>
 
+      <!-- Flyer Promocional -->
+      <div class="card">
+        <h2 style="margin-bottom: 0.5rem;"><i class="fas fa-image"></i> Flyer Promocional <span style="font-size:0.85rem;font-weight:400;color:var(--gray-500)">(Opcional)</span></h2>
+        <p class="help-text" style="margin-bottom:1rem;">Subí una imagen de tu flyer o logo para destacar tu publicación. Aparece en el listado y en la página de detalles.</p>
+
+        <input type="hidden" name="flyer_image" id="flyerImageUrl" value="<?php echo htmlspecialchars($listing['flyer_image'] ?? ''); ?>">
+
+        <div id="flyerPreviewWrap" style="display:<?php echo !empty($listing['flyer_image']) ? 'block' : 'none'; ?>;margin-bottom:1rem;position:relative;width:100%;max-width:400px;">
+          <img id="flyerPreviewImg" src="<?php echo htmlspecialchars($listing['flyer_image'] ?? ''); ?>" alt="Flyer" style="width:100%;border-radius:8px;border:1px solid var(--gray-300);">
+          <button type="button" onclick="removeFlyerImage()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;line-height:1;">✕</button>
+        </div>
+
+        <label id="flyerUploadLabel" style="display:<?php echo !empty($listing['flyer_image']) ? 'none' : 'inline-flex'; ?>;align-items:center;gap:0.5rem;padding:0.65rem 1.25rem;background:var(--gray-100);border:2px dashed var(--gray-300);border-radius:8px;cursor:pointer;font-weight:600;color:var(--gray-700);transition:all 0.2s;">
+          <i class="fas fa-upload"></i> Seleccionar imagen
+          <input type="file" id="flyerFileInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="uploadFlyerImage(this)">
+        </label>
+        <span id="flyerStatus" style="margin-left:1rem;font-size:0.875rem;color:var(--gray-500);"></span>
+      </div>
+
       <!-- Duración -->
       <div class="card">
         <h2 style="margin-bottom: 1rem;">Duración de la Publicación</h2>
@@ -723,6 +753,46 @@ $provincias = [
       if (confirm('¿Estás seguro de que querés eliminar esta publicación? Esta acción no se puede deshacer.')) {
         window.location.href = 'delete-listing.php?id=<?php echo $listing_id; ?>';
       }
+    }
+
+    // Flyer upload
+    function uploadFlyerImage(input) {
+      if (!input.files || !input.files[0]) return;
+      const status = document.getElementById('flyerStatus');
+      status.textContent = 'Subiendo...';
+      status.style.color = 'var(--gray-500)';
+      const fd = new FormData();
+      fd.append('flyer', input.files[0]);
+      fetch('/jobs_service/upload-flyer.php', { method: 'POST', body: fd })
+        .then(async r => {
+          const text = await r.text();
+          try { return JSON.parse(text); }
+          catch(e) { throw new Error('Respuesta inválida: ' + text.substring(0, 100)); }
+        })
+        .then(data => {
+          if (data.ok) {
+            document.getElementById('flyerImageUrl').value = data.url;
+            document.getElementById('flyerPreviewImg').src = data.url;
+            document.getElementById('flyerPreviewWrap').style.display = 'block';
+            document.getElementById('flyerUploadLabel').style.display = 'none';
+            status.textContent = '';
+          } else {
+            status.textContent = 'Error: ' + (data.error || 'No se pudo subir');
+            status.style.color = '#e74c3c';
+          }
+        })
+        .catch(err => {
+          status.textContent = 'Error al subir: ' + err.message;
+          status.style.color = '#e74c3c';
+        });
+      input.value = '';
+    }
+
+    function removeFlyerImage() {
+      document.getElementById('flyerImageUrl').value = '';
+      document.getElementById('flyerPreviewWrap').style.display = 'none';
+      document.getElementById('flyerUploadLabel').style.display = 'inline-flex';
+      document.getElementById('flyerStatus').textContent = '';
     }
   </script>
 </body>

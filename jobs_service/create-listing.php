@@ -843,7 +843,7 @@ $provincias = [
       status.textContent = 'Subiendo...';
       const fd = new FormData();
       fd.append('flyer', input.files[0]);
-      fetch('upload-flyer.php', { method: 'POST', body: fd })
+      fetch('/jobs_service/upload-flyer.php', { method: 'POST', body: fd })
         .then(async r => {
           const text = await r.text();
           try { return JSON.parse(text); }
