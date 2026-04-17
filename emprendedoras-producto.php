@@ -226,6 +226,38 @@ $sinpeWA = preg_replace('/\D/', '', $sinpePhone);
             font-size: 2rem; cursor: pointer; background: none; border: none;
         }
     </style>
+
+  <!-- JSON-LD Product -->
+  <script type="application/ld+json">
+  <?php
+  $schemaImgs = array_values(array_filter([
+    $product['image_1'] ?? '', $product['image_2'] ?? '',
+    $product['image_3'] ?? '', $product['image_4'] ?? '',
+    $product['image_5'] ?? '',
+  ]));
+  $schemaProduct = [
+    '@context'    => 'https://schema.org',
+    '@type'       => 'Product',
+    'name'        => $product['name'],
+    'description' => $product['description'] ?? '',
+    'url'         => $cleanUrl,
+    'image'       => !empty($schemaImgs) ? $schemaImgs : [],
+    'category'    => $product['category_name'] ?? '',
+    'brand'       => ['@type' => 'Brand', 'name' => $product['seller_name'] ?? 'CompraTica'],
+    'offers'      => [
+      '@type'         => 'Offer',
+      'price'         => (float)$product['price'],
+      'priceCurrency' => 'CRC',
+      'availability'  => (int)($product['stock'] ?? 1) > 0
+                           ? 'https://schema.org/InStock'
+                           : 'https://schema.org/OutOfStock',
+      'url'           => $cleanUrl,
+      'seller'        => ['@type' => 'Person', 'name' => $product['seller_name'] ?? 'CompraTica'],
+    ],
+  ];
+  echo json_encode($schemaProduct, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+  ?>
+  </script>
 </head>
 <body>
 <?php include __DIR__ . '/includes/header.php'; ?>

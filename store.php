@@ -1229,6 +1229,42 @@ foreach ($_SESSION['cart'] as $it) {
     .products-grid { grid-template-columns: 1fr; }
     }
   </style>
+
+  <!-- JSON-LD Event (Venta de Garaje) -->
+  <script type="application/ld+json">
+  <?php
+  $schemaItems = [];
+  foreach ($products as $i => $p) {
+      $pImg = getProductImage($p);
+      $item = [
+        '@type'    => 'Offer',
+        'name'     => $p['name'],
+        'price'    => (float)$p['price'],
+        'priceCurrency' => 'CRC',
+        'availability'  => (int)($p['stock'] ?? 1) > 0
+                             ? 'https://schema.org/InStock'
+                             : 'https://schema.org/SoldOut',
+      ];
+      if ($pImg) $item['image'] = $pImg;
+      if (!empty($p['description'])) $item['description'] = substr($p['description'], 0, 160);
+      $schemaItems[] = $item;
+  }
+  $schemaEvent = [
+    '@context'    => 'https://schema.org',
+    '@type'       => 'Event',
+    'name'        => $sale['title'],
+    'description' => 'Venta de garaje de ' . ($sale['affiliate_name'] ?? 'CompraTica') . ' en Costa Rica.',
+    'url'         => $cleanUrl,
+    'startDate'   => $sale['start_at'] ?? '',
+    'endDate'     => $sale['end_at']   ?? '',
+    'eventStatus' => 'https://schema.org/EventScheduled',
+    'eventAttendanceMode' => 'https://schema.org/OnlineEventAttendanceMode',
+    'organizer'   => ['@type' => 'Person', 'name' => $sale['affiliate_name'] ?? 'CompraTica'],
+    'offers'      => $schemaItems,
+  ];
+  echo json_encode($schemaEvent, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+  ?>
+  </script>
 </head>
 <body>
 
