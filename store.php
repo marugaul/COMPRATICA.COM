@@ -1259,6 +1259,10 @@ foreach ($_SESSION['cart'] as $it) {
     'endDate'     => $sale['end_at']   ?? '',
     'eventStatus' => 'https://schema.org/EventScheduled',
     'eventAttendanceMode' => 'https://schema.org/OnlineEventAttendanceMode',
+    'location'    => [
+      '@type'   => 'VirtualLocation',
+      'url'     => $cleanUrl,
+    ],
     'organizer'   => ['@type' => 'Person', 'name' => $sale['affiliate_name'] ?? 'CompraTica'],
     'offers'      => $schemaItems,
   ];
