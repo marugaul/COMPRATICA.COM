@@ -135,7 +135,7 @@ $fullLocation = implode(', ', $locationParts);
   <meta property="og:site_name" content="CompraTica">
 
   <?php if (!empty($listing['latitude']) && !empty($listing['longitude'])): ?>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <?php endif; ?>
 
   <!-- Twitter Card -->
@@ -783,7 +783,7 @@ function changeImage(thumbnail, index) {
 </script>
 
 <?php if (!empty($listing['latitude']) && !empty($listing['longitude'])): ?>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/O/bk=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   var propMap = L.map('property-map').setView([<?= (float)$listing['latitude'] ?>, <?= (float)$listing['longitude'] ?>], 15);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
