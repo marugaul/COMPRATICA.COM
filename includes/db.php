@@ -907,6 +907,8 @@ function db() {
                 contact_email TEXT,
                 contact_whatsapp TEXT,
                 listing_type  TEXT DEFAULT 'sale',
+                latitude     REAL DEFAULT NULL,
+                longitude    REAL DEFAULT NULL,
                 pricing_plan_id INTEGER NOT NULL DEFAULT 1,
                 is_active    INTEGER DEFAULT 1,
                 is_featured  INTEGER DEFAULT 0,
@@ -1011,6 +1013,10 @@ function db() {
                 $relCols = array_column($pdo->query("PRAGMA table_info(real_estate_listings)")->fetchAll(PDO::FETCH_ASSOC), 'name');
                 if (!in_array('agent_id', $relCols))
                     $pdo->exec("ALTER TABLE real_estate_listings ADD COLUMN agent_id INTEGER");
+                if (!in_array('latitude', $relCols))
+                    $pdo->exec("ALTER TABLE real_estate_listings ADD COLUMN latitude REAL DEFAULT NULL");
+                if (!in_array('longitude', $relCols))
+                    $pdo->exec("ALTER TABLE real_estate_listings ADD COLUMN longitude REAL DEFAULT NULL");
             } catch (Throwable $_e) {}
             try {
                 $lpCols = array_column($pdo->query("PRAGMA table_info(listing_pricing)")->fetchAll(PDO::FETCH_ASSOC), 'name');

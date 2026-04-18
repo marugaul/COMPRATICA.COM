@@ -28,7 +28,7 @@ if ($listing_id <= 0) {
 $stmt = $pdo->prepare("
   SELECT l.*, p.name as plan_name, p.price_usd, p.price_crc, p.payment_methods, p.duration_days
   FROM service_listings l
-  LEFT JOIN service_pricing p ON l.pricing_plan_id = p.id
+  LEFT JOIN listing_pricing p ON l.pricing_plan_id = p.id
   WHERE l.id = ? AND l.agent_id = ?
   LIMIT 1
 ");

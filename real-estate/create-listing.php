@@ -91,6 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $canton = trim($_POST['canton'] ?? '');
     $district = trim($_POST['district'] ?? '');
     $location = trim($_POST['location'] ?? '');
+    $latitude  = $_POST['latitude']  !== '' ? (float)$_POST['latitude']  : null;
+    $longitude = $_POST['longitude'] !== '' ? (float)$_POST['longitude'] : null;
 
     // Detalles de la propiedad
     $bedrooms = (int)($_POST['bedrooms'] ?? 0);
@@ -171,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $insertStmt = $pdo->prepare("
       INSERT INTO real_estate_listings (
         agent_id, user_id, category_id, title, description, price, currency,
-        location, province, canton, district,
+        location, province, canton, district, latitude, longitude,
         bedrooms, bathrooms, area_m2, parking_spaces,
         features, images,
         contact_name, contact_phone, contact_email, contact_whatsapp,
@@ -180,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         created_at, updated_at
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?,
         ?, ?,
         ?, ?, ?, ?,
@@ -202,6 +204,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $province,
       $canton,
       $district,
+      $latitude,
+      $longitude,
       $bedrooms,
       $bathrooms,
       $area_m2,
@@ -621,7 +625,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       }
     }
+  /* Mapa */
+  .map-picker-wrap { margin-top: 1.25rem; }
+  .map-search-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .map-search-row input { flex: 1; padding: 0.6rem 0.9rem; border: 1px solid #cbd5e0; border-radius: 8px; font-size: 0.9rem; }
+  .map-search-row button { padding: 0.6rem 1rem; background: #002b7f; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+  .map-search-row button:hover { background: #001a50; }
+  #map-picker { height: 320px; border-radius: 10px; border: 1px solid #cbd5e0; }
+  .map-coords { font-size: 0.82rem; color: #718096; margin-top: 0.5rem; }
   </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 </head>
 <body>
   <div class="header">
@@ -736,6 +749,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <label>Ubicación Específica</label>
               <input type="text" name="location" placeholder="Ej: 200m oeste de la iglesia">
             </div>
+          </div>
+
+          <!-- MAPA -->
+          <div class="map-picker-wrap">
+            <label style="font-weight:600;display:block;margin-bottom:0.5rem;">
+              <i class="fas fa-map-pin" style="color:#002b7f;"></i> Ubicación en el Mapa <span style="font-weight:400;color:#718096;font-size:0.85rem;">(opcional)</span>
+            </label>
+            <div class="map-search-row">
+              <input type="text" id="map-search-input" placeholder="Buscar dirección en Costa Rica...">
+              <button type="button" onclick="searchMapAddress()"><i class="fas fa-search"></i> Buscar</button>
+              <button type="button" onclick="clearMapPin()" style="background:#e53e3e;"><i class="fas fa-times"></i> Limpiar</button>
+            </div>
+            <div id="map-picker"></div>
+            <div class="map-coords" id="map-coords-display">Hacé clic en el mapa para marcar la ubicación exacta de la propiedad.</div>
+            <input type="hidden" name="latitude"  id="input-latitude"  value="">
+            <input type="hidden" name="longitude" id="input-longitude" value="">
           </div>
         </div>
       </div>
@@ -1449,6 +1478,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         districtSelect.innerHTML = '<option value="">Seleccione cantón primero</option>';
         districtSelect.disabled = true;
       }
+    });
+  </script>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/O/bk=" crossorigin=""></script>
+  <script>
+    // ── Mapa picker ──────────────────────────────────────────────
+    var mapPicker = L.map('map-picker').setView([9.7489, -83.7534], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(mapPicker);
+
+    var mapMarker = null;
+
+    function setMapPin(lat, lng) {
+      if (mapMarker) mapPicker.removeLayer(mapMarker);
+      mapMarker = L.marker([lat, lng], { draggable: true }).addTo(mapPicker);
+      mapMarker.on('dragend', function(e) {
+        var p = e.target.getLatLng();
+        updateCoords(p.lat, p.lng);
+      });
+      updateCoords(lat, lng);
+      mapPicker.setView([lat, lng], 15);
+    }
+
+    function updateCoords(lat, lng) {
+      document.getElementById('input-latitude').value  = lat.toFixed(7);
+      document.getElementById('input-longitude').value = lng.toFixed(7);
+      document.getElementById('map-coords-display').textContent =
+        'Lat: ' + lat.toFixed(6) + '  |  Lng: ' + lng.toFixed(6);
+    }
+
+    function clearMapPin() {
+      if (mapMarker) { mapPicker.removeLayer(mapMarker); mapMarker = null; }
+      document.getElementById('input-latitude').value  = '';
+      document.getElementById('input-longitude').value = '';
+      document.getElementById('map-coords-display').textContent =
+        'Hacé clic en el mapa para marcar la ubicación exacta de la propiedad.';
+    }
+
+    mapPicker.on('click', function(e) { setMapPin(e.latlng.lat, e.latlng.lng); });
+
+    function searchMapAddress() {
+      var q = document.getElementById('map-search-input').value.trim();
+      if (!q) return;
+      fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=cr&q=' + encodeURIComponent(q), {
+        headers: { 'Accept-Language': 'es' }
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        if (data && data.length > 0) {
+          setMapPin(parseFloat(data[0].lat), parseFloat(data[0].lon));
+        } else {
+          alert('No se encontró la dirección. Probá con más detalles.');
+        }
+      })
+      .catch(function(){ alert('Error al buscar. Intentá de nuevo.'); });
+    }
+
+    document.getElementById('map-search-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); searchMapAddress(); }
     });
   </script>
 </body>
