@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       'contact_phone' => trim($_POST['contact_phone'] ?? ''),
       'contact_whatsapp' => trim($_POST['contact_whatsapp'] ?? ''),
       'application_url' => trim($_POST['application_url'] ?? ''),
-      'end_date' => !empty($_POST['end_date']) ? date('Y-m-d H:i:s', strtotime($_POST['end_date'])) : null,
+      'end_date' => $listing['end_date'],
       'is_active' => isset($_POST['is_active']) ? 1 : 0,
       'id' => $listing_id
     ];
@@ -659,15 +659,28 @@ $provincias = [
       </div>
 
       <!-- Duración -->
+      <?php
+        $endDate  = $listing['end_date'] ?? '';
+        $daysLeft = $endDate ? (int)ceil((strtotime($endDate) - time()) / 86400) : null;
+      ?>
       <div class="card">
         <h2 style="margin-bottom: 1rem;">Duración de la Publicación</h2>
-
-        <div class="form-group">
-          <label>Fecha de Fin (Opcional)</label>
-          <input type="date" name="end_date"
-            value="<?php echo $listing['end_date'] ? date('Y-m-d', strtotime($listing['end_date'])) : ''; ?>">
-          <p class="help-text">Dejá en blanco para que la publicación esté activa indefinidamente</p>
-        </div>
+        <p style="color: #4a5568; font-size: 0.95rem;">
+          <i class="fas fa-calendar-alt" style="color: #27ae60;"></i>
+          <?php if ($endDate): ?>
+            <?php if ($daysLeft <= 0): ?>
+              <strong style="color: #c0392b;">Publicación vencida el <?php echo date('d/m/Y', strtotime($endDate)); ?></strong>
+            <?php else: ?>
+              Fecha de vencimiento: <strong><?php echo date('d/m/Y', strtotime($endDate)); ?></strong>
+              (<?php echo $daysLeft; ?> día(s) restante(s))
+            <?php endif; ?>
+          <?php else: ?>
+            Sin fecha de vencimiento asignada.
+          <?php endif; ?>
+        </p>
+        <p style="color: #718096; font-size: 0.85rem; margin-top: 0.5rem;">
+          <i class="fas fa-info-circle"></i> La fecha se calcula automáticamente según el plan contratado.
+        </p>
       </div>
 
       <div class="form-actions">

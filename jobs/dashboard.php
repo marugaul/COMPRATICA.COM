@@ -52,10 +52,12 @@ if (isset($_GET['error'])) {
 
 // Obtener publicaciones del empleador (solo empleos)
 $stmt = $pdo->prepare("
-  SELECT * FROM job_listings
-  WHERE employer_id = ?
-    AND listing_type = 'job'
-  ORDER BY created_at DESC
+  SELECT jl.*, lp.name AS plan_name, lp.duration_days
+  FROM job_listings jl
+  LEFT JOIN listing_pricing lp ON lp.id = jl.pricing_plan_id
+  WHERE jl.employer_id = ?
+    AND jl.listing_type = 'job'
+  ORDER BY jl.created_at DESC
 ");
 $stmt->execute([$employer_id]);
 $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -249,6 +251,16 @@ foreach ($listings as $listing) {
       color: #c62828;
     }
 
+    .badge.pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .plan-tag { font-size: 0.78rem; font-weight: 600; color: #27ae60; background: #e8f5e9; padding: 0.15rem 0.6rem; border-radius: 50px; }
+    .expire-tag { font-size: 0.85rem; color: var(--gray-700); }
+    .expire-warn { color: #e67e22; font-weight: 600; }
+    .expire-expired { color: #c0392b; font-weight: 600; }
+
     .empty-state {
       text-align: center;
       padding: 4rem 2rem;
@@ -421,19 +433,42 @@ foreach ($listings as $listing) {
       </div>
     <?php else: ?>
       <div class="listings-grid">
-        <?php foreach ($listings as $listing): ?>
+        <?php foreach ($listings as $listing):
+          $endDate  = $listing['end_date'] ?? '';
+          $pStatus  = $listing['payment_status'] ?? 'pending';
+          $daysLeft = $endDate ? (int)ceil((strtotime($endDate) - time()) / 86400) : null;
+        ?>
           <div class="listing-card">
             <div class="listing-info">
               <h3><?php echo htmlspecialchars($listing['title']); ?></h3>
-              <div class="listing-meta">
-                <span class="badge <?php echo $listing['listing_type']; ?>">
-                  <?php echo $listing['listing_type'] === 'job' ? 'Empleo' : 'Servicio'; ?>
+              <div class="listing-meta" style="flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                <?php if ($pStatus === 'free' || $pStatus === 'confirmed' || $pStatus === 'paid'): ?>
+                  <span class="badge active"><i class="fas fa-check-circle"></i> Activa</span>
+                <?php elseif ($pStatus === 'pending'): ?>
+                  <span class="badge pending"><i class="fas fa-clock"></i> Pendiente de pago</span>
+                <?php else: ?>
+                  <span class="badge inactive"><i class="fas fa-times-circle"></i> Inactiva</span>
+                <?php endif; ?>
+
+                <?php if ($listing['plan_name']): ?>
+                  <span class="plan-tag"><i class="fas fa-tag"></i> <?php echo htmlspecialchars($listing['plan_name']); ?></span>
+                <?php endif; ?>
+
+                <span class="expire-tag">
+                  <?php if ($endDate): ?>
+                    <?php if ($daysLeft <= 0): ?>
+                      <span class="expire-expired"><i class="fas fa-exclamation-circle"></i> Vencida el <?php echo date('d/m/Y', strtotime($endDate)); ?></span>
+                    <?php elseif ($daysLeft <= 3): ?>
+                      <span class="expire-warn"><i class="fas fa-exclamation-triangle"></i> Vence en <?php echo $daysLeft; ?> día(s) — <?php echo date('d/m/Y', strtotime($endDate)); ?></span>
+                    <?php else: ?>
+                      <i class="fas fa-calendar-alt"></i> Vence el <?php echo date('d/m/Y', strtotime($endDate)); ?> (<?php echo $daysLeft; ?> días)
+                    <?php endif; ?>
+                  <?php else: ?>
+                    <i class="fas fa-calendar-alt"></i> Sin fecha de vencimiento
+                  <?php endif; ?>
                 </span>
-                <span class="badge <?php echo $listing['is_active'] ? 'active' : 'inactive'; ?>">
-                  <?php echo $listing['is_active'] ? 'Activa' : 'Inactiva'; ?>
-                </span>
+
                 <span><i class="fas fa-eye"></i> <?php echo $listing['views_count'] ?? 0; ?> vistas</span>
-                <span><i class="fas fa-calendar"></i> <?php echo date('d/m/Y', strtotime($listing['created_at'])); ?></span>
               </div>
             </div>
             <div>
