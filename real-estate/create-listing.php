@@ -634,7 +634,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   #map-picker { height: 320px; border-radius: 10px; border: 1px solid #cbd5e0; }
   .map-coords { font-size: 0.82rem; color: #718096; margin-top: 0.5rem; }
   </style>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
   <div class="header">
@@ -1481,16 +1481,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     });
   </script>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/O/bk=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // ── Mapa picker ──────────────────────────────────────────────
-    var mapPicker = L.map('map-picker').setView([9.7489, -83.7534], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19
-    }).addTo(mapPicker);
+    var mapPicker, mapMarker;
 
-    var mapMarker = null;
+    function initMap() {
+      mapPicker = L.map('map-picker').setView([9.7489, -83.7534], 7);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19
+      }).addTo(mapPicker);
+
+      mapMarker = null;
+      mapPicker.on('click', function(e) { setMapPin(e.latlng.lat, e.latlng.lng); });
+
+      setTimeout(function() { mapPicker.invalidateSize(); }, 300);
+    }
 
     function setMapPin(lat, lng) {
       if (mapMarker) mapPicker.removeLayer(mapMarker);
@@ -1518,8 +1525,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'Hacé clic en el mapa para marcar la ubicación exacta de la propiedad.';
     }
 
-    mapPicker.on('click', function(e) { setMapPin(e.latlng.lat, e.latlng.lng); });
-
     function searchMapAddress() {
       var q = document.getElementById('map-search-input').value.trim();
       if (!q) return;
@@ -1540,6 +1545,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     document.getElementById('map-search-input').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') { e.preventDefault(); searchMapAddress(); }
     });
+
+    if (document.readyState === 'complete') {
+      initMap();
+    } else {
+      window.addEventListener('load', initMap);
+    }
   </script>
 </body>
 </html>
